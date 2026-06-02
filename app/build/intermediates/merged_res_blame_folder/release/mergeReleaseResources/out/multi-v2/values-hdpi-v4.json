@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.bmw.drivingcoach.app-mergeReleaseResources-57:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "/home/ctw00173_ubuntu/.gradle/caches/transforms-4/f7f2b642d1164149c884246b0a5f14c6/transformed/appcompat-1.7.0/res/values-hdpi-v4/values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        }
+    ]
+}

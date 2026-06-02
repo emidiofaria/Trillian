@@ -56,10 +56,10 @@ com.bmw.drivingcoach.app-sqlite-framework-2.4.0-54 /home/ctw00173_ubuntu/.gradle
 com.bmw.drivingcoach.app-customview-poolingcontainer-1.0.0-55 /home/ctw00173_ubuntu/.gradle/caches/transforms-4/f578f460bf9397428d2f9ecb300e0fc1/transformed/customview-poolingcontainer-1.0.0/res
 com.bmw.drivingcoach.app-appcompat-1.7.0-56 /home/ctw00173_ubuntu/.gradle/caches/transforms-4/f7f2b642d1164149c884246b0a5f14c6/transformed/appcompat-1.7.0/res
 com.bmw.drivingcoach.app-core-ktx-1.13.1-57 /home/ctw00173_ubuntu/.gradle/caches/transforms-4/fabfd3424148844a4f03ebd9901fd707/transformed/core-ktx-1.13.1/res
-com.bmw.drivingcoach.app-pngs-58 /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/build/generated/res/pngs/debug
-com.bmw.drivingcoach.app-resValues-59 /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/build/generated/res/resValues/debug
-com.bmw.drivingcoach.app-packageDebugResources-60 /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.bmw.drivingcoach.app-packageDebugResources-61 /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.bmw.drivingcoach.app-debug-62 /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/build/intermediates/merged_res/debug/mergeDebugResources
-com.bmw.drivingcoach.app-debug-63 /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/debug/res
-com.bmw.drivingcoach.app-main-64 /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/res
+com.bmw.drivingcoach.app-pngs-58 /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/build/generated/res/pngs/debug
+com.bmw.drivingcoach.app-resValues-59 /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/build/generated/res/resValues/debug
+com.bmw.drivingcoach.app-packageDebugResources-60 /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+com.bmw.drivingcoach.app-packageDebugResources-61 /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+com.bmw.drivingcoach.app-debug-62 /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/build/intermediates/merged_res/debug/mergeDebugResources
+com.bmw.drivingcoach.app-debug-63 /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/debug/res
+com.bmw.drivingcoach.app-main-64 /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/res

@@ -491,40 +491,40 @@ public final class DaggerBMWDrivingCoachApp_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_bmw_drivingcoach_ui_auth_LoginViewModel = "com.bmw.drivingcoach.ui.auth.LoginViewModel";
-
-      static String com_bmw_drivingcoach_ui_profile_ProfileViewModel = "com.bmw.drivingcoach.ui.profile.ProfileViewModel";
-
-      static String com_bmw_drivingcoach_ui_recording_RecordingViewModel = "com.bmw.drivingcoach.ui.recording.RecordingViewModel";
-
       static String com_bmw_drivingcoach_ui_auth_RegisterViewModel = "com.bmw.drivingcoach.ui.auth.RegisterViewModel";
-
-      static String com_bmw_drivingcoach_ui_session_SessionResultViewModel = "com.bmw.drivingcoach.ui.session.SessionResultViewModel";
 
       static String com_bmw_drivingcoach_ui_session_LapDetailViewModel = "com.bmw.drivingcoach.ui.session.LapDetailViewModel";
 
+      static String com_bmw_drivingcoach_ui_session_SessionResultViewModel = "com.bmw.drivingcoach.ui.session.SessionResultViewModel";
+
+      static String com_bmw_drivingcoach_ui_profile_ProfileViewModel = "com.bmw.drivingcoach.ui.profile.ProfileViewModel";
+
       static String com_bmw_drivingcoach_ui_home_HomeViewModel = "com.bmw.drivingcoach.ui.home.HomeViewModel";
 
-      @KeepFieldType
-      LoginViewModel com_bmw_drivingcoach_ui_auth_LoginViewModel2;
+      static String com_bmw_drivingcoach_ui_recording_RecordingViewModel = "com.bmw.drivingcoach.ui.recording.RecordingViewModel";
 
-      @KeepFieldType
-      ProfileViewModel com_bmw_drivingcoach_ui_profile_ProfileViewModel2;
-
-      @KeepFieldType
-      RecordingViewModel com_bmw_drivingcoach_ui_recording_RecordingViewModel2;
+      static String com_bmw_drivingcoach_ui_auth_LoginViewModel = "com.bmw.drivingcoach.ui.auth.LoginViewModel";
 
       @KeepFieldType
       RegisterViewModel com_bmw_drivingcoach_ui_auth_RegisterViewModel2;
 
       @KeepFieldType
-      SessionResultViewModel com_bmw_drivingcoach_ui_session_SessionResultViewModel2;
-
-      @KeepFieldType
       LapDetailViewModel com_bmw_drivingcoach_ui_session_LapDetailViewModel2;
 
       @KeepFieldType
+      SessionResultViewModel com_bmw_drivingcoach_ui_session_SessionResultViewModel2;
+
+      @KeepFieldType
+      ProfileViewModel com_bmw_drivingcoach_ui_profile_ProfileViewModel2;
+
+      @KeepFieldType
       HomeViewModel com_bmw_drivingcoach_ui_home_HomeViewModel2;
+
+      @KeepFieldType
+      RecordingViewModel com_bmw_drivingcoach_ui_recording_RecordingViewModel2;
+
+      @KeepFieldType
+      LoginViewModel com_bmw_drivingcoach_ui_auth_LoginViewModel2;
     }
   }
 
@@ -585,31 +585,19 @@ public final class DaggerBMWDrivingCoachApp_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_bmw_drivingcoach_ui_auth_RegisterViewModel = "com.bmw.drivingcoach.ui.auth.RegisterViewModel";
-
-      static String com_bmw_drivingcoach_ui_recording_RecordingViewModel = "com.bmw.drivingcoach.ui.recording.RecordingViewModel";
-
-      static String com_bmw_drivingcoach_ui_profile_ProfileViewModel = "com.bmw.drivingcoach.ui.profile.ProfileViewModel";
-
-      static String com_bmw_drivingcoach_ui_auth_LoginViewModel = "com.bmw.drivingcoach.ui.auth.LoginViewModel";
-
       static String com_bmw_drivingcoach_ui_session_SessionResultViewModel = "com.bmw.drivingcoach.ui.session.SessionResultViewModel";
 
       static String com_bmw_drivingcoach_ui_home_HomeViewModel = "com.bmw.drivingcoach.ui.home.HomeViewModel";
 
       static String com_bmw_drivingcoach_ui_session_LapDetailViewModel = "com.bmw.drivingcoach.ui.session.LapDetailViewModel";
 
-      @KeepFieldType
-      RegisterViewModel com_bmw_drivingcoach_ui_auth_RegisterViewModel2;
+      static String com_bmw_drivingcoach_ui_profile_ProfileViewModel = "com.bmw.drivingcoach.ui.profile.ProfileViewModel";
 
-      @KeepFieldType
-      RecordingViewModel com_bmw_drivingcoach_ui_recording_RecordingViewModel2;
+      static String com_bmw_drivingcoach_ui_recording_RecordingViewModel = "com.bmw.drivingcoach.ui.recording.RecordingViewModel";
 
-      @KeepFieldType
-      ProfileViewModel com_bmw_drivingcoach_ui_profile_ProfileViewModel2;
+      static String com_bmw_drivingcoach_ui_auth_RegisterViewModel = "com.bmw.drivingcoach.ui.auth.RegisterViewModel";
 
-      @KeepFieldType
-      LoginViewModel com_bmw_drivingcoach_ui_auth_LoginViewModel2;
+      static String com_bmw_drivingcoach_ui_auth_LoginViewModel = "com.bmw.drivingcoach.ui.auth.LoginViewModel";
 
       @KeepFieldType
       SessionResultViewModel com_bmw_drivingcoach_ui_session_SessionResultViewModel2;
@@ -619,6 +607,18 @@ public final class DaggerBMWDrivingCoachApp_HiltComponents_SingletonC {
 
       @KeepFieldType
       LapDetailViewModel com_bmw_drivingcoach_ui_session_LapDetailViewModel2;
+
+      @KeepFieldType
+      ProfileViewModel com_bmw_drivingcoach_ui_profile_ProfileViewModel2;
+
+      @KeepFieldType
+      RecordingViewModel com_bmw_drivingcoach_ui_recording_RecordingViewModel2;
+
+      @KeepFieldType
+      RegisterViewModel com_bmw_drivingcoach_ui_auth_RegisterViewModel2;
+
+      @KeepFieldType
+      LoginViewModel com_bmw_drivingcoach_ui_auth_LoginViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
