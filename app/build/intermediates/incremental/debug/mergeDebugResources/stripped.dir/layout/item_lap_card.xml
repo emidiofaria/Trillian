@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/spacing_md"
+    android:layout_marginVertical="@dimen/spacing_xs"
+    app:cardBackgroundColor="@color/colorSurface"
+    app:cardCornerRadius="@dimen/card_corner_radius"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/spacing_md">
+
+        <!-- Best lap indicator (gold accent bar) -->
+        <View
+            android:id="@+id/bestLapIndicator"
+            android:layout_width="4dp"
+            android:layout_height="0dp"
+            android:background="@color/colorGold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:visibility="visible" />
+
+        <!-- Lap number -->
+        <TextView
+            android:id="@+id/lapNumber"
+            style="@style/TextAppearance.BMW.LapNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_sm"
+            app:layout_constraintStart_toEndOf="@id/bestLapIndicator"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="LAP 3" />
+
+        <!-- Best badge -->
+        <TextView
+            android:id="@+id/bestBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:background="@drawable/bg_best_badge"
+            android:paddingHorizontal="@dimen/spacing_sm"
+            android:paddingVertical="2dp"
+            android:text="BEST"
+            android:textColor="@color/colorBackground"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/lapNumber"
+            app:layout_constraintStart_toEndOf="@id/lapNumber"
+            app:layout_constraintTop_toTopOf="@id/lapNumber"
+            tools:visibility="visible" />
+
+        <!-- Lap time -->
+        <TextView
+            android:id="@+id/lapTime"
+            style="@style/TextAppearance.BMW.LapTime.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_sm"
+            app:layout_constraintStart_toEndOf="@id/bestLapIndicator"
+            app:layout_constraintTop_toBottomOf="@id/lapNumber"
+            tools:text="1:42.387" />
+
+        <!-- Delta vs best -->
+        <TextView
+            android:id="@+id/deltaTime"
+            style="@style/TextAppearance.BMW.Delta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="@id/lapTime"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/lapTime"
+            tools:text="+0.842"
+            tools:textColor="@color/colorDeltaNegative" />
+
+        <!-- Sector times row -->
+        <LinearLayout
+            android:id="@+id/sectorsContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/bestLapIndicator"
+            app:layout_constraintTop_toBottomOf="@id/lapTime">
+
+            <!-- Sector 1 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.BMW.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="S1"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/sector1Time"
+                    style="@style/TextAppearance.BMW.Delta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    tools:text="32.4s" />
+            </LinearLayout>
+
+            <!-- Sector 2 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.BMW.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="S2"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/sector2Time"
+                    style="@style/TextAppearance.BMW.Delta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    tools:text="38.1s" />
+            </LinearLayout>
+
+            <!-- Sector 3 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.BMW.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="S3"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/sector3Time"
+                    style="@style/TextAppearance.BMW.Delta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    tools:text="31.9s" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

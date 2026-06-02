@@ -10,34 +10,34 @@
 10
 11    <!-- Location permissions for GPS tracking -->
 12    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-12-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:6:5-79
-12-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:6:22-76
+12-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:6:5-79
+12-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:6:22-76
 13    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-13-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:7:5-81
-13-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:7:22-78
+13-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:7:5-81
+13-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:7:22-78
 14
 15    <!-- Activity recognition for motion detection -->
 16    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-16-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:10:5-79
-16-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:10:22-76
+16-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:10:5-79
+16-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:10:22-76
 17
 18    <!-- Network access -->
 19    <uses-permission android:name="android.permission.INTERNET" />
-19-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:13:5-67
-19-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:13:22-64
+19-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:13:5-67
+19-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:13:22-64
 20
 21    <!-- Foreground service permissions -->
 22    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-22-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:16:5-77
-22-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:16:22-74
+22-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:16:5-77
+22-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:16:22-74
 23    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-23-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:17:5-86
-23-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:17:22-83
+23-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:17:5-86
+23-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:17:22-83
 24
 25    <!-- High-frequency sensor access (required for SENSOR_DELAY_FASTEST on Android 12+) -->
 26    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
-26-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:20:5-85
-26-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:20:22-82
+26-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:20:5-85
+26-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:20:22-82
 27    <uses-permission android:name="android.permission.REORDER_TASKS" />
 27-->[androidx.fragment:fragment-testing-manifest:1.8.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/9bc7bea5afa59d27d297cd87eae6889a/transformed/fragment-testing-manifest-1.8.0/AndroidManifest.xml:23:5-72
 27-->[androidx.fragment:fragment-testing-manifest:1.8.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/9bc7bea5afa59d27d297cd87eae6889a/transformed/fragment-testing-manifest-1.8.0/AndroidManifest.xml:23:22-69
@@ -63,77 +63,77 @@
 36-->[androidx.core:core:1.13.1] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/ebedea8a2ba0fde0454d41866e515bca/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
 37
 38    <application
-38-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:22:5-62:19
+38-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:22:5-62:19
 39        android:name="com.bmw.drivingcoach.BMWDrivingCoachApp"
-39-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:23:9-43
+39-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:23:9-43
 40        android:allowBackup="true"
-40-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:24:9-35
+40-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:24:9-35
 41        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
 41-->[androidx.core:core:1.13.1] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/ebedea8a2ba0fde0454d41866e515bca/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
 42        android:dataExtractionRules="@xml/data_extraction_rules"
-42-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:25:9-65
+42-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:25:9-65
 43        android:debuggable="true"
 44        android:extractNativeLibs="false"
 45        android:fullBackupContent="@xml/backup_rules"
-45-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:26:9-54
+45-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:26:9-54
 46        android:icon="@mipmap/ic_launcher"
-46-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:27:9-43
+46-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:27:9-43
 47        android:label="@string/app_name"
-47-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:28:9-41
+47-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:28:9-41
 48        android:roundIcon="@mipmap/ic_launcher_round"
-48-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:29:9-54
+48-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:29:9-54
 49        android:supportsRtl="true"
-49-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:30:9-35
+49-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:30:9-35
 50        android:theme="@style/Theme.BMWDrivingCoach" >
-50-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:31:9-53
+50-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:31:9-53
 51
 52        <!-- Main Activity -->
 53        <activity
-53-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:35:9-43:20
+53-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:35:9-43:20
 54            android:name="com.bmw.drivingcoach.ui.MainActivity"
-54-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:36:13-44
+54-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:36:13-44
 55            android:exported="true"
-55-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:37:13-36
+55-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:37:13-36
 56            android:theme="@style/Theme.BMWDrivingCoach" >
-56-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:38:13-57
+56-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:38:13-57
 57            <intent-filter>
-57-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:39:13-42:29
+57-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:39:13-42:29
 58                <action android:name="android.intent.action.MAIN" />
-58-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:40:17-69
-58-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:40:25-66
+58-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:40:17-69
+58-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:40:25-66
 59
 60                <category android:name="android.intent.category.LAUNCHER" />
-60-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:17-77
-60-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:27-74
+60-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:17-77
+60-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:27-74
 61            </intent-filter>
 62        </activity>
 63
 64        <!-- Telemetry Foreground Service -->
 65        <service
-65-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:46:9-49:56
+65-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:46:9-49:56
 66            android:name="com.bmw.drivingcoach.service.TelemetryForegroundService"
-66-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:47:13-63
+66-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:47:13-63
 67            android:exported="false"
-67-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:48:13-37
+67-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:48:13-37
 68            android:foregroundServiceType="location" />
-68-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:49:13-53
+68-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:49:13-53
 69
 70        <!-- FileProvider for sharing images -->
 71        <provider
 72            android:name="androidx.core.content.FileProvider"
-72-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:53:13-62
+72-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:53:13-62
 73            android:authorities="com.bmw.drivingcoach.fileprovider"
-73-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:54:13-64
+73-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:54:13-64
 74            android:exported="false"
-74-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:55:13-37
+74-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:55:13-37
 75            android:grantUriPermissions="true" >
-75-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:56:13-47
+75-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:56:13-47
 76            <meta-data
-76-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:57:13-59:54
+76-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:57:13-59:54
 77                android:name="android.support.FILE_PROVIDER_PATHS"
-77-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:58:17-67
+77-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:58:17-67
 78                android:resource="@xml/file_paths" />
-78-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:59:17-51
+78-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:59:17-51
 79        </provider>
 80
 81        <activity
@@ -151,8 +151,8 @@
 87            <intent-filter>
 87-->[androidx.fragment:fragment-testing-manifest:1.8.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/9bc7bea5afa59d27d297cd87eae6889a/transformed/fragment-testing-manifest-1.8.0/AndroidManifest.xml:32:13-34:29
 88                <action android:name="android.intent.action.MAIN" />
-88-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:40:17-69
-88-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:40:25-66
+88-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:40:17-69
+88-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:40:25-66
 89            </intent-filter>
 90        </activity>
 91
@@ -395,8 +395,8 @@
 213-->[androidx.test:core:1.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/b04af9fd6143e82fc7829255eedcd37a/transformed/core-1.5.0/AndroidManifest.xml:31:13-33:29
 213-->[androidx.test:core:1.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/b04af9fd6143e82fc7829255eedcd37a/transformed/core-1.5.0/AndroidManifest.xml:31:28-51
 214                <category android:name="android.intent.category.LAUNCHER" />
-214-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:17-77
-214-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:27-74
+214-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:17-77
+214-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:27-74
 215            </intent-filter>
 216        </activity>
 217        <activity
@@ -411,8 +411,8 @@
 221-->[androidx.test:core:1.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/b04af9fd6143e82fc7829255eedcd37a/transformed/core-1.5.0/AndroidManifest.xml:31:13-33:29
 221-->[androidx.test:core:1.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/b04af9fd6143e82fc7829255eedcd37a/transformed/core-1.5.0/AndroidManifest.xml:31:28-51
 222                <category android:name="android.intent.category.LAUNCHER" />
-222-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:17-77
-222-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:27-74
+222-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:17-77
+222-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:27-74
 223            </intent-filter>
 224        </activity>
 225        <activity
@@ -427,8 +427,8 @@
 229-->[androidx.test:core:1.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/b04af9fd6143e82fc7829255eedcd37a/transformed/core-1.5.0/AndroidManifest.xml:31:13-33:29
 229-->[androidx.test:core:1.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/b04af9fd6143e82fc7829255eedcd37a/transformed/core-1.5.0/AndroidManifest.xml:31:28-51
 230                <category android:name="android.intent.category.LAUNCHER" />
-230-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:17-77
-230-->/home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:27-74
+230-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:17-77
+230-->/home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:27-74
 231            </intent-filter>
 232        </activity>
 233

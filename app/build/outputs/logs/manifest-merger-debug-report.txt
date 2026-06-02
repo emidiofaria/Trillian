@@ -1,20 +1,20 @@
 -- Merging decision tree log ---
 provider#androidx.core.content.FileProvider
-INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:52:9-60:20
+INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:52:9-60:20
 	android:grantUriPermissions
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:56:13-47
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:56:13-47
 	android:authorities
-		INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:54:13-64
+		INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:54:13-64
 	android:exported
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:55:13-37
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:55:13-37
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:53:13-62
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:53:13-62
 manifest
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:2:1-64:12
-INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:2:1-64:12
-INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:2:1-64:12
-INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:2:1-64:12
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:2:1-64:12
+INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:2:1-64:12
+INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:2:1-64:12
+INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:2:1-64:12
 MERGED from [androidx.databinding:viewbinding:8.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/07f4fa6eaf24313e992fe979592aba1f/transformed/viewbinding-8.5.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.navigation:navigation-common:2.8.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/c75f867ac23be0ebc6c8247631351cbf/transformed/navigation-common-2.8.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.navigation:navigation-common-ktx:2.8.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/5657c6700a6d6e91297ae5bbf72c752b/transformed/navigation-common-ktx-2.8.0/AndroidManifest.xml:2:1-7:12
@@ -96,48 +96,48 @@ MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /home/c
 MERGED from [androidx.print:print:1.0.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/2eb2984c8a373778d7735dd0134293dd/transformed/print-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [com.google.dagger:dagger-lint-aar:2.51] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/60ca51b273662dea659a8da709cbc7c1/transformed/dagger-lint-aar-2.51/AndroidManifest.xml:16:1-19:12
 	package
-		INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
+		INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
 	android:versionName
-		INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
+		INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
 	xmlns:tools
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:3:5-51
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:3:5-51
 	android:versionCode
-		INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
+		INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
 	xmlns:android
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:2:11-69
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:2:11-69
 uses-permission#android.permission.ACCESS_FINE_LOCATION
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:6:5-79
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:6:5-79
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:6:22-76
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:6:22-76
 uses-permission#android.permission.ACCESS_COARSE_LOCATION
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:7:5-81
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:7:5-81
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:7:22-78
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:7:22-78
 uses-permission#android.permission.ACTIVITY_RECOGNITION
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:10:5-79
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:10:5-79
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:10:22-76
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:10:22-76
 uses-permission#android.permission.INTERNET
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:13:5-67
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:13:5-67
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:13:22-64
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:13:22-64
 uses-permission#android.permission.FOREGROUND_SERVICE
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:16:5-77
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:16:5-77
 MERGED from [androidx.work:work-runtime:2.9.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/e0843e6ab5e47fd54a9f6f30f5d7e7e9/transformed/work-runtime-2.9.0/AndroidManifest.xml:26:5-77
 MERGED from [androidx.work:work-runtime:2.9.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/e0843e6ab5e47fd54a9f6f30f5d7e7e9/transformed/work-runtime-2.9.0/AndroidManifest.xml:26:5-77
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:16:22-74
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:16:22-74
 uses-permission#android.permission.FOREGROUND_SERVICE_LOCATION
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:17:5-86
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:17:5-86
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:17:22-83
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:17:22-83
 uses-permission#android.permission.HIGH_SAMPLING_RATE_SENSORS
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:20:5-85
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:20:5-85
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:20:22-82
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:20:22-82
 application
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:22:5-62:19
-INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:22:5-62:19
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:22:5-62:19
+INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:22:5-62:19
 MERGED from [com.google.android.material:material:1.12.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/6deb468a936d12b30a104a372a383412/transformed/material-1.12.0/AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.12.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/6deb468a936d12b30a104a372a383412/transformed/material-1.12.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/836b5fc9b40168c0e6ad4c3b74c03264/transformed/constraintlayout-2.1.4/AndroidManifest.xml:9:5-20
@@ -167,65 +167,65 @@ MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] /home/ctw00173_ub
 MERGED from [androidx.startup:startup-runtime:1.1.1] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/a6b89f8fc5039002a85e66b128971e66/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/a6b89f8fc5039002a85e66b128971e66/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
 	android:extractNativeLibs
-		INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
+		INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/ebedea8a2ba0fde0454d41866e515bca/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:30:9-35
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:30:9-35
 	android:label
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:28:9-41
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:28:9-41
 	android:fullBackupContent
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:26:9-54
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:26:9-54
 	android:roundIcon
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:29:9-54
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:29:9-54
 	tools:targetApi
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:32:9-29
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:32:9-29
 	android:icon
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:27:9-43
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:27:9-43
 	android:allowBackup
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:24:9-35
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:24:9-35
 	android:theme
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:31:9-53
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:31:9-53
 	android:dataExtractionRules
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:25:9-65
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:25:9-65
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:23:9-43
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:23:9-43
 activity#com.bmw.drivingcoach.ui.MainActivity
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:35:9-43:20
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:35:9-43:20
 	android:exported
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:37:13-36
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:37:13-36
 	android:theme
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:38:13-57
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:38:13-57
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:36:13-44
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:36:13-44
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:39:13-42:29
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:39:13-42:29
 action#android.intent.action.MAIN
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:40:17-69
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:40:17-69
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:40:25-66
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:40:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:17-77
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:17-77
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:41:27-74
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:41:27-74
 service#com.bmw.drivingcoach.service.TelemetryForegroundService
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:46:9-49:56
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:46:9-49:56
 	android:exported
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:48:13-37
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:48:13-37
 	android:foregroundServiceType
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:49:13-53
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:49:13-53
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:47:13-63
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:47:13-63
 meta-data#android.support.FILE_PROVIDER_PATHS
-ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:57:13-59:54
+ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:57:13-59:54
 	android:resource
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:59:17-51
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:59:17-51
 	android:name
-		ADDED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml:58:17-67
+		ADDED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml:58:17-67
 uses-sdk
-INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
-INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
-INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
+INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
+INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
 MERGED from [androidx.databinding:viewbinding:8.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/07f4fa6eaf24313e992fe979592aba1f/transformed/viewbinding-8.5.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.databinding:viewbinding:8.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/07f4fa6eaf24313e992fe979592aba1f/transformed/viewbinding-8.5.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.navigation:navigation-common:2.8.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/c75f867ac23be0ebc6c8247631351cbf/transformed/navigation-common-2.8.0/AndroidManifest.xml:20:5-44
@@ -389,9 +389,9 @@ MERGED from [com.google.dagger:dagger-lint-aar:2.51] /home/ctw00173_ubuntu/.grad
 	tools:overrideLibrary
 		ADDED from [androidx.fragment:fragment-testing:1.8.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/274030d3ec23deadf27fde0ef4d5fc97/transformed/fragment-testing-1.8.0/AndroidManifest.xml:22:9-51
 	android:targetSdkVersion
-		INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
+		INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
 	android:minSdkVersion
-		INJECTED from /home/ctw00173_ubuntu/04_skunk/ctw00173_Android_app_POC/app/src/main/AndroidManifest.xml
+		INJECTED from /home/ctw00173_ubuntu/05_AI_DIY/Trillian/app/src/main/AndroidManifest.xml
 uses-permission#android.permission.REORDER_TASKS
 ADDED from [androidx.fragment:fragment-testing-manifest:1.8.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/9bc7bea5afa59d27d297cd87eae6889a/transformed/fragment-testing-manifest-1.8.0/AndroidManifest.xml:23:5-72
 MERGED from [androidx.test:core:1.5.0] /home/ctw00173_ubuntu/.gradle/caches/transforms-4/b04af9fd6143e82fc7829255eedcd37a/transformed/core-1.5.0/AndroidManifest.xml:24:5-72
