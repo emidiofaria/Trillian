@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- BMW Brand Colors -->
+    <color name="bmw_blue">#1C69D4</color>
+    <color name="bmw_blue_dark">#0A3D7C</color>
+    <color name="bmw_blue_variant">#155FBD</color>
+    
+    <!-- Dark Theme Base Colors (Luxury Feel) -->
+    <color name="dark_background">#0D0D0D</color>
+    <color name="dark_surface">#1A1A1A</color>
+    <color name="dark_surface_variant">#242424</color>
+    <color name="dark_surface_elevated">#2A2A2A</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0B0</color>
+    <color name="text_disabled">#666666</color>
+    
+    <!-- Semantic Colors -->
+    <color name="colorError">#CF3A3A</color>
+    <color name="colorSuccess">#2ECC71</color>
+    <color name="colorWarning">#F39C12</color>
+    
+    <!-- Lap Delta Colors -->
+    <color name="colorDeltaPositive">#2ECC71</color>
+    <color name="colorDeltaNegative">#E74C3C</color>
+    <color name="colorGold">#C9A227</color>
+    
+    <!-- Theme Colors -->
+    <color name="colorPrimary">#1C69D4</color>
+    <color name="colorPrimaryDark">#0A3D7C</color>
+    <color name="colorPrimaryVariant">#155FBD</color>
+    <color name="colorSecondary">#FFFFFF</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorBackground">#0D0D0D</color>
+    <color name="colorSurface">#1A1A1A</color>
+    <color name="colorSurfaceVariant">#242424</color>
+    <color name="colorOnBackground">#FFFFFF</color>
+    <color name="colorOnSurface">#FFFFFF</color>
+    <color name="colorOnSurfaceVariant">#B0B0B0</color>
+</resources>

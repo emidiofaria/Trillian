@@ -1,0 +1,74 @@
+[
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/item_lap_card.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/item_lap_card.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/component_lap_time_card.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/component_lap_time_card.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/item_session_history.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/item_session_history.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_recording.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_recording.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_register.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_register.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_profile.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_profile.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_login.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_login.xml"
+    },
+    {
+        "merged": "com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_login.xml",
+        "source": "com.bmw.drivingcoach.app-main-64:/layout/fragment_login.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/item_sector_comparison.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/item_sector_comparison.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_chart.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_chart.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_onboarding.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_onboarding.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_home.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_home.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_coach.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_coach.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_laps.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_laps.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/activity_main.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_lap_detail.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_lap_detail.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/fragment_session_result.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/fragment_session_result.xml"
+    },
+    {
+        "merged": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-mergeDebugResources-61:/layout/item_coaching_insight.xml",
+        "source": "/home/ctw00173_ubuntu/.gradle/daemon/8.7/com.bmw.drivingcoach.app-main-64:/layout/item_coaching_insight.xml"
+    }
+]

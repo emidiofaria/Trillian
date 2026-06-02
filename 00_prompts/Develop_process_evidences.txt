@@ -1,0 +1,102 @@
+## 1st prompt
+
+lets create the specification of an android app that does the following.
+During this specification conversation we will describe and refine system specification.
+When I tell you to create the prompts and test specs we will move to planning phase.
+Act like a super senior system engineer with deep knowledge on android development.
+Keep it simple,not ambiguous. Requirements/spec shall be simple and all requirements shall have a requirements id when the file with the system specs is generated.
+BMW driving coach AI assisted.
+Can evolute to Social car network BMW "Strava style".
+A luxury AI driving coach that turns every track day into measurable performance mastery.
+Perfect for trackdays on karts
+  - User facing: Phone – Android
+- **Features**
+  - User management
+  - Share accomplishments - can evolve to social network , track day time laps, driving academy – AI learning (just place holder)
+---
+### 🧭 Goal
+Validate:
+- telemetry capture works reliably
+- backend can reconstruct laps
+- coaching insights are useful
+---
+### 🧠 V1 Core Use Cases ("BMW Driving Coach")
+#### 1. Session recording
+- Start/stop track session
+- Auto-detect lap boundaries
+#### 2. Lap comparison
+- Best lap vs current lap
+- Delta time tracking
+#### 3. Driving feedback (post-session)
+Examples:
+- "You lost time braking into Turn 3"
+- "Corner exit speed is inconsistent"
+- "Throttle application is too aggressive in Sector 2"
+#### 4. Driver progression tracking
+- Improvement over sessions
+- Consistency scoring
+---
+### V1 design principle
+👉 **Everything is post-session analysis** (not real-time coaching)
+This is critical for:
+- safety
+- simplicity
+- data correctness
+---
+### User facing concept
+- Android app (mobile)
+### Machinery
+- Collects data from the phone (GPS and IMU)
+- Process phone data
+- Provide driving tips
+
+
+###################### 2 nd prompt  ###########################################
+"Plan the implementation to pass the prompts and instructions to copilot CLI.
+I want a app with quality, produce good prompts and with detail to be possible achieve this specification"
+###############################################################################
+
+
+################
+Project intructions file
+################
+
+
+Development process:
+We will build an android app,
+main development steps
+1 - design system specification
+2 - Plan implementation
+3 - Coding implementation
+4 - tests
+
+After design is approved and reviewed we move to next step Plan and implementation.
+After plan implementation is approved we move to coding
+Coding will be performed using copilot CLI using models from github ghe (Opus or Sonnet).
+
+
+################
+SRS review - indepent model (shell). SRS as input
+################
+"describe me a resume of a system specified at BMW_DrivingCoach_SRS_v1. Be pragmatic use bullet points. Evaluate the
+  system quality as a system sw engineer"
+
+
+################
+1 - Plan system acceptance tests - Human execution
+################
+- From requirements file generate a plan to create system acceptance tests to be implemented by human in a phone and real track day. 
+Describe in detail the test setup, instantiate backend, build android app and all dependencies
+Its expected to create checkilists for system tests and for test environment setup.
+- From requirements file generate system acceptance tests using android emulator.
+
+
+###############################################
+Trillian V1 Acceptation feedback
+#########################################
+- App runs on emulator. No Backend enabled or tested.
+- Needed to add an Skipped login feature to be possible login on test procedures.
+- Not tested on HW yet, (Phone or IDCEvo)
+- Overral: App works, features are there, surprisingly good!! Fully Vibe coded. Spec Driven Development.
+
+

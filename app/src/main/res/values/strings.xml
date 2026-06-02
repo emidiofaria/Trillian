@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BMW Driving Coach</string>
+    
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_sessions">Sessions</string>
+    <string name="nav_coaching">Coaching</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_recording">Recording</string>
+    
+    <!-- Auth -->
+    <string name="sign_in">Sign In</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="register">Register</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="full_name">Full Name</string>
+    
+    <!-- Session -->
+    <string name="start_session">Start Session</string>
+    <string name="stop_session">Stop Session</string>
+    <string name="session_results">Session Results</string>
+    <string name="recent_sessions">Recent Sessions</string>
+    <string name="no_sessions">No sessions yet</string>
+    <string name="best_lap">Best Lap</string>
+    <string name="current_lap">Current Lap</string>
+    
+    <!-- Tabs -->
+    <string name="tab_laps">Laps</string>
+    <string name="tab_coach">Coach</string>
+    <string name="tab_chart">Chart</string>
+    
+    <!-- Common -->
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="back">Back</string>
+</resources>
