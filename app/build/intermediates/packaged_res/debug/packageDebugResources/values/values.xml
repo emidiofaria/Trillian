@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <color name="bmw_blue">#1C69D4</color>
+    <color name="bmw_blue_dark">#0A3D7C</color>
+    <color name="bmw_blue_variant">#155FBD</color>
+    <color name="colorBackground">#0D0D0D</color>
+    <color name="colorDeltaNegative">#E74C3C</color>
+    <color name="colorDeltaPositive">#2ECC71</color>
+    <color name="colorError">#CF3A3A</color>
+    <color name="colorGold">#C9A227</color>
+    <color name="colorOnBackground">#FFFFFF</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorOnSurface">#FFFFFF</color>
+    <color name="colorOnSurfaceVariant">#B0B0B0</color>
+    <color name="colorPrimary">#1C69D4</color>
+    <color name="colorPrimaryDark">#0A3D7C</color>
+    <color name="colorPrimaryVariant">#155FBD</color>
+    <color name="colorSecondary">#FFFFFF</color>
+    <color name="colorSuccess">#2ECC71</color>
+    <color name="colorSurface">#1A1A1A</color>
+    <color name="colorSurfaceVariant">#242424</color>
+    <color name="colorWarning">#F39C12</color>
+    <color name="dark_background">#0D0D0D</color>
+    <color name="dark_surface">#1A1A1A</color>
+    <color name="dark_surface_elevated">#2A2A2A</color>
+    <color name="dark_surface_variant">#242424</color>
+    <color name="text_disabled">#666666</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0B0</color>
+    <dimen name="badge_corner_radius">4dp</dimen>
+    <dimen name="bottom_nav_height">56dp</dimen>
+    <dimen name="button_corner_radius">8dp</dimen>
+    <dimen name="button_height">48dp</dimen>
+    <dimen name="button_height_small">36dp</dimen>
+    <dimen name="card_corner_radius">12dp</dimen>
+    <dimen name="delta_badge_padding_horizontal">8dp</dimen>
+    <dimen name="delta_badge_padding_vertical">4dp</dimen>
+    <dimen name="icon_size_lg">32dp</dimen>
+    <dimen name="icon_size_md">24dp</dimen>
+    <dimen name="icon_size_sm">16dp</dimen>
+    <dimen name="icon_size_xl">48dp</dimen>
+    <dimen name="lap_card_min_height">80dp</dimen>
+    <dimen name="spacing_lg">24dp</dimen>
+    <dimen name="spacing_md">16dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_xl">32dp</dimen>
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_xxl">48dp</dimen>
+    <string name="app_name">BMW Driving Coach</string>
+    <string name="back">Back</string>
+    <string name="best_lap">Best Lap</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="current_lap">Current Lap</string>
+    <string name="email">Email</string>
+    <string name="error_generic">Something went wrong</string>
+    <string name="full_name">Full Name</string>
+    <string name="loading">Loading…</string>
+    <string name="nav_coaching">Coaching</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_recording">Recording</string>
+    <string name="nav_sessions">Sessions</string>
+    <string name="no_sessions">No sessions yet</string>
+    <string name="ok">OK</string>
+    <string name="password">Password</string>
+    <string name="recent_sessions">Recent Sessions</string>
+    <string name="register">Register</string>
+    <string name="retry">Retry</string>
+    <string name="session_results">Session Results</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="start_session">Start Session</string>
+    <string name="stop_session">Stop Session</string>
+    <string name="tab_chart">Chart</string>
+    <string name="tab_coach">Coach</string>
+    <string name="tab_laps">Laps</string>
+    <style name="TextAppearance.BMW.Body" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+    </style>
+    <style name="TextAppearance.BMW.Body.Secondary">
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+    <style name="TextAppearance.BMW.Button" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    <style name="TextAppearance.BMW.Caption" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/colorOnSurfaceVariant</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
+    </style>
+    <style name="TextAppearance.BMW.Delta" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="fontFamily">monospace</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:fontWeight" ns1:targetApi="o">500</item>
+    </style>
+    <style name="TextAppearance.BMW.Delta.Negative">
+        <item name="android:textColor">@color/colorDeltaNegative</item>
+    </style>
+    <style name="TextAppearance.BMW.Delta.Positive">
+        <item name="android:textColor">@color/colorDeltaPositive</item>
+    </style>
+    <style name="TextAppearance.BMW.H1" parent="TextAppearance.MaterialComponents.Headline4">
+        <item name="android:textSize">28sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+    <style name="TextAppearance.BMW.H2" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textSize">22sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.BMW.H3" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="TextAppearance.BMW.LapNumber" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/colorOnSurfaceVariant</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+    <style name="TextAppearance.BMW.LapTime" parent="TextAppearance.MaterialComponents.Headline3">
+        <item name="android:textSize">48sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="fontFamily">monospace</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+    <style name="TextAppearance.BMW.LapTime.Medium">
+        <item name="android:textSize">32sp</item>
+    </style>
+    <style name="TextAppearance.BMW.LapTime.Small">
+        <item name="android:textSize">24sp</item>
+    </style>
+    <style name="TextAppearance.BMW.Tab" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
+    <style name="Theme.BMWDrivingCoach" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        
+        
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorOnSecondary">@color/colorPrimaryDark</item>
+        
+        
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
+        <item name="colorOnBackground">@color/colorOnBackground</item>
+        <item name="android:windowBackground">@color/colorBackground</item>
+        
+        
+        <item name="android:statusBarColor">@color/colorBackground</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/colorBackground</item>
+        
+        
+        <item name="colorError">@color/colorError</item>
+        <item name="colorOnError">@color/text_primary</item>
+    </style>
+    <style name="Widget.BMW.BottomNavigation" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="backgroundTint">@color/colorSurface</item>
+        <item name="itemIconTint">@color/bottom_nav_color</item>
+        <item name="itemTextColor">@color/bottom_nav_color</item>
+        <item name="itemActiveIndicatorStyle">@null</item>
+    </style>
+    <style name="Widget.BMW.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/colorPrimary</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="cornerRadius">@dimen/button_corner_radius</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="Widget.BMW.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/colorPrimary</item>
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="cornerRadius">@dimen/button_corner_radius</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    <style name="Widget.BMW.Button.Text" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    <style name="Widget.BMW.Card" parent="Widget.MaterialComponents.CardView">
+        <item name="cardCornerRadius">@dimen/card_corner_radius</item>
+        <item name="cardElevation">0dp</item>
+        <item name="cardBackgroundColor">@color/colorSurface</item>
+    </style>
+    <style name="Widget.BMW.Card.Elevated" parent="Widget.BMW.Card">
+        <item name="cardBackgroundColor">@color/colorSurfaceVariant</item>
+    </style>
+</resources>
