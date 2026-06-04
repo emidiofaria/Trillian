@@ -1,0 +1,395 @@
+# WF-01 — PR Checks (BMW-DC-CICD-001 §4)
+#
+# Runs on every branch push and pull_request (except deployment/** branches which
+# go directly to deploy.yml). All jobs except appium-e2e run in parallel.
+# appium-e2e is the final gate — it runs only if all other jobs pass.
+#
+# Action version registry (§7 — verified 2026-06-04):
+#   actions/checkout@v6, actions/setup-java@v5 (temurin), actions/setup-node@v6 (node 24)
+#   actions/upload-artifact@v4, actions/cache@v5, gradle/actions/setup-gradle@v6
+#   reactivecircus/android-emulator-runner@v2, bridgecrew/checkov-action@master
+#   google-checks/checks-app-scan-github-action@v1.0.3, github/codeql-action/upload-sarif@v3
+#   dorny/test-reporter@v1, eifinger/actionlint-action@v3
+
+name: PR Checks
+
+on:
+  push:                   # PR-TR-01: trigger on push to any branch
+    branches-ignore:
+      - 'deployment/**'   # PR-TR-03: deployment branches feed deploy.yml directly
+  pull_request:           # PR-TR-02: trigger on pull_request to any branch
+    branches-ignore:
+      - 'deployment/**'
+
+# PR-TR-04: cancel in-progress runs on the same branch/PR
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+# GT-01: branch protection rule must require all jobs here to pass before merge.
+#        Configure in GitHub → Settings → Branches → Branch protection rules.
+# GT-03: all jobs below (except appium-e2e) have no `needs` — they run in parallel.
+# SEC-01: no secret value is ever echoed or hardcoded; all access is via ${{ secrets.NAME }}.
+
+# Default: least-privilege permissions; individual jobs override as needed (NFR-05)
+permissions:
+  contents: read
+
+# ─── APK output paths ────────────────────────────────────────────────────────
+# Single source of truth for build output locations.
+# Update here when the Gradle build variant or output directory changes.
+env:
+  APK_DEBUG_PATH: app/build/outputs/apk/debug/app-debug.apk
+
+jobs:
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # lint-android (LA-01, LA-02, LA-03, LA-04)
+  # ──────────────────────────────────────────────────────────────────────────────
+  lint-android:
+    name: Android Lint + ktlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # RN-04
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/decode-google-services
+        with:
+          google-services-base64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
+
+      - uses: ./.github/actions/setup-gradle
+
+      - name: Run Android Lint
+        run: ./gradlew lint
+        # LA-01: non-zero exit (any ERROR severity findings) fails the job
+
+      - name: Run ktlint
+        run: ./gradlew ktlintCheck
+        # LA-02: non-zero exit fails the job
+
+      - name: Upload lint report
+        if: always()  # LA-03: upload on both success and failure
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-android-report-${{ github.sha }}
+          path: app/build/reports/lint-results-*.html
+          retention-days: 30
+          if-no-files-found: warn
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # lint-backend (LB-01, LB-02, LB-03)
+  # ──────────────────────────────────────────────────────────────────────────────
+  lint-backend:
+    name: Backend ESLint + tsc
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # RN-04
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-backend
+
+      - name: Run ESLint
+        working-directory: backend
+        run: npm run lint
+        # LB-01: non-zero exit fails the job
+
+      - name: Run TypeScript type check
+        working-directory: backend
+        run: npx tsc --noEmit
+        # LB-02: non-zero exit fails the job
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # unit-android (UA-01 – UA-05)
+  # ──────────────────────────────────────────────────────────────────────────────
+  unit-android:
+    name: Android Unit Tests + JaCoCo
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # RN-04
+    permissions:
+      contents: read
+      checks: write  # UA-04: publish test results to PR check
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/decode-google-services
+        with:
+          google-services-base64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
+
+      - uses: ./.github/actions/setup-gradle
+
+      - name: Run unit tests with JaCoCo coverage
+        run: ./gradlew testDebugUnitTest jacocoTestReport
+        # UA-01: runs tests + generates report
+        # UA-02: jacocoTestReport is finalizedBy jacocoTestCoverageVerification (≥95%)
+
+      - name: Publish test results to PR check
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Android Unit Tests
+          path: app/build/test-results/testDebugUnitTest/*.xml
+          reporter: java-junit
+        # UA-04
+
+      - name: Upload JaCoCo HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-android-report-${{ github.sha }}
+          path: app/build/reports/jacoco/
+          retention-days: 30
+        # UA-03
+
+      - name: Upload JUnit XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-android-junit-${{ github.sha }}
+          path: app/build/test-results/testDebugUnitTest/
+          retention-days: 30
+        # UA-03
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # unit-backend (UB-01 – UB-04)
+  # ──────────────────────────────────────────────────────────────────────────────
+  unit-backend:
+    name: Backend Unit Tests + Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # RN-04
+    permissions:
+      contents: read
+      checks: write  # publish test results
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-node-backend
+
+      - name: Run Jest with coverage
+        working-directory: backend
+        run: npm test
+        # UB-01: runs jest --coverage
+        # UB-02: coverage thresholds enforced in jest.config.js (≥95%)
+
+      - name: Publish backend test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Backend Unit Tests
+          path: backend/coverage/junit.xml
+          reporter: java-junit
+
+      - name: Upload coverage + JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-backend-report-${{ github.sha }}
+          path: backend/coverage/
+          retention-days: 30
+        # UB-03
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # checkov-scan (CK-01 – CK-06, NFR-03)
+  # ──────────────────────────────────────────────────────────────────────────────
+  checkov-scan:
+    name: Checkov IaC Scan + actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # RN-04
+    permissions:
+      contents: read
+      security-events: write  # CK-04: upload SARIF to GitHub Code Scanning
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run actionlint on workflow files
+        uses: eifinger/actionlint-action@v3
+        with:
+          files: '.github/workflows/*.yml'
+        # NFR-03: workflow YAML must pass actionlint
+
+      - name: Run Checkov
+        uses: bridgecrew/checkov-action@master
+        with:
+          config_file: checkov.yaml
+          framework: all
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          soft_fail: false
+          # CK-05: HIGH/CRITICAL findings not suppressed in checkov.yaml will fail the job
+        # CK-01, CK-02, CK-03
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-results.sarif
+        # CK-04
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # google-checks-apk (GC-01 – GC-09)
+  # ──────────────────────────────────────────────────────────────────────────────
+  google-checks-apk:
+    name: Google Checks APK Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 45  # RN-04; GC-06: scan timeout 30 min + build headroom
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/decode-google-services
+        with:
+          google-services-base64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
+        # GC-02
+
+      - uses: ./.github/actions/setup-gradle
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+        # GC-01
+
+      - name: Submit APK to Google Checks
+        uses: google-checks/checks-app-scan-github-action@v1.0.3
+        with:
+          account_id: ${{ secrets.GOOGLE_CHECKS_ACCOUNT_ID }}
+          api_key: ${{ secrets.GOOGLE_CHECKS_API_KEY }}
+          binary_path: ${{ env.APK_DEBUG_PATH }}
+          wait_for_report: true
+          # GC-06: The action polls until the scan completes; job timeout is the
+          #        outer bound (45 min) per RN-04.
+        # GC-03, GC-04, GC-05
+        # GC-07: the action exits non-zero on PRIORITY/POTENTIAL findings
+
+      - name: Upload Google Checks report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-checks-report-${{ github.sha }}
+          path: checks-report*.json
+          retention-days: 30
+          if-no-files-found: warn
+        # GC-08
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # appium-e2e (E2E-01 – E2E-10)
+  # Final gate — runs only when all parallel jobs above pass (GT-04)
+  # ──────────────────────────────────────────────────────────────────────────────
+  appium-e2e:
+    name: Appium E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # RN-04, E2E-10
+    # E2E-01: depends on all other jobs
+    needs: [lint-android, lint-backend, unit-android, unit-backend, checkov-scan, google-checks-apk]
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/decode-google-services
+        with:
+          google-services-base64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
+        # E2E-04: google-services.json needed to build the debug APK
+
+      - uses: ./.github/actions/setup-gradle
+
+      - name: Set up Node.js 24 for Appium
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Appium and UIAutomator2 driver
+        run: |
+          npm install -g appium@latest
+          appium driver install uiautomator2
+        # E2E-05
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+        # E2E-04
+
+      - name: Enable KVM for hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+        # RN-03: required for Android emulator hardware acceleration
+
+      - name: Start Appium server in background
+        run: |
+          appium --log appium.log --log-level info &
+          echo "APPIUM_PID=$!" >> "$GITHUB_ENV"
+          # Wait for Appium to be ready
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:4723/status > /dev/null 2>&1; then
+              echo "Appium ready after $i seconds"
+              break
+            fi
+            sleep 1
+          done
+        # E2E-05
+
+      # E2E-06: active test flows covered — F-03 permissions, F-04 track setup,
+      #          F-05 session recording, F-06 session upload.
+      #          F-01 (registration) and F-02 (login) are DEFERRED — see §4.8.
+      - name: Run E2E tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          ram-size: 4096M
+          disk-size: 8G
+          emulator-options: -no-window -no-snapshot-save -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            # Install the debug APK (E2E-04)
+            adb install "${{ env.APK_DEBUG_PATH }}"
+
+            # Run the Appium test suite
+            cd e2e && npm test
+        env:
+          APK_PATH: ${{ github.workspace }}/${{ env.APK_DEBUG_PATH }}
+        # E2E-02, E2E-03, E2E-04
+
+      - name: Capture emulator screen recording on failure
+        if: failure()
+        run: |
+          adb shell screenrecord --time-limit 10 /sdcard/failure.mp4 || true
+          adb pull /sdcard/failure.mp4 failure.mp4 || true
+        # E2E-09: video of failing tests
+
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appium-e2e-report-${{ github.sha }}
+          path: |
+            e2e/results/junit-e2e.xml
+            failure.mp4
+          retention-days: 30
+          if-no-files-found: warn
+        # E2E-09
+
+      - name: Stop Appium server
+        if: always()
+        run: |
+          if [ -n "$APPIUM_PID" ]; then
+            kill "$APPIUM_PID" || true
+          fi
