@@ -22,7 +22,7 @@ This directory contains comprehensive test documentation for validating the BMW 
 |----------|-------|-------|
 | [10_PRE_TRACK_DAY_TESTS.md](10_PRE_TRACK_DAY_TESTS.md) | 10 | Full system validation before track day |
 | [20_ONBOARDING_TESTS.md](20_ONBOARDING_TESTS.md) | 14 | First launch, permissions, registration, login |
-| [30_TRACK_SETUP_TESTS.md](30_TRACK_SETUP_TESTS.md) | 16 | Start/finish line definition on map |
+| [30_TRACK_SETUP_TESTS.md](30_TRACK_SETUP_TESTS.md) | 13 | Start/finish line GPS capture |
 | [40_SESSION_RECORDING_TESTS.md](40_SESSION_RECORDING_TESTS.md) | 16 | GPS capture, foreground service, telemetry |
 | [50_LAP_DETECTION_TESTS.md](50_LAP_DETECTION_TESTS.md) | 14 | Server-side lap detection validation |
 | [60_SESSION_RESULTS_TESTS.md](60_SESSION_RESULTS_TESTS.md) | 17 | Laps, Coach, Chart tabs |
@@ -101,11 +101,11 @@ These tests cover all 117 requirements from `BMW_DrivingCoach_SRS_v1.md`:
 |-------------|------------------|----------|
 | User Management (UM) | 19 | ✓ |
 | Onboarding (ON) | 8 | ✓ |
-| Track Setup (TS) | 13 | ✓ |
+| Track Setup (TS) | 15 | ✓ |
 | Session Recording (SR) | 11 | ✓ |
 | Telemetry Capture (TC) | 12 | ✓ |
 | Telemetry Upload (TU) | 13 | ✓ |
-| Lap Detection (LD) | 12 | ✓ |
+| Lap Detection (LD) | 13 | ✓ |
 | Lap Comparison (LC) | 10 | ✓ |
 | AI Coaching (AI) | 14 | ✓ |
 | Driver Progression (DP) | 6 | ✓ |
@@ -163,4 +163,5 @@ These tests cover all 117 requirements from `BMW_DrivingCoach_SRS_v1.md`:
 
 ---
 
-*Document version: 1.0 | Created: 2026-05-06*
+*Document version: 2.0 | Updated: 2026-07-10*
+*v2.0 changes: Track Setup updated from Google Maps to GPS capture workflow*

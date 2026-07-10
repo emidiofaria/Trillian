@@ -19,6 +19,7 @@ import dagger.assisted.AssistedInject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -113,8 +114,22 @@ class TelemetryUploadWorker @AssistedInject constructor(
                 requestBody
             )
 
-            // Make API call
-            val response = telemetryApiService.uploadSession(sessionId, multipartBody)
+            // Build optional startLine params if present
+            val textPlain = "text/plain".toMediaTypeOrNull()
+            val startLineLat1 = session.startLineLat1?.toString()?.toRequestBody(textPlain)
+            val startLineLng1 = session.startLineLng1?.toString()?.toRequestBody(textPlain)
+            val startLineLat2 = session.startLineLat2?.toString()?.toRequestBody(textPlain)
+            val startLineLng2 = session.startLineLng2?.toString()?.toRequestBody(textPlain)
+
+            // Make API call with startLine params
+            val response = telemetryApiService.uploadSession(
+                sessionId,
+                multipartBody,
+                startLineLat1,
+                startLineLng1,
+                startLineLat2,
+                startLineLng2
+            )
 
             when {
                 response.isSuccessful -> {

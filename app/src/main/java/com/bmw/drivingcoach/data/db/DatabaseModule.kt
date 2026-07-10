@@ -24,6 +24,7 @@ object DatabaseModule {
             BMWDatabase::class.java,
             BMWDatabase.DATABASE_NAME
         )
+            .addMigrations(BMWDatabase.MIGRATION_1_2)
             .fallbackToDestructiveMigration()
             .build()
     }

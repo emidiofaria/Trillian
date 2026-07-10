@@ -50,7 +50,7 @@ class TelemetryUploadWorkerTest {
         // Arrange
         val session = createTestSession(UploadStatus.PENDING)
         whenever(sessionDao.getSessionByIdSync(testSessionId)).thenReturn(session)
-        whenever(telemetryApiService.uploadSession(any(), any())).thenReturn(
+        whenever(telemetryApiService.uploadSession(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(
             Response.success(UploadResponse(testRemoteId, "Success"))
         )
 
@@ -68,7 +68,7 @@ class TelemetryUploadWorkerTest {
         // Arrange
         val session = createTestSession(UploadStatus.PENDING)
         whenever(sessionDao.getSessionByIdSync(testSessionId)).thenReturn(session)
-        whenever(telemetryApiService.uploadSession(any(), any())).thenReturn(
+        whenever(telemetryApiService.uploadSession(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(
             Response.error(503, "Service Unavailable".toResponseBody())
         )
 
@@ -85,7 +85,7 @@ class TelemetryUploadWorkerTest {
         // Arrange
         val session = createTestSession(UploadStatus.PENDING)
         whenever(sessionDao.getSessionByIdSync(testSessionId)).thenReturn(session)
-        whenever(telemetryApiService.uploadSession(any(), any())).thenReturn(
+        whenever(telemetryApiService.uploadSession(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(
             Response.error(400, "Bad Request".toResponseBody())
         )
 
@@ -107,7 +107,7 @@ class TelemetryUploadWorkerTest {
 
         // Assert
         assertEquals(ListenableWorker.Result.failure(), result)
-        verify(telemetryApiService, never()).uploadSession(any(), any())
+        verify(telemetryApiService, never()).uploadSession(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -121,7 +121,7 @@ class TelemetryUploadWorkerTest {
 
         // Assert
         assertEquals(ListenableWorker.Result.success(), result)
-        verify(telemetryApiService, never()).uploadSession(any(), any())
+        verify(telemetryApiService, never()).uploadSession(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
     }
 
     @Test
@@ -129,7 +129,7 @@ class TelemetryUploadWorkerTest {
         // Arrange
         val session = createTestSession(UploadStatus.PENDING)
         whenever(sessionDao.getSessionByIdSync(testSessionId)).thenReturn(session)
-        whenever(telemetryApiService.uploadSession(any(), any())).thenThrow(
+        whenever(telemetryApiService.uploadSession(any(), any(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())).thenThrow(
             RuntimeException("Network unavailable")
         )
 
@@ -206,7 +206,7 @@ class TelemetryUploadWorkerTest {
         sessionDao.updateUploadStatus(sessionId, UploadStatus.UPLOADING.name, null)
 
         return try {
-            val response = telemetryApiService.uploadSession(sessionId, mock())
+            val response = telemetryApiService.uploadSession(sessionId, mock(), null, null, null, null)
 
             when {
                 response.isSuccessful -> {

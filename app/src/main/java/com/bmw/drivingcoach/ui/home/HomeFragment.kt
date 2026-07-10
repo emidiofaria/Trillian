@@ -141,6 +141,10 @@ class HomeFragment : Fragment() {
                 val action = HomeFragmentDirections.actionHomeToSessionResult(event.sessionId)
                 findNavController().navigate(action)
             }
+            is HomeEvent.NavigateToTrackSetup -> {
+                val action = HomeFragmentDirections.actionHomeToTrackSetup()
+                findNavController().navigate(action)
+            }
             is HomeEvent.NavigateToProfile -> {
                 val action = HomeFragmentDirections.actionHomeToProfile()
                 findNavController().navigate(action)

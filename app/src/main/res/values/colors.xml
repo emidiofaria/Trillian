@@ -14,6 +14,7 @@
     <!-- Text Colors -->
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#B0B0B0</color>
+    <color name="textSecondary">#B0B0B0</color>
     <color name="text_disabled">#666666</color>
     
     <!-- Semantic Colors -->

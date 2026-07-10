@@ -33,9 +33,20 @@ export class LapDetectionError extends Error {
 // Constants
 const START_ZONE_RADIUS_M = 15;
 const MIN_DISTANCE_FROM_START_M = 200;
-const MIN_LAP_TIME_MS = 30000; // 30 seconds
+const MIN_LAP_TIME_MS_CENTROID = 30000; // 30 seconds for centroid-based (wider tolerance)
+const MIN_LAP_TIME_MS_LINE = 20000; // 20 seconds for line-based (more precise)
 const START_ZONE_SAMPLE_TIME_MS = 30000; // First 30 seconds
 const START_ZONE_MAX_SAMPLES = 300;
+
+/**
+ * Start/finish line defined by two GPS points.
+ */
+export interface StartLine {
+  lat1: number;
+  lng1: number;
+  lat2: number;
+  lng2: number;
+}
 
 /**
  * Calculates the haversine distance between two points in metres.
@@ -88,24 +99,144 @@ function computeCentroid(samples: TelemetrySample[]): { lat: number; lng: number
 }
 
 /**
- * Detects laps from telemetry samples using start/finish line auto-detection.
- * 
- * Algorithm:
- * 1. Use first 30 seconds to define 'start zone' centroid
- * 2. Detect lap boundaries when driver re-enters the start zone
- *    after being at least 200m away
- * 3. Enforce minimum 30 second lap time
+ * Earth radius in metres for local coordinate conversion.
  */
-export function detectLaps(samples: TelemetrySample[]): DetectedLap[] {
+const EARTH_RADIUS_M = 6371000;
+
+/**
+ * Converts GPS coordinates to local Cartesian coordinates (x, y) in metres.
+ * Uses equirectangular approximation which is accurate for small distances.
+ */
+function toLocal(lat: number, lng: number, refLat: number, refLng: number): { x: number; y: number } {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const x = toRad(lng - refLng) * EARTH_RADIUS_M * Math.cos(toRad(refLat));
+  const y = toRad(lat - refLat) * EARTH_RADIUS_M;
+  return { x, y };
+}
+
+/**
+ * 2D cross product of vectors (v1x, v1y) and (v2x, v2y).
+ */
+function crossProduct(v1x: number, v1y: number, v2x: number, v2y: number): number {
+  return v1x * v2y - v1y * v2x;
+}
+
+/**
+ * Determines if a GPS path segment crosses a defined line (start/finish line).
+ * Uses 2D line-segment intersection via cross product method.
+ */
+export function lineIntersection(
+  startLine: StartLine,
+  prevLat: number, prevLng: number,
+  currLat: number, currLng: number
+): boolean {
+  // Convert to local Cartesian coordinates relative to line midpoint
+  const refLat = (startLine.lat1 + startLine.lat2) / 2;
+  const refLng = (startLine.lng1 + startLine.lng2) / 2;
+
+  const lineP1 = toLocal(startLine.lat1, startLine.lng1, refLat, refLng);
+  const lineP2 = toLocal(startLine.lat2, startLine.lng2, refLat, refLng);
+  const segP1 = toLocal(prevLat, prevLng, refLat, refLng);
+  const segP2 = toLocal(currLat, currLng, refLat, refLng);
+
+  // Direction vectors
+  const abx = lineP2.x - lineP1.x;
+  const aby = lineP2.y - lineP1.y;
+  const cdx = segP2.x - segP1.x;
+  const cdy = segP2.y - segP1.y;
+
+  // Cross products to determine orientation
+  const d1 = crossProduct(cdx, cdy, lineP1.x - segP1.x, lineP1.y - segP1.y);
+  const d2 = crossProduct(cdx, cdy, lineP2.x - segP1.x, lineP2.y - segP1.y);
+  const d3 = crossProduct(abx, aby, segP1.x - lineP1.x, segP1.y - lineP1.y);
+  const d4 = crossProduct(abx, aby, segP2.x - lineP1.x, segP2.y - lineP1.y);
+
+  // Segments intersect if points are on opposite sides of each other's lines
+  if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+      ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Detects laps from telemetry samples.
+ * 
+ * If startLine is provided, uses precise line intersection detection.
+ * Otherwise, falls back to centroid-based auto-detection.
+ * 
+ * @param samples Telemetry samples with GPS coordinates
+ * @param startLine Optional user-defined start/finish line
+ */
+export function detectLaps(samples: TelemetrySample[], startLine?: StartLine): DetectedLap[] {
   if (samples.length < 10) {
     throw new LapDetectionError('Insufficient samples for lap detection');
   }
   
   // Sort samples by timestamp
   const sortedSamples = [...samples].sort((a, b) => a.timestampMs - b.timestampMs);
-  
-  // Step 1: Define start zone from first 30 seconds or 300 samples
   const firstTimestamp = sortedSamples[0].timestampMs;
+
+  // Use line intersection if startLine provided, otherwise use centroid
+  if (startLine) {
+    return detectLapsWithLine(sortedSamples, startLine, firstTimestamp);
+  } else {
+    return detectLapsWithCentroid(sortedSamples, firstTimestamp);
+  }
+}
+
+/**
+ * Detects laps using precise line intersection.
+ */
+function detectLapsWithLine(
+  sortedSamples: TelemetrySample[],
+  startLine: StartLine,
+  firstTimestamp: number
+): DetectedLap[] {
+  const lapBoundaries: number[] = [0];
+  let wasOutsideStartZone = false;
+  let lastBoundaryTime = firstTimestamp;
+
+  // Compute centroid of start line for distance check
+  const lineCentroid = {
+    lat: (startLine.lat1 + startLine.lat2) / 2,
+    lng: (startLine.lng1 + startLine.lng2) / 2,
+  };
+
+  for (let i = 1; i < sortedSamples.length; i++) {
+    const prev = sortedSamples[i - 1];
+    const curr = sortedSamples[i];
+
+    // Check if we're far enough from start to count
+    const distance = haversineMetres(curr.latitude, curr.longitude, lineCentroid.lat, lineCentroid.lng);
+    if (distance >= MIN_DISTANCE_FROM_START_M) {
+      wasOutsideStartZone = true;
+    }
+
+    // Check for lap boundary: crossing the line after being outside
+    if (
+      wasOutsideStartZone &&
+      lineIntersection(startLine, prev.latitude, prev.longitude, curr.latitude, curr.longitude) &&
+      curr.timestampMs - lastBoundaryTime >= MIN_LAP_TIME_MS_LINE
+    ) {
+      lapBoundaries.push(i);
+      lastBoundaryTime = curr.timestampMs;
+      wasOutsideStartZone = false;
+    }
+  }
+
+  return buildLapsFromBoundaries(sortedSamples, lapBoundaries);
+}
+
+/**
+ * Detects laps using centroid-based auto-detection (fallback).
+ */
+function detectLapsWithCentroid(
+  sortedSamples: TelemetrySample[],
+  firstTimestamp: number
+): DetectedLap[] {
+  // Step 1: Define start zone from first 30 seconds or 300 samples
   const startZoneCutoff = firstTimestamp + START_ZONE_SAMPLE_TIME_MS;
   
   const startZoneSamples = sortedSamples.filter(
@@ -142,7 +273,7 @@ export function detectLaps(samples: TelemetrySample[]): DetectedLap[] {
     if (
       wasOutsideStartZone &&
       distance <= START_ZONE_RADIUS_M &&
-      sample.timestampMs - lastBoundaryTime >= MIN_LAP_TIME_MS
+      sample.timestampMs - lastBoundaryTime >= MIN_LAP_TIME_MS_CENTROID
     ) {
       lapBoundaries.push(i);
       lastBoundaryTime = sample.timestampMs;
@@ -150,16 +281,16 @@ export function detectLaps(samples: TelemetrySample[]): DetectedLap[] {
     }
   }
   
-  // Note: We don't add a final boundary at end of session.
-  // Only complete laps (crossing to crossing) are counted.
-  // The final "incomplete" lap after the last crossing is ignored.
-  
-  // Step 4: Build lap objects from crossings
-  // lapBoundaries contains [0, crossing1, crossing2, ..., crossingN]
-  // We want laps: crossing1→crossing2, crossing2→crossing3, etc.
-  // The segment 0→crossing1 is the "out lap" and is skipped
-  const laps: DetectedLap[] = [];
-  
+  return buildLapsFromBoundaries(sortedSamples, lapBoundaries);
+}
+
+/**
+ * Builds DetectedLap objects from boundary indices.
+ */
+function buildLapsFromBoundaries(
+  sortedSamples: TelemetrySample[],
+  lapBoundaries: number[]
+): DetectedLap[] {
   // We need at least 3 boundaries to have 1 complete lap:
   // [0 (start), first_crossing, second_crossing] = 1 lap (first_crossing → second_crossing)
   if (lapBoundaries.length < 3) {
@@ -167,6 +298,8 @@ export function detectLaps(samples: TelemetrySample[]): DetectedLap[] {
       `Insufficient lap crossings detected: found ${lapBoundaries.length - 1}, need at least 2`
     );
   }
+  
+  const laps: DetectedLap[] = [];
   
   // Build laps from crossing to crossing (skip the out lap at index 0)
   for (let i = 1; i < lapBoundaries.length - 1; i++) {
