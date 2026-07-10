@@ -35,7 +35,11 @@ interface ApiService {
         @Part("trackName") trackName: RequestBody,
         @Part("startedAt") startedAt: RequestBody,
         @Part("endedAt") endedAt: RequestBody,
-        @Part file: MultipartBody.Part
+        @Part file: MultipartBody.Part,
+        @Part("startLineLat1") startLineLat1: RequestBody? = null,
+        @Part("startLineLng1") startLineLng1: RequestBody? = null,
+        @Part("startLineLat2") startLineLat2: RequestBody? = null,
+        @Part("startLineLng2") startLineLng2: RequestBody? = null
     ): Response<UploadResponse>
 
     @GET("sessions")

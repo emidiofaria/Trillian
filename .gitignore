@@ -1,0 +1,70 @@
+# ============================================
+# Android
+# ============================================
+*.iml
+.gradle/
+/local.properties
+/.idea/
+/build/
+/app/build/
+/captures
+.externalNativeBuild/
+.cxx/
+
+# APK/AAB files (use GitHub Releases instead)
+*.apk
+*.aab
+*.ap_
+
+# Signing keys (NEVER commit)
+*.jks
+*.keystore
+keystore.properties
+
+# Android profiling
+*.hprof
+
+# ============================================
+# Backend (Node.js)
+# ============================================
+node_modules/
+dist/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# ============================================
+# IDE & Editors
+# ============================================
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Copilot / AI Tools
+# ============================================
+.copilot/
+
+# ============================================
+# Testing
+# ============================================
+/coverage/
+*.lcov
+.nyc_output/
+
+# ============================================
+# Temporary files
+# ============================================
+*.tmp
+*.temp
+*.bak

@@ -3,8 +3,10 @@ import {
   computeSectors,
   haversineMetres,
   findBestLap,
+  lineIntersection,
   LapDetectionError,
   DetectedLap,
+  StartLine,
 } from '../src/lap/lapDetector';
 import { TelemetrySample } from '../src/types';
 
@@ -426,6 +428,229 @@ describe('Lap Detector', () => {
     it('should return null for empty array', () => {
       const best = findBestLap([]);
       expect(best).toBeNull();
+    });
+  });
+
+  describe('lineIntersection', () => {
+    const startLine: StartLine = {
+      lat1: 48.12345,
+      lng1: 11.56789,
+      lat2: 48.12345,
+      lng2: 11.56800, // ~8m wide line
+    };
+
+    it('should detect path crossing finish line', () => {
+      // Path goes from south to north across the line
+      const crosses = lineIntersection(
+        startLine,
+        48.12340, 11.56795, // South of line
+        48.12350, 11.56795  // North of line
+      );
+      expect(crosses).toBe(true);
+    });
+
+    it('should not detect parallel path', () => {
+      // Path runs parallel to the line (east-west)
+      const crosses = lineIntersection(
+        startLine,
+        48.12340, 11.56780, // South of line
+        48.12340, 11.56810  // Still south, moved east
+      );
+      expect(crosses).toBe(false);
+    });
+
+    it('should not detect path ending before line', () => {
+      // Both points are south of the line
+      const crosses = lineIntersection(
+        startLine,
+        48.12335, 11.56795,
+        48.12340, 11.56795  // Still south of 48.12345
+      );
+      expect(crosses).toBe(false);
+    });
+
+    it('should not detect path missing line to the side', () => {
+      // Path crosses north-south but outside the line width
+      const crosses = lineIntersection(
+        startLine,
+        48.12340, 11.56850, // East of finish line
+        48.12350, 11.56850
+      );
+      expect(crosses).toBe(false);
+    });
+
+    it('should detect diagonal crossing', () => {
+      const crosses = lineIntersection(
+        startLine,
+        48.12340, 11.56788,
+        48.12350, 11.56798
+      );
+      expect(crosses).toBe(true);
+    });
+
+    it('should detect reverse direction crossing', () => {
+      // Path goes from north to south
+      const crosses = lineIntersection(
+        startLine,
+        48.12350, 11.56795, // North of line
+        48.12340, 11.56795  // South of line
+      );
+      expect(crosses).toBe(true);
+    });
+  });
+
+  describe('detectLaps with startLine', () => {
+    it('should detect laps using line intersection when startLine provided', () => {
+      // Horizontal start line (east-west)
+      const startLine: StartLine = {
+        lat1: 48.13517,
+        lng1: 11.5820,
+        lat2: 48.13517,
+        lng2: 11.5822, // ~15m wide
+      };
+
+      const samples: TelemetrySample[] = [];
+      
+      // Start zone: 30 seconds of sitting still
+      for (let i = 0; i < 300; i++) {
+        samples.push({
+          timestampMs: i * 100,
+          latitude: 48.13517,
+          longitude: 11.5821,
+          speedMs: 0,
+          headingDeg: 0,
+          accelX: 0, accelY: 0, accelZ: 9.81,
+          gyroX: 0, gyroY: 0, gyroZ: 0,
+          gpsAccuracyM: 3,
+        });
+      }
+
+      // Complete 4 laps - each lap: go north (>200m from line), then cross back south
+      // Use 0.00301 offset so crossing doesn't land exactly on sample boundary
+      const lapDuration = 30000; // 30 seconds per lap
+      
+      for (let lap = 0; lap < 4; lap++) {
+        const lapStartMs = 30000 + lap * lapDuration;
+        
+        // Phase 1: Go north away from the line (10 seconds, ~0.00301 deg = ~335m)
+        for (let i = 0; i < 100; i++) {
+          samples.push({
+            timestampMs: lapStartMs + i * 100,
+            latitude: 48.13517 + (i / 100) * 0.00301,
+            longitude: 11.5821,
+            speedMs: 30,
+            headingDeg: 0,
+            accelX: 0, accelY: 0, accelZ: 9.81,
+            gyroX: 0, gyroY: 0, gyroZ: 0,
+            gpsAccuracyM: 3,
+          });
+        }
+        
+        // Phase 2: Stay north for a bit (10 seconds)
+        for (let i = 0; i < 100; i++) {
+          samples.push({
+            timestampMs: lapStartMs + 10000 + i * 100,
+            latitude: 48.13818, // ~335m north of line
+            longitude: 11.5821 + (i / 100) * 0.0005,
+            speedMs: 30,
+            headingDeg: 90,
+            accelX: 0, accelY: 0, accelZ: 9.81,
+            gyroX: 0, gyroY: 0, gyroZ: 0,
+            gpsAccuracyM: 3,
+          });
+        }
+        
+        // Phase 3: Return south to cross the line (10 seconds)
+        for (let i = 0; i < 100; i++) {
+          const progress = i / 100;
+          samples.push({
+            timestampMs: lapStartMs + 20000 + i * 100,
+            latitude: 48.13818 - progress * 0.004, // Cross from 48.13818 to 48.13418 (crosses 48.13517)
+            longitude: 11.5821,
+            speedMs: 30,
+            headingDeg: 180,
+            accelX: 0, accelY: 0, accelZ: 9.81,
+            gyroX: 0, gyroY: 0, gyroZ: 0,
+            gpsAccuracyM: 3,
+          });
+        }
+      }
+
+      const laps = detectLaps(samples, startLine);
+
+      // Should detect at least 2 laps (4 crossings = 3 lap boundaries after start)
+      expect(laps.length).toBeGreaterThanOrEqual(2);
+      
+      // Verify lap timing is reasonable
+      for (const lap of laps) {
+        expect(lap.durationMs).toBeGreaterThan(20000);
+        expect(lap.durationMs).toBeLessThan(60000);
+      }
+    });
+
+    it('should use 20s minimum lap time with line detection (vs 30s for centroid)', () => {
+      // Horizontal start line (offset to avoid exact sample landing)
+      const startLine: StartLine = {
+        lat1: 48.13513,
+        lng1: 11.5819,
+        lat2: 48.13513,
+        lng2: 11.5821,
+      };
+
+      const samples: TelemetrySample[] = [];
+      
+      // Start zone - 30 seconds
+      for (let i = 0; i < 300; i++) {
+        samples.push({
+          timestampMs: i * 100,
+          latitude: 48.13513,
+          longitude: 11.5820,
+          speedMs: 0,
+          headingDeg: 0,
+          accelX: 0, accelY: 0, accelZ: 9.81,
+          gyroX: 0, gyroY: 0, gyroZ: 0,
+          gpsAccuracyM: 3,
+        });
+      }
+
+      // Create 22-second laps - should be valid for line detection (20s min) but not centroid (30s min)
+      for (let lap = 0; lap < 4; lap++) {
+        const lapStart = 30000 + lap * 22000;
+        
+        // Go north, far from line (8 seconds, ~250m)
+        for (let i = 0; i < 80; i++) {
+          samples.push({
+            timestampMs: lapStart + i * 100,
+            latitude: 48.13513 + (i / 80) * 0.0025, // Go 278m north
+            longitude: 11.5820,
+            speedMs: 30,
+            headingDeg: 0,
+            accelX: 0, accelY: 0, accelZ: 9.81,
+            gyroX: 0, gyroY: 0, gyroZ: 0,
+            gpsAccuracyM: 3,
+          });
+        }
+        
+        // Turn around and go south (14 seconds - cross line)
+        for (let i = 0; i < 140; i++) {
+          const progress = i / 140;
+          samples.push({
+            timestampMs: lapStart + 8000 + i * 100,
+            latitude: 48.13763 - progress * 0.004, // Go from ~278m north to ~167m south
+            longitude: 11.5820,
+            speedMs: 30,
+            headingDeg: 180,
+            accelX: 0, accelY: 0, accelZ: 9.81,
+            gyroX: 0, gyroY: 0, gyroZ: 0,
+            gpsAccuracyM: 3,
+          });
+        }
+      }
+
+      const lapsWithLine = detectLaps(samples, startLine);
+      
+      // With line intersection, 22s laps should be detected
+      expect(lapsWithLine.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

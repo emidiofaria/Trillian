@@ -1,6 +1,6 @@
 # Track Setup Tests
 
-> **Purpose:** Validate the start/finish line definition flow using map interaction. These tests verify the user can correctly define track boundaries before recording.
+> **Purpose:** Validate the start/finish line definition flow using two-point GPS capture. These tests verify the user can correctly define track boundaries before recording.
 
 ---
 
@@ -9,9 +9,10 @@
 | Item | Required State | Check |
 |------|----------------|-------|
 | Device | GPS enabled, location services ON | ☐ |
-| Location | Outdoors or near window for GPS | ☐ |
-| Network | Connected (for map tiles) | ☐ |
+| Location | Outdoors with clear sky view (track day) | ☐ |
+| Network | Not required for track setup | ☐ |
 | User | Logged in | ☐ |
+| Position | Standing at the start/finish line of the track | ☐ |
 
 ---
 
@@ -24,154 +25,136 @@
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | On Home screen | FAB visible (bottom right) | ☐ |
-| 2 | Tap FAB (record button) | Track Setup screen opens | ☐ |
-| 3 | Observe map | Map displayed with dark style | ☐ |
-| 4 | Observe toolbar | Back button and CLEAR option | ☐ |
-| 5 | Observe instruction card | Instruction text visible | ☐ |
-| 6 | Instruction text reads | "Tap two points on the map..." | ☐ |
-| 7 | START RECORDING button | Disabled initially | ☐ |
+| 2 | Tap FAB (record button) | New Session dialog appears | ☐ |
+| 3 | Enter track name | Track name accepted | ☐ |
+| 4 | Tap "Start" | Track Setup screen opens | ☐ |
+| 5 | Observe instructions | "SET START/FINISH LINE" title | ☐ |
+| 6 | Instruction text reads | "Walk to each edge of the track..." | ☐ |
+| 7 | GPS status indicator visible | Shows satellites and accuracy | ☐ |
+| 8 | START RECORDING button | Disabled initially | ☐ |
 
-**Requirement Coverage:** TS-01, TS-02, TS-11, TS-13
-
----
-
-### TS-02: Place Point A
-
-**Objective:** Verify first map tap places Point A correctly.
-
-| Step | Action | Expected Result | Pass/Fail |
-|------|--------|-----------------|-----------|
-| 1 | On Track Setup screen | Map displayed | ☐ |
-| 2 | Tap anywhere on map | Marker placed at tap location | ☐ |
-| 3 | Marker color | BMW blue marker | ☐ |
-| 4 | Marker label | "A" or distinguishing indicator | ☐ |
-| 5 | Instruction updates | Indicates "tap second point" | ☐ |
-| 6 | START RECORDING button | Still disabled | ☐ |
-
-**Requirement Coverage:** TS-03
+**Requirement Coverage:** TS-01, TS-02, TS-12, TS-14
 
 ---
 
-### TS-03: Place Point B and Draw Line
+### TS-02: GPS Status Display
 
-**Objective:** Verify second map tap places Point B and draws the line.
+**Objective:** Verify GPS status indicator shows accuracy information.
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Point A already placed | One marker on map | ☐ |
-| 2 | Tap second location on map | Second marker placed | ☐ |
-| 3 | Marker label | "B" or distinguishing indicator | ☐ |
-| 4 | Polyline drawn | BMW blue line between A and B | ☐ |
-| 5 | Instruction updates | Indicates line is set | ☐ |
-| 6 | START RECORDING button | Enabled (if distance valid) | ☐ |
+| 1 | On Track Setup screen | GPS status container visible | ☐ |
+| 2 | Wait for GPS fix | Status updates | ☐ |
+| 3 | GPS indicator dot | Green when ≤10m accuracy | ☐ |
+| 4 | GPS indicator dot | Amber when >10m accuracy | ☐ |
+| 5 | Status text shows | "GPS: X satellites, ±Ym" format | ☐ |
 
-**Requirement Coverage:** TS-04
+**Requirement Coverage:** TS-03, TS-04
 
 ---
 
-### TS-04: Third Tap Does Nothing
+### TS-03: Capture Point A
 
-**Objective:** Verify tapping after both points placed shows snackbar.
+**Objective:** Verify Point A capture at track edge.
+
+**Setup:** Walk to the LEFT edge of the track at the start/finish line.
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Both points A and B placed | Line visible | ☐ |
-| 2 | Tap another location on map | No new marker added | ☐ |
-| 3 | Snackbar appears | "Tap CLEAR to redraw" message | ☐ |
-| 4 | Existing markers remain | A and B unchanged | ☐ |
+| 1 | On Track Setup screen | Point A card displayed | ☐ |
+| 2 | Point A label shows | "POINT A (Left Edge)" | ☐ |
+| 3 | Point A coords show | "Not captured" | ☐ |
+| 4 | CAPTURE button for Point A | Enabled | ☐ |
+| 5 | Tap CAPTURE (Point A) | Current GPS location captured | ☐ |
+| 6 | Point A coords update | Shows "48.xxxxx, 11.xxxxx" format | ☐ |
+| 7 | Point B CAPTURE button | Now enabled | ☐ |
+| 8 | CLEAR button appears | Visible | ☐ |
+| 9 | START RECORDING button | Still disabled | ☐ |
 
-**Requirement Coverage:** TS-05
+**Requirement Coverage:** TS-05, TS-06, TS-11
 
 ---
 
-### TS-05: Use My Location Button
+### TS-04: Capture Point B and Line Width
 
-**Objective:** Verify "USE MY LOCATION" sets Point A to current GPS position.
+**Objective:** Verify Point B capture and distance calculation.
+
+**Setup:** Walk to the RIGHT edge of the track at the start/finish line (opposite side from Point A).
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Fresh Track Setup (no points) | Empty map | ☐ |
-| 2 | Tap "USE MY LOCATION" button | GPS location fetched | ☐ |
-| 3 | Point A marker placed | At device's current location | ☐ |
-| 4 | Map centers on location | Marker visible on screen | ☐ |
-| 5 | Can still tap for Point B | Second tap works | ☐ |
+| 1 | Point A already captured | Coords displayed | ☐ |
+| 2 | Point B CAPTURE button | Enabled | ☐ |
+| 3 | Tap CAPTURE (Point B) | Current GPS location captured | ☐ |
+| 4 | Point B coords update | Shows "48.xxxxx, 11.xxxxx" format | ☐ |
+| 5 | LINE WIDTH label shows | "LINE WIDTH" | ☐ |
+| 6 | LINE WIDTH value updates | Shows distance in metres (e.g., "8.2m") | ☐ |
+| 7 | If distance ≥3m | START RECORDING enabled | ☐ |
 
-**Requirement Coverage:** TS-06
+**Requirement Coverage:** TS-07, TS-08, TS-12
+
+---
+
+### TS-05: Line Distance Validation — Too Close
+
+**Objective:** Verify points less than 3m apart are rejected.
+
+**Setup:** Stand still and capture both points without moving.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Capture Point A | Coords captured | ☐ |
+| 2 | Without moving, capture Point B | Same approximate location | ☐ |
+| 3 | LINE WIDTH shows | <3m value (e.g., "0.5m") | ☐ |
+| 4 | Hint text appears | "Minimum 3m required" | ☐ |
+| 5 | START RECORDING button | Disabled | ☐ |
+| 6 | Tap CLEAR | Points reset | ☐ |
+| 7 | Re-capture correctly | Walk to opposite edges | ☐ |
+
+**Requirement Coverage:** TS-09, TS-10
 
 ---
 
 ### TS-06: Clear Button
 
-**Objective:** Verify CLEAR button resets the track setup.
+**Objective:** Verify CLEAR button resets captured points.
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Place both Point A and Point B | Line visible | ☐ |
-| 2 | Tap CLEAR in toolbar | Confirmation or immediate clear | ☐ |
-| 3 | Both markers removed | Map empty | ☐ |
-| 4 | Polyline removed | No line visible | ☐ |
-| 5 | START RECORDING button | Disabled | ☐ |
-| 6 | Can start over | Tap to place Point A | ☐ |
+| 1 | Capture Point A | Coords displayed | ☐ |
+| 2 | CLEAR button visible | Shows "CLEAR" | ☐ |
+| 3 | Tap CLEAR | Both points reset | ☐ |
+| 4 | Point A coords | "Not captured" | ☐ |
+| 5 | Point B coords | "Not captured" | ☐ |
+| 6 | LINE WIDTH | "--" | ☐ |
+| 7 | Point B CAPTURE | Disabled | ☐ |
+| 8 | CLEAR button | Hidden | ☐ |
+| 9 | START RECORDING | Disabled | ☐ |
 
-**Requirement Coverage:** TS-07
+**Requirement Coverage:** TS-11
 
 ---
 
-### TS-07: Line Distance Validation — Too Close
+### TS-07: Valid Line Distance and Start Recording
 
-**Objective:** Verify points less than 2m apart are rejected.
-
-**Setup:** Stand still and place both points at nearly identical location.
+**Objective:** Verify valid line allows recording to start.
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Tap "USE MY LOCATION" for Point A | Marker placed | ☐ |
-| 2 | Zoom in maximum on map | Close view | ☐ |
-| 3 | Tap very close to Point A for Point B | Second marker ~1m away | ☐ |
-| 4 | Tap START RECORDING | Validation runs | ☐ |
-| 5 | Error message appears | "Points are too close" | ☐ |
-| 6 | Button disabled or returns to setup | Cannot proceed | ☐ |
+| 1 | Walk to left track edge | Position at left | ☐ |
+| 2 | Capture Point A | Coords displayed | ☐ |
+| 3 | Walk to right track edge | Cross ~5-15m | ☐ |
+| 4 | Capture Point B | Coords displayed | ☐ |
+| 5 | LINE WIDTH shows | Value between 3-50m | ☐ |
+| 6 | START RECORDING button | Enabled | ☐ |
+| 7 | Tap START RECORDING | Navigation occurs | ☐ |
+| 8 | Recording screen appears | Elapsed time displayed | ☐ |
 
-**Requirement Coverage:** TS-08, TS-09
-
----
-
-### TS-08: Line Distance Validation — Too Far
-
-**Objective:** Verify points more than 200m apart are rejected.
-
-| Step | Action | Expected Result | Pass/Fail |
-|------|--------|-----------------|-----------|
-| 1 | Zoom out on map | Wide view | ☐ |
-| 2 | Tap for Point A | Marker placed | ☐ |
-| 3 | Tap for Point B ~300m away | Second marker placed | ☐ |
-| 4 | Line drawn | Visible between distant points | ☐ |
-| 5 | Tap START RECORDING | Validation runs | ☐ |
-| 6 | Error message appears | "Line is too long — place points closer..." | ☐ |
-| 7 | Button disabled or returns to setup | Cannot proceed | ☐ |
-
-**Requirement Coverage:** TS-08, TS-10
+**Requirement Coverage:** TS-12, TS-13
 
 ---
 
-### TS-09: Valid Line Distance (2m–200m)
-
-**Objective:** Verify valid line distance allows recording to start.
-
-| Step | Action | Expected Result | Pass/Fail |
-|------|--------|-----------------|-----------|
-| 1 | Place Point A | Marker placed | ☐ |
-| 2 | Place Point B ~10-50m away | Second marker placed | ☐ |
-| 3 | Line drawn | Visible between points | ☐ |
-| 4 | START RECORDING button | Enabled | ☐ |
-| 5 | Tap START RECORDING | Validation passes | ☐ |
-| 6 | Screen transitions | Recording screen appears | ☐ |
-
-**Requirement Coverage:** TS-08, TS-11, TS-12
-
----
-
-### TS-10: Start/Finish Coordinates Storage
+### TS-08: Start/Finish Coordinates Storage
 
 **Objective:** Verify coordinates are stored in SessionEntity.
 
@@ -179,46 +162,14 @@
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Define valid start/finish line | Line set | ☐ |
+| 1 | Define valid start/finish line | Both points captured | ☐ |
 | 2 | Tap START RECORDING | Recording starts | ☐ |
 | 3 | Immediately STOP | Session created | ☐ |
 | 4 | Inspect session data | startLineLat1/Lng1 present | ☐ |
 | 5 | Verify coordinates | startLineLat2/Lng2 present | ☐ |
-| 6 | Values match map | Approximate to tapped locations | ☐ |
+| 6 | Values match capture | Close to captured GPS coords | ☐ |
 
-**Requirement Coverage:** TS-12
-
----
-
-### TS-11: Track Name Entry
-
-**Objective:** Verify user can enter track name before recording.
-
-| Step | Action | Expected Result | Pass/Fail |
-|------|--------|-----------------|-----------|
-| 1 | Define valid start/finish line | Line set | ☐ |
-| 2 | Track name input visible | Text field or dialog | ☐ |
-| 3 | Enter "Circuito de Braga" | Name accepted | ☐ |
-| 4 | Tap START RECORDING | Recording starts | ☐ |
-| 5 | After session, check Home | Track name displayed | ☐ |
-
-**Requirement Coverage:** Related to session creation flow
-
----
-
-### TS-12: Map Dark Style
-
-**Objective:** Verify map uses BMW dark (Aubergine) style.
-
-| Step | Action | Expected Result | Pass/Fail |
-|------|--------|-----------------|-----------|
-| 1 | Open Track Setup screen | Map loads | ☐ |
-| 2 | Observe map background | Dark color scheme | ☐ |
-| 3 | Roads visible | Visible on dark background | ☐ |
-| 4 | Labels readable | White/light text on dark | ☐ |
-| 5 | Overall aesthetic | Matches BMW luxury theme | ☐ |
-
-**Requirement Coverage:** TS-02
+**Requirement Coverage:** TS-13
 
 ---
 
@@ -231,24 +182,25 @@
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | Disable device location services | Location OFF | ☐ |
-| 2 | Open Track Setup screen | Map loads (cached tiles) | ☐ |
-| 3 | Tap "USE MY LOCATION" | Error or prompt to enable GPS | ☐ |
-| 4 | Manual tap still works | Can place markers on map | ☐ |
-| 5 | Tap START RECORDING | Permission/GPS error shown | ☐ |
+| 2 | Open Track Setup screen | Screen loads | ☐ |
+| 3 | GPS status shows | "Waiting for GPS..." or similar | ☐ |
+| 4 | GPS indicator | Amber (not ready) | ☐ |
+| 5 | CAPTURE buttons | May work but low accuracy warning | ☐ |
+| 6 | Enable GPS | Status updates to show accuracy | ☐ |
 
 ---
 
-### TS-EDGE-02: No Network (Offline Map)
+### TS-EDGE-02: Poor GPS Accuracy
 
-**Objective:** Verify behavior with no network connectivity.
+**Objective:** Verify behavior with poor GPS signal.
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Enable airplane mode | Network OFF | ☐ |
-| 2 | Open Track Setup screen | Map may not load tiles | ☐ |
-| 3 | If cached tiles exist | Some map visible | ☐ |
-| 4 | Can still tap to place points | Markers placed | ☐ |
-| 5 | GPS still works | Location available | ☐ |
+| 1 | Go indoors (poor GPS) | Limited satellite visibility | ☐ |
+| 2 | Open Track Setup screen | Screen loads | ☐ |
+| 3 | GPS indicator | Amber (>10m accuracy) | ☐ |
+| 4 | GPS status shows | Accuracy >10m (e.g., "±25m") | ☐ |
+| 5 | CAPTURE still works | Can capture but may be inaccurate | ☐ |
 
 ---
 
@@ -259,9 +211,9 @@
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | Open Track Setup | Screen displayed | ☐ |
-| 2 | Place Point A only | One marker | ☐ |
+| 2 | Capture Point A | One point captured | ☐ |
 | 3 | Press back button | Returns to Home | ☐ |
-| 4 | Open Track Setup again | Fresh state (no markers) | ☐ |
+| 4 | Open Track Setup again | Fresh state (no points) | ☐ |
 
 ---
 
@@ -271,11 +223,27 @@
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Place Point A and Point B | Line visible | ☐ |
+| 1 | Capture Point A | Coords displayed | ☐ |
 | 2 | Rotate device | Landscape mode | ☐ |
-| 3 | Markers and line preserved | Still visible | ☐ |
-| 4 | Rotate back | Portrait mode | ☐ |
-| 5 | State unchanged | Same markers and line | ☐ |
+| 3 | Point A still captured | Coords preserved | ☐ |
+| 4 | Capture Point B | In landscape | ☐ |
+| 5 | Rotate back | Portrait mode | ☐ |
+| 6 | Both points preserved | LINE WIDTH still shown | ☐ |
+
+---
+
+### TS-EDGE-05: Re-capture Point A After Point B
+
+**Objective:** Verify recapturing requires clearing first.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Capture Point A | Coords displayed | ☐ |
+| 2 | Capture Point B | Both captured | ☐ |
+| 3 | Point A CAPTURE button | Shows captured state | ☐ |
+| 4 | To re-capture | Must tap CLEAR first | ☐ |
+| 5 | Tap CLEAR | Both points reset | ☐ |
+| 6 | Can start over | Fresh capture | ☐ |
 
 ---
 
@@ -284,21 +252,18 @@
 | Test ID | Test Name | Status |
 |---------|-----------|--------|
 | TS-01 | Access Track Setup Screen | ☐ Pass ☐ Fail |
-| TS-02 | Place Point A | ☐ Pass ☐ Fail |
-| TS-03 | Place Point B and Draw Line | ☐ Pass ☐ Fail |
-| TS-04 | Third Tap Does Nothing | ☐ Pass ☐ Fail |
-| TS-05 | Use My Location Button | ☐ Pass ☐ Fail |
+| TS-02 | GPS Status Display | ☐ Pass ☐ Fail |
+| TS-03 | Capture Point A | ☐ Pass ☐ Fail |
+| TS-04 | Capture Point B and Line Width | ☐ Pass ☐ Fail |
+| TS-05 | Line Distance — Too Close | ☐ Pass ☐ Fail |
 | TS-06 | Clear Button | ☐ Pass ☐ Fail |
-| TS-07 | Line Distance — Too Close | ☐ Pass ☐ Fail |
-| TS-08 | Line Distance — Too Far | ☐ Pass ☐ Fail |
-| TS-09 | Valid Line Distance | ☐ Pass ☐ Fail |
-| TS-10 | Coordinates Storage | ☐ Pass ☐ Fail |
-| TS-11 | Track Name Entry | ☐ Pass ☐ Fail |
-| TS-12 | Map Dark Style | ☐ Pass ☐ Fail |
+| TS-07 | Valid Line Distance | ☐ Pass ☐ Fail |
+| TS-08 | Coordinates Storage | ☐ Pass ☐ Fail |
 | TS-EDGE-01 | GPS Not Available | ☐ Pass ☐ Fail |
-| TS-EDGE-02 | No Network (Offline Map) | ☐ Pass ☐ Fail |
+| TS-EDGE-02 | Poor GPS Accuracy | ☐ Pass ☐ Fail |
 | TS-EDGE-03 | Back Navigation | ☐ Pass ☐ Fail |
 | TS-EDGE-04 | Screen Rotation | ☐ Pass ☐ Fail |
+| TS-EDGE-05 | Re-capture After Both | ☐ Pass ☐ Fail |
 
 ---
 
@@ -314,4 +279,5 @@
 
 ---
 
-*Document ID: SAT-TS-001 | Version: 1.0 | Date: 2026-05-06*
+*Document ID: SAT-TS-001 | Version: 2.0 | Date: 2026-07-10*
+*Updated: Replaced Google Maps tap-based line drawing with two-point GPS capture workflow*

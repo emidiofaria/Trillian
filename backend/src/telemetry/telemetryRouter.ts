@@ -55,7 +55,20 @@ const uploadSchema = z.object({
   trackName: z.string().min(1).max(200),
   startedAt: z.coerce.number().positive(),
   endedAt: z.coerce.number().positive(),
-});
+  // Optional start/finish line coordinates (all 4 or none)
+  startLineLat1: z.coerce.number().min(-90).max(90).optional(),
+  startLineLng1: z.coerce.number().min(-180).max(180).optional(),
+  startLineLat2: z.coerce.number().min(-90).max(90).optional(),
+  startLineLng2: z.coerce.number().min(-180).max(180).optional(),
+}).refine(
+  (data) => {
+    // Either all 4 startLine fields are present or none
+    const fields = [data.startLineLat1, data.startLineLng1, data.startLineLat2, data.startLineLng2];
+    const presentCount = fields.filter(f => f !== undefined).length;
+    return presentCount === 0 || presentCount === 4;
+  },
+  { message: 'All 4 startLine coordinates must be provided together, or none at all' }
+);
 
 // Async lap processing (fire-and-forget)
 async function processSessionAsync(sessionId: string): Promise<void> {
@@ -119,7 +132,7 @@ router.post(
         return;
       }
       
-      const { trackName, startedAt, endedAt } = validationResult.data;
+      const { trackName, startedAt, endedAt, startLineLat1, startLineLng1, startLineLat2, startLineLng2 } = validationResult.data;
       const sessionId = validationResult.data.sessionId || uuidv4();
       const userId = req.user.id;
       const rawFilePath = req.file.path;
@@ -139,19 +152,23 @@ router.post(
         `${sessionId}.jsonl`
       );
       
-      // Insert or update session
+      // Insert or update session (with optional startLine coords)
       const result = await query<Session>(
-        `INSERT INTO sessions (id, user_id, track_name, started_at, ended_at, raw_file_path, processing_status)
-         VALUES ($1, $2, $3, to_timestamp($4::double precision / 1000), to_timestamp($5::double precision / 1000), $6, 'PENDING')
+        `INSERT INTO sessions (id, user_id, track_name, started_at, ended_at, raw_file_path, processing_status, start_line_lat1, start_line_lng1, start_line_lat2, start_line_lng2)
+         VALUES ($1, $2, $3, to_timestamp($4::double precision / 1000), to_timestamp($5::double precision / 1000), $6, 'PENDING', $7, $8, $9, $10)
          ON CONFLICT (id) DO UPDATE SET
            track_name = EXCLUDED.track_name,
            started_at = EXCLUDED.started_at,
            ended_at = EXCLUDED.ended_at,
            raw_file_path = EXCLUDED.raw_file_path,
            processing_status = 'PENDING',
+           start_line_lat1 = EXCLUDED.start_line_lat1,
+           start_line_lng1 = EXCLUDED.start_line_lng1,
+           start_line_lat2 = EXCLUDED.start_line_lat2,
+           start_line_lng2 = EXCLUDED.start_line_lng2,
            updated_at = NOW()
          RETURNING id`,
-        [sessionId, userId, trackName, startedAt, endedAt, finalFilePath]
+        [sessionId, userId, trackName, startedAt, endedAt, finalFilePath, startLineLat1 ?? null, startLineLng1 ?? null, startLineLat2 ?? null, startLineLng2 ?? null]
       );
       
       const insertedSessionId = result.rows[0].id;
