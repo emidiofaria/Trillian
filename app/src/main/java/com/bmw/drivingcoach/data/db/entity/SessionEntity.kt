@@ -14,7 +14,12 @@ data class SessionEntity(
     val rawFilePath: String,
     val uploadStatus: String = UploadStatus.PENDING.name,
     val processingStatus: String = ProcessingStatus.PENDING.name,
-    val remoteSessionId: String? = null
+    val remoteSessionId: String? = null,
+    // Start/finish line coordinates (two GPS points defining the line)
+    val startLineLat1: Double? = null,
+    val startLineLng1: Double? = null,
+    val startLineLat2: Double? = null,
+    val startLineLng2: Double? = null
 )
 
 enum class UploadStatus {

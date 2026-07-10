@@ -58,6 +58,10 @@
         tools:layout="@layout/fragment_home">
 
         <action
+            android:id="@+id/action_home_to_track_setup"
+            app:destination="@id/trackSetupFragment" />
+
+        <action
             android:id="@+id/action_home_to_recording"
             app:destination="@id/recordingFragment">
             <argument
@@ -78,6 +82,39 @@
         </action>
     </fragment>
 
+    <!-- Track Setup Flow -->
+    <fragment
+        android:id="@+id/trackSetupFragment"
+        android:name="com.bmw.drivingcoach.ui.tracksetup.TrackSetupFragment"
+        android:label="Track Setup"
+        tools:layout="@layout/fragment_track_setup">
+
+        <action
+            android:id="@+id/action_track_setup_to_recording"
+            app:destination="@id/recordingFragment">
+            <argument
+                android:name="sessionId"
+                app:argType="long"
+                android:defaultValue="-1L" />
+            <argument
+                android:name="startLineLat1"
+                app:argType="float"
+                android:defaultValue="0" />
+            <argument
+                android:name="startLineLng1"
+                app:argType="float"
+                android:defaultValue="0" />
+            <argument
+                android:name="startLineLat2"
+                app:argType="float"
+                android:defaultValue="0" />
+            <argument
+                android:name="startLineLng2"
+                app:argType="float"
+                android:defaultValue="0" />
+        </action>
+    </fragment>
+
     <fragment
         android:id="@+id/recordingFragment"
         android:name="com.bmw.drivingcoach.ui.recording.RecordingFragment"
@@ -86,7 +123,28 @@
 
         <argument
             android:name="sessionId"
-            app:argType="long" />
+            app:argType="long"
+            android:defaultValue="-1L" />
+
+        <argument
+            android:name="startLineLat1"
+            app:argType="float"
+            android:defaultValue="0" />
+
+        <argument
+            android:name="startLineLng1"
+            app:argType="float"
+            android:defaultValue="0" />
+
+        <argument
+            android:name="startLineLat2"
+            app:argType="float"
+            android:defaultValue="0" />
+
+        <argument
+            android:name="startLineLng2"
+            app:argType="float"
+            android:defaultValue="0" />
 
         <action
             android:id="@+id/action_recording_to_session_result"

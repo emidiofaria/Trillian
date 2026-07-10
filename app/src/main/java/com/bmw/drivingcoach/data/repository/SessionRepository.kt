@@ -103,12 +103,26 @@ class SessionRepository @Inject constructor(
                 file.asRequestBody("application/octet-stream".toMediaType())
             )
 
+            // Build optional startLine params if present
+            val startLineLat1Body = session.startLineLat1?.toString()
+                ?.toRequestBody("text/plain".toMediaType())
+            val startLineLng1Body = session.startLineLng1?.toString()
+                ?.toRequestBody("text/plain".toMediaType())
+            val startLineLat2Body = session.startLineLat2?.toString()
+                ?.toRequestBody("text/plain".toMediaType())
+            val startLineLng2Body = session.startLineLng2?.toString()
+                ?.toRequestBody("text/plain".toMediaType())
+
             val response = apiService.uploadTelemetry(
                 sessionId = sessionIdBody,
                 trackName = trackNameBody,
                 startedAt = startedAtBody,
                 endedAt = endedAtBody,
-                file = filePart
+                file = filePart,
+                startLineLat1 = startLineLat1Body,
+                startLineLng1 = startLineLng1Body,
+                startLineLat2 = startLineLat2Body,
+                startLineLng2 = startLineLng2Body
             )
 
             if (response.isSuccessful && response.body() != null) {

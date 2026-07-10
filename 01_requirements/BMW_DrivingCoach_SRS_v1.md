@@ -115,19 +115,21 @@ These decisions are locked. All requirements and implementation prompts reflect 
 
 | ID | Requirement |
 |---|---|
-| TS-01 | Before starting a recording, the user shall define a start/finish line on a Google Map by tapping two points. |
-| TS-02 | The Track Setup screen shall display a Google Map with a dark (Aubergine) style applied via a JSON style resource. |
-| TS-03 | The first tap on the map shall place point A (a BMW blue marker). |
-| TS-04 | The second tap on the map shall place point B (a second marker) and draw a BMW blue polyline between point A and point B representing the start/finish line. |
-| TS-05 | If both points are already placed, further taps on the map shall do nothing. A Snackbar shall inform the user to tap CLEAR to redraw. |
-| TS-06 | A 'USE MY LOCATION' button shall set point A to the device's last known GPS location and place a marker at that position. |
-| TS-07 | A 'CLEAR' button in the toolbar shall remove both markers and the polyline and reset the state to the initial tap-point-A state. |
-| TS-08 | The line shall be validated on 'START RECORDING': the distance between point A and point B shall be between 2 m and 200 m inclusive. |
-| TS-09 | If the distance is less than 2 m, the app shall display an error: 'Points are too close'. |
-| TS-10 | If the distance is greater than 200 m, the app shall display an error: 'Line is too long — place points closer to the start/finish'. |
-| TS-11 | The 'START RECORDING' button shall remain disabled until both points are placed and the line passes validation. |
-| TS-12 | On confirmation, the two lat/lng pairs (startLineLat1, startLineLng1, startLineLat2, startLineLng2) shall be stored in the `SessionEntity` in Room and passed as navigation arguments to the Recording screen. |
-| TS-13 | The instruction card on the Track Setup screen shall read: 'Tap two points on the map to draw the start/finish line. Stand at the line when placing points for best accuracy.' |
+| TS-01 | Before starting a recording, the user shall define a start/finish line by capturing two GPS points at the track edges. |
+| TS-02 | The Track Setup screen shall display instructions, GPS status, Point A/B capture cards, line width display, and action buttons. |
+| TS-03 | The GPS status indicator shall display satellite count and accuracy (e.g., "GPS: 8 satellites, ±3m"). |
+| TS-04 | A GPS indicator dot shall be green when accuracy ≤10m (ready) or amber when >10m (acquiring). |
+| TS-05 | Point A shall be captured by tapping the 'CAPTURE' button on the Point A card while standing at the left edge of the track. |
+| TS-06 | After Point A is captured, its coordinates shall be displayed (e.g., "48.12345, 11.56789") and the Point B capture button shall be enabled. |
+| TS-07 | Point B shall be captured by tapping the 'CAPTURE' button on the Point B card while standing at the right edge of the track. |
+| TS-08 | After both points are captured, the LINE WIDTH shall be displayed in metres using haversine distance calculation. |
+| TS-09 | The line shall be validated: the distance between Point A and Point B shall be at least 3 metres. |
+| TS-10 | If the distance is less than 3 metres, a hint shall display "Minimum 3m required" and the START RECORDING button shall remain disabled. |
+| TS-11 | A 'CLEAR' button shall appear after any point is captured and shall reset both points to allow re-capture. |
+| TS-12 | The 'START RECORDING' button shall remain disabled until both points are captured and the line passes validation (≥3m). |
+| TS-13 | On 'START RECORDING', the two lat/lng pairs (startLineLat1, startLineLng1, startLineLat2, startLineLng2) shall be stored in the `SessionEntity` in Room. |
+| TS-14 | The instruction text shall read: "Walk to each edge of the track at the start/finish line and capture two GPS points." |
+| TS-15 | The app shall use Android LocationManager with GPS_PROVIDER for location updates with 1-second interval and 0-metre minimum distance. |
 
 ---
 
@@ -193,17 +195,18 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | ID | Requirement |
 |---|---|
 | LD-01 | Lap detection shall be performed server-side, asynchronously, after the JSONL file is successfully stored in Azure Blob Storage. |
-| LD-02 | Lap boundaries shall be detected using a segment-intersection algorithm against the user-defined start/finish line (two lat/lng points). |
-| LD-03 | The algorithm shall skip the first 10 seconds of telemetry samples to avoid false crossings at session start. |
+| LD-02 | When a start/finish line is provided (startLineLat1/Lng1, startLineLat2/Lng2), lap boundaries shall be detected using a segment-intersection algorithm against the user-defined line. |
+| LD-03 | When no start/finish line is provided (legacy sessions), the backend shall fall back to centroid-based detection using the first 30 seconds of telemetry to compute a start zone. |
 | LD-04 | A lap boundary shall be recorded when consecutive GPS samples form a line segment that intersects the start/finish line segment, using the cross-product sign-of-area method. |
-| LD-05 | A minimum lap time guard of 20,000 ms shall be enforced. Any crossing detected less than 20 s after the previous boundary shall be ignored. |
-| LD-06 | The last incomplete lap (started after the final boundary, session ends before re-crossing) shall be discarded. Only complete laps shall be stored. |
-| LD-07 | If fewer than 50 telemetry samples are present in the file, the backend shall set `processingStatus=FAILED` and log: 'Insufficient samples'. |
-| LD-08 | If fewer than 2 complete laps are detected, the backend shall set `processingStatus=FAILED`, store no laps, and log a warning. The user shall be notified in the app. |
-| LD-09 | Each detected lap shall be divided into 3 equal-time sectors. `sector1Ms + sector2Ms + sector3Ms` shall equal `durationMs` exactly (sector 3 absorbs rounding). |
-| LD-10 | The lap with the minimum `durationMs` shall be flagged as `isBestLap=true`. Exactly one lap per session shall have this flag set. |
-| LD-11 | `SessionEntity.processingStatus` shall progress through: `PENDING → PROCESSING → LAPS_DONE → COMPLETE` on success, or `FAILED` on any error. |
-| LD-12 | The lat/lng approximation used for segment intersection (Cartesian) is valid for tracks smaller than 5 km in extent. This is the supported use case. |
+| LD-05 | For line-based detection, a minimum lap time guard of 20,000 ms shall be enforced. For centroid fallback, 30,000 ms shall be used. |
+| LD-06 | The driver must travel at least 200m from the start zone before a lap crossing is counted (prevents false triggers near the line). |
+| LD-07 | The last incomplete lap (started after the final boundary, session ends before re-crossing) shall be discarded. Only complete laps shall be stored. |
+| LD-08 | If fewer than 50 telemetry samples are present in the file, the backend shall set `processingStatus=FAILED` and log: 'Insufficient samples'. |
+| LD-09 | If fewer than 2 complete laps are detected, the backend shall set `processingStatus=FAILED`, store no laps, and log a warning. The user shall be notified in the app. |
+| LD-10 | Each detected lap shall be divided into 3 equal-time sectors. `sector1Ms + sector2Ms + sector3Ms` shall equal `durationMs` exactly (sector 3 absorbs rounding). |
+| LD-11 | The lap with the minimum `durationMs` shall be flagged as `isBestLap=true`. Exactly one lap per session shall have this flag set. |
+| LD-12 | `SessionEntity.processingStatus` shall progress through: `PENDING → PROCESSING → LAPS_DONE → COMPLETE` on success, or `FAILED` on any error. |
+| LD-13 | The lat/lng approximation used for segment intersection (equirectangular Cartesian) is valid for tracks smaller than 5 km in extent. This is the supported use case. |
 
 ---
 

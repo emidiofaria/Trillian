@@ -63,6 +63,51 @@ describe('Telemetry Router', () => {
       expect(response.body.data.status).toBe('PROCESSING');
     });
 
+    it('should upload telemetry with startLine coordinates', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ id: testSessionId }],
+        rowCount: 1,
+      });
+
+      const telemetryContent = [
+        '{"timestampMs":1000,"latitude":48.135,"longitude":11.582,"speedMs":25}',
+        '{"timestampMs":1100,"latitude":48.136,"longitude":11.583,"speedMs":26}',
+      ].join('\n');
+
+      const response = await request(app)
+        .post('/telemetry/upload')
+        .set('Authorization', `Bearer ${testToken}`)
+        .field('trackName', 'Nürburgring GP')
+        .field('startedAt', '1704067200000')
+        .field('endedAt', '1704070800000')
+        .field('startLineLat1', '48.13517')
+        .field('startLineLng1', '11.5820')
+        .field('startLineLat2', '48.13517')
+        .field('startLineLng2', '11.5822')
+        .attach('file', Buffer.from(telemetryContent), 'telemetry.jsonl');
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.sessionId).toBeDefined();
+      expect(response.body.data.status).toBe('PROCESSING');
+    });
+
+    it('should reject upload with partial startLine coordinates', async () => {
+      const telemetryContent = '{"timestampMs":1000,"latitude":48.135,"longitude":11.582,"speedMs":25}';
+
+      const response = await request(app)
+        .post('/telemetry/upload')
+        .set('Authorization', `Bearer ${testToken}`)
+        .field('trackName', 'Test Track')
+        .field('startedAt', '1704067200000')
+        .field('endedAt', '1704070800000')
+        .field('startLineLat1', '48.13517')  // Only partial - missing lng1, lat2, lng2
+        .attach('file', Buffer.from(telemetryContent), 'telemetry.jsonl');
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation failed');
+    });
+
     it('should reject upload without authentication', async () => {
       const response = await request(app)
         .post('/telemetry/upload')
