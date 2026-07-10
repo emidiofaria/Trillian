@@ -37,14 +37,14 @@
 
                 <TextView
                     android:id="@+id/trackName"
-                    style="@style/TextAppearance.BMW.H3"
+                    style="@style/TextAppearance.DrivingCoach.H3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorOnSurfaceVariant"
                     tools:text="Nürburgring GP" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
@@ -53,7 +53,7 @@
 
                 <TextView
                     android:id="@+id/bestLapTime"
-                    style="@style/TextAppearance.BMW.LapTime"
+                    style="@style/TextAppearance.DrivingCoach.LapTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorGold"
@@ -61,7 +61,7 @@
 
                 <TextView
                     android:id="@+id/sessionSummary"
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_xs"
@@ -90,7 +90,7 @@
             app:tabIndicatorFullWidth="false"
             app:tabMode="fixed"
             app:tabSelectedTextColor="@color/colorPrimary"
-            app:tabTextAppearance="@style/TextAppearance.BMW.Tab"
+            app:tabTextAppearance="@style/TextAppearance.DrivingCoach.Tab"
             app:tabTextColor="@color/colorOnSurfaceVariant" />
 
     </com.google.android.material.appbar.AppBarLayout>
@@ -116,7 +116,7 @@
 
             <TextView
                 android:id="@+id/processingTitle"
-                style="@style/TextAppearance.BMW.H3"
+                style="@style/TextAppearance.DrivingCoach.H3"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Processing your session..."
@@ -131,7 +131,7 @@
 
                 <TextView
                     android:id="@+id/stepUploading"
-                    style="@style/TextAppearance.BMW.Body"
+                    style="@style/TextAppearance.DrivingCoach.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Uploading ○"
@@ -146,7 +146,7 @@
 
                 <TextView
                     android:id="@+id/stepLaps"
-                    style="@style/TextAppearance.BMW.Body"
+                    style="@style/TextAppearance.DrivingCoach.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Detecting laps ○"
@@ -161,7 +161,7 @@
 
                 <TextView
                     android:id="@+id/stepCoaching"
-                    style="@style/TextAppearance.BMW.Body"
+                    style="@style/TextAppearance.DrivingCoach.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Generating coaching ○"

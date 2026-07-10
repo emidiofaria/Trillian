@@ -1,6 +1,6 @@
 # components.md
 
-Operational component inventory for RCA localization in BMW Driving Coach Android app.
+Operational component inventory for RCA localization in Driving Coach Android app.
 
 ---
 
@@ -19,7 +19,7 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 
 ### Dependencies
 
-- `LocationManager` (GPS_PROVIDER)
+- `FusedLocationProviderClient` (Google Play Services Location)
 - `SensorManager` (accelerometer, gyroscope)
 - `SessionDao` — updates session end time
 - `WorkManager` — enqueues upload on stop
@@ -27,7 +27,8 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 
 ### Inputs
 
-- Session ID (from `HomeViewModel.startNewSession()`)
+- Session ID (from `RecordingViewModel.createSessionAndStartRecording()`)
+- Start line coordinates (optional, from `TrackSetupFragment`)
 - `ACTION_START_RECORDING` / `ACTION_STOP_RECORDING` intents
 
 ### Outputs
@@ -54,7 +55,7 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 | "GPS lock timeout" | Logcat WARN |
 | "GPS signal lost" | Logcat WARN / Notification |
 | "Error writing telemetry sample" | Logcat ERROR |
-| Notification channel `bmw_recording` | System notification bar |
+| Notification channel `drivingcoach_recording` | System notification bar |
 | `RecordingState.Error` | StateFlow observation |
 
 ### Evidence Sources
@@ -128,7 +129,7 @@ Handles user registration, login, token storage, and automatic token injection/e
 ### Evidence Sources
 
 - Logcat filter: `OkHttp` or HTTP logging interceptor
-- DataStore file: `bmw_driving_coach_prefs.preferences_pb`
+- DataStore file: `driving_coach_prefs.preferences_pb`
 - `AuthResult.Error` in UI (via ViewModel state)
 
 ### Recovery/Mitigation
@@ -218,12 +219,37 @@ SQLite database via Room for offline-first session storage. Single source of tru
 
 ### Key Code Areas
 
-- `BMWDatabase.kt` — Room database definition, version 1
-- `SessionDao.kt` — session CRUD, upload status tracking
+- `DrivingCoachDatabase.kt` — Room database definition, version 2
+- `SessionDao.kt` — session CRUD, upload status tracking, start line updates
 - `LapDao.kt` — lap queries
 - `CoachingInsightDao.kt` — insight queries
 - `db/entity/*.kt` — entity classes
 - `DatabaseModule.kt` — Hilt provider
+
+### Schema Version History
+
+| Version | Changes | Migration |
+|---------|---------|-----------|
+| 1 | Initial schema | — |
+| 2 | Added `startLineLat1`, `startLineLng1`, `startLineLat2`, `startLineLng2` to `sessions` table | `MIGRATION_1_2` |
+
+### SessionEntity Fields (v2)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Long | Primary key (auto-generate) |
+| `userId` | String | User identifier |
+| `trackName` | String | Track name |
+| `startedAt` | Long | Session start timestamp |
+| `endedAt` | Long? | Session end timestamp |
+| `rawFilePath` | String | Path to telemetry JSONL file |
+| `uploadStatus` | String | PENDING/UPLOADING/DONE/FAILED |
+| `processingStatus` | String | PENDING/UPLOADING/DETECTING_LAPS/GENERATING_COACHING/COMPLETE/FAILED |
+| `remoteSessionId` | String? | Backend session ID |
+| `startLineLat1` | Double? | Start line point A latitude |
+| `startLineLng1` | Double? | Start line point A longitude |
+| `startLineLat2` | Double? | Start line point B latitude |
+| `startLineLng2` | Double? | Start line point B longitude |
 
 ### Dependencies
 
@@ -233,6 +259,7 @@ SQLite database via Room for offline-first session storage. Single source of tru
 ### Inputs
 
 - Insert/update from `SessionRepository`, `TelemetryForegroundService`
+- Start line coords from `TrackSetupFragment` via `RecordingViewModel`
 - Flow observations from ViewModels
 
 ### Outputs
@@ -261,9 +288,9 @@ SQLite database via Room for offline-first session storage. Single source of tru
 
 ### Evidence Sources
 
-- `bmw_driving_coach.db` in `databases/`
+- `driving_coach.db` in `databases/`
 - Android Studio Database Inspector
-- `adb shell run-as com.bmw.drivingcoach ls databases/`
+- `adb shell run-as com.drivingcoach ls databases/`
 
 ### Recovery/Mitigation
 
@@ -452,7 +479,7 @@ Local file storage for raw telemetry JSONL files. Each session writes to `files/
 
 ### Evidence Sources
 
-- `adb shell run-as com.bmw.drivingcoach ls -la files/telemetry/`
+- `adb shell run-as com.drivingcoach ls -la files/telemetry/`
 - `adb pull` to inspect JSONL content
 - Line count = sample count
 
@@ -569,11 +596,11 @@ Encrypted key-value storage for auth tokens and user profile data. Replaces Shar
 | Signal | Location |
 |--------|----------|
 | DataStore exceptions | Logcat |
-| File: `bmw_driving_coach_prefs.preferences_pb` | App data directory |
+| File: `driving_coach_prefs.preferences_pb` | App data directory |
 
 ### Evidence Sources
 
-- `adb shell run-as com.bmw.drivingcoach ls files/datastore/`
+- `adb shell run-as com.drivingcoach ls files/datastore/`
 - Flow emission observation
 
 ### Recovery/Mitigation
@@ -700,6 +727,125 @@ Identifies sessions stuck in `PENDING` upload status for >5 minutes. Surfaces wa
 ### Criticality
 
 **LOW** — UX indicator only; no data impact
+
+---
+
+## Component: Track Setup (Start Line Capture)
+
+### Purpose
+
+GPS-based capture of two points defining the start/finish line. User walks to each edge of the track and captures coordinates. This enables precise line-intersection lap detection instead of centroid-based fallback.
+
+### Key Code Areas
+
+- `ui/tracksetup/TrackSetupFragment.kt` — GPS capture UI, permission handling
+- `ui/tracksetup/TrackSetupViewModel.kt` — state management for two-point capture
+- `util/GeoUtils.kt` — haversine distance calculation, line intersection math
+
+### Dependencies
+
+- `FusedLocationProviderClient` (Google Play Services Location)
+- `ACCESS_FINE_LOCATION` permission
+- Navigation Component (Safe Args)
+
+### Inputs
+
+- User taps "Capture" buttons at two GPS locations
+- Live GPS coordinates from `FusedLocationProviderClient`
+
+### Outputs
+
+- `TrackSetupState` with `pointA`, `pointB`, `distance`, `isValid`
+- Navigation to `RecordingFragment` with 4 start line coordinates
+
+### State Flow
+
+```
+Initial → GPS Acquiring → Point A Captured → Point B Captured → Valid (distance ≥ 3m) → Navigate
+                                    ↓
+                              Clear → Back to Initial
+```
+
+### Key Constants
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `MIN_LINE_DISTANCE_M` | 3.0 | Minimum track width for valid line |
+| `MAX_GPS_ACCURACY_M` | 10.0 | GPS accuracy threshold for "ready" |
+
+### GeoUtils Functions
+
+| Function | Purpose |
+|----------|---------|
+| `haversineDistance()` | Calculate distance between two GPS points |
+| `lineIntersection()` | Detect if car path crosses start line |
+| `toLocal()` | Convert GPS to local X/Y for intersection math (private) |
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| GPS not acquiring | Status shows "Acquiring GPS..." indefinitely | Indoor, poor sky view, emulator without location set |
+| Points too close | "Minimum 3m required" hint visible | User captured same edge twice |
+| Permission denied | Fragment pops back, snackbar shown | User denied location permission |
+
+### Observable Signals
+
+| Signal | Location |
+|--------|----------|
+| GPS accuracy | `TrackSetupState.gpsAccuracy` |
+| Satellite count | `TrackSetupState.satelliteCount` |
+| Line distance | `TrackSetupState.distance` |
+| Capture success | `TrackSetupState.pointA/pointB` non-null |
+
+### Evidence Sources
+
+- Logcat: `FusedLocationProviderClient` updates
+- UI: GPS indicator color (green = ready, red = acquiring)
+- ViewModel state via debugging
+
+### Recovery/Mitigation
+
+- GPS not acquiring: Move outdoors, wait for satellite lock, set emulator location manually
+- Permission denied: Re-request via app settings
+- Points too close: Clear and recapture at correct positions
+
+### Criticality
+
+**MEDIUM** — Without valid start line, app falls back to 30-second centroid-based lap detection (less accurate but functional)
+
+---
+
+## Component: GeoUtils (Geometry Utilities)
+
+### Purpose
+
+Provides geographic calculation utilities for lap detection and track setup.
+
+### Key Functions
+
+```kotlin
+// Calculate distance between two GPS points (meters)
+fun haversineDistance(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double
+
+// Check if GPS path segment crosses start/finish line
+fun lineIntersection(
+    lineLat1: Double, lineLng1: Double, lineLat2: Double, lineLng2: Double,
+    prevLat: Double, prevLng: Double, currLat: Double, currLng: Double
+): Boolean
+
+// Convert GPS to local Cartesian coordinates (private helper)
+private fun toLocal(lat: Double, lng: Double, refLat: Double, refLng: Double): Pair<Double, Double>
+```
+
+### Usage
+
+- **TrackSetupViewModel**: `haversineDistance()` for line width validation
+- **Backend lapDetector**: `lineIntersection()` for lap detection
+
+### Criticality
+
+**HIGH** — Core math for lap detection accuracy
 
 ---
 

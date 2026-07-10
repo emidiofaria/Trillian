@@ -7,7 +7,7 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   
   database: {
-    url: process.env.DATABASE_URL || 'postgresql://localhost:5432/bmw_driving_coach',
+    url: process.env.DATABASE_URL || 'postgresql://localhost:5432/driving_coach',
   },
   
   jwt: {

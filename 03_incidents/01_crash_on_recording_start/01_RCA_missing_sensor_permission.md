@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Incident ID** | 02 |
-| **Application** | BMW Driving Coach |
+| **Application** | Driving Coach |
 | **Severity** | CRITICAL |
 | **RCA Date** | 2026-05-27 |
 | **Analyst** | Copilot RCA Engine |
@@ -12,7 +12,7 @@
 
 ## Incident Summary
 
-The BMW Driving Coach Android app crashes immediately when a user attempts to start a telemetry recording session. The crash occurs because `TelemetryForegroundService` attempts to register accelerometer and gyroscope sensor listeners using `SENSOR_DELAY_FASTEST` (0 microseconds sampling rate) without declaring the required `HIGH_SAMPLING_RATE_SENSORS` permission in `AndroidManifest.xml`. This permission is mandatory on Android 12+ (API 31+) for sampling rates faster than 200Hz.
+The Driving Coach Android app crashes immediately when a user attempts to start a telemetry recording session. The crash occurs because `TelemetryForegroundService` attempts to register accelerometer and gyroscope sensor listeners using `SENSOR_DELAY_FASTEST` (0 microseconds sampling rate) without declaring the required `HIGH_SAMPLING_RATE_SENSORS` permission in `AndroidManifest.xml`. This permission is mandatory on Android 12+ (API 31+) for sampling rates faster than 200Hz.
 
 ---
 
@@ -52,7 +52,7 @@ The BMW Driving Coach Android app crashes immediately when a user attempts to st
 ### Present (Expected)
 | Signal | Value/Content |
 |--------|---------------|
-| Intent action | `com.bmw.drivingcoach.ACTION_START_RECORDING` |
+| Intent action | `com.drivingcoach.ACTION_START_RECORDING` |
 | Session ID in extras | Present (valid long value) |
 | Location permission | Granted |
 | GPS provider | Available and registered successfully |
@@ -100,8 +100,8 @@ app needs to declare the normal permission HIGH_SAMPLING_RATE_SENSORS.
     at android.hardware.SystemSensorManager.registerListenerImpl(SystemSensorManager.java:326)
     at android.hardware.SensorManager.registerListener(SensorManager.java:855)
     at android.hardware.SensorManager.registerListener(SensorManager.java:762)
-    at com.bmw.drivingcoach.service.TelemetryForegroundService.startRecording(TelemetryForegroundService.kt:226)
-    at com.bmw.drivingcoach.service.TelemetryForegroundService.onStartCommand(TelemetryForegroundService.kt:150)
+    at com.drivingcoach.service.TelemetryForegroundService.startRecording(TelemetryForegroundService.kt:226)
+    at com.drivingcoach.service.TelemetryForegroundService.onStartCommand(TelemetryForegroundService.kt:150)
 ```
 
 #### 2. Code at Crash Location (TelemetryForegroundService.kt:225-230)
@@ -368,7 +368,7 @@ From [Android 12 Behavior Changes](https://developer.android.com/about/versions/
 | File | Change |
 |------|--------|
 | `app/src/main/AndroidManifest.xml` | Add `HIGH_SAMPLING_RATE_SENSORS` permission |
-| `app/src/main/java/com/bmw/drivingcoach/service/TelemetryForegroundService.kt` | Add try-catch with fallback |
+| `app/src/main/java/com/drivingcoach/service/TelemetryForegroundService.kt` | Add try-catch with fallback |
 
 ---
 

@@ -1,11 +1,11 @@
 ---
 name: RCA
-description: "Root Cause Analysis Engine for BMW Driving Coach Android Application. Use when investigating production incidents, crashes, or failures."
+description: "Root Cause Analysis Engine for Driving Coach Android Application. Use when investigating production incidents, crashes, or failures."
 ---
 
 # RCA agent.md
 
-Root Cause Analysis Engine for BMW Driving Coach Android Application.
+Root Cause Analysis Engine for Driving Coach Android Application.
 
 ---
 
@@ -19,7 +19,7 @@ This RCA engine exists to:
 4. **Express uncertainty honestly** when evidence is incomplete
 5. **Guide remediation** with actionable mitigation and prevention
 
-The engine operates on the BMW Driving Coach Android app — a telemetry capture and coaching application with:
+The engine operates on the Driving Coach Android app — a telemetry capture and coaching application with:
 - Foreground service for GPS/IMU recording
 - Room database for offline-first storage
 - WorkManager for background uploads
@@ -554,7 +554,7 @@ Every RCA must produce a structured report:
 **Key Signals**:
 - Logcat tag: `TelemetryService`
 - StateFlow: `RecordingState`
-- Notification channel: `bmw_recording`
+- Notification channel: `drivingcoach_recording`
 
 **Common Failure Points**:
 1. GPS lock failure → Check "GPS lock timeout" / "GPS locked" logs

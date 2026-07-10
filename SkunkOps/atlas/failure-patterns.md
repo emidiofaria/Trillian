@@ -1,6 +1,6 @@
 # failure-patterns.md
 
-Operational failure patterns for RCA acceleration in BMW Driving Coach Android app.
+Operational failure patterns for RCA acceleration in Driving Coach Android app.
 
 ---
 
@@ -94,7 +94,7 @@ Operational failure patterns for RCA acceleration in BMW Driving Coach Android a
 
 | Cause | Code Path | Evidence |
 |-------|-----------|----------|
-| Indoor location | `LocationManager.GPS_PROVIDER` | No satellite visibility |
+| Indoor location | `FusedLocationProviderClient` | No satellite visibility |
 | GPS hardware disabled | System settings | Provider disabled callback |
 | Location permission revoked | Runtime permission check | `RecordingState.Error` |
 | GPS chipset failure | Hardware | No fix even outdoors |
@@ -234,7 +234,7 @@ Operational failure patterns for RCA acceleration in BMW Driving Coach Android a
 
 1. **ANR traces**: `/data/anr/anr_*` files, look for `runBlocking` in stack
 2. **Systrace**: Capture startup trace, look for disk I/O blocking main thread
-3. **DataStore file**: Size of `bmw_driving_coach_prefs.preferences_pb`
+3. **DataStore file**: Size of `driving_coach_prefs.preferences_pb`
 4. **Device info**: Storage health, available space, device tier
 5. **Logcat**: DataStore exceptions during startup
 
@@ -429,7 +429,7 @@ Operational failure patterns for RCA acceleration in BMW Driving Coach Android a
 ### Evidence To Check
 
 1. **Room DB**: `SELECT rawFilePath FROM sessions WHERE id = X`
-2. **File system**: `adb shell ls -la /data/data/com.bmw.drivingcoach/files/telemetry/`
+2. **File system**: `adb shell ls -la /data/data/com.drivingcoach/files/telemetry/`
 3. **Upload worker logs**: Look for "Telemetry file not found" with session ID
 4. **Storage settings**: Was "Clear Data" used?
 5. **Session creation**: Was `rawFilePath` set correctly?
@@ -543,14 +543,14 @@ Operational failure patterns for RCA acceleration in BMW Driving Coach Android a
 |--------|----------|-----------|
 | `Room cannot verify data integrity` | Crashlytics | Any occurrence |
 | `IllegalStateException` on DB access | Stack trace | Room migration |
-| Version mismatch | `BMWDatabase` | Deployed vs installed |
-| DB file corrupt | `bmw_driving_coach.db` | SQLite errors |
+| Version mismatch | `DrivingCoachDatabase` | Deployed vs installed |
+| DB file corrupt | `driving_coach.db` | SQLite errors |
 
 ### Likely Causes
 
 | Cause | Code Path | Evidence |
 |-------|-----------|----------|
-| Schema change without migration | `BMWDatabase` version bump | No `Migration` object |
+| Schema change without migration | `DrivingCoachDatabase` version bump | No `Migration` object |
 | Destructive migration disabled | Default Room behavior | `fallbackToDestructiveMigration()` not called |
 | Column type change | Entity modification | SQLite type mismatch |
 | Index/FK change | Entity annotations | Schema diff |
@@ -559,7 +559,7 @@ Operational failure patterns for RCA acceleration in BMW Driving Coach Android a
 
 1. **Crashlytics**: Search for Room migration exceptions
 2. **Schema files**: Compare `app/schemas/*.json` between versions
-3. **BMWDatabase**: Check version number and migrations
+3. **DrivingCoachDatabase**: Check version number and migrations
 4. **SQLite**: Direct DB inspection for schema
 5. **Entity changes**: Diff entity classes between versions
 
@@ -587,7 +587,7 @@ Operational failure patterns for RCA acceleration in BMW Driving Coach Android a
 
 ### Confidence
 
-**MEDIUM** — `BMWDatabase` is at version 1 with no migrations; future versions must add them. Pattern will occur on first schema change.
+**LOW** — `DrivingCoachDatabase` is at version 2 with `MIGRATION_1_2` implemented. Pattern addressed for v1→v2; future schema changes must add new migrations.
 
 ---
 

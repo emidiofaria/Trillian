@@ -272,7 +272,7 @@
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | Observe chart lines | Multiple lines visible | ☐ |
-| 2 | Best lap line | BMW blue (#1C69D4) | ☐ |
+| 2 | Best lap line | brand blue (#1C69D4) | ☐ |
 | 3 | Other lap lines | Grey (#444444) | ☐ |
 | 4 | Best lap distinguishable | Clearly stands out | ☐ |
 | 5 | Legend visible | "Best Lap" (blue), "Other laps" (grey) | ☐ |

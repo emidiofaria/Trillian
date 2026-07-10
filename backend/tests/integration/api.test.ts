@@ -6,7 +6,7 @@ import app from '../../src/app';
 import { generateSyntheticLaps, samplesToJsonl, generateSingleLap } from './testHelpers';
 
 // Use test database
-const TEST_DATABASE_URL = process.env.DATABASE_URL_TEST || 'postgresql://localhost:5432/bmw_driving_coach_test';
+const TEST_DATABASE_URL = process.env.DATABASE_URL_TEST || 'postgresql://localhost:5432/driving_coach_test';
 
 // Mock Anthropic SDK for coaching tests
 jest.mock('@anthropic-ai/sdk', () => {

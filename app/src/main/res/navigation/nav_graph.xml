@@ -8,7 +8,7 @@
     <!-- Onboarding Flow -->
     <fragment
         android:id="@+id/onboardingFragment"
-        android:name="com.bmw.drivingcoach.ui.onboarding.OnboardingFragment"
+        android:name="com.drivingcoach.ui.onboarding.OnboardingFragment"
         android:label="Onboarding"
         tools:layout="@layout/fragment_onboarding">
 
@@ -22,7 +22,7 @@
     <!-- Auth Flow -->
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.bmw.drivingcoach.ui.auth.LoginFragment"
+        android:name="com.drivingcoach.ui.auth.LoginFragment"
         android:label="Login"
         tools:layout="@layout/fragment_login">
 
@@ -39,7 +39,7 @@
 
     <fragment
         android:id="@+id/registerFragment"
-        android:name="com.bmw.drivingcoach.ui.auth.RegisterFragment"
+        android:name="com.drivingcoach.ui.auth.RegisterFragment"
         android:label="Register"
         tools:layout="@layout/fragment_register">
 
@@ -53,7 +53,7 @@
     <!-- Main Flow -->
     <fragment
         android:id="@+id/homeFragment"
-        android:name="com.bmw.drivingcoach.ui.home.HomeFragment"
+        android:name="com.drivingcoach.ui.home.HomeFragment"
         android:label="Home"
         tools:layout="@layout/fragment_home">
 
@@ -85,7 +85,7 @@
     <!-- Track Setup Flow -->
     <fragment
         android:id="@+id/trackSetupFragment"
-        android:name="com.bmw.drivingcoach.ui.tracksetup.TrackSetupFragment"
+        android:name="com.drivingcoach.ui.tracksetup.TrackSetupFragment"
         android:label="Track Setup"
         tools:layout="@layout/fragment_track_setup">
 
@@ -117,7 +117,7 @@
 
     <fragment
         android:id="@+id/recordingFragment"
-        android:name="com.bmw.drivingcoach.ui.recording.RecordingFragment"
+        android:name="com.drivingcoach.ui.recording.RecordingFragment"
         android:label="Recording"
         tools:layout="@layout/fragment_recording">
 
@@ -158,7 +158,7 @@
 
     <fragment
         android:id="@+id/sessionResultFragment"
-        android:name="com.bmw.drivingcoach.ui.session.SessionResultFragment"
+        android:name="com.drivingcoach.ui.session.SessionResultFragment"
         android:label="Session Result"
         tools:layout="@layout/fragment_session_result">
 
@@ -177,7 +177,7 @@
 
     <fragment
         android:id="@+id/lapDetailFragment"
-        android:name="com.bmw.drivingcoach.ui.session.LapDetailFragment"
+        android:name="com.drivingcoach.ui.session.LapDetailFragment"
         android:label="Lap Detail"
         tools:layout="@layout/fragment_lap_detail">
 
@@ -188,7 +188,7 @@
 
     <fragment
         android:id="@+id/profileFragment"
-        android:name="com.bmw.drivingcoach.ui.profile.ProfileFragment"
+        android:name="com.drivingcoach.ui.profile.ProfileFragment"
         android:label="Profile"
         tools:layout="@layout/fragment_profile" />
 
