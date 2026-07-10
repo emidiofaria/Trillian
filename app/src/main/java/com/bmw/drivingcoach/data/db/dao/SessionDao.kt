@@ -39,4 +39,7 @@ interface SessionDao {
 
     @Query("UPDATE sessions SET endedAt = :endedAt WHERE id = :id")
     suspend fun updateSessionEndTime(id: Long, endedAt: Long)
+
+    @Query("UPDATE sessions SET startLineLat1 = :lat1, startLineLng1 = :lng1, startLineLat2 = :lat2, startLineLng2 = :lng2 WHERE id = :sessionId")
+    suspend fun updateStartLine(sessionId: Long, lat1: Double, lng1: Double, lat2: Double, lng2: Double)
 }

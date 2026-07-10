@@ -52,6 +52,7 @@ data class HomeUiState(
 sealed class HomeEvent {
     data class NavigateToRecording(val sessionId: Long) : HomeEvent()
     data class NavigateToSessionResult(val sessionId: Long) : HomeEvent()
+    data class NavigateToTrackSetup(val trackName: String) : HomeEvent()
     object NavigateToProfile : HomeEvent()
     data class ShowError(val message: String) : HomeEvent()
 }
@@ -167,31 +168,8 @@ class HomeViewModel @Inject constructor(
 
     fun startNewSession(trackName: String) {
         viewModelScope.launch {
-            try {
-                // Create new session in Room
-                val session = SessionEntity(
-                    userId = currentUserId,
-                    trackName = trackName.ifBlank { "Unknown Track" },
-                    startedAt = System.currentTimeMillis(),
-                    endedAt = null,
-                    rawFilePath = "",
-                    uploadStatus = "PENDING",
-                    remoteSessionId = null
-                )
-                val sessionId = sessionDao.insertSession(session)
-
-                // Start the telemetry service
-                val intent = Intent(context, TelemetryForegroundService::class.java).apply {
-                    action = TelemetryForegroundService.ACTION_START_RECORDING
-                    putExtra(TelemetryForegroundService.EXTRA_SESSION_ID, sessionId)
-                }
-                context.startForegroundService(intent)
-
-                // Navigate to recording screen
-                _events.emit(HomeEvent.NavigateToRecording(sessionId))
-            } catch (e: Exception) {
-                _events.emit(HomeEvent.ShowError("Failed to start session: ${e.message}"))
-            }
+            // Navigate to track setup instead of directly starting recording
+            _events.emit(HomeEvent.NavigateToTrackSetup(trackName.ifBlank { "Unknown Track" }))
         }
     }
 
