@@ -7,17 +7,17 @@ plugins {
 }
 
 android {
-    namespace = "com.bmw.drivingcoach"
+    namespace = "com.drivingcoach"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.bmw.drivingcoach"
+        applicationId = "com.drivingcoach"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "com.bmw.drivingcoach.HiltTestRunner"
+        testInstrumentationRunner = "com.drivingcoach.HiltTestRunner"
     }
 
     buildTypes {
@@ -82,6 +82,9 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")
+    
+    // Google Play Services - Location (FusedLocationProvider)
+    implementation("com.google.android.gms:play-services-location:21.2.0")
     
     // Retrofit & OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

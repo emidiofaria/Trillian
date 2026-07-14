@@ -1,14 +1,14 @@
-# BMW Driving Coach — Implementation Summary
+# Driving Coach — Implementation Summary
 
 > **Executive Summary of Development Process**  
-> **Project:** BMW Driving Coach V1  
+> **Project:** Driving Coach V1  
 > **Date:** 2026-05-06
 
 ---
 
 ## Project Overview
 
-**BMW Driving Coach** is a track day companion app that records GPS/IMU telemetry, detects lap times, and provides AI-powered coaching feedback.
+**Driving Coach** is a track day companion app that records GPS/IMU telemetry, detects lap times, and provides AI-powered coaching feedback.
 
 | Metric | Value |
 |--------|-------|
@@ -194,7 +194,7 @@ Overall              70.76%
 ## Artifacts Produced
 
 ```
-bmw-driving-coach/
+driving-coach/
 ├── app/                          # Android application
 ├── backend/                      # Node.js API server
 ├── 01_requirements/              # SRS documentation

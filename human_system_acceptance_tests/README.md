@@ -1,8 +1,8 @@
 # Human System Acceptance Tests
 
-> **BMW Driving Coach — System Acceptance Test Documentation**
+> **Driving Coach — System Acceptance Test Documentation**
 
-This directory contains comprehensive test documentation for validating the BMW Driving Coach application through human testing at a real track day.
+This directory contains comprehensive test documentation for validating the Driving Coach application through human testing at a real track day.
 
 ---
 
@@ -95,7 +95,7 @@ This directory contains comprehensive test documentation for validating the BMW 
 
 ## Requirements Traceability
 
-These tests cover all 117 requirements from `BMW_DrivingCoach_SRS_v1.md`:
+These tests cover all 117 requirements from `DrivingCoach_SRS_v1.md`:
 
 | SRS Section | Requirement Count | Coverage |
 |-------------|------------------|----------|

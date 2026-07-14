@@ -1,4 +1,4 @@
--- BMW Driving Coach Database Schema
+-- Driving Coach Database Schema
 -- PostgreSQL
 
 -- Enable UUID extension

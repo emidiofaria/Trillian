@@ -21,7 +21,7 @@
         <!-- Track Name -->
         <TextView
             android:id="@+id/trackName"
-            style="@style/TextAppearance.BMW.H3"
+            style="@style/TextAppearance.DrivingCoach.H3"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
@@ -34,7 +34,7 @@
         <!-- Date -->
         <TextView
             android:id="@+id/sessionDate"
-            style="@style/TextAppearance.BMW.Body"
+            style="@style/TextAppearance.DrivingCoach.Body"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/colorOnSurfaceVariant"
@@ -45,7 +45,7 @@
         <!-- Best Lap Time -->
         <TextView
             android:id="@+id/bestLapTime"
-            style="@style/TextAppearance.BMW.LapTime.Small"
+            style="@style/TextAppearance.DrivingCoach.LapTime.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/colorPrimary"
@@ -56,7 +56,7 @@
         <!-- Stats Row: Laps + Consistency -->
         <TextView
             android:id="@+id/sessionStats"
-            style="@style/TextAppearance.BMW.Caption"
+            style="@style/TextAppearance.DrivingCoach.Caption"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"

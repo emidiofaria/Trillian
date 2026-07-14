@@ -1,6 +1,6 @@
 # system.md
 
-> BMW Driving Coach Android Application — Operational System Map  
+> Driving Coach Android Application — Operational System Map  
 > Generated: 2026-05-26 | Confidence: HIGH (derived from source code analysis)
 
 ---
@@ -9,8 +9,8 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Application Name** | BMW Driving Coach |
-| **Package ID** | `com.bmw.drivingcoach` |
+| **Application Name** | Driving Coach |
+| **Package ID** | `com.drivingcoach` |
 | **Type** | Native Android Application (POC) |
 | **Architecture** | Single-module MVVM with Clean Architecture layers |
 | **Target SDK** | 35 (Android 15) |
@@ -18,7 +18,7 @@
 
 ### Purpose
 
-BMW Driving Coach is a **track-day telemetry application** that:
+Driving Coach is a **track-day telemetry application** that:
 1. Captures GPS location and IMU sensor data during driving sessions
 2. Uploads telemetry to a backend for lap detection and AI-powered coaching insights
 3. Displays session results with lap times, sector analysis, and personalized driving advice
@@ -27,8 +27,8 @@ BMW Driving Coach is a **track-day telemetry application** that:
 
 Single `:app` module with internal package structure:
 ```
-com.bmw.drivingcoach/
-├── BMWDrivingCoachApp.kt    # Hilt Application entry point
+com.drivingcoach/
+├── DrivingCoachApp.kt    # Hilt Application entry point
 ├── data/
 │   ├── api/                  # Network layer (Retrofit, DTOs)
 │   ├── db/                   # Room database (entities, DAOs)
@@ -53,7 +53,8 @@ com.bmw.drivingcoach/
 | Responsibility | Component |
 |----------------|-----------|
 | GPS/IMU capture at 10 Hz | `TelemetryForegroundService` |
-| Telemetry file persistence | `TelemetryFileWriter` (JSONL) |
+| Telemetry file persistence | `TelemetryFileWriter` (JSONL with header) |
+| Local (offline) lap detection | `LocalLapDetector` |
 | Session state management | Room database + `SessionRepository` |
 | Background telemetry upload | `TelemetryUploadWorker` (WorkManager) |
 | Authentication flow | `AuthRepository` + `AuthInterceptor` |
@@ -124,9 +125,9 @@ com.bmw.drivingcoach/
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| Database | Room 2.6.1 | Schema version 1 |
-| Database Name | `bmw_driving_coach.db` | — |
-| Migration Strategy | `fallbackToDestructiveMigration()` | Data loss on schema change |
+| Database | Room 2.6.1 | Schema version 2 |
+| Database Name | `driving_coach.db` | — |
+| Migration Strategy | `MIGRATION_1_2` + `fallbackToDestructiveMigration()` | Explicit migrations with destructive fallback |
 
 **Tables:**
 
@@ -161,12 +162,19 @@ com.bmw.drivingcoach/
 |-----------|------|--------------|
 | `TelemetryForegroundService` | Foreground Service | `location` |
 
-**GPS Configuration:**
-- Provider: GPS_PROVIDER
-- Min interval: 100ms (10 Hz target)
-- Min distance: 0 meters
-- Lock timeout: 5 seconds
-- Signal lost threshold: 10 seconds
+**TelemetryForegroundService GPS Configuration (Recording):**
+- Provider: `LocationManager.GPS_PROVIDER`
+- Interval: 100ms (10 Hz target for high-fidelity telemetry)
+- Min distance: 0 metres
+- Lock timeout: 5 seconds (`GPS_LOCK_TIMEOUT_MS`)
+- Signal lost threshold: 10 seconds (`GPS_SIGNAL_LOST_TIMEOUT_MS`)
+
+**TrackSetupFragment GPS Configuration (Start Line Capture):**
+- Provider: `FusedLocationProviderClient` (Google Play Services)
+- Priority: `PRIORITY_HIGH_ACCURACY`
+- Interval: 1000ms (1 Hz for UI updates)
+- Min update interval: 500ms
+- Note: FusedLocation used for emulator compatibility during track setup
 
 **IMU Configuration:**
 - Sensors: Accelerometer, Gyroscope
@@ -234,7 +242,7 @@ com.bmw.drivingcoach/
 
 | Service | Type | Evidence | Status |
 |---------|------|----------|--------|
-| BMW Backend API | REST | `ApiService`, `TelemetryApiService` | Required |
+| Backend API | REST | `ApiService`, `TelemetryApiService` | Required |
 | — | — | `http://10.0.2.2:3000/` | Emulator localhost |
 
 **Backend Stack (from `/backend/package.json`):**
@@ -404,7 +412,7 @@ No CI/CD workflow files found in `.github/workflows/` or other common locations.
 |------|----------|----------|------------|
 | **No crash reporting** | HIGH | No Crashlytics/Sentry | Add crash reporting SDK |
 | **Hardcoded dev URL** | HIGH | `http://10.0.2.2:3000/` | Use BuildConfig + flavors |
-| **Destructive DB migration** | HIGH | `fallbackToDestructiveMigration()` | Implement proper migrations |
+| **DB schema changes** | MEDIUM | `MIGRATION_1_2` exists, `fallbackToDestructiveMigration()` fallback | Continue adding explicit migrations |
 | **No token refresh** | MEDIUM | Only 401 detection, no refresh flow | Implement token refresh |
 | **HTTP logging in release** | MEDIUM | Always BODY level | Conditional on `BuildConfig.DEBUG` |
 
@@ -470,9 +478,9 @@ No CI/CD workflow files found in `.github/workflows/` or other common locations.
 |---------|------|
 | Gradle build config | `/app/build.gradle.kts` |
 | Android Manifest | `/app/src/main/AndroidManifest.xml` |
-| Hilt Application | `/app/src/main/java/.../BMWDrivingCoachApp.kt` |
+| Hilt Application | `/app/src/main/java/.../DrivingCoachApp.kt` |
 | Network Module | `/app/src/main/java/.../di/NetworkModule.kt` |
-| Database | `/app/src/main/java/.../data/db/BMWDatabase.kt` |
+| Database | `/app/src/main/java/.../data/db/DrivingCoachDatabase.kt` |
 | Foreground Service | `/app/src/main/java/.../service/TelemetryForegroundService.kt` |
 | Upload Worker | `/app/src/main/java/.../data/worker/TelemetryUploadWorker.kt` |
 | Auth Interceptor | `/app/src/main/java/.../data/api/AuthInterceptor.kt` |

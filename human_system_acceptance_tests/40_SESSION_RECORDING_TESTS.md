@@ -29,7 +29,7 @@
 | 1 | Complete track setup (valid line) | Line set | ☐ |
 | 2 | Tap START RECORDING | Screen transitions | ☐ |
 | 3 | Recording screen appears | Full screen, dark background | ☐ |
-| 4 | BMW logo/branding visible | Top of screen | ☐ |
+| 4 | App logo/branding visible | Top of screen | ☐ |
 | 5 | Elapsed time displayed | Large MM:SS.mmm format | ☐ |
 | 6 | GPS status indicator visible | Below time | ☐ |
 | 7 | STOP button visible | Large red button at bottom | ☐ |
@@ -151,7 +151,7 @@
 |------|--------|-----------------|-----------|
 | 1 | Start recording | Recording begins | ☐ |
 | 2 | Pull down notification shade | Notification visible | ☐ |
-| 3 | Notification title | "BMW Driving Coach" | ☐ |
+| 3 | Notification title | "Driving Coach" | ☐ |
 | 4 | Notification content | "Recording — MM:SS" | ☐ |
 | 5 | Observe notification | Time updates (~every second) | ☐ |
 | 6 | Notification icon | App icon visible | ☐ |
@@ -190,7 +190,7 @@
 | 3 | Check notification | Still shows "Recording" | ☐ |
 | 4 | Wait 30 seconds | In background | ☐ |
 | 5 | Open another app | Navigate away | ☐ |
-| 6 | Return to BMW Driving Coach | Open from notification or recent | ☐ |
+| 6 | Return to Driving Coach | Open from notification or recent | ☐ |
 | 7 | Elapsed time | Continued counting (not reset) | ☐ |
 | 8 | GPS data collected | Telemetry file grows | ☐ |
 

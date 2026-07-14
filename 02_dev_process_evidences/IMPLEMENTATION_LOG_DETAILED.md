@@ -1,7 +1,7 @@
-# BMW Driving Coach — Implementation Process Evidence
+# Driving Coach — Implementation Process Evidence
 
 > **Document Type:** Developer Evidence Log  
-> **Project:** BMW Driving Coach Android Application + Backend  
+> **Project:** Driving Coach Android Application + Backend  
 > **Implementation Period:** Multi-session development  
 > **Final Documentation Date:** 2026-05-06
 
@@ -30,7 +30,7 @@
 
 ### 1.1 Project Description
 
-BMW Driving Coach is a track day companion application that:
+Driving Coach is a track day companion application that:
 - Records GPS/IMU telemetry during track sessions
 - Detects lap times using user-defined start/finish lines
 - Provides AI-powered coaching feedback via Anthropic Claude API
@@ -51,7 +51,7 @@ BMW Driving Coach is a track day companion application that:
 
 ### 1.3 Requirements Source
 
-All implementation follows `01_requirements/BMW_DrivingCoach_SRS_v1.md`:
+All implementation follows `01_requirements/DrivingCoach_SRS_v1.md`:
 - **117 total requirements**
 - **17 sections** covering all functional areas
 - **10 architecture decisions** locked for V1
@@ -61,7 +61,7 @@ All implementation follows `01_requirements/BMW_DrivingCoach_SRS_v1.md`:
 ## 2. Phase 1: Android Project Scaffold
 
 ### 2.1 Objective
-Bootstrap Android project with all dependencies, BMW-themed design system, navigation graph, and empty screen shells.
+Bootstrap Android project with all dependencies, DrivingCoach-themed design system, navigation graph, and empty screen shells.
 
 ### 2.2 Implementation Steps
 
@@ -69,7 +69,7 @@ Bootstrap Android project with all dependencies, BMW-themed design system, navig
 ```
 Created directory structure:
 app/
-├── src/main/java/com/bmw/drivingcoach/
+├── src/main/java/com/drivingcoach/
 │   ├── data/
 │   ├── domain/
 │   ├── ui/
@@ -153,7 +153,7 @@ Services registered:
 
 **colors.xml**
 ```xml
-<color name="colorPrimary">#1C69D4</color>        <!-- BMW Blue -->
+<color name="colorPrimary">#1C69D4</color>        <!-- Brand Blue -->
 <color name="colorPrimaryDark">#0A3D7C</color>
 <color name="colorBackground">#0D0D0D</color>      <!-- Near-black luxury -->
 <color name="colorSurface">#1A1A1A</color>
@@ -163,9 +163,9 @@ Services registered:
 ```
 
 **type.xml - TextAppearances**
-- `TextAppearance.BMW.LapTime`: 48sp, bold, monospace
-- `TextAppearance.BMW.Delta`: 14sp, medium, monospace
-- `TextAppearance.BMW.H1/H2/H3/Body/Caption`
+- `TextAppearance.DrivingCoach.LapTime`: 48sp, bold, monospace
+- `TextAppearance.DrivingCoach.Delta`: 14sp, medium, monospace
+- `TextAppearance.DrivingCoach.H1/H2/H3/Body/Caption`
 
 **dimens.xml**
 - Spacing: xs(4dp), sm(8dp), md(16dp), lg(24dp), xl(32dp)
@@ -197,7 +197,7 @@ app/src/main/res/values/type.xml
 app/src/main/res/values/dimens.xml
 app/src/main/res/values/strings.xml
 app/src/main/res/navigation/nav_graph.xml
-app/src/main/java/.../BMWDrivingCoachApplication.kt
+app/src/main/java/.../DrivingCoachApplication.kt
 app/src/main/java/.../MainActivity.kt
 ```
 
@@ -317,7 +317,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(context, AppDatabase::class.java, "bmw_driving_coach.db")
+        return Room.databaseBuilder(context, AppDatabase::class.java, "driving_coach.db")
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -685,7 +685,7 @@ Build tabbed results screen with Laps, Coach, and Chart tabs.
 
 3. **ChartFragment**: MPAndroidChart
    - Speed trace for all laps
-   - Best lap in BMW blue
+   - Best lap in Brand blue
    - Other laps in grey
 
 **LapDetailFragment.kt**
@@ -749,7 +749,7 @@ object ShareCardGenerator {
         canvas.drawColor(0xFF0D0D0D.toInt())
         
         // Draw branding, lap time, track name, date, consistency
-        // Draw BMW blue bottom border
+        // Draw Brand blue bottom border
         
         return bitmap
     }
@@ -1056,7 +1056,7 @@ All 117 requirements from SRS mapped to specific test IDs.
 | ID | Decision | Rationale |
 |----|----------|-----------|
 | AD-01 | User-drawn start/finish line | Simpler than track database, works anywhere |
-| AD-02 | Azure hosting | Enterprise-grade, BMW ecosystem compatible |
+| AD-02 | Azure hosting | Enterprise-grade, cloud ecosystem compatible |
 | AD-03 | JSONL telemetry format | Human-readable, easy to parse, streamable |
 | AD-04 | Firebase Auth | Reliable, extensible to social login |
 | AD-05 | Kotlin Android | Modern, concise, null-safe |
@@ -1100,7 +1100,7 @@ All 117 requirements from SRS mapped to specific test IDs.
 
 **Key directories:**
 ```
-app/src/main/java/com/bmw/drivingcoach/
+app/src/main/java/com/drivingcoach/
 ├── data/
 │   ├── api/ (ApiService, DTOs, Interceptor, EventBus)
 │   ├── local/ (Room entities, DAOs, Database)

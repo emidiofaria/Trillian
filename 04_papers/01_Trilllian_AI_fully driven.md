@@ -20,7 +20,7 @@ Every great experiment needs a name. This one is called **Trillian**.
 
 Why Trillian? Because it sounds cool, it's a bit mysterious, and naming your side project after something sci-fi is basically mandatory at this point. Bonus: it doubles as "Trace McMillan" — fitting for an app that traces you around a racing circuit.
 
-Because what follows is, frankly, a little mad.
+Because what follows is, frankly, a little rad.
 
 The premise: **Build a complete, real-world Android application — with a Node.js backend, a PostgreSQL database, Firebase authentication, Azure cloud hosting, and an AI coaching engine — without the human developer writing a single line of code.**
 
@@ -148,7 +148,7 @@ The lesson from Sprint Zero, stated plainly: **AI code quality is a direct refle
 
 ## Chapter 6: The Questions We're Here to Answer
 
-This paper is the first in a bi-weekly series. Each issue tracks the experiment's progress — what worked, what blew up, what was learned. The open questions driving the whole adventure:
+This paper is the first in a bi-monthly series. Each issue tracks the experiment's progress — what worked, what blew up, what was learned. The open questions driving the whole adventure:
 
 1. **Can a fully spec-driven, AI-implemented project stay quality without a human ever patching the code?**
 2. **Does the V-Model survive contact with AI-generated code?** Early sign: surprisingly yes — because spec-driven AI code is paradoxically more traceable than a lot of human-written code.
@@ -166,7 +166,7 @@ But what we can already say: a complete, working application — real architectu
 
 The Trillian project's current official verdict on fully AI-driven software development: **"Mostly working."**
 
-That's a better grade than most side projects get. We'll take it.
+That's a better grade than most side projects get. We'll take it. For now.
 
 Paper #2 will cover the first real track day — GPS accuracy in the wild, lap detection quality on actual tarmac, and whether the AI coaching feedback is genuinely useful or just very confidently wrong. Given what's been delivered so far, the bet is on "surprisingly useful." We have been surprised before. Pleasantly.
 
@@ -179,4 +179,4 @@ Until then: write the spec, trust the process, and for the love of all things en
 *📄 Next Paper: "Trillian Chronicles #2 — The Track Day" (expected: July 2026)*  
 *🔗 Repo: `05_AI_DIY/Trillian`*  
 *⚙️ Stack: Kotlin · TypeScript · Node.js · Firebase · Azure · Anthropic Claude*  
-*📋 SRS: `01_requirements/BMW_DrivingCoach_SRS_v1.md` — 117 requirements, 10 architecture decisions*
+*📋 SRS: `01_requirements/DrivingCoach_SRS_v1.md` — 117 requirements, 10 architecture decisions*

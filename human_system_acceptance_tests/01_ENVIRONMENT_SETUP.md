@@ -1,6 +1,6 @@
 # Environment Setup Checklist
 
-> **Purpose:** Prepare all required tools and dependencies before building the BMW Driving Coach system.
+> **Purpose:** Prepare all required tools and dependencies before building the Driving Coach system.
 
 ---
 
@@ -106,7 +106,7 @@ sdkmanager "build-tools;35.0.0"
 |------|--------|--------------|-------|
 | 4.1 | Install PostgreSQL 15+ | `psql --version` shows 15.x | ☐ |
 | 4.2 | Start PostgreSQL service | Service running | ☐ |
-| 4.3 | Create database `bmw_driving_coach` | Database accessible | ☐ |
+| 4.3 | Create database `driving_coach` | Database accessible | ☐ |
 | 4.4 | Note connection string | URL format verified | ☐ |
 
 **Installation commands:**
@@ -121,14 +121,14 @@ brew install postgresql@15
 brew services start postgresql@15
 
 # Create database
-sudo -u postgres psql -c "CREATE DATABASE bmw_driving_coach;"
-sudo -u postgres psql -c "CREATE USER bmw_user WITH PASSWORD 'your_password';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE bmw_driving_coach TO bmw_user;"
+sudo -u postgres psql -c "CREATE DATABASE driving_coach;"
+sudo -u postgres psql -c "CREATE USER dc_user WITH PASSWORD 'your_password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE driving_coach TO dc_user;"
 ```
 
 **Connection string format:**
 ```
-DATABASE_URL=postgresql://bmw_user:your_password@localhost:5432/bmw_driving_coach
+DATABASE_URL=postgresql://dc_user:your_password@localhost:5432/driving_coach
 ```
 
 ---
@@ -202,13 +202,13 @@ cat service-account-key.json | base64 -w 0 > firebase-admin-key-base64.txt
 
 | Step | Action | Resource Name | Check |
 |------|--------|---------------|-------|
-| A1 | Create Resource Group | `rg-bmw-driving-coach` | ☐ |
-| A2 | Create App Service Plan | `asp-bmw-driving-coach` | ☐ |
-| A3 | Create App Service (Node.js 20) | `app-bmw-driving-coach` | ☐ |
-| A4 | Create Storage Account | `stbmwdrivingcoach` | ☐ |
+| A1 | Create Resource Group | `rg-driving-coach` | ☐ |
+| A2 | Create App Service Plan | `asp-driving-coach` | ☐ |
+| A3 | Create App Service (Node.js 20) | `app-driving-coach` | ☐ |
+| A4 | Create Storage Account | `stdrivingcoach` | ☐ |
 | A5 | Create Blob Container `telemetry` | Private access | ☐ |
-| A6 | Create PostgreSQL Flexible Server | `psql-bmw-driving-coach` | ☐ |
-| A7 | Create database on PostgreSQL | `bmw_driving_coach` | ☐ |
+| A6 | Create PostgreSQL Flexible Server | `psql-driving-coach` | ☐ |
+| A7 | Create database on PostgreSQL | `driving_coach` | ☐ |
 
 ---
 
@@ -238,8 +238,8 @@ echo "Android SDK: $ANDROID_HOME"
 echo "adb: $(adb --version | head -1)"
 
 # Clone repo if needed
-git clone <repository-url> bmw-driving-coach
-cd bmw-driving-coach
+git clone <repository-url> driving-coach
+cd driving-coach
 
 # Verify project structure
 ls -la app/ backend/
