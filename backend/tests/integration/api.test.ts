@@ -6,7 +6,7 @@ import app from '../../src/app';
 import { generateSyntheticLaps, samplesToJsonl, generateSingleLap } from './testHelpers';
 
 // Use test database
-const TEST_DATABASE_URL = process.env.DATABASE_URL_TEST || 'postgresql://localhost:5432/bmw_driving_coach_test';
+const TEST_DATABASE_URL = process.env.DATABASE_URL_TEST || 'postgresql://localhost:5432/driving_coach_test';
 
 // Mock Anthropic SDK for coaching tests
 jest.mock('@anthropic-ai/sdk', () => {
@@ -27,12 +27,33 @@ jest.mock('@anthropic-ai/sdk', () => {
   }));
 });
 
-describe('Backend API Integration Tests', () => {
+// Check if PostgreSQL is available - skip integration tests if not
+const checkDatabaseAvailable = async (): Promise<boolean> => {
+  const testPool = new Pool({ connectionString: TEST_DATABASE_URL });
+  try {
+    await testPool.query('SELECT 1');
+    await testPool.end();
+    return true;
+  } catch {
+    await testPool.end();
+    return false;
+  }
+};
+
+// Conditionally run tests based on database availability
+const describeIfDb = process.env.SKIP_INTEGRATION_TESTS ? describe.skip : describe;
+
+describeIfDb('Backend API Integration Tests', () => {
   let pool: Pool;
-  let testUserId: string;
-  let testUserToken: string;
 
   beforeAll(async () => {
+    // Check database availability
+    const dbAvailable = await checkDatabaseAvailable();
+    if (!dbAvailable) {
+      console.warn('⚠️ PostgreSQL not available - skipping integration tests');
+      return;
+    }
+    
     // Connect to test database
     pool = new Pool({ connectionString: TEST_DATABASE_URL });
     
@@ -86,9 +107,6 @@ describe('Backend API Integration Tests', () => {
       expect(response.body.data).toHaveProperty('userId');
       expect(typeof response.body.data.token).toBe('string');
       expect(response.body.data.token.length).toBeGreaterThan(0);
-
-      testUserToken = response.body.data.token;
-      testUserId = response.body.data.userId;
     });
 
     it('POST /auth/login with valid credentials returns 200 and token', async () => {
@@ -106,8 +124,6 @@ describe('Backend API Integration Tests', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('token');
       expect(typeof response.body.data.token).toBe('string');
-
-      testUserToken = response.body.data.token;
     });
 
     it('GET /auth/me with valid token returns 200 and user data', async () => {
@@ -150,7 +166,6 @@ describe('Backend API Integration Tests', () => {
 
   describe('Upload and Processing', () => {
     let authToken: string;
-    let userId: string;
 
     beforeEach(async () => {
       // Create test user
@@ -163,7 +178,6 @@ describe('Backend API Integration Tests', () => {
         });
 
       authToken = registerRes.body.data.token;
-      userId = registerRes.body.data.userId;
     });
 
     it('POST /telemetry/upload with synthetic 5-lap JSONL returns 201', async () => {

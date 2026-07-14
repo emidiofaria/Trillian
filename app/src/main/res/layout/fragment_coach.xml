@@ -31,7 +31,7 @@
                 android:padding="@dimen/spacing_lg">
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="AI COACHING"
@@ -39,7 +39,7 @@
 
                 <TextView
                     android:id="@+id/consistencyScore"
-                    style="@style/TextAppearance.BMW.LapTime"
+                    style="@style/TextAppearance.DrivingCoach.LapTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
@@ -47,14 +47,14 @@
                     tools:text="94.2%" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="CONSISTENCY SCORE" />
 
                 <TextView
                     android:id="@+id/sessionSummary"
-                    style="@style/TextAppearance.BMW.Body"
+                    style="@style/TextAppearance.DrivingCoach.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_md"
@@ -89,7 +89,7 @@
                 android:indeterminateTint="@color/colorPrimary" />
 
             <TextView
-                style="@style/TextAppearance.BMW.Body"
+                style="@style/TextAppearance.DrivingCoach.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_md"
@@ -100,7 +100,7 @@
         <!-- Empty state -->
         <TextView
             android:id="@+id/emptyStateText"
-            style="@style/TextAppearance.BMW.Body"
+            style="@style/TextAppearance.DrivingCoach.Body"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_xl"

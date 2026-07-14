@@ -37,14 +37,14 @@
 
                 <TextView
                     android:id="@+id/trackName"
-                    style="@style/TextAppearance.BMW.H3"
+                    style="@style/TextAppearance.DrivingCoach.H3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorOnSurfaceVariant"
                     tools:text="Nürburgring GP" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"
@@ -53,7 +53,7 @@
 
                 <TextView
                     android:id="@+id/bestLapTime"
-                    style="@style/TextAppearance.BMW.LapTime"
+                    style="@style/TextAppearance.DrivingCoach.LapTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorGold"
@@ -61,7 +61,7 @@
 
                 <TextView
                     android:id="@+id/sessionSummary"
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_xs"
@@ -90,106 +90,54 @@
             app:tabIndicatorFullWidth="false"
             app:tabMode="fixed"
             app:tabSelectedTextColor="@color/colorPrimary"
-            app:tabTextAppearance="@style/TextAppearance.BMW.Tab"
+            app:tabTextAppearance="@style/TextAppearance.DrivingCoach.Tab"
             app:tabTextColor="@color/colorOnSurfaceVariant" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Processing Status Card -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/processingCard"
+    <!-- Upload Status Bar (small, dismissible) -->
+    <LinearLayout
+        android:id="@+id/uploadStatusBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/spacing_md"
+        android:background="@color/colorPrimaryVariant"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/spacing_md"
+        android:paddingVertical="@dimen/spacing_sm"
         android:visibility="gone"
-        app:cardBackgroundColor="@color/colorSurface"
-        app:cardCornerRadius="@dimen/card_corner_radius"
-        app:cardElevation="4dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:visibility="visible">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <ProgressBar
+            android:id="@+id/uploadProgress"
+            style="@style/Widget.AppCompat.ProgressBar"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:indeterminateTint="@color/colorOnPrimary" />
+
+        <TextView
+            android:id="@+id/uploadStatusText"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="@dimen/spacing_md">
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Uploading session..."
+            android:textColor="@color/colorOnPrimary"
+            android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/processingTitle"
-                style="@style/TextAppearance.BMW.H3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Processing your session..."
-                android:textColor="@color/colorOnSurface" />
+        <ImageButton
+            android:id="@+id/dismissStatusButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Dismiss"
+            android:src="@drawable/ic_close"
+            android:tint="@color/colorOnPrimary" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_md"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/stepUploading"
-                    style="@style/TextAppearance.BMW.Body"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Uploading ○"
-                    android:textColor="@color/colorOnSurfaceVariant" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="@dimen/spacing_sm"
-                    android:text="|"
-                    android:textColor="@color/colorOnSurfaceVariant" />
-
-                <TextView
-                    android:id="@+id/stepLaps"
-                    style="@style/TextAppearance.BMW.Body"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Detecting laps ○"
-                    android:textColor="@color/colorOnSurfaceVariant" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="@dimen/spacing_sm"
-                    android:text="|"
-                    android:textColor="@color/colorOnSurfaceVariant" />
-
-                <TextView
-                    android:id="@+id/stepCoaching"
-                    style="@style/TextAppearance.BMW.Body"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Generating coaching ○"
-                    android:textColor="@color/colorOnSurfaceVariant" />
-            </LinearLayout>
-
-            <ProgressBar
-                android:id="@+id/processingProgress"
-                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_md"
-                android:indeterminate="true"
-                android:indeterminateTint="@color/colorPrimary" />
-
-            <!-- Retry Button (shown on failure) -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/retryButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_md"
-                android:text="RETRY ANALYSIS"
-                android:visibility="gone"
-                app:backgroundTint="@color/colorError"
-                app:cornerRadius="@dimen/button_corner_radius"
-                tools:visibility="visible" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 
     <!-- ViewPager2 for tab content -->
     <androidx.viewpager2.widget.ViewPager2

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- BMW Brand Colors -->
-    <color name="bmw_blue">#1C69D4</color>
-    <color name="bmw_blue_dark">#0A3D7C</color>
-    <color name="bmw_blue_variant">#155FBD</color>
+    <!-- Brand Colors -->
+    <color name="brand_blue">#1C69D4</color>
+    <color name="brand_blue_dark">#0A3D7C</color>
+    <color name="brand_blue_variant">#155FBD</color>
     
     <!-- Dark Theme Base Colors (Luxury Feel) -->
     <color name="dark_background">#0D0D0D</color>

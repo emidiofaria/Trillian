@@ -15,7 +15,7 @@
 
 **To reset app state:**
 ```
-Settings → Apps → BMW Driving Coach → Storage → Clear Data
+Settings → Apps → Driving Coach → Storage → Clear Data
 ```
 
 ---
@@ -29,7 +29,7 @@ Settings → Apps → BMW Driving Coach → Storage → Clear Data
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | Clear app data (fresh install state) | Data cleared confirmation | ☐ |
-| 2 | Launch BMW Driving Coach | Onboarding screen appears | ☐ |
+| 2 | Launch Driving Coach | Onboarding screen appears | ☐ |
 | 3 | Observe screen content | First page visible (Location) | ☐ |
 | 4 | Observe navigation | Page indicator dots visible | ☐ |
 | 5 | Observe button | "GRANT PERMISSIONS & START" visible | ☐ |

@@ -2,8 +2,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Application** | BMW Driving Coach |
-| **Package** | `com.bmw.drivingcoach` |
+| **Application** | Driving Coach |
+| **Package** | `com.drivingcoach` |
 | **Severity** | Critical |
 | **Priority** | High |
 | **Status** | Open |
@@ -13,13 +13,13 @@
 
 ## Summary
 
-The BMW Driving Coach app crashes immediately when attempting to start a telemetry recording session. The crash is caused by a missing Android permission declaration in the manifest.
+The Driving Coach app crashes immediately when attempting to start a telemetry recording session. The crash is caused by a missing Android permission declaration in the manifest.
 
 ---
 
 ## Steps to Reproduce
 
-1. Open the BMW Driving Coach app
+1. Open the Driving Coach app
 2. Start a recording session (triggers `ACTION_START_RECORDING`)
 3. **Result**: App crashes with `SecurityException`
 
@@ -56,8 +56,8 @@ at android.hardware.SystemSensorManager$BaseEventQueue.addSensor(SystemSensorMan
 at android.hardware.SystemSensorManager.registerListenerImpl(SystemSensorManager.java:326)
 at android.hardware.SensorManager.registerListener(SensorManager.java:855)
 at android.hardware.SensorManager.registerListener(SensorManager.java:762)
-at com.bmw.drivingcoach.service.TelemetryForegroundService.startRecording(TelemetryForegroundService.kt:226)
-at com.bmw.drivingcoach.service.TelemetryForegroundService.onStartCommand(TelemetryForegroundService.kt:150)
+at com.drivingcoach.service.TelemetryForegroundService.startRecording(TelemetryForegroundService.kt:226)
+at com.drivingcoach.service.TelemetryForegroundService.onStartCommand(TelemetryForegroundService.kt:150)
 ```
 ---
 

@@ -1,6 +1,6 @@
 # flows.md
 
-Runtime execution flows for RCA localization in BMW Driving Coach Android app.
+Runtime execution flows for RCA localization in Driving Coach Android app.
 
 ---
 
@@ -157,6 +157,88 @@ OnboardingFragment.onViewCreated()
 
 ---
 
+## Flow: Track Setup (Start Line Capture)
+
+### Goal
+
+Capture two GPS points defining the start/finish line before recording, enabling precise lap detection.
+
+### Trigger
+
+- User taps "Start Session" FAB on HomeFragment
+- User enters track name → navigates to TrackSetupFragment
+
+### Execution Path
+
+```
+HomeFragment: User taps FAB
+→ showTrackNameDialog()
+→ User enters track name, taps "Start"
+→ HomeViewModel.startNewSession(trackName)
+  → _events.emit(NavigateToTrackSetup(trackName))
+→ HomeFragment observes event
+  → findNavController().navigate(actionHomeToTrackSetup)
+→ TrackSetupFragment.onViewCreated()
+  → fusedLocationClient = LocationServices.getFusedLocationProviderClient()
+  → checkPermissionsAndStart()
+→ startLocationUpdates()
+  → fusedLocationClient.requestLocationUpdates(PRIORITY_HIGH_ACCURACY, 1000ms)
+→ [CONTINUOUS] locationCallback.onLocationResult()
+  → TrackSetupViewModel.updateGpsStatus(accuracy, satelliteCount)
+→ User walks to track edge A, taps "Capture A"
+  → TrackSetupViewModel.setPointA(location)
+→ User walks to track edge B, taps "Capture B"
+  → TrackSetupViewModel.setPointB(location)
+  → Calculate distance via GeoUtils.haversineDistance()
+  → If distance >= 3m: isValid = true
+→ User taps "Start Recording"
+  → viewModel.getStartLineCoords() returns StartLineCoords(lat1, lng1, lat2, lng2)
+  → Navigate to RecordingFragment with start line args
+→ RecordingFragment.startRecordingIfReady()
+  → sessionId == -1L (new session)
+  → viewModel.createSessionAndStartRecording(trackName, startLine)
+    → [ROOM WRITE] sessionRepository.createSession(SessionEntity with startLine coords)
+    → viewModel.startRecording(newSessionId)
+```
+
+### Async Boundaries
+
+| Boundary | Type | Location |
+|----------|------|----------|
+| Location updates | `LocationCallback` | `onLocationResult()` |
+| State observation | `StateFlow.collectLatest` | `TrackSetupFragment` |
+| Session creation | `viewModelScope.launch` | `RecordingViewModel` |
+
+### Persistence Boundaries
+
+| Storage | Data | Trigger |
+|---------|------|---------|
+| Room `sessions` | SessionEntity + 4 start line coords | Navigation to recording |
+
+### External Dependencies
+
+- GPS hardware (via `FusedLocationProviderClient`)
+- Google Play Services Location API
+
+### Failure Points
+
+| Stage | Failure | Symptom | Propagation |
+|-------|---------|---------|-------------|
+| GPS acquisition | No location updates | "Acquiring GPS..." indefinitely | Buttons disabled |
+| Permission | Denied | Snackbar, navigate back | Flow blocked |
+| Points too close | Distance < 3m | "Minimum 3m required" hint | Cannot proceed |
+
+### Operational Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| GPS accuracy | `TrackSetupState.gpsAccuracy` | Location precision |
+| Satellite count | `TrackSetupState.satelliteCount` | GPS fix quality |
+| Distance | `TrackSetupState.distance` | Line width validation |
+| Point capture | `pointA`/`pointB` non-null | User action completed |
+
+---
+
 ## Flow: Session Recording (Telemetry Capture)
 
 ### Goal
@@ -167,6 +249,7 @@ Capture GPS + IMU telemetry at 10Hz during a driving session, persist to local f
 
 - User taps "Start Session" FAB on HomeFragment
 - User enters track name in dialog
+- User completes Track Setup (captures start line)
 
 ### Execution Path
 
@@ -175,7 +258,11 @@ HomeFragment: User taps FAB
 → showTrackNameDialog()
 → User enters track name, taps "Start"
 → HomeViewModel.startNewSession(trackName)
-  → [ROOM WRITE] sessionDao.insertSession(SessionEntity)
+  → _events.emit(NavigateToTrackSetup(trackName))
+→ [Track Setup Flow - see above]
+→ RecordingFragment receives start line coords via Safe Args
+→ RecordingViewModel.createSessionAndStartRecording(trackName, startLine)
+  → [ROOM WRITE] sessionRepository.createSession(SessionEntity with startLine)
   → Returns sessionId
   → [ASYNC] startForegroundService(ACTION_START_RECORDING, sessionId)
   → [EVENT] _events.emit(NavigateToRecording)
@@ -188,12 +275,12 @@ HomeFragment: User taps FAB
 → TelemetryForegroundService.startRecording()
   → Create TelemetryFileWriter(sessionId)
   → startForeground(notification)
-  → locationManager.requestLocationUpdates(GPS_PROVIDER, 100ms)
+  → fusedLocationClient.requestLocationUpdates(locationRequest, 1000ms)
   → sensorManager.registerListener(accelerometer, FASTEST)
   → sensorManager.registerListener(gyroscope, FASTEST)
   → handler.post(notificationUpdateRunnable)
   → _state.value = Recording(...)
-→ [CONTINUOUS] onLocationChanged(location)
+→ [CONTINUOUS] onLocationResult(locationResult)
   → Create TelemetrySample with GPS + buffered IMU
   → [ASYNC IO] telemetryWriter.writeSample(sample)
 → User taps "Stop"
@@ -201,7 +288,7 @@ HomeFragment: User taps FAB
   → TelemetryForegroundService.stopRecording(context)
 → TelemetryForegroundService.stopRecording()
   → _state.value = Stopping
-  → locationManager.removeUpdates()
+  → fusedLocationClient.removeLocationUpdates()
   → sensorManager.unregisterListener()
   → [ASYNC IO] telemetryWriter.close()
   → [ROOM WRITE] sessionDao.updateSessionEndTime()
@@ -216,9 +303,9 @@ HomeFragment: User taps FAB
 
 | Boundary | Type | Location |
 |----------|------|----------|
-| Session insert | `viewModelScope.launch` | `HomeViewModel.startNewSession()` |
+| Session insert | `viewModelScope.launch` | `RecordingViewModel.createSessionAndStartRecording()` |
 | Service start | `startForegroundService()` | Cross-process async |
-| Location updates | `LocationListener` callback | `onLocationChanged()` |
+| Location updates | `LocationCallback` | `onLocationResult()` |
 | Sensor updates | `SensorEventListener` callback | `onSensorChanged()` |
 | File writes | `Dispatchers.IO` coroutine | `TelemetryFileWriter.writeSample()` |
 | Service binding | `ServiceConnection` callback | `RecordingViewModel` |
@@ -229,13 +316,13 @@ HomeFragment: User taps FAB
 
 | Storage | Data | Trigger |
 |---------|------|---------|
-| Room `sessions` | SessionEntity | Session start |
+| Room `sessions` | SessionEntity + start line coords | Session start |
 | Room `sessions.endedAt` | Timestamp | Session stop |
 | File `telemetry/session_{id}.jsonl` | TelemetrySamples | Each GPS update |
 
 ### External Dependencies
 
-- GPS hardware (via `LocationManager`)
+- GPS hardware (via `FusedLocationProviderClient`)
 - Accelerometer sensor
 - Gyroscope sensor
 - Android foreground service runtime
@@ -287,7 +374,108 @@ HomeFragment: User taps FAB
 | "Error writing telemetry sample" | `TelemetryFileWriter` ERROR | Write failure |
 | "Recording stopped and saved" | `TelemetryService` INFO | Clean stop |
 | "Service destroyed" | `TelemetryService` DEBUG | Service lifecycle end |
-| Notification channel `bmw_recording` | System | Foreground service active |
+| Notification channel `drivingcoach_recording` | System | Foreground service active |
+
+---
+
+## Flow: Local Lap Detection (Offline)
+
+### Goal
+
+Detect lap boundaries from telemetry file immediately after recording stops, without requiring network connectivity. Provides instant lap times on Session Result screen.
+
+### Trigger
+
+- `RecordingViewModel.stopRecording()` completes
+- Before service `stopSelf()` call
+
+### Execution Path
+
+```
+RecordingViewModel.stopRecording()
+→ serviceBinder?.stopRecording(sessionId) // service saves file
+→ [AWAIT] stoppingJob.join()
+→ processLapsLocally(sessionId)
+  → sessionRepository.getSessionById(sessionId)
+  → telemetryFilePath = getFilesDir()/telemetry/session_{id}.jsonl
+  → LocalLapDetector.readTelemetryFile(filePath)
+    → Read header line (if present) for start line coords
+    → Parse JSONL samples into List<TelemetrySample>
+  → LocalLapDetector.detectLaps(samples, startLine)
+    → detectCrossings(samples, startLine)
+      → For each sample pair: check line segment intersection
+      → Apply guards: MIN_LAP_TIME_MS (20s), MIN_DISTANCE_FROM_START_M (50m)
+    → buildLapsFromCrossings(crossings)
+    → Mark best lap (shortest duration)
+    → Return LocalLapResult.Success(laps)
+  → lapDao.insertAll(laps.map { it.toEntity(sessionId, isLocalOnly=true) })
+  → Log "Inserted X local laps"
+→ _events.emit(NavigateToSessionResult(sessionId))
+```
+
+### Async Boundaries
+
+| Boundary | Type | Location |
+|----------|------|----------|
+| Stop recording job | `Job.join()` | Wait for service stop |
+| Lap detection | `Dispatchers.IO` | `processLapsLocally()` |
+| Room insert | `Dispatchers.IO` | `lapDao.insertAll()` |
+
+### Persistence Boundaries
+
+| Storage | Data | Trigger |
+|---------|------|---------|
+| File `telemetry/session_{id}.jsonl` | Header + samples (read only) | Detection start |
+| Room `laps` | LapEntity with `isLocalOnly=true` | Successful detection |
+
+### External Dependencies
+
+None — fully offline operation.
+
+### Algorithm Constants
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `MIN_LAP_TIME_MS` | 20,000 | Primary guard against GPS jitter |
+| `MIN_DISTANCE_FROM_START_M` | 50.0 | Ensures driver traveled around track (kart-compatible) |
+| `MIN_SAMPLES` | 50 | Minimum telemetry samples required |
+
+### Failure Points
+
+| Stage | Failure | Symptom | Propagation |
+|-------|---------|---------|-------------|
+| File read | File not found | `LocalLapResult.Error` | "No laps detected" message |
+| Parsing | Invalid JSON | Exception logged, sample skipped | Partial data |
+| No start line | All coords 0.0 | `LocalLapResult.NoStartLine` | Detection skipped |
+| No crossings | GPS path doesn't cross line | `LocalLapResult.InsufficientLaps` | "Complete 2+ laps" message |
+| Insufficient laps | Only 1 crossing | `LocalLapResult.InsufficientLaps` | "Complete 2+ laps" message |
+| Room insert | DB error | Exception logged | Laps not persisted |
+
+### User-Visible Symptoms
+
+| Symptom | Cause |
+|---------|-------|
+| "No laps detected" | Start line doesn't intersect GPS trace |
+| "Complete at least 2 laps" | User only completed 1 lap |
+| Laps show immediately offline | Success! Local detection worked |
+| "📶 Offline" banner visible | `isLocalOnly=true` laps present |
+
+### Operational Signals
+
+| Signal | Tag | Meaning |
+|--------|-----|---------|
+| "=== LAP DETECTION START ===" | `LocalLapDetector` DEBUG | Detection began |
+| "Start line valid" | `LocalLapDetector` DEBUG | Coordinates non-zero |
+| "Detected X line crossings" | `LocalLapDetector` DEBUG | Intersection found |
+| "Built X laps from crossings" | `LocalLapDetector` DEBUG | Valid laps created |
+| "Inserted X local laps" | `RecordingViewModel` INFO | Persistence complete |
+
+### Relationship to Backend Detection
+
+- Local detection runs immediately, provides instant feedback
+- Backend detection runs later via `TelemetryUploadWorker` 
+- Backend results overwrite local laps (more accurate with full session context)
+- Local laps have `isLocalOnly=true`; backend laps have `isLocalOnly=false`
 
 ---
 

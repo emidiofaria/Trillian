@@ -38,7 +38,7 @@
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Open BMW Driving Coach app | App launches | ☐ |
+| 1 | Open Driving Coach app | App launches | ☐ |
 | 2 | Navigate to Login screen | Login form displayed | ☐ |
 | 3 | Enter invalid email format | Email field shows error | ☐ |
 | 4 | Enter valid email, short password (<8 chars) | Password error shown | ☐ |
@@ -191,7 +191,7 @@
 | 3 | Share sheet opens | Android share sheet appears | ☐ |
 | 4 | Select "Save to device" or similar | Image saves | ☐ |
 | 5 | Open saved image | 1080×1080 image displayed | ☐ |
-| 6 | Image contains | BMW branding, lap time, track name, date | ☐ |
+| 6 | Image contains | App branding, lap time, track name, date | ☐ |
 
 **Requirement Coverage:** SH-01 to SH-05
 

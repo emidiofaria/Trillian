@@ -55,13 +55,13 @@
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | View saved share card image | Image displayed | ☐ |
-| 2 | BMW Driving Coach branding | Text visible at top | ☐ |
-| 3 | Best lap time | Large, centered, BMW blue | ☐ |
+| 2 | Driving Coach branding | Text visible at top | ☐ |
+| 3 | Best lap time | Large, centered, brand blue | ☐ |
 | 4 | "BEST LAP" label | Visible near time | ☐ |
 | 5 | Track name | Displayed | ☐ |
 | 6 | Session date | Displayed | ☐ |
 | 7 | Consistency score | "CONSISTENCY XX%" | ☐ |
-| 8 | BMW blue bottom border | 4dp line visible | ☐ |
+| 8 | brand blue bottom border | 4dp line visible | ☐ |
 | 9 | Dark background | #0D0D0D or similar | ☐ |
 
 **Requirement Coverage:** SH-03
@@ -75,7 +75,7 @@
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | Branding text | ~28sp bold, white | ☐ |
-| 2 | Best lap time | ~72sp bold, monospace, BMW blue | ☐ |
+| 2 | Best lap time | ~72sp bold, monospace, brand blue | ☐ |
 | 3 | Track name | ~22sp, white | ☐ |
 | 4 | Date | ~14sp, grey | ☐ |
 | 5 | Consistency | ~14sp, white | ☐ |
@@ -138,7 +138,7 @@
 |------|--------|-----------------|-----------|
 | 1 | On Profile screen | Avatar visible | ☐ |
 | 2 | Avatar shape | Circle | ☐ |
-| 3 | Avatar background | BMW blue (#1C69D4) | ☐ |
+| 3 | Avatar background | brand blue (#1C69D4) | ☐ |
 | 4 | Initials displayed | First 2 letters of name | ☐ |
 | 5 | Name "John Doe" | Shows "JD" | ☐ |
 | 6 | Name "Alice" | Shows "AL" | ☐ |

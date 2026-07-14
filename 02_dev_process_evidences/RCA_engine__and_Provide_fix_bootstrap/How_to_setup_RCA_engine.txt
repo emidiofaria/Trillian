@@ -1,5 +1,5 @@
 # On Chat GPT (Web): set the follow prompt:
-- "ctw00173_Android_app_POC\00_prompts\Phone-only_BMW_Driving_Coach.md"
+- "ctw00173_Android_app_POC\00_prompts\Phone-only_Driving_Coach.md"
 
 # Propmt to generate RCA engine prompts
 "I'm operating an android app I have copilot Ghe on my machine with github models. the models have access to my source code : app code .Create me the ready to use prompts that produce with quality: RCA agent.md instructions.md SkunkOps/atlas/failure-patterns.md SkunkOps/atlas/components.md SkunkOps/atlas/flows.md SkunkOps/atlas/system.md"
@@ -11,7 +11,7 @@ Remark this will generate 6 prompts to Create
 Provide fix engine
 ##############################################
 # same context (chat gpt web)
-"Now I plan create a new AI agent (provide_fix_agent). The objective is that Agent be able to use as input - system knowledge base (atlas + past known issues) and RCA analisys provided Outputs of this agent: - code fix. - Compile the app - ensure all tests are passing - App runs - Perform an impact analysis on requirements -> Ask me if I agree with requirements change. requirements are at 01_requirements/BMW_DrivingCoach_SRS_v1.md Update the requirements implementation plan based on the change."
+"Now I plan create a new AI agent (provide_fix_agent). The objective is that Agent be able to use as input - system knowledge base (atlas + past known issues) and RCA analisys provided Outputs of this agent: - code fix. - Compile the app - ensure all tests are passing - App runs - Perform an impact analysis on requirements -> Ask me if I agree with requirements change. requirements are at 01_requirements/DrivingCoach_SRS_v1.md Update the requirements implementation plan based on the change."
 
 Remark: this generates the prompt to generate the Provide_fix_agent.md
 
