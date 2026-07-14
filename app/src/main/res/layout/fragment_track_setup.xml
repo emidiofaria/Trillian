@@ -8,13 +8,14 @@
     android:fitsSystemWindows="true"
     tools:context=".ui.tracksetup.TrackSetupFragment">
 
-    <!-- BMW Logo Placeholder -->
-    <View
+    <!-- App Logo -->
+    <ImageView
         android:id="@+id/appLogo"
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:layout_marginTop="@dimen/spacing_xl"
-        android:background="@drawable/bg_logo_placeholder"
+        android:src="@mipmap/ic_launcher"
+        android:contentDescription="@string/app_name"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
