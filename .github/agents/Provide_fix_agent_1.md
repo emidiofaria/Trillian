@@ -109,7 +109,7 @@ The agent MUST validate whether the fix changes:
 
 against:
 
-`01_requirements/BMW_DrivingCoach_SRS_v1.md`
+`01_requirements/DrivingCoach_SRS_v1.md`
 
 ---
 
@@ -213,7 +213,7 @@ The agent MUST identify:
 
 The agent MUST compare the proposed change against:
 
-`01_requirements/BMW_DrivingCoach_SRS_v1.md`
+`01_requirements/DrivingCoach_SRS_v1.md`
 
 The agent MUST identify:
 

@@ -7,13 +7,13 @@
     android:background="@color/colorBackground"
     android:padding="@dimen/spacing_lg">
 
-    <!-- BMW Logo -->
+    <!-- App Logo -->
     <TextView
         android:id="@+id/logoText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="BMW DRIVING COACH"
-        android:textAppearance="@style/TextAppearance.BMW.H2"
+        android:text="DRIVING COACH"
+        android:textAppearance="@style/TextAppearance.DrivingCoach.H2"
         android:textColor="@color/colorPrimary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -26,7 +26,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_lg"
         android:text="PERMISSIONS REQUIRED"
-        android:textAppearance="@style/TextAppearance.BMW.H3"
+        android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
         android:textColor="@color/colorOnBackground"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -85,7 +85,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Location"
-                            android:textAppearance="@style/TextAppearance.BMW.H3"
+                            android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
                             android:textColor="@color/colorOnSurface" />
 
                         <TextView
@@ -93,7 +93,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_xs"
                             android:text="We use GPS to track your lap times precisely. No data is shared without your consent."
-                            android:textAppearance="@style/TextAppearance.BMW.Body"
+                            android:textAppearance="@style/TextAppearance.DrivingCoach.Body"
                             android:textColor="@color/colorOnSurfaceVariant" />
                     </LinearLayout>
 
@@ -145,7 +145,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Activity Recognition"
-                            android:textAppearance="@style/TextAppearance.BMW.H3"
+                            android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
                             android:textColor="@color/colorOnSurface" />
 
                         <TextView
@@ -153,7 +153,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_xs"
                             android:text="Detects when you are in a vehicle for smarter recording."
-                            android:textAppearance="@style/TextAppearance.BMW.Body"
+                            android:textAppearance="@style/TextAppearance.DrivingCoach.Body"
                             android:textColor="@color/colorOnSurfaceVariant" />
                     </LinearLayout>
 
@@ -204,7 +204,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Local Storage"
-                            android:textAppearance="@style/TextAppearance.BMW.H3"
+                            android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
                             android:textColor="@color/colorOnSurface" />
 
                         <TextView
@@ -212,7 +212,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_xs"
                             android:text="Telemetry is saved locally until uploaded."
-                            android:textAppearance="@style/TextAppearance.BMW.Body"
+                            android:textAppearance="@style/TextAppearance.DrivingCoach.Body"
                             android:textColor="@color/colorOnSurfaceVariant" />
                     </LinearLayout>
 
@@ -248,7 +248,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Some permissions were denied:"
-            android:textAppearance="@style/TextAppearance.BMW.Body"
+            android:textAppearance="@style/TextAppearance.DrivingCoach.Body"
             android:textColor="@color/colorError"
             android:gravity="center" />
 
@@ -257,7 +257,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_xs"
-            android:textAppearance="@style/TextAppearance.BMW.Caption"
+            android:textAppearance="@style/TextAppearance.DrivingCoach.Caption"
             android:textColor="@color/colorOnSurfaceVariant"
             android:gravity="center"
             tools:text="Location, Activity Recognition" />
@@ -269,7 +269,7 @@
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:text="GRANT PERMISSIONS"
-        android:textAppearance="@style/TextAppearance.BMW.H3"
+        android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
         app:backgroundTint="@color/colorPrimary"
         app:cornerRadius="@dimen/button_corner_radius"
         app:layout_constraintBottom_toTopOf="@id/settingsButton"

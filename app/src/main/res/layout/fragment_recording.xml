@@ -9,13 +9,13 @@
     android:fitsSystemWindows="true"
     tools:context=".ui.recording.RecordingFragment">
 
-    <!-- BMW Logo Placeholder (Blue Circle) -->
+    <!-- App Logo Placeholder (Blue Circle) -->
     <View
-        android:id="@+id/bmwLogo"
+        android:id="@+id/appLogo"
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:layout_marginTop="@dimen/spacing_xl"
-        android:background="@drawable/bg_bmw_logo_placeholder"
+        android:background="@drawable/bg_logo_placeholder"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -23,19 +23,19 @@
     <!-- Elapsed Time Label -->
     <TextView
         android:id="@+id/elapsedTimeLabel"
-        style="@style/TextAppearance.BMW.Caption"
+        style="@style/TextAppearance.DrivingCoach.Caption"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xl"
         android:text="SESSION TIME"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/bmwLogo" />
+        app:layout_constraintTop_toBottomOf="@id/appLogo" />
 
     <!-- Large Elapsed Time Display (MM:SS.mmm) -->
     <TextView
         android:id="@+id/elapsedTime"
-        style="@style/TextAppearance.BMW.LapTime"
+        style="@style/TextAppearance.DrivingCoach.LapTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_sm"
@@ -64,7 +64,7 @@
 
         <TextView
             android:id="@+id/gpsStatusText"
-            style="@style/TextAppearance.BMW.Body"
+            style="@style/TextAppearance.DrivingCoach.Body"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_sm"
@@ -74,7 +74,7 @@
     <!-- Lap Counter (optional, for future use) -->
     <TextView
         android:id="@+id/lapCounter"
-        style="@style/TextAppearance.BMW.H2"
+        style="@style/TextAppearance.DrivingCoach.H2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xl"
@@ -123,7 +123,7 @@
 
         <TextView
             android:id="@+id/recordingStatusText"
-            style="@style/TextAppearance.BMW.Caption"
+            style="@style/TextAppearance.DrivingCoach.Caption"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_sm"

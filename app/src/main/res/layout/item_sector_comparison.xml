@@ -23,7 +23,7 @@
             <!-- Sector Label -->
             <TextView
                 android:id="@+id/sectorLabel"
-                style="@style/TextAppearance.BMW.Caption"
+                style="@style/TextAppearance.DrivingCoach.Caption"
                 android:layout_width="70dp"
                 android:layout_height="wrap_content"
                 tools:text="Sector 1" />
@@ -31,7 +31,7 @@
             <!-- Selected Lap Time (monospace) -->
             <TextView
                 android:id="@+id/selectedTime"
-                style="@style/TextAppearance.BMW.Delta"
+                style="@style/TextAppearance.DrivingCoach.Delta"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -41,7 +41,7 @@
             <!-- Delta Badge -->
             <TextView
                 android:id="@+id/deltaBadge"
-                style="@style/TextAppearance.BMW.Delta"
+                style="@style/TextAppearance.DrivingCoach.Delta"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_delta_badge_small"

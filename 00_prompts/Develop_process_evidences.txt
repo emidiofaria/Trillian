@@ -5,8 +5,8 @@ During this specification conversation we will describe and refine system specif
 When I tell you to create the prompts and test specs we will move to planning phase.
 Act like a super senior system engineer with deep knowledge on android development.
 Keep it simple,not ambiguous. Requirements/spec shall be simple and all requirements shall have a requirements id when the file with the system specs is generated.
-BMW driving coach AI assisted.
-Can evolute to Social car network BMW "Strava style".
+Driving coach AI assisted.
+Can evolute to Social car network DrivingCoach "Strava style".
 A luxury AI driving coach that turns every track day into measurable performance mastery.
 Perfect for trackdays on karts
   - User facing: Phone – Android
@@ -20,7 +20,7 @@ Validate:
 - backend can reconstruct laps
 - coaching insights are useful
 ---
-### 🧠 V1 Core Use Cases ("BMW Driving Coach")
+### 🧠 V1 Core Use Cases ("Driving Coach")
 #### 1. Session recording
 - Start/stop track session
 - Auto-detect lap boundaries
@@ -78,7 +78,7 @@ Coding will be performed using copilot CLI using models from github ghe (Opus or
 ################
 SRS review - indepent model (shell). SRS as input
 ################
-"describe me a resume of a system specified at BMW_DrivingCoach_SRS_v1. Be pragmatic use bullet points. Evaluate the
+"describe me a resume of a system specified at DrivingCoach_SRS_v1. Be pragmatic use bullet points. Evaluate the
   system quality as a system sw engineer"
 
 

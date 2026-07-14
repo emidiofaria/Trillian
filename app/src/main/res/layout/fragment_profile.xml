@@ -17,7 +17,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:navigationIcon="@drawable/ic_back"
         app:title="PROFILE"
-        app:titleTextAppearance="@style/TextAppearance.BMW.LapNumber"
+        app:titleTextAppearance="@style/TextAppearance.DrivingCoach.LapNumber"
         app:titleTextColor="@color/colorOnSurface" />
 
     <!-- Avatar Circle -->
@@ -39,7 +39,7 @@
     <!-- Display Name -->
     <TextView
         android:id="@+id/userName"
-        style="@style/TextAppearance.BMW.H2"
+        style="@style/TextAppearance.DrivingCoach.H2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_md"
@@ -51,7 +51,7 @@
     <!-- Email -->
     <TextView
         android:id="@+id/userEmail"
-        style="@style/TextAppearance.BMW.Body"
+        style="@style/TextAppearance.DrivingCoach.Body"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xs"
@@ -92,14 +92,14 @@
 
                 <TextView
                     android:id="@+id/totalSessions"
-                    style="@style/TextAppearance.BMW.H2"
+                    style="@style/TextAppearance.DrivingCoach.H2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorPrimary"
                     tools:text="42" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="SESSIONS" />
@@ -125,14 +125,14 @@
 
                 <TextView
                     android:id="@+id/totalLaps"
-                    style="@style/TextAppearance.BMW.H2"
+                    style="@style/TextAppearance.DrivingCoach.H2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/colorPrimary"
                     tools:text="387" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="LAPS" />
@@ -158,7 +158,7 @@
 
                 <TextView
                     android:id="@+id/bestLapTime"
-                    style="@style/TextAppearance.BMW.H3"
+                    style="@style/TextAppearance.DrivingCoach.H3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
@@ -166,7 +166,7 @@
                     tools:text="1:41.5" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="BEST LAP" />

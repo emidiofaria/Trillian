@@ -13,7 +13,7 @@
         android:layout_width="120dp"
         android:layout_height="120dp"
         android:layout_marginTop="@dimen/spacing_xxl"
-        android:contentDescription="BMW Logo"
+        android:contentDescription="App Logo"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -22,18 +22,18 @@
 
     <TextView
         android:id="@+id/title"
-        style="@style/TextAppearance.BMW.H1"
+        style="@style/TextAppearance.DrivingCoach.H1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_lg"
-        android:text="BMW Driving Coach"
+        android:text="Driving Coach"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/logo" />
 
     <TextView
         android:id="@+id/subtitle"
-        style="@style/TextAppearance.BMW.Body.Secondary"
+        style="@style/TextAppearance.DrivingCoach.Body.Secondary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_sm"
@@ -87,7 +87,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/loginButton"
-        style="@style/Widget.BMW.Button.Primary"
+        style="@style/Widget.DrivingCoach.Button.Primary"
         android:layout_width="0dp"
         android:layout_height="@dimen/button_height"
         android:layout_marginTop="@dimen/spacing_lg"
@@ -98,7 +98,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/registerButton"
-        style="@style/Widget.BMW.Button.Text"
+        style="@style/Widget.DrivingCoach.Button.Text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_md"
@@ -109,7 +109,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/skipLoginButton"
-        style="@style/Widget.BMW.Button.Text"
+        style="@style/Widget.DrivingCoach.Button.Text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xl"

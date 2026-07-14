@@ -15,5 +15,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BMWDrivingCoach"
+rootProject.name = "DrivingCoach"
 include(":app")

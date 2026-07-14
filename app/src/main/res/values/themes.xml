@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- BMW Dark Theme (Luxury Feel) -->
-    <style name="Theme.BMWDrivingCoach" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- DrivingCoach Dark Theme (Luxury Feel) -->
+    <style name="Theme.DrivingCoach" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand colors -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
@@ -30,7 +30,7 @@
     </style>
 
     <!-- Button Styles -->
-    <style name="Widget.BMW.Button.Primary" parent="Widget.MaterialComponents.Button">
+    <style name="Widget.DrivingCoach.Button.Primary" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/colorPrimary</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="cornerRadius">@dimen/button_corner_radius</item>
@@ -38,31 +38,31 @@
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
-    <style name="Widget.BMW.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
+    <style name="Widget.DrivingCoach.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="strokeColor">@color/colorPrimary</item>
         <item name="android:textColor">@color/colorPrimary</item>
         <item name="cornerRadius">@dimen/button_corner_radius</item>
         <item name="android:textAllCaps">false</item>
     </style>
 
-    <style name="Widget.BMW.Button.Text" parent="Widget.MaterialComponents.Button.TextButton">
+    <style name="Widget.DrivingCoach.Button.Text" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="android:textColor">@color/colorPrimary</item>
         <item name="android:textAllCaps">false</item>
     </style>
 
     <!-- Card Style -->
-    <style name="Widget.BMW.Card" parent="Widget.MaterialComponents.CardView">
+    <style name="Widget.DrivingCoach.Card" parent="Widget.MaterialComponents.CardView">
         <item name="cardCornerRadius">@dimen/card_corner_radius</item>
         <item name="cardElevation">0dp</item>
         <item name="cardBackgroundColor">@color/colorSurface</item>
     </style>
 
-    <style name="Widget.BMW.Card.Elevated" parent="Widget.BMW.Card">
+    <style name="Widget.DrivingCoach.Card.Elevated" parent="Widget.DrivingCoach.Card">
         <item name="cardBackgroundColor">@color/colorSurfaceVariant</item>
     </style>
 
     <!-- Bottom Navigation Style -->
-    <style name="Widget.BMW.BottomNavigation" parent="Widget.MaterialComponents.BottomNavigationView">
+    <style name="Widget.DrivingCoach.BottomNavigation" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="backgroundTint">@color/colorSurface</item>
         <item name="itemIconTint">@color/bottom_nav_color</item>
         <item name="itemTextColor">@color/bottom_nav_color</item>
