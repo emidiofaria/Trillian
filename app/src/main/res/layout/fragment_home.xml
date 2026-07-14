@@ -75,8 +75,8 @@
                 android:layout_height="40dp"
                 android:layout_marginStart="@dimen/spacing_md"
                 android:layout_marginTop="@dimen/spacing_md"
-                android:background="@drawable/bg_logo_placeholder"
-                android:contentDescription="App Logo"
+                android:src="@mipmap/ic_launcher"
+                android:contentDescription="@string/app_name"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/uploadBanner" />
 
