@@ -1,6 +1,6 @@
 # Backend Deployment Guide
 
-> **Purpose:** Step-by-step instructions to deploy the BMW Driving Coach backend locally for testing and to Azure for production.
+> **Purpose:** Step-by-step instructions to deploy the Driving Coach backend locally for testing and to Azure for production.
 
 ---
 
@@ -12,7 +12,7 @@
 |------|--------------|-------|
 | Node.js 20.x installed | `node --version` shows v20.x | ☐ |
 | PostgreSQL running | `pg_isready` returns "accepting connections" | ☐ |
-| Database created | `bmw_driving_coach` exists | ☐ |
+| Database created | `driving_coach` exists | ☐ |
 | Repository cloned | `backend/` directory exists | ☐ |
 
 ---
@@ -47,7 +47,7 @@ PORT=3000
 NODE_ENV=development
 
 # Database
-DATABASE_URL=postgresql://bmw_user:your_password@localhost:5432/bmw_driving_coach
+DATABASE_URL=postgresql://dc_user:your_password@localhost:5432/driving_coach
 
 # Firebase Admin (base64-encoded service account JSON)
 FIREBASE_SERVICE_ACCOUNT_BASE64=<paste base64 string here>
@@ -99,9 +99,9 @@ Expected output:
               List of relations
  Schema |       Name        | Type  |  Owner
 --------+-------------------+-------+----------
- public | coaching_insights | table | bmw_user
- public | laps              | table | bmw_user
- public | sessions          | table | bmw_user
+ public | coaching_insights | table | dc_user
+ public | laps              | table | dc_user
+ public | sessions          | table | dc_user
 ```
 
 ---
@@ -181,8 +181,8 @@ npm run test:unit
 |------|--------------|-------|
 | Azure CLI installed | `az --version` works | ☐ |
 | Logged into Azure | `az account show` shows correct subscription | ☐ |
-| Resource Group exists | `rg-bmw-driving-coach` | ☐ |
-| App Service created | `app-bmw-driving-coach` | ☐ |
+| Resource Group exists | `rg-driving-coach` | ☐ |
+| App Service created | `app-driving-coach` | ☐ |
 | PostgreSQL Flexible Server created | Connection string available | ☐ |
 | Storage Account created | Connection string available | ☐ |
 
@@ -192,8 +192,8 @@ npm run test:unit
 
 ```bash
 # Set resource group and app name
-RG_NAME="rg-bmw-driving-coach"
-APP_NAME="app-bmw-driving-coach"
+RG_NAME="rg-driving-coach"
+APP_NAME="app-driving-coach"
 
 # Configure environment variables
 az webapp config appsettings set \
@@ -201,7 +201,7 @@ az webapp config appsettings set \
   --name $APP_NAME \
   --settings \
     NODE_ENV=production \
-    DATABASE_URL="postgresql://user:pass@psql-bmw.postgres.database.azure.com:5432/bmw_driving_coach?sslmode=require" \
+    DATABASE_URL="postgresql://user:pass@psql-dc.postgres.database.azure.com:5432/driving_coach?sslmode=require" \
     FIREBASE_SERVICE_ACCOUNT_BASE64="<base64 encoded JSON>" \
     ANTHROPIC_API_KEY="sk-ant-..." \
     STORAGE_TYPE="azure" \
@@ -234,9 +234,9 @@ az webapp config set \
 ```bash
 # Connect to Azure PostgreSQL
 PGPASSWORD=<password> psql \
-  -h psql-bmw-driving-coach.postgres.database.azure.com \
-  -U bmw_admin \
-  -d bmw_driving_coach \
+  -h psql-driving-coach.postgres.database.azure.com \
+  -U dc_admin \
+  -d driving_coach \
   -f src/db/schema.sql
 ```
 
@@ -288,7 +288,7 @@ jobs:
           npm run build
       - uses: azure/webapps-deploy@v3
         with:
-          app-name: app-bmw-driving-coach
+          app-name: app-driving-coach
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./backend
 ```

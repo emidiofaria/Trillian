@@ -17,14 +17,14 @@
 
         <TextView
             android:id="@+id/headline"
-            style="@style/TextAppearance.BMW.H3"
+            style="@style/TextAppearance.DrivingCoach.H3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             tools:text="Brake earlier into Turn 3" />
 
         <TextView
             android:id="@+id/detail"
-            style="@style/TextAppearance.BMW.Body"
+            style="@style/TextAppearance.DrivingCoach.Body"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_xs"

@@ -56,14 +56,14 @@
 
                     <TextView
                         android:id="@+id/selectedLapLabel"
-                        style="@style/TextAppearance.BMW.Caption"
+                        style="@style/TextAppearance.DrivingCoach.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         tools:text="LAP 3" />
 
                     <TextView
                         android:id="@+id/selectedLapTime"
-                        style="@style/TextAppearance.BMW.LapTime.Medium"
+                        style="@style/TextAppearance.DrivingCoach.LapTime.Medium"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_xs"
@@ -91,7 +91,7 @@
                     android:padding="@dimen/spacing_md">
 
                     <TextView
-                        style="@style/TextAppearance.BMW.Caption"
+                        style="@style/TextAppearance.DrivingCoach.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="BEST LAP"
@@ -99,7 +99,7 @@
 
                     <TextView
                         android:id="@+id/bestLapTime"
-                        style="@style/TextAppearance.BMW.LapTime.Medium"
+                        style="@style/TextAppearance.DrivingCoach.LapTime.Medium"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_xs"
@@ -112,7 +112,7 @@
         <!-- Total Delta Badge -->
         <TextView
             android:id="@+id/totalDelta"
-            style="@style/TextAppearance.BMW.Delta"
+            style="@style/TextAppearance.DrivingCoach.Delta"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_md"
@@ -127,7 +127,7 @@
         <!-- Sector Comparison Section -->
         <TextView
             android:id="@+id/sectorComparisonLabel"
-            style="@style/TextAppearance.BMW.H3"
+            style="@style/TextAppearance.DrivingCoach.H3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_md"
@@ -193,13 +193,13 @@
                 android:orientation="vertical">
 
                 <TextView
-                    style="@style/TextAppearance.BMW.H3"
+                    style="@style/TextAppearance.DrivingCoach.H3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Speed Trace Comparison" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_sm"

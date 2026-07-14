@@ -49,7 +49,7 @@
 
                     <TextView
                         android:id="@+id/uploadBannerText"
-                        style="@style/TextAppearance.BMW.Caption"
+                        style="@style/TextAppearance.DrivingCoach.Caption"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="@dimen/spacing_sm"
@@ -68,28 +68,28 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Header Row: BMW Logo + Profile -->
+            <!-- Header Row: App Logo + Profile -->
             <ImageView
-                android:id="@+id/bmwLogo"
+                android:id="@+id/appLogo"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginStart="@dimen/spacing_md"
                 android:layout_marginTop="@dimen/spacing_md"
-                android:background="@drawable/bg_bmw_logo_placeholder"
-                android:contentDescription="BMW Logo"
+                android:background="@drawable/bg_logo_placeholder"
+                android:contentDescription="App Logo"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/uploadBanner" />
 
             <TextView
                 android:id="@+id/title"
-                style="@style/TextAppearance.BMW.H2"
+                style="@style/TextAppearance.DrivingCoach.H2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/spacing_sm"
                 android:text="Driving Coach"
-                app:layout_constraintBottom_toBottomOf="@id/bmwLogo"
-                app:layout_constraintStart_toEndOf="@id/bmwLogo"
-                app:layout_constraintTop_toTopOf="@id/bmwLogo" />
+                app:layout_constraintBottom_toBottomOf="@id/appLogo"
+                app:layout_constraintStart_toEndOf="@id/appLogo"
+                app:layout_constraintTop_toTopOf="@id/appLogo" />
 
             <ImageButton
                 android:id="@+id/profileButton"
@@ -99,9 +99,9 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Profile"
                 android:src="@drawable/ic_profile"
-                app:layout_constraintBottom_toBottomOf="@id/bmwLogo"
+                app:layout_constraintBottom_toBottomOf="@id/appLogo"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/bmwLogo"
+                app:layout_constraintTop_toTopOf="@id/appLogo"
                 app:tint="@color/colorOnSurface" />
 
             <!-- Hero Card: Best Lap -->
@@ -116,7 +116,7 @@
                 app:cardElevation="0dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/bmwLogo"
+                app:layout_constraintTop_toBottomOf="@id/appLogo"
                 app:strokeColor="@color/colorPrimary"
                 app:strokeWidth="2dp">
 
@@ -128,7 +128,7 @@
                     android:padding="@dimen/spacing_lg">
 
                     <TextView
-                        style="@style/TextAppearance.BMW.Caption"
+                        style="@style/TextAppearance.DrivingCoach.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="YOUR BEST LAP"
@@ -136,7 +136,7 @@
 
                     <TextView
                         android:id="@+id/bestLapTime"
-                        style="@style/TextAppearance.BMW.LapTime"
+                        style="@style/TextAppearance.DrivingCoach.LapTime"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_xs"
@@ -145,7 +145,7 @@
 
                     <TextView
                         android:id="@+id/bestLapInfo"
-                        style="@style/TextAppearance.BMW.Caption"
+                        style="@style/TextAppearance.DrivingCoach.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_xs"
@@ -156,7 +156,7 @@
             <!-- Recent Sessions Header -->
             <TextView
                 android:id="@+id/recentSessionsTitle"
-                style="@style/TextAppearance.BMW.LapNumber"
+                style="@style/TextAppearance.DrivingCoach.LapNumber"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/spacing_md"
@@ -202,7 +202,7 @@
                     app:tint="@color/colorOnSurfaceVariant" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Body"
+                    style="@style/TextAppearance.DrivingCoach.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_md"
@@ -210,7 +210,7 @@
                     android:textColor="@color/colorOnSurfaceVariant" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_xs"

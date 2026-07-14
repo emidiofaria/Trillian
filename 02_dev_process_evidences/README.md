@@ -1,8 +1,8 @@
 # Development Process Evidence
 
-> **BMW Driving Coach — Developer Process Documentation**
+> **Driving Coach — Developer Process Documentation**
 
-This directory contains evidence of the step-by-step implementation process for the BMW Driving Coach application.
+This directory contains evidence of the step-by-step implementation process for the Driving Coach application.
 
 ---
 

@@ -1,6 +1,6 @@
 # System Acceptance Signoff
 
-> **Purpose:** Final acceptance criteria checklist for BMW Driving Coach V1 release. All items must pass before system is approved for production use.
+> **Purpose:** Final acceptance criteria checklist for Driving Coach V1 release. All items must pass before system is approved for production use.
 
 ---
 

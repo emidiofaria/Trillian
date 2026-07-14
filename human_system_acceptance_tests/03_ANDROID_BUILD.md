@@ -1,6 +1,6 @@
 # Android Build Instructions
 
-> **Purpose:** Complete guide to build the BMW Driving Coach APK, configure Firebase and API endpoints, and install on test device.
+> **Purpose:** Complete guide to build the Driving Coach APK, configure Firebase and API endpoints, and install on test device.
 
 ---
 
@@ -9,7 +9,7 @@
 ### Step 1: Verify Project Structure
 
 ```bash
-cd bmw-driving-coach
+cd driving-coach
 ls -la app/
 ```
 
@@ -40,7 +40,7 @@ cp ~/Downloads/google-services.json app/google-services.json
 | Verification | Expected | Check |
 |--------------|----------|-------|
 | File exists | `app/google-services.json` present | ☐ |
-| Package name matches | `"package_name": "com.bmw.drivingcoach"` | ☐ |
+| Package name matches | `"package_name": "com.drivingcoach"` | ☐ |
 | Firebase App ID present | `"mobilesdk_app_id"` field exists | ☐ |
 
 **Verify contents:**
@@ -80,7 +80,7 @@ android {
         }
         release {
             // Production Azure backend
-            buildConfigField("String", "API_BASE_URL", "\"https://app-bmw-driving-coach.azurewebsites.net/\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://app-driving-coach.azurewebsites.net/\"")
         }
     }
 }
@@ -157,17 +157,17 @@ ls -la app/build/outputs/apk/debug/app-debug.apk
 #### 3.1 Create Keystore (first time only)
 
 ```bash
-keytool -genkey -v -keystore bmw-driving-coach.keystore \
-  -alias bmw-release \
+keytool -genkey -v -keystore driving-coach.keystore \
+  -alias dc-release \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
 | Information | Value to Enter | Check |
 |-------------|----------------|-------|
 | Keystore password | (save securely) | ☐ |
-| Key alias | `bmw-release` | ☐ |
+| Key alias | `dc-release` | ☐ |
 | Key password | (save securely) | ☐ |
-| Organization | BMW Driving Coach | ☐ |
+| Organization | Driving Coach | ☐ |
 
 ---
 
@@ -175,9 +175,9 @@ keytool -genkey -v -keystore bmw-driving-coach.keystore \
 
 Create or edit `local.properties` (NOT committed to Git):
 ```properties
-storeFile=../bmw-driving-coach.keystore
+storeFile=../driving-coach.keystore
 storePassword=your_keystore_password
-keyAlias=bmw-release
+keyAlias=dc-release
 keyPassword=your_key_password
 ```
 
@@ -186,9 +186,9 @@ Or configure in `app/build.gradle.kts`:
 android {
     signingConfigs {
         create("release") {
-            storeFile = file("../bmw-driving-coach.keystore")
+            storeFile = file("../driving-coach.keystore")
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias = "bmw-release"
+            keyAlias = "dc-release"
             keyPassword = System.getenv("KEY_PASSWORD") ?: ""
         }
     }
@@ -284,7 +284,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 | Verification | Expected | Check |
 |--------------|----------|-------|
 | Installation succeeds | "Success" message | ☐ |
-| App appears in launcher | "BMW Driving Coach" icon | ☐ |
+| App appears in launcher | "Driving Coach" icon | ☐ |
 | App opens without crash | Splash/onboarding screen | ☐ |
 
 ---

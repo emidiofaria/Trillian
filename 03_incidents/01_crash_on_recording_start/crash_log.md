@@ -3,7 +3,7 @@
 ## Exception
 
 ```
-java.lang.RuntimeException: Unable to start service com.bmw.drivingcoach.service.TelemetryForegroundService@d90acc8 with Intent { act=com.bmw.drivingcoach.ACTION_START_RECORDING cmp=com.bmw.drivingcoach/.service.TelemetryForegroundService (has extras) }:
+java.lang.RuntimeException: Unable to start service com.drivingcoach.service.TelemetryForegroundService@d90acc8 with Intent { act=com.drivingcoach.ACTION_START_RECORDING cmp=com.drivingcoach/.service.TelemetryForegroundService (has extras) }:
 java.lang.SecurityException: To use the sampling rate of 0 microseconds, app needs to declare the normal permission HIGH_SAMPLING_RATE_SENSORS.
 ```
 
@@ -31,8 +31,8 @@ at android.hardware.SystemSensorManager$BaseEventQueue.addSensor(SystemSensorMan
 at android.hardware.SystemSensorManager.registerListenerImpl(SystemSensorManager.java:326)
 at android.hardware.SensorManager.registerListener(SensorManager.java:855)
 at android.hardware.SensorManager.registerListener(SensorManager.java:762)
-at com.bmw.drivingcoach.service.TelemetryForegroundService.startRecording(TelemetryForegroundService.kt:226)
-at com.bmw.drivingcoach.service.TelemetryForegroundService.onStartCommand(TelemetryForegroundService.kt:150)
+at com.drivingcoach.service.TelemetryForegroundService.startRecording(TelemetryForegroundService.kt:226)
+at com.drivingcoach.service.TelemetryForegroundService.onStartCommand(TelemetryForegroundService.kt:150)
 at android.app.ActivityThread.handleServiceArgs(ActivityThread.java:5121)
 ... 9 more
 ```

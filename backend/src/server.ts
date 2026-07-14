@@ -4,7 +4,7 @@ import { closePool } from './db';
 
 const server = app.listen(config.port, () => {
   console.log(`
-🏎️  BMW Driving Coach API Server
+🏎️  Driving Coach API Server
 ================================
 Environment: ${config.nodeEnv}
 Port:        ${config.port}

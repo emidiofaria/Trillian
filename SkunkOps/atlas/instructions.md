@@ -1,6 +1,6 @@
 # instructions.md
 
-Operational Intelligence System for BMW Driving Coach Android Application.
+Operational Intelligence System for Driving Coach Android Application.
 
 ---
 
@@ -14,7 +14,7 @@ This operational intelligence system exists to:
 4. **Prevent incident recurrence** by capturing systemic weaknesses and driving permanent fixes
 5. **Enable continuous improvement** through human feedback incorporation
 
-The system serves as the **operational memory** for the BMW Driving Coach Android application, encoding:
+The system serves as the **operational memory** for the Driving Coach Android application, encoding:
 - How the system actually behaves at runtime
 - How failures propagate through async boundaries
 - Which failure patterns recur and how to recognize them

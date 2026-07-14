@@ -10,11 +10,11 @@
 
     <!-- BMW Logo Placeholder -->
     <View
-        android:id="@+id/bmwLogo"
+        android:id="@+id/appLogo"
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:layout_marginTop="@dimen/spacing_xl"
-        android:background="@drawable/bg_bmw_logo_placeholder"
+        android:background="@drawable/bg_logo_placeholder"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -22,7 +22,7 @@
     <!-- Instructions -->
     <TextView
         android:id="@+id/instructionsTitle"
-        style="@style/TextAppearance.BMW.H2"
+        style="@style/TextAppearance.DrivingCoach.H2"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/spacing_lg"
@@ -31,11 +31,11 @@
         android:text="SET START/FINISH LINE"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/bmwLogo" />
+        app:layout_constraintTop_toBottomOf="@id/appLogo" />
 
     <TextView
         android:id="@+id/instructionsBody"
-        style="@style/TextAppearance.BMW.Body"
+        style="@style/TextAppearance.DrivingCoach.Body"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/spacing_lg"
@@ -66,7 +66,7 @@
 
         <TextView
             android:id="@+id/gpsStatusText"
-            style="@style/TextAppearance.BMW.Body"
+            style="@style/TextAppearance.DrivingCoach.Body"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_sm"
@@ -94,7 +94,7 @@
 
             <TextView
                 android:id="@+id/pointALabel"
-                style="@style/TextAppearance.BMW.Caption"
+                style="@style/TextAppearance.DrivingCoach.Caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="POINT A (Left Edge)"
@@ -103,7 +103,7 @@
 
             <TextView
                 android:id="@+id/pointACoords"
-                style="@style/TextAppearance.BMW.Body"
+                style="@style/TextAppearance.DrivingCoach.Body"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
@@ -151,7 +151,7 @@
 
             <TextView
                 android:id="@+id/pointBLabel"
-                style="@style/TextAppearance.BMW.Caption"
+                style="@style/TextAppearance.DrivingCoach.Caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="POINT B (Right Edge)"
@@ -160,7 +160,7 @@
 
             <TextView
                 android:id="@+id/pointBCoords"
-                style="@style/TextAppearance.BMW.Body"
+                style="@style/TextAppearance.DrivingCoach.Body"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_xs"
@@ -191,7 +191,7 @@
     <!-- Distance Display -->
     <TextView
         android:id="@+id/distanceLabel"
-        style="@style/TextAppearance.BMW.Caption"
+        style="@style/TextAppearance.DrivingCoach.Caption"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_lg"
@@ -202,7 +202,7 @@
 
     <TextView
         android:id="@+id/distanceValue"
-        style="@style/TextAppearance.BMW.H1"
+        style="@style/TextAppearance.DrivingCoach.H1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xs"
@@ -214,7 +214,7 @@
 
     <TextView
         android:id="@+id/distanceHint"
-        style="@style/TextAppearance.BMW.Caption"
+        style="@style/TextAppearance.DrivingCoach.Caption"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xs"
