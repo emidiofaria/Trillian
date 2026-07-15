@@ -59,7 +59,12 @@
 
         <action
             android:id="@+id/action_home_to_track_setup"
-            app:destination="@id/trackSetupFragment" />
+            app:destination="@id/trackSetupFragment">
+            <argument
+                android:name="trackName"
+                app:argType="string"
+                android:defaultValue="Unknown Track" />
+        </action>
 
         <action
             android:id="@+id/action_home_to_recording"
@@ -89,6 +94,11 @@
         android:label="Track Setup"
         tools:layout="@layout/fragment_track_setup">
 
+        <argument
+            android:name="trackName"
+            app:argType="string"
+            android:defaultValue="Unknown Track" />
+
         <action
             android:id="@+id/action_track_setup_to_recording"
             app:destination="@id/recordingFragment">
@@ -96,6 +106,10 @@
                 android:name="sessionId"
                 app:argType="long"
                 android:defaultValue="-1L" />
+            <argument
+                android:name="trackName"
+                app:argType="string"
+                android:defaultValue="Unknown Track" />
             <argument
                 android:name="startLineLat1"
                 app:argType="float"
@@ -125,6 +139,11 @@
             android:name="sessionId"
             app:argType="long"
             android:defaultValue="-1L" />
+
+        <argument
+            android:name="trackName"
+            app:argType="string"
+            android:defaultValue="Unknown Track" />
 
         <argument
             android:name="startLineLat1"

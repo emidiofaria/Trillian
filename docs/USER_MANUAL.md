@@ -206,14 +206,29 @@ The AI looks at your speed profiles, braking points, and corner entry/exit to gi
 
 ### 5.3 Speed Charts
 
-The **Chart** tab shows your speed over time:
+The **Chart** tab shows your speed around the track:
 
-- X-axis: Distance around the track
-- Y-axis: Speed (km/h or mph)
-- Multiple laps overlaid for comparison
-- Your best lap highlighted
+- **X-axis:** Distance in meters from start/finish line
+- **Y-axis:** Speed in km/h
+- **Blue line:** Your best lap
+- **Grey lines:** All other laps
 
-Use this to see where you're gaining or losing time compared to your fastest lap.
+**Why distance, not time?**
+
+Distance-based charts let you compare laps accurately. Every corner appears at the same position on the X-axis, so you can see:
+- Where you braked earlier or later
+- Corner entry and exit speeds
+- Where you're gaining or losing time
+
+**Large Sessions (10+ laps):**
+
+For sessions with many laps, you'll see a choice:
+- **⚡ Fast** — Loads quickly, slightly smoothed data (~100 points per lap)
+- **📊 Detailed** — Full resolution, all telemetry samples
+
+Choose Fast for a quick look, Detailed for precise analysis.
+
+**Note:** Speed charts are processed locally from your telemetry file — no internet required!
 
 ---
 

@@ -14,7 +14,71 @@
         android:paddingHorizontal="@dimen/spacing_md"
         android:paddingVertical="@dimen/spacing_md">
 
-        <!-- AI Coaching Header Card -->
+        <!-- AI Available Banner (shows when AI insights arrive for local session) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/aiAvailableBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_md"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/colorPrimary"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardElevation="0dp"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎯 AI Coaching Available!"
+                    android:textColor="@color/colorOnPrimary"
+                    android:textStyle="bold" />
+
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:gravity="center"
+                    android:text="Your session has been analysed by AI.\nSwitch to see personalised tips."
+                    android:textColor="@color/colorOnPrimary" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnKeepLocal"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Keep Local"
+                        app:strokeColor="@color/colorOnPrimary"
+                        android:textColor="@color/colorOnPrimary" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnViewAI"
+                        style="@style/Widget.MaterialComponents.Button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="@dimen/spacing_sm"
+                        android:backgroundTint="@color/colorOnPrimary"
+                        android:text="View AI"
+                        android:textColor="@color/colorPrimary" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Coaching Header Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/headerCard"
             android:layout_width="match_parent"
@@ -30,12 +94,18 @@
                 android:orientation="vertical"
                 android:padding="@dimen/spacing_lg">
 
+                <!-- Coaching type badge (LOCAL/AI) -->
                 <TextView
+                    android:id="@+id/coachingTypeBadge"
                     style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="AI COACHING"
-                    android:textColor="@color/colorPrimary" />
+                    android:background="@drawable/bg_badge_primary"
+                    android:paddingHorizontal="@dimen/spacing_sm"
+                    android:paddingVertical="@dimen/spacing_xs"
+                    android:text="OFFLINE INSIGHTS"
+                    android:textColor="@color/colorOnPrimary"
+                    tools:text="OFFLINE INSIGHTS" />
 
                 <TextView
                     android:id="@+id/consistencyScore"
@@ -108,6 +178,46 @@
             android:text="No coaching insights available yet.\nComplete more laps to get personalized tips."
             android:textColor="@color/colorOnSurfaceVariant"
             android:visibility="gone" />
+
+        <!-- Upsell card (shown for offline sessions) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/upsellCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_lg"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/colorSurface"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/colorOutline"
+            app:strokeWidth="1dp"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="🚀 Get more with AI"
+                    android:textColor="@color/colorOnSurface" />
+
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:gravity="center"
+                    android:text="Upload when online for sector analysis,\nbraking points, and line optimisation."
+                    android:textColor="@color/colorOnSurfaceVariant" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 

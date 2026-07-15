@@ -155,28 +155,63 @@ Collect all available evidence before reasoning:
 
 ### Step 2 — System Localization
 
-Use Atlas files to locate the incident within the system:
+**⚠️ MANDATORY: Load Atlas files BEFORE any source code investigation.**
 
-#### Reference: `system.md`
-- Identify which layer is affected (UI, ViewModel, Service, Repository, API)
-- Map symptom to architectural component
+Atlas is the operational knowledge base for this application. You MUST consult it first to:
+- Understand system architecture before diving into code
+- Match symptoms to known failure patterns (instant RCA acceleration)
+- Identify component dependencies and async boundaries
+- Follow documented execution flows rather than rediscovering them
 
-#### Reference: `components.md`
-- Identify affected component(s) by matching signals to observable signals table
-- Check component dependencies for cascade effects
-- Note component criticality level
+#### Atlas Location
 
-#### Reference: `flows.md`
-- Identify which execution flow is affected
-- Locate the failure point in the step-by-step execution path
-- Identify async boundaries that may have delayed propagation
-- Note persistence boundaries that may hold evidence
+```
+SkunkOps/atlas/
+├── system.md           # Architecture, tech stack, runtime components
+├── components.md       # Component inventory with failure modes & signals
+├── flows.md            # Step-by-step execution paths with failure points
+├── failure-patterns.md # Known failure patterns with causes & mitigations
+└── instructions.md     # Operating model for the RCA system
+```
+
+#### Load Order (execute these view commands)
+
+1. **`view SkunkOps/atlas/failure-patterns.md`** — Check for known pattern match FIRST
+   - If symptom matches a pattern → use pattern's evidence checklist and likely causes
+   - If no match → continue to system/component localization
+
+2. **`view SkunkOps/atlas/system.md`** — Understand architecture
+   - Identify which layer is affected (UI, ViewModel, Service, Repository, API)
+   - Map symptom to architectural component
+
+3. **`view SkunkOps/atlas/components.md`** — Find affected component
+   - Identify affected component(s) by matching signals to observable signals table
+   - Check component dependencies for cascade effects
+   - Note component criticality level
+
+4. **`view SkunkOps/atlas/flows.md`** — Trace execution path
+   - Identify which execution flow is affected
+   - Locate the failure point in the step-by-step execution path
+   - Identify async boundaries that may have delayed propagation
+   - Note persistence boundaries that may hold evidence
+
+#### Gate Check
+
+**DO NOT proceed to source code investigation until you have:**
+- [ ] Checked `failure-patterns.md` for matching symptoms
+- [ ] Identified primary component from `components.md`
+- [ ] Identified affected flow from `flows.md`
+- [ ] Noted async/persistence boundaries from flow documentation
+
+Only AFTER Atlas localization is complete, proceed to source code verification in Step 3.
 
 #### Localization Output
+
 ```
 SYSTEM LOCALIZATION:
-- Primary Component: [component name]
-- Affected Flow: [flow name]
+- Pattern Match: [pattern name if found, or "No match - novel incident"]
+- Primary Component: [component name from components.md]
+- Affected Flow: [flow name from flows.md]
 - Failure Stage: [step in execution path]
 - Async Boundaries Crossed: [list]
 - Persistence Touched: [list]
@@ -184,7 +219,50 @@ SYSTEM LOCALIZATION:
 
 ---
 
-### Step 3 — Evidence Correlation
+### Step 3 — Source Code Verification
+
+**⚠️ MANDATORY: Verify ALL Atlas claims against actual source code.**
+
+Even when a failure pattern matches, you MUST confirm the hypothesis by checking the actual code. Atlas documents known patterns, but code may have changed since the pattern was documented.
+
+#### Verification Checklist
+
+For each claim in the matched pattern or component documentation:
+
+1. **Locate the code path** mentioned in Atlas (file:line references)
+2. **Verify the code still matches** the documented behavior
+3. **Trace the actual execution** for this specific incident
+4. **Document verification** with code snippets
+
+#### Verification Commands
+
+Use grep to find and verify code claims:
+```
+grep -C 3 -n "pattern" path/to/file.kt
+```
+
+#### Verification Output
+
+```
+CODE VERIFICATION:
+| Atlas Claim | Code Location | Actual Code | Verified |
+|-------------|---------------|-------------|----------|
+| [claim 1]   | file:line     | [snippet]   | ✅/❌    |
+| [claim 2]   | file:line     | [snippet]   | ✅/❌    |
+```
+
+#### Gate Check
+
+**DO NOT finalize root cause until:**
+- [ ] All Atlas claims verified against current source code
+- [ ] Code snippets documented as evidence
+- [ ] Any discrepancies between Atlas and code noted
+
+If code differs from Atlas documentation, update the RCA confidence accordingly and note the discrepancy.
+
+---
+
+### Step 4 — Evidence Correlation
 
 Correlate signals to build a timeline and causal chain:
 
@@ -223,7 +301,7 @@ Actual:   PENDING → UPLOADING → FAILED → FAILED → FAILED → FAILED → 
 
 ---
 
-### Step 4 — Hypothesis Generation
+### Step 5 — Hypothesis Generation
 
 Generate hypotheses ranked by evidence strength:
 
@@ -271,7 +349,7 @@ ELIMINATED HYPOTHESES:
 
 ---
 
-### Step 5 — Root Cause Determination
+### Step 6 — Root Cause Determination
 
 Distinguish the causal chain:
 
@@ -305,7 +383,7 @@ CONTRIBUTING FACTORS:
 
 ---
 
-### Step 6 — Mitigation Guidance
+### Step 7 — Mitigation Guidance
 
 Provide actionable remediation:
 

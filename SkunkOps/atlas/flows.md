@@ -479,6 +479,104 @@ None — fully offline operation.
 
 ---
 
+## Flow: Offline Coaching Insight Generation
+
+### Goal
+
+Generate coaching insights locally from detected laps. Provides immediate feedback without requiring backend AI processing.
+
+### Trigger
+
+- Local lap detection completes successfully (`DetectionResult.Success`)
+- At least 2 laps detected
+
+### Execution Path
+
+```
+RecordingViewModel.processLapsLocally()
+→ LocalLapDetector.detectLaps() returns Success
+→ saveLapsToRoom(sessionId, detectedLaps)
+  → Map DetectedLap to LapEntity
+  → Set sector1Ms = 0L, sector2Ms = 0L, sector3Ms = 0L  // ⚠️ No sector data
+  → lapDao.insertLaps(lapEntities)
+→ generateOfflineCoaching(sessionId, lapEntities)
+  → OfflineCoachingEngine.generateInsights(laps)
+    → Check laps.size >= 2
+    → generateBestLapInsight(laps, bestLap)
+      → avgS1 = laps.map { it.sector1Ms }.average()  // All 0 → avgS1 = 0.0
+      → gainS1 = avgS1 - bestLap.sector1Ms           // 0.0 - 0 = 0
+      → Select "best" sector (all gains equal at 0)
+      → Return "Lap X Was Your Fastest" + sector detail
+    → generateConsistencyInsight(laps)
+      → Calculate stdDev of durationMs
+      → Map to Excellent/Solid/Work thresholds
+      → Return headline + "Laps vary by {stdDev}" detail
+    → generateSectorFocusInsight(laps, bestLap)
+      → Calculate avg delta vs best for each sector
+      → Select weakest or "All Sectors Strong"
+  → Return List<OfflineInsight>
+→ Map to CoachingInsightEntity with isLocalOnly=true
+→ coachingInsightDao.insertInsights(insightEntities)
+→ Log "Generated X offline coaching insights"
+```
+
+### Async Boundaries
+
+| Boundary | Type | Location |
+|----------|------|----------|
+| Insight generation | `Dispatchers.Main` | Computation in ViewModel coroutine |
+| Room insert | `Dispatchers.IO` | `coachingInsightDao.insertInsights()` |
+
+### Persistence Boundaries
+
+| Storage | Data | Trigger |
+|---------|------|---------|
+| Room `laps` | LapEntity with sector*Ms = 0L | Input to generation |
+| Room `coaching_insights` | CoachingInsightEntity | Successful generation |
+
+### External Dependencies
+
+None — fully offline operation.
+
+### Algorithm Details
+
+| Insight | Calculation | Output |
+|---------|-------------|--------|
+| Best Lap | `minByOrNull { durationMs }` | Lap number + sector contribution |
+| Consistency | `stdDev(durationMs) / mean` → percentage | Excellent (>95%), Solid (85-95%), Work (<85%) |
+| Sector Focus | `avgDelta = avg(sector - bestLap.sector)` | Weakest sector or "All Strong" |
+
+### Failure Points
+
+| Stage | Failure | Symptom | Propagation |
+|-------|---------|---------|-------------|
+| Insufficient laps | `laps.size < 2` | Empty insight list | No insights shown |
+| Zero sector data | All `sector*Ms = 0L` | "0ms quicker than average" | Misleading insight |
+| Room insert | DB error | Exception logged | Insights not persisted |
+
+### User-Visible Symptoms
+
+| Symptom | Cause |
+|---------|-------|
+| "0ms quicker than average" | Sectors not calculated (local detection) |
+| "Laps vary by Xms" (misleading) | StdDev shown but "vary by" wording implies range |
+| No coaching tab content | < 2 laps or generation failed |
+| Insights show immediately offline | Success! Offline coaching worked |
+
+### Operational Signals
+
+| Signal | Tag | Meaning |
+|--------|-----|---------|
+| "Generated X offline coaching insights" | `RecordingViewModel` DEBUG | Generation complete |
+| "No offline coaching insights generated" | `RecordingViewModel` DEBUG | Insufficient laps |
+| "Error generating offline coaching insights" | `RecordingViewModel` ERROR | Exception occurred |
+
+### Known Issue: FP-SENTINEL-VALUE
+
+See failure pattern **"Sentinel Value Treated as Valid Data (FP-SENTINEL-VALUE)"** for the root cause of "0ms quicker than average" issue and recommended fix.
+
+---
+
 ## Flow: Telemetry Upload (Background Sync)
 
 ### Goal
@@ -680,6 +778,93 @@ SessionResultFragment created with sessionId arg
 | `processingStatus` values | Room `sessions` table | Processing progress |
 | Polling job active | ViewModel coroutine | Waiting for completion |
 | `retryAnalysis()` called | Logcat (if instrumented) | User requested retry |
+
+---
+
+## Flow: Chart Data Loading (Speed vs Distance)
+
+### Goal
+
+Load real telemetry data, compute cumulative distance, and render speed trace chart with distance-based X-axis.
+
+### Trigger
+
+- User navigates to Chart tab in SessionResultFragment
+- `SessionUiState` emits with `rawFilePath` and `laps`
+
+### Execution Path
+
+```
+ChartFragment observes parentViewModel.uiState
+→ state.laps.isNotEmpty() && state.rawFilePath != null
+→ Check lap count:
+  → If laps > 10: showProcessingModeDialog()
+    → User selects FAST or DETAILED
+  → If laps <= 10: use DETAILED mode
+→ processAndDisplayChart()
+→ [ASYNC] For each lap:
+  → TelemetryChartProcessor.computeSpeedByDistance(filePath, lap.startTs, lap.endTs, mode)
+    → TelemetryFileReader.readRange(filePath, startTs, endTs)
+    → If FAST mode: downsample(samples, 100)
+    → computeDistanceAndSpeed(samples)
+      → For each sample: cumulativeDistance += haversine(prev, current)
+      → Return SpeedDataPoint(distanceMeters, speedKmh)
+→ Convert to MPAndroidChart Entry list
+→ Create LineDataSet (blue for best lap, grey for others)
+→ Bind to LineChart widget
+```
+
+### Async Boundaries
+
+| Boundary | Type | Location |
+|----------|------|----------|
+| File read | `withContext(Dispatchers.IO)` | `TelemetryFileReader.readRange()` |
+| Distance computation | `withContext(Dispatchers.Default)` | `TelemetryChartProcessor.computeSpeedByDistance()` |
+| UI update | Main thread | `binding.speedChart.data = ...` |
+
+### Persistence Boundaries
+
+| Storage | Data | Purpose |
+|---------|------|---------|
+| JSONL file | Telemetry samples | Source of speed + GPS data |
+| Room `sessions` | `rawFilePath` | Path to telemetry file |
+| Room `laps` | `startTs`, `endTs` | Filter samples by lap |
+
+### External Dependencies
+
+None — fully offline processing.
+
+### Failure Points
+
+| Stage | Failure | Symptom | Propagation |
+|-------|---------|---------|-------------|
+| File not found | `rawFilePath` points to missing file | "Telemetry data not available" | Empty chart |
+| Empty samples | No samples in time range | "No speed data available" | Empty chart |
+| Memory pressure | Very large session in DETAILED mode | ANR / OOM | App may freeze |
+
+### Configuration
+
+| Constant | Value | Effect |
+|----------|-------|--------|
+| `LARGE_SESSION_LAP_THRESHOLD` | 10 | Dialog shown above this |
+| `FAST_MODE_POINTS_PER_LAP` | 100 | Downsampling target |
+
+### User-Visible Symptoms
+
+| Symptom | Cause |
+|---------|-------|
+| Loading spinner | Processing telemetry |
+| "Fast vs Detailed" dialog | Session has >10 laps |
+| Empty chart | File missing or no data |
+| Slow rendering | Large session in DETAILED mode |
+
+### Operational Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| Processing mode dialog | UI | User choosing Fast/Detailed |
+| Loading container visible | UI | Computation in progress |
+| `hasLoadedRealData = true` | Fragment state | Chart rendered successfully |
 
 ---
 
@@ -1051,5 +1236,6 @@ None (local-only).
 | GPS unavailable | No telemetry data |
 | File write failure | Data gaps, upload may fail |
 | Upload failure | No coaching insights |
+| Zero sector data | Misleading sector insights |
 | 401 on any API | Session expired, re-login |
 | Room corruption | All local data lost |

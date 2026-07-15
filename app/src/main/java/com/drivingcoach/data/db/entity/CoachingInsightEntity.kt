@@ -23,5 +23,10 @@ data class CoachingInsightEntity(
     val sessionId: Long,
     val headline: String,
     val detail: String,
-    val generatedAt: Long
+    val generatedAt: Long,
+    /**
+     * True if this insight was generated locally (offline coaching).
+     * False if it came from the AI backend.
+     */
+    val isLocalOnly: Boolean = false
 )

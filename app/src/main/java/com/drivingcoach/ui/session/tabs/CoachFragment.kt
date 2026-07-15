@@ -4,18 +4,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.drivingcoach.R
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
+import com.drivingcoach.data.db.entity.CoachingPreference
 import com.drivingcoach.databinding.FragmentCoachBinding
 import com.drivingcoach.databinding.ItemCoachingInsightBinding
 import com.drivingcoach.ui.session.SessionResultViewModel
+import com.drivingcoach.ui.session.SessionUiState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -40,7 +39,18 @@ class CoachFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupClickListeners()
         observeViewModel()
+    }
+
+    private fun setupClickListeners() {
+        binding.btnKeepLocal.setOnClickListener {
+            parentViewModel.setCoachingPreference(CoachingPreference.LOCAL)
+        }
+        
+        binding.btnViewAI.setOnClickListener {
+            parentViewModel.setCoachingPreference(CoachingPreference.AI)
+        }
     }
 
     private fun observeViewModel() {
@@ -53,7 +63,7 @@ class CoachFragment : Fragment() {
         }
     }
 
-    private fun updateUI(state: com.drivingcoach.ui.session.SessionUiState) {
+    private fun updateUI(state: SessionUiState) {
         // Update consistency score
         binding.consistencyScore.text = String.format("%.1f%%", state.consistencyScore)
         
@@ -62,6 +72,30 @@ class CoachFragment : Fragment() {
         val bestLapTime = state.bestLap?.let { formatLapTime(it.durationMs) } ?: "N/A"
         binding.sessionSummary.text = "$lapCount laps completed\nBest lap: $bestLapTime"
 
+        // Determine which insights to show based on preference
+        val hasLocalInsights = state.insights.any { it.isLocalOnly }
+        val hasAiInsights = state.insights.any { !it.isLocalOnly }
+        val showingLocal = state.coachingPreference == CoachingPreference.LOCAL || !hasAiInsights
+        
+        // Update coaching type badge
+        binding.coachingTypeBadge.text = if (showingLocal && hasLocalInsights) "OFFLINE INSIGHTS" else "AI COACHING"
+        
+        // Show AI available banner when:
+        // - User is viewing local insights AND AI insights exist AND preference is LOCAL
+        val showAiBanner = hasLocalInsights && hasAiInsights && state.coachingPreference == CoachingPreference.LOCAL
+        binding.aiAvailableBanner.visibility = if (showAiBanner) View.VISIBLE else View.GONE
+        
+        // Show upsell card when:
+        // - Only local insights exist (no AI yet) AND session is offline/pending upload
+        val showUpsell = hasLocalInsights && !hasAiInsights && !state.isLoading
+        binding.upsellCard.visibility = if (showUpsell) View.VISIBLE else View.GONE
+
+        // Filter insights based on preference
+        val insightsToShow = when {
+            showingLocal -> state.insights.filter { it.isLocalOnly }
+            else -> state.insights.filter { !it.isLocalOnly }
+        }
+
         // Handle loading/empty states
         when {
             state.isLoading -> {
@@ -69,8 +103,9 @@ class CoachFragment : Fragment() {
                 binding.insightsContainer.visibility = View.GONE
                 binding.emptyStateText.visibility = View.GONE
                 binding.headerCard.visibility = View.GONE
+                binding.upsellCard.visibility = View.GONE
             }
-            state.insights.isEmpty() -> {
+            insightsToShow.isEmpty() && state.insights.isEmpty() -> {
                 binding.loadingContainer.visibility = View.GONE
                 binding.insightsContainer.visibility = View.GONE
                 binding.emptyStateText.visibility = View.VISIBLE
@@ -81,7 +116,7 @@ class CoachFragment : Fragment() {
                 binding.insightsContainer.visibility = View.VISIBLE
                 binding.emptyStateText.visibility = View.GONE
                 binding.headerCard.visibility = View.VISIBLE
-                populateInsights(state.insights)
+                populateInsights(insightsToShow)
             }
         }
     }

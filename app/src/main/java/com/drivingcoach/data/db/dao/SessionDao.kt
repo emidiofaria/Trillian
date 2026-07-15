@@ -25,6 +25,9 @@ interface SessionDao {
     @Query("SELECT * FROM sessions WHERE userId = :userId ORDER BY startedAt DESC")
     fun getAllSessionsForUser(userId: String): Flow<List<SessionEntity>>
 
+    @Query("SELECT * FROM sessions ORDER BY startedAt DESC")
+    fun getAllSessions(): Flow<List<SessionEntity>>
+
     @Query("SELECT * FROM sessions WHERE uploadStatus = 'PENDING' OR uploadStatus = 'FAILED'")
     suspend fun getPendingUploadSessions(): List<SessionEntity>
     

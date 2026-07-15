@@ -51,6 +51,10 @@ class SessionRepository @Inject constructor(
         return sessionDao.getAllSessionsForUser(userId)
     }
 
+    fun getAllSessions(): Flow<List<SessionEntity>> {
+        return sessionDao.getAllSessions()
+    }
+
     suspend fun fetchSessions(): SessionResult<List<SessionDto>> {
         return try {
             val response = apiService.getSessions()
