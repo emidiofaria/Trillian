@@ -1,5 +1,5 @@
 # Trillian Chronicles — Paper #2
-## "Before the Track Day: Four Bugs, Zero Code Typed, and a Helmet Made of Pixels"
+## "Before the Track Day: Four Bugs, Zero Code Typed, and a yellow helmet Made of Pixels"
 
 **Series:** The Fully AI-Driven Software Development Experiment  
 **Issue:** #2 — The Pre-Season Shakedown  
@@ -26,15 +26,17 @@ Spoiler: It worked. Eventually. After some... extensive prompting.
 
 ---
 
-## TL;DR: Five Lessons the Emulator Taught Us
+## TL;DR: Six Lessons the Emulator Taught Us
 
 Before you read about the bugs that almost ruined track day, here's what they taught us. These are the lessons that survive long after the stack traces are forgotten.
 
-### Lesson 1: Race Conditions Don't Care About Your Architecture
+### Lesson 1: AI Builds What You Specify, Not What You Need
 
-The service-emits-state-ViewModel-observes pattern looks beautiful on a whiteboard. In practice, if the service calls `stopSelf()` mid-emission, the observer never receives the message. The newspaper is already in the fire by the time you reach for it.
+The speed chart showed a beautiful sine wave. It technically fulfilled the requirement: *"show a speed chart."* The AI even left a helpful comment: `// In a real app, this would come from telemetry samples`. But nobody questioned it until a human with racing knowledge asked: *"Wait, what does this chart actually show?"*
 
-**The rule:** Don't rely on async observation for critical operations triggered by teardown. Call it directly or don't call it at all.
+X-axis was time (useless for comparing corners). Data was synthetic (useless for actual analysis). The AI implemented the spec faithfully — including its gaps.
+
+**The rule:** AI implements your request literally. It doesn't challenge the request. Domain expertise isn't optional; it's the difference between a feature that exists and a feature that's useful. A chart that "shows speed" isn't the same as a chart that helps you go faster.
 
 ### Lesson 2: Numbers Have Context
 
@@ -60,6 +62,11 @@ That blue circle was committed months ago. It survived multiple feature branches
 
 **The rule:** Replace placeholders immediately after the real asset exists. They have a way of becoming permanent. "Temporary" is the most permanent state in software.
 
+### Lesson 6: Race Conditions Don't Care About Your Architecture
+
+The service-emits-state-ViewModel-observes pattern looks beautiful on a whiteboard. In practice, if the service calls `stopSelf()` mid-emission, the observer never receives the message. The newspaper is already in the fire by the time you reach for it.
+
+**The rule:** Don't rely on async observation for critical operations triggered by teardown. Call it directly or don't call it at all.
 ---
 
 ## The Evidence: Four Bugs, One Table
@@ -73,6 +80,7 @@ Here's what broke. The lessons above came from these. Full root cause analyses l
 | 04 | Debugging required 3 data sources | Telemetry file had no session context — start line stored separately in Room | Add header line to JSONL with session metadata + start line | #3 |
 | 05 | Giant card blocked lap times | UI designed "online-first" — status card assumed temporary, but offline = permanent | Replace 180dp card with 40dp dismissible status bar | #4 |
 | — | Blue circle instead of helmet | Placeholder drawable never replaced with actual app icon | Change `bg_logo_placeholder` → `@mipmap/ic_launcher` | #5 |
+| — | Speed chart showed fake data | AI implemented "speed chart" literally — sine wave, time-based X-axis, no real telemetry | Real telemetry, distance-based X-axis, downsampling dialog | #6 |
 
 *Full RCAs with evidence, timelines, and code analysis: `03_incidents/02-05/`*
 
@@ -101,7 +109,7 @@ Paper #1 asked: *"Can AI build a production app without human code intervention?
 
 Paper #2 answers: *"Yes — and when bugs appear, it can debug them too. With documentation."*
 
-Four bugs. Four fixes. Five lessons. Zero lines of human code. The spec is intact — all 117 requirements still trace to working code. The tests pass. The incidents are filed with full root cause analysis, evidence chains, and prevention recommendations that will outlive the bugs themselves.
+Four bugs. Four fixes. Six lessons. Zero lines of human code. The spec is intact — all 117 requirements still trace to working code. The tests pass. The incidents are filed with full root cause analysis, evidence chains, and prevention recommendations that will outlive the bugs themselves.
 
 Tomorrow: real GPS. Real tires. Real data. The validation that matters.
 
