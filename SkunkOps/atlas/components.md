@@ -147,6 +147,72 @@ Detects laps locally (offline) from a JSONL telemetry file using start/finish li
 
 ---
 
+## Component: TelemetryChartProcessor
+
+### Purpose
+
+Processes telemetry data into chart-ready speed vs distance data points for the Chart tab. Computes cumulative distance using GPS coordinates and supports downsampling for large sessions.
+
+### Key Code Areas
+
+- `TelemetryChartProcessor.kt` — core processing logic, distance computation
+- `ChartData.kt` — `SpeedDataPoint` and `ChartProcessingMode` enum
+- `ChartFragment.kt` — UI integration, processing mode dialog
+
+### Dependencies
+
+- `TelemetryFileReader` — reads samples from JSONL file
+- `GeoUtils` — haversine distance calculation
+- `LapEntity` — provides lap start/end timestamps
+
+### Inputs
+
+- JSONL telemetry file path (via `SessionUiState.rawFilePath`)
+- Lap timestamps (`LapEntity.startTs`, `LapEntity.endTs`)
+- Processing mode (FAST or DETAILED)
+
+### Outputs
+
+- `List<SpeedDataPoint>` — distance (meters) and speed (km/h) for charting
+- MPAndroidChart `Entry` list for rendering
+
+### Algorithm
+
+1. Read telemetry samples within lap time range (`TelemetryFileReader.readRange()`)
+2. If FAST mode, downsample to ~100 points per lap (uniform sampling)
+3. Compute cumulative distance: for each sample, add haversine distance from previous sample
+4. Convert speed: `speedKmh = speedMs * 3.6`
+5. Return list of `SpeedDataPoint(distanceMeters, speedKmh)`
+
+### Configuration Constants
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `LARGE_SESSION_LAP_THRESHOLD` | 10 | Trigger processing mode dialog |
+| `FAST_MODE_POINTS_PER_LAP` | 100 | Target points after downsampling |
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| Empty data | "No speed data available" message | No samples in lap time range |
+| File not found | Error loading data | Telemetry file missing |
+| Memory pressure | Slow rendering or ANR | Very large session (50+ laps) in DETAILED mode |
+
+### Observable Signals
+
+| Signal | Location |
+|--------|----------|
+| Processing mode dialog | UI when laps > 10 |
+| Loading spinner | Chart tab during processing |
+| "Offline processing is limited..." | Dialog message |
+
+### Criticality
+
+**MEDIUM** — Chart is a value-add feature; failure doesn't block lap times or coaching
+
+---
+
 ## Component: Authentication Layer
 
 ### Purpose
@@ -917,6 +983,88 @@ private fun toLocal(lat: Double, lng: Double, refLat: Double, refLng: Double): P
 
 ---
 
+## Component: Offline Coaching Engine
+
+### Purpose
+
+Generates coaching insights locally (offline) from lap data stored in Room. Provides immediate feedback after recording stops without requiring backend AI processing. Produces 3-4 insights: Best Lap Highlight, Top Speed, Consistency Score, and Sector Focus (upsell).
+
+### Key Code Areas
+
+- `OfflineCoachingEngine.kt` — stateless insight generation rules engine
+- `RecordingViewModel.kt` — calls `generateOfflineCoaching()` after lap detection
+- `CoachingInsightDao.kt` / `CoachingInsightEntity.kt` — persists generated insights
+
+### Dependencies
+
+- `LapEntity` from Room — provides lap timing and sector data
+- `CoachingInsightDao` — persists generated insights
+- Telemetry JSONL file — for top speed extraction
+
+### Inputs
+
+- `List<LapEntity>` — laps from the session (minimum 2 required)
+- Each lap contains: `durationMs`, `sector1Ms`, `sector2Ms`, `sector3Ms`, `startTs`, `endTs`
+- `rawFilePath` — path to telemetry JSONL for top speed extraction
+
+### Outputs
+
+- `List<OfflineInsight>` — 3-4 insights with `headline` and `detail` strings
+- Persisted `CoachingInsightEntity` rows in Room
+
+### Insight Types (v2.1+)
+
+| Insight | Condition | Example |
+|---------|-----------|---------|
+| Best Lap | Always (if ≥2 laps) | "Lap 3 Was Your Fastest — 2.3s ahead of average" |
+| Top Speed | If telemetry file exists | "🚀 Top Speed: 247 km/h — Hit on Lap 3" |
+| Consistency | Always (if ≥2 laps) | "Laps within 1.2s of each other" |
+| Sector Focus | If sectors unavailable | "Sector Analysis Coming Soon" (upsell) |
+
+### Failure Modes
+
+| Mode | Symptom | Cause | Mitigation (v2.1) |
+|------|---------|-------|-------------------|
+| Insufficient laps | Empty insight list | `laps.size < 2` | Show message |
+| Zero sector data | ~~"0ms quicker"~~ | Sectors not calculated | ✅ FIXED: `areSectorsAvailable()` guard |
+| No telemetry file | No top speed insight | File missing/deleted | Graceful skip |
+| GPS noise spike | False top speed | Bad GPS data | ✅ FIXED: 350 km/h cap |
+
+### Observable Signals
+
+| Signal | Location |
+|--------|----------|
+| `RecordingViewModel` tag | Logcat |
+| "Generated X offline coaching insights" | Logcat DEBUG |
+| "No offline coaching insights generated" | Logcat DEBUG |
+| `isLocalOnly = true` | `CoachingInsightEntity` |
+
+### Evidence Sources
+
+- Room query: `SELECT * FROM coaching_insights WHERE sessionId = ? AND isLocalOnly = 1`
+- Logcat filter: `TAG:RecordingViewModel`
+- `session.jsonl` for lap count and speed verification
+
+### Recovery/Mitigation
+
+- Insufficient laps: User must complete at least 2 laps
+- Zero sector data: ✅ `areSectorsAvailable()` guard prevents false insights
+
+### Known Limitations
+
+| Limitation | Impact | Status |
+|------------|--------|--------|
+| No sector timing (local) | Sector insights show "0ms" | ✅ FIXED v2.1 |
+| GPS noise (>350 km/h) | False top speed | ✅ FIXED v2.1 |
+| Wording "vary by" | Misleading | ✅ FIXED v2.1 → "within" |
+| No driving technique insights | Limited feedback | Backend-only feature |
+
+### Criticality
+
+**MEDIUM** — Enhances UX; failure = no coaching but session data intact
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -930,5 +1078,6 @@ private fun toLocal(lat: Double, lng: Double, refLat: Double, refLng: Double): P
 | Telemetry Upload Worker | MEDIUM | Delayed sync, no data loss |
 | Session Repository | MEDIUM | Operation-specific failures |
 | Lap & Coaching Sync | MEDIUM | Delayed insights |
+| Offline Coaching Engine | MEDIUM | No coaching insights |
 | Session State Machine | MEDIUM | UX confusion |
 | Stale Upload Detection | LOW | Missing UX warning |

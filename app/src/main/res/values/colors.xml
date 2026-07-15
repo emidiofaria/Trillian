@@ -39,4 +39,5 @@
     <color name="colorOnBackground">#FFFFFF</color>
     <color name="colorOnSurface">#FFFFFF</color>
     <color name="colorOnSurfaceVariant">#B0B0B0</color>
+    <color name="colorOutline">#404040</color>
 </resources>

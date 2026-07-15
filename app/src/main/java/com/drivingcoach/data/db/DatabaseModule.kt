@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
+import com.drivingcoach.data.db.dao.SessionPreferenceDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,7 +25,11 @@ object DatabaseModule {
             DrivingCoachDatabase::class.java,
             DrivingCoachDatabase.DATABASE_NAME
         )
-            .addMigrations(DrivingCoachDatabase.MIGRATION_1_2, DrivingCoachDatabase.MIGRATION_2_3)
+            .addMigrations(
+                DrivingCoachDatabase.MIGRATION_1_2, 
+                DrivingCoachDatabase.MIGRATION_2_3,
+                DrivingCoachDatabase.MIGRATION_3_4
+            )
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -42,5 +47,10 @@ object DatabaseModule {
     @Provides
     fun provideCoachingInsightDao(database: DrivingCoachDatabase): CoachingInsightDao {
         return database.coachingInsightDao()
+    }
+
+    @Provides
+    fun provideSessionPreferenceDao(database: DrivingCoachDatabase): SessionPreferenceDao {
+        return database.sessionPreferenceDao()
     }
 }

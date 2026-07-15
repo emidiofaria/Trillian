@@ -64,8 +64,7 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    // TODO: Replace with actual user ID from auth
-    private val currentUserId = "demo_user"
+    // Single-user MVP: no userId filtering needed
     
     companion object {
         private const val STALE_UPLOAD_THRESHOLD_MS = 5 * 60 * 1000L // 5 minutes
@@ -89,7 +88,7 @@ class HomeViewModel @Inject constructor(
     private fun loadSessions() {
         viewModelScope.launch {
             try {
-                sessionDao.getAllSessionsForUser(currentUserId).collect { sessions ->
+                sessionDao.getAllSessions().collect { sessions ->
                     val sessionSummaries = sessions.map { session ->
                         val laps = lapDao.getLapsForSession(session.id).first()
                         val bestLap = laps.minByOrNull { it.durationMs }

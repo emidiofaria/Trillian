@@ -18,6 +18,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.drivingcoach.R
 import com.drivingcoach.databinding.FragmentTrackSetupBinding
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -39,6 +40,8 @@ class TrackSetupFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: TrackSetupViewModel by viewModels()
+    
+    private val args: TrackSetupFragmentArgs by navArgs()
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var currentLocation: Location? = null
@@ -254,10 +257,11 @@ class TrackSetupFragment : Fragment() {
     private fun navigateToRecording() {
         val coords = viewModel.getStartLineCoords() ?: return
 
-        // Navigate to recording with start line coords
+        // Navigate to recording with start line coords and track name
         val action = TrackSetupFragmentDirections
             .actionTrackSetupToRecording(
                 sessionId = -1L, // Will be created by RecordingFragment
+                trackName = args.trackName,
                 startLineLat1 = coords.lat1.toFloat(),
                 startLineLng1 = coords.lng1.toFloat(),
                 startLineLat2 = coords.lat2.toFloat(),
