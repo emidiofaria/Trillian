@@ -149,7 +149,7 @@ class HomeFragment : Fragment() {
                 findNavController().navigate(action)
             }
             is HomeEvent.NavigateToTrackSetup -> {
-                val action = HomeFragmentDirections.actionHomeToTrackSetup()
+                val action = HomeFragmentDirections.actionHomeToTrackSetup(event.trackName)
                 findNavController().navigate(action)
             }
             is HomeEvent.NavigateToProfile -> {

@@ -7,12 +7,16 @@ import androidx.work.WorkManager
 import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
+import com.drivingcoach.data.db.dao.SessionPreferenceDao
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
+import com.drivingcoach.data.db.entity.CoachingPreference
 import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.ProcessingStatus
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.db.entity.SessionPreferenceEntity
 import com.drivingcoach.data.worker.TelemetryUploadWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.math.sqrt
 
@@ -33,6 +38,8 @@ data class SessionUiState(
     val consistencyScore: Float = 0f,
     val processingStatus: ProcessingStatus = ProcessingStatus.PENDING,
     val hasLocalOnlyLaps: Boolean = false,  // True if any laps were detected locally (not yet processed by backend)
+    val rawFilePath: String? = null,  // Path to telemetry JSONL file for chart rendering
+    val coachingPreference: CoachingPreference = CoachingPreference.LOCAL,  // User's preference for which coaching to view
     val error: String? = null
 )
 
@@ -41,6 +48,7 @@ class SessionResultViewModel @Inject constructor(
     private val sessionDao: SessionDao,
     private val lapDao: LapDao,
     private val coachingInsightDao: CoachingInsightDao,
+    private val sessionPreferenceDao: SessionPreferenceDao,
     private val workManager: WorkManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -62,14 +70,20 @@ class SessionResultViewModel @Inject constructor(
                 combine(
                     sessionDao.getSessionById(sessionId),
                     lapDao.getLapsForSession(sessionId),
-                    coachingInsightDao.getInsightsForSession(sessionId)
-                ) { session, laps, insights ->
+                    coachingInsightDao.getInsightsForSession(sessionId),
+                    sessionPreferenceDao.getPreferenceFlow(sessionId)
+                ) { session, laps, insights, preference ->
                     val bestLap = laps.find { it.isBestLap } ?: laps.minByOrNull { it.durationMs }
                     val consistencyScore = computeConsistencyScore(laps)
                     val processingStatus = session?.processingStatus?.let { 
                         try { ProcessingStatus.valueOf(it) } catch (e: Exception) { ProcessingStatus.PENDING }
                     } ?: ProcessingStatus.PENDING
                     val hasLocalOnlyLaps = laps.any { it.isLocalOnly }
+                    
+                    // Default to LOCAL if no preference stored
+                    val coachingPref = preference?.coachingPreference?.let {
+                        try { CoachingPreference.valueOf(it) } catch (e: Exception) { CoachingPreference.LOCAL }
+                    } ?: CoachingPreference.LOCAL
                     
                     SessionUiState(
                         isLoading = false,
@@ -79,7 +93,9 @@ class SessionResultViewModel @Inject constructor(
                         bestLap = bestLap,
                         consistencyScore = consistencyScore,
                         processingStatus = processingStatus,
-                        hasLocalOnlyLaps = hasLocalOnlyLaps
+                        hasLocalOnlyLaps = hasLocalOnlyLaps,
+                        rawFilePath = session?.rawFilePath,
+                        coachingPreference = coachingPref
                     )
                 }.collect { state ->
                     _uiState.value = state
@@ -99,6 +115,28 @@ class SessionResultViewModel @Inject constructor(
                     isLoading = false,
                     error = e.message ?: "Failed to load session"
                 )
+            }
+        }
+    }
+    
+    /**
+     * Sets the user's coaching preference (LOCAL or AI).
+     * Persisted to database so it's remembered when returning to session.
+     */
+    fun setCoachingPreference(preference: CoachingPreference) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    sessionPreferenceDao.upsertPreference(
+                        SessionPreferenceEntity(
+                            sessionId = sessionId,
+                            coachingPreference = preference.name
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                // Non-fatal - just update UI state without persisting
+                _uiState.value = _uiState.value.copy(coachingPreference = preference)
             }
         }
     }

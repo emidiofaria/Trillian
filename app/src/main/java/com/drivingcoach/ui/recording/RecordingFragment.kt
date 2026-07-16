@@ -203,7 +203,7 @@ class RecordingFragment : Fragment() {
                 null
             }
             viewModel.createSessionAndStartRecording(
-                trackName = "Track Session", // TODO: Get from nav args or preferences
+                trackName = args.trackName,
                 startLine = startLine
             )
         }

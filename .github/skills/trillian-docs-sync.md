@@ -175,28 +175,78 @@ For each artifact type, apply these update strategies:
 
 ## Output Format
 
-After analysis and updates, provide a **Documentation Sync Report** with detailed diffs:
+After analysis and updates, **append** a new entry to `docs/SYNC_REPORT.md` (create if doesn't exist).
+
+### SYNC_REPORT.md Structure
+
+This is a **cumulative changelog** of all documentation syncs. Each sync adds a new entry at the TOP of the file (newest first).
 
 ```markdown
 # Documentation Sync Report
 
-**Date:** YYYY-MM-DD
-**Codebase Version:** [git commit hash]
-**Trigger:** [User request / feature description]
+Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
-## Summary
+## [2026-07-15] Real Speed Chart
+
+**Codebase Version:** v1.9-real-speed-chart  
+**Trigger:** Real telemetry speed chart implementation
+
+### Summary
 
 | Artifact | Status | Changes |
 |----------|--------|---------|
-| system.md | ✅ Updated | +15 lines, -3 lines |
-| components.md | ✅ Updated | +47 lines (2 new components) |
-| flows.md | ⚠️ Needs Review | Flow X may need diagram |
-| failure-patterns.md | ➖ No changes | Current |
-| DrivingCoach_SRS_v1.md | ✅ Updated | +5 requirements |
-| USER_MANUAL.md | ✅ Updated | +1 section, +2 FAQ entries |
-| Test checklists | ✅ Updated | +8 test cases |
+| components.md | ✅ Updated | +55 lines (1 new component) |
+| flows.md | ✅ Updated | +85 lines (1 new flow) |
+| SRS_v1.md | ✅ Updated | +5 requirements (LC-11 to LC-15) |
+| USER_MANUAL.md | ✅ Updated | Section 5.3 rewritten |
+
+### New Requirement IDs
+- LC-11, LC-12, LC-13, LC-14, LC-15
+
+### Files Modified
+```
+M  SkunkOps/atlas/components.md    (+55)
+M  SkunkOps/atlas/flows.md         (+85)
+M  01_requirements/SRS_v1.md       (+7, -2)
+M  docs/USER_MANUAL.md             (+22, -6)
+```
+
+---
+
+## [2026-07-13] Local Lap Detection
+
+**Codebase Version:** v1.7-local-lap-detection  
+**Trigger:** Offline lap detection feature
+
+### Summary
+...
+```
+
+### Entry Template
+
+Each sync entry should include:
+
+1. **Date header** — `## [YYYY-MM-DD] Feature Name`
+2. **Metadata** — Version, trigger
+3. **Summary table** — Artifacts updated with line counts
+4. **New IDs** — Any new requirement/test IDs added
+5. **Files Modified** — Git-style file list
+6. **Separator** — `---` between entries
+
+### Update Workflow
+
+1. Read existing `docs/SYNC_REPORT.md` (if exists)
+2. Prepare new entry with current sync details
+3. Insert new entry after the header, before previous entries
+4. Write updated file
+
+This keeps a running history while maintaining the newest-first order for easy reading.
+
+---
+
+## Change Visibility Requirements (per entry)
 
 ---
 

@@ -222,8 +222,13 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | LC-06 | Tapping a lap card shall navigate to the Lap Detail screen for that lap. |
 | LC-07 | The Lap Detail screen shall display the selected lap and the best lap side by side: lap times in large `LapTime` style, total delta (coloured), and per-sector breakdown. |
 | LC-08 | Each sector comparison on the Lap Detail screen shall show: sector label, selected time (monospace), delta badge (coloured pill), best time (monospace), and a horizontal relative-performance bar. |
-| LC-09 | The Session Result screen shall display a 'CHART' tab with a speed trace (km/h vs lap progress) for all laps. All laps shall be plotted in grey (#444444), the best lap in BMW blue (#1C69D4). |
+| LC-09 | The Session Result screen shall display a 'CHART' tab with a speed trace (km/h vs distance in meters) for all laps. All laps shall be plotted in grey (#B0B0B0 at 50% opacity), the best lap in brand primary colour with 3dp line width. |
 | LC-10 | Speed values in the chart shall be converted from m/s to km/h using the factor 3.6. |
+| LC-11 | The chart X-axis shall display distance in meters from lap start (e.g., "450m"), computed using cumulative haversine distance between GPS samples. |
+| LC-12 | The chart shall read real telemetry data from the session's JSONL file, filtered by lap start/end timestamps. |
+| LC-13 | For sessions with more than 10 laps, the app shall display a warning: "Offline processing is limited and may take some time." |
+| LC-14 | For sessions with large telemetry data, the app shall prompt the user to choose between "Fast" (downsampled to ~100 points per lap) or "Detailed" (all samples) processing modes. |
+| LC-15 | In Fast mode, samples shall be uniformly downsampled to approximately 100 points per lap to optimize rendering performance. |
 
 ---
 
@@ -246,13 +251,28 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | AI-13 | The consistency score formula is: `(1 − σ / μ) × 100`, where `σ` is the standard deviation of lap times and `μ` is the mean lap time. The result is clamped to [0, 100] and expressed as a percentage to 1 decimal place. |
 | AI-14 | If `processingStatus=FAILED`, the `COACH` tab shall display a 'RETRY ANALYSIS' button. |
 
+### 10.1 Offline Coaching (Local Insights)
+
+| ID | Requirement |
+|---|---|
+| OC-01 | When offline or backend unavailable, the app shall generate local coaching insights immediately after local lap detection completes. |
+| OC-02 | Offline coaching shall produce exactly 3-4 insights: Best Lap, Top Speed (if telemetry available), Consistency, and Sector Focus (upsell). |
+| OC-03 | The Best Lap insight shall show "Lap N Was Your Fastest" with time delta vs average. Sector detail shall only be shown if all laps have non-zero sector times. |
+| OC-04 | If sector times are unavailable (sector*Ms = 0), the Best Lap insight shall NOT reference specific sectors. Instead, it shall show "X.Xs ahead of average". |
+| OC-05 | The Top Speed insight shall read telemetry JSONL, extract maximum speed, and display "🚀 Top Speed: X km/h — Hit on Lap N". |
+| OC-06 | GPS noise shall be filtered: speeds > 350 km/h (97.2 m/s) shall be rejected as implausible. |
+| OC-07 | The Consistency insight shall show "Laps within X.Xs of each other" (using stdDev), not "vary by". |
+| OC-08 | When sectors are unavailable, the Sector Focus insight shall show "Coming Soon" upsell message instead of false sector recommendations. |
+| OC-09 | Offline insights shall be stored with `source="LOCAL"` flag in `coaching_insights` table. |
+| OC-10 | When backend coaching arrives, local insights shall be replaced by backend insights. |
+
 ---
 
 ## 11. Driver progression tracking
 
 | ID | Requirement |
 |---|---|
-| DP-01 | The Home screen shall display a history list of all sessions for the signed-in user, ordered by `startedAt` descending. |
+| DP-01 | The Home screen shall display a history list of all sessions, ordered by `startedAt` descending. (Single-user MVP: no userId filtering) |
 | DP-02 | Each session history card shall show: track name, date formatted as `dd MMM yyyy HH:mm`, best lap time for that session, lap count, consistency score, and an upload status chip (`UPLOADED` / `PENDING` / `FAILED`). |
 | DP-03 | The Home screen shall display a hero card showing the user's overall best lap time across all sessions, the track it was set on, and the date. |
 | DP-04 | If the user has no sessions, the hero card shall display: 'Record your first session to see your best lap'. |

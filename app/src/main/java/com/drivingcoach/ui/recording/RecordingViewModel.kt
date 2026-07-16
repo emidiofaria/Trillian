@@ -9,7 +9,10 @@ import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.drivingcoach.coaching.OfflineCoachingEngine
+import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
+import com.drivingcoach.data.db.entity.CoachingInsightEntity
 import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.SessionEntity
 import com.drivingcoach.data.repository.SessionRepository
@@ -61,6 +64,7 @@ class RecordingViewModel @Inject constructor(
     application: Application,
     private val sessionRepository: SessionRepository,
     private val lapDao: LapDao,
+    private val coachingInsightDao: CoachingInsightDao,
     private val localLapDetector: LocalLapDetector
 ) : AndroidViewModel(application) {
 
@@ -307,7 +311,13 @@ class RecordingViewModel @Inject constructor(
                 when (result) {
                     is LocalLapDetector.DetectionResult.Success -> {
                         // Save laps to Room
-                        saveLapsToRoom(sessionId, result.laps)
+                        val lapEntities = saveLapsToRoom(sessionId, result.laps)
+                        
+                        // Generate offline coaching insights (with telemetry path for top speed)
+                        if (lapEntities.isNotEmpty()) {
+                            generateOfflineCoaching(sessionId, lapEntities, session.rawFilePath)
+                        }
+                        
                         finishProcessing("${result.laps.size} laps detected", result.laps.size)
                     }
                     is LocalLapDetector.DetectionResult.InsufficientLaps -> {
@@ -340,9 +350,10 @@ class RecordingViewModel @Inject constructor(
 
     /**
      * Saves detected laps to Room database.
+     * @return The saved LapEntity list (for coaching generation)
      */
-    private suspend fun saveLapsToRoom(sessionId: Long, detectedLaps: List<LocalLapDetector.DetectedLap>) {
-        if (detectedLaps.isEmpty()) return
+    private suspend fun saveLapsToRoom(sessionId: Long, detectedLaps: List<LocalLapDetector.DetectedLap>): List<LapEntity> {
+        if (detectedLaps.isEmpty()) return emptyList()
 
         // Find best lap
         val bestLap = localLapDetector.findBestLap(detectedLaps)
@@ -369,6 +380,48 @@ class RecordingViewModel @Inject constructor(
         }
 
         Log.d(TAG, "Saved ${lapEntities.size} laps to Room for session $sessionId")
+        return lapEntities
+    }
+
+    /**
+     * Generates offline coaching insights from detected laps.
+     * Uses deterministic rules engine (no AI/network required).
+     * 
+     * @param rawFilePath Path to telemetry JSONL file for top speed extraction
+     */
+    private suspend fun generateOfflineCoaching(
+        sessionId: Long, 
+        laps: List<LapEntity>,
+        rawFilePath: String?
+    ) {
+        try {
+            val insights = OfflineCoachingEngine.generateInsights(laps, rawFilePath)
+            
+            if (insights.isEmpty()) {
+                Log.d(TAG, "No offline coaching insights generated (insufficient laps)")
+                return
+            }
+
+            val now = System.currentTimeMillis()
+            val insightEntities = insights.map { insight ->
+                CoachingInsightEntity(
+                    sessionId = sessionId,
+                    headline = insight.headline,
+                    detail = insight.detail,
+                    generatedAt = now,
+                    isLocalOnly = true
+                )
+            }
+
+            withContext(Dispatchers.IO) {
+                coachingInsightDao.insertInsights(insightEntities)
+            }
+
+            Log.d(TAG, "Generated ${insightEntities.size} offline coaching insights for session $sessionId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating offline coaching insights", e)
+            // Non-fatal - session still usable without insights
+        }
     }
 
     /**
