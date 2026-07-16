@@ -874,3 +874,103 @@ Operational failure patterns for RCA acceleration in Driving Coach Android app.
 | Date | Fix Applied |
 |------|-------------|
 | 2026-05-28 | Added HIGH_SAMPLING_RATE_SENSORS permission + defensive try-catch fallback |
+
+---
+
+## Pattern: Sentinel Value Treated as Valid Data (FP-SENTINEL-VALUE)
+
+### Symptoms
+
+- Coach tab displays "0ms quicker than average" as sector praise
+- Sector-specific insights generated when no sector data exists
+- Consistency insight says "Laps vary by X" but shows standard deviation
+- Insights appear technically correct but are semantically meaningless
+
+### Signals
+
+| Signal | Location | Threshold |
+|--------|----------|-----------|
+| "0ms quicker than average" | Coach tab UI | Any occurrence |
+| `sector1Ms = 0, sector2Ms = 0, sector3Ms = 0` | Room `laps` table | All sectors zero for local laps |
+| `isLocalOnly = true` | Room `laps` and `coaching_insights` | Indicates offline-generated data |
+| Sector insight headline for local session | Coach tab | Local sessions have no sector data |
+
+### Likely Causes
+
+| Cause | Code Path | Evidence |
+|-------|-----------|----------|
+| Missing sector data stored as 0L | `RecordingViewModel.saveLapsToRoom():260-280` | `sector*Ms = 0L` with comment |
+| No guard for zero/missing sectors | `OfflineCoachingEngine.generateBestLapInsight():48-65` | Arithmetic on zeros |
+| No nullable sector representation | `LapEntity.kt` | `sector*Ms: Long` (non-nullable) |
+| No test coverage for zero sectors | `OfflineCoachingEngineTest.kt` | All tests use non-zero sectors |
+
+### Evidence To Check
+
+1. **Room DB**: `SELECT id, sector1Ms, sector2Ms, sector3Ms, isLocalOnly FROM laps WHERE sessionId = ?`
+2. **Room DB**: `SELECT headline, detail FROM coaching_insights WHERE sessionId = ? AND isLocalOnly = 1`
+3. **Logcat**: Filter `TAG:RecordingViewModel` for "Generated X offline coaching insights"
+4. **Source**: Verify `DetectedLap` class has no sector fields
+5. **Source**: Verify `saveLapsToRoom()` writes `sector*Ms = 0L`
+
+### Common Triggers
+
+- User completes a session using local lap detection (no backend processing)
+- User opens Coach tab before backend processing completes
+- Offline usage without network connectivity
+
+### Root Cause
+
+The system uses `0L` as a sentinel value to represent "no data" but the coaching engine interprets it as "measured value of 0ms". This violates the principle that missing data should be explicitly represented (null) rather than using magic values.
+
+### Causal Chain
+
+```
+DetectedLap has no sector fields (design decision)
+    ↓
+saveLapsToRoom() writes sector*Ms = 0L (sentinel)
+    ↓
+OfflineCoachingEngine.generateBestLapInsight() calculates:
+  - avgS1 = average of all zeros = 0.0
+  - gainS1 = 0.0 - 0 = 0
+    ↓
+maxByOrNull selects Sector 1 as "best" (first of equal values)
+    ↓
+Output: "You nailed Sector 1 — 0ms quicker than average"
+```
+
+### Mitigation
+
+1. **Immediate**: Add guard in `OfflineCoachingEngine`:
+   ```kotlin
+   private fun areSectorsAvailable(laps: List<LapEntity>): Boolean =
+       laps.all { it.sector1Ms > 0 && it.sector2Ms > 0 && it.sector3Ms > 0 }
+   ```
+
+2. **Suppress sector insights**: When `!areSectorsAvailable(laps)`:
+   - Replace sector detail with lap-only insight
+   - Skip `generateSectorFocusInsight()` entirely
+
+3. **Fix consistency wording**: Either:
+   - Change calculation to `max(durationMs) - min(durationMs)` (range)
+   - Change copy to "Standard deviation: Xms"
+
+### Permanent Fix
+
+1. **Schema change**: Make `LapEntity.sector*Ms` nullable (`Long?`)
+2. **Persist null**: `saveLapsToRoom()` uses `null` instead of `0L`
+3. **Guard all consumers**: Check for null before sector calculations
+4. **Add tests**: Cover zero/null sector scenarios in `OfflineCoachingEngineTest`
+
+### Confidence
+
+**HIGH** — Direct code path traced from `DetectedLap` → `saveLapsToRoom()` → `OfflineCoachingEngine`
+
+### Related RCA
+
+- `03_incidents/06_coaching_incidents/06_RCA_invalid_sector_coaching.md`
+
+### Resolution History
+
+| Date | Fix Applied |
+|------|-------------|
+| (pending) | Sector guard + wording fix required |
