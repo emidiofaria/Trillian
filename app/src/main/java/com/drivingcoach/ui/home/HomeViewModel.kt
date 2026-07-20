@@ -2,6 +2,7 @@ package com.drivingcoach.ui.home
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drivingcoach.data.db.dao.LapDao
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -55,6 +57,8 @@ sealed class HomeEvent {
     data class NavigateToTrackSetup(val trackName: String) : HomeEvent()
     object NavigateToProfile : HomeEvent()
     data class ShowError(val message: String) : HomeEvent()
+    data class ShowSessionDeleted(val trackName: String) : HomeEvent()
+    data class ShowSessionRenamed(val newName: String) : HomeEvent()
 }
 
 @HiltViewModel
@@ -181,6 +185,57 @@ class HomeViewModel @Inject constructor(
     fun onProfileClick() {
         viewModelScope.launch {
             _events.emit(HomeEvent.NavigateToProfile)
+        }
+    }
+
+    fun deleteSession(sessionId: Long) {
+        viewModelScope.launch {
+            try {
+                val session = sessionDao.getSessionByIdSync(sessionId)
+                val trackName = session?.trackName ?: "Session"
+                
+                // Delete telemetry file if it exists
+                session?.rawFilePath?.let { path ->
+                    try {
+                        val file = File(path)
+                        if (file.exists()) {
+                            file.delete()
+                            Log.d("HomeViewModel", "Deleted telemetry file: $path")
+                        }
+                    } catch (e: Exception) {
+                        Log.w("HomeViewModel", "Failed to delete telemetry file: $path", e)
+                    }
+                }
+                
+                // Delete from Room (CASCADE will remove laps and coaching insights)
+                sessionDao.deleteById(sessionId)
+                Log.d("HomeViewModel", "Deleted session: $sessionId")
+                
+                _events.emit(HomeEvent.ShowSessionDeleted(trackName))
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Failed to delete session: $sessionId", e)
+                _events.emit(HomeEvent.ShowError("Failed to delete session"))
+            }
+        }
+    }
+
+    fun renameSession(sessionId: Long, newName: String) {
+        viewModelScope.launch {
+            try {
+                val trimmedName = newName.trim()
+                if (trimmedName.isEmpty() || trimmedName.length > 100) {
+                    _events.emit(HomeEvent.ShowError("Track name must be 1-100 characters"))
+                    return@launch
+                }
+                
+                sessionDao.updateTrackName(sessionId, trimmedName)
+                Log.d("HomeViewModel", "Renamed session $sessionId to: $trimmedName")
+                
+                _events.emit(HomeEvent.ShowSessionRenamed(trimmedName))
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Failed to rename session: $sessionId", e)
+                _events.emit(HomeEvent.ShowError("Failed to rename session"))
+            }
         }
     }
 }

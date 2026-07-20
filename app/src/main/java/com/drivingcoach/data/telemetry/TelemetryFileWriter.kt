@@ -113,6 +113,23 @@ class TelemetryFileWriter(
     }
 
     /**
+     * Flushes buffered data to disk without closing the writer.
+     * Call periodically to minimize data loss on unexpected termination.
+     */
+    suspend fun flush() = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            if (isClosed) return@withContext
+
+            try {
+                writer?.flush()
+                Log.d(TAG, "Flushed telemetry writer for session $sessionId")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error flushing telemetry writer for session $sessionId", e)
+            }
+        }
+    }
+
+    /**
      * Flushes and closes the writer.
      */
     suspend fun close() = withContext(Dispatchers.IO) {
