@@ -1,0 +1,240 @@
+3:26:01.309 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1015.96ms min=1015.96ms max=1015.96ms count=1
+2026-07-22 13:26:02.892 17058-17058 TelemetryService        com.drivingcoach                     I  GPS locked
+2026-07-22 13:26:02.958 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=824.14ms min=650.50ms max=997.78ms count=2
+2026-07-22 13:26:04.332 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=686.79ms min=363.10ms max=1010.48ms count=2
+2026-07-22 13:26:05.349 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.17ms min=1017.17ms max=1017.17ms count=1
+2026-07-22 13:26:06.365 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1012.47ms min=1012.47ms max=1012.47ms count=1
+2026-07-22 13:26:07.418 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1052.80ms min=1052.80ms max=1052.80ms count=1
+2026-07-22 13:26:09.440 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1010.47ms min=999.25ms max=1021.70ms count=2
+2026-07-22 13:26:09.553 17058-17058 FrameTracker            com.drivingcoach                     E  force finish cuj, time out: J<IME_INSETS_ANIMATION::1@0@com.drivingcoach>
+2026-07-22 13:26:10.449 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1009.56ms min=1009.56ms max=1009.56ms count=1
+2026-07-22 13:26:11.470 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.11ms min=1020.11ms max=1020.11ms count=1
+2026-07-22 13:26:12.481 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1010.79ms min=1010.79ms max=1010.79ms count=1
+2026-07-22 13:26:13.482 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1001.58ms min=1001.58ms max=1001.58ms count=1
+2026-07-22 13:26:14.500 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1016.87ms min=1016.87ms max=1016.87ms count=1
+2026-07-22 13:26:15.519 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.45ms min=1018.45ms max=1018.45ms count=1
+2026-07-22 13:26:16.557 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1038.33ms min=1038.33ms max=1038.33ms count=1
+2026-07-22 13:26:17.569 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1012.08ms min=1012.08ms max=1012.08ms count=1
+2026-07-22 13:26:18.583 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1012.46ms min=1012.46ms max=1012.46ms count=1
+2026-07-22 13:26:19.601 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.78ms min=1017.78ms max=1017.78ms count=1
+2026-07-22 13:26:20.602 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1001.49ms min=1001.49ms max=1001.49ms count=1
+2026-07-22 13:26:21.617 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1014.21ms min=1014.21ms max=1014.21ms count=1
+2026-07-22 13:26:22.631 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1014.58ms min=1014.58ms max=1014.58ms count=1
+2026-07-22 13:26:23.667 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1035.59ms min=1035.59ms max=1035.59ms count=1
+2026-07-22 13:26:24.671 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1003.03ms min=1003.03ms max=1003.03ms count=1
+2026-07-22 13:26:25.692 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.17ms min=1020.17ms max=1020.17ms count=1
+2026-07-22 13:26:26.707 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1014.49ms min=1014.49ms max=1014.49ms count=1
+2026-07-22 13:26:27.744 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1036.37ms min=1036.37ms max=1036.37ms count=1
+2026-07-22 13:26:28.590 14637-20715 ActivityManager         system_server                        E  ANR in com.google.android.gms.persistent
+                                                                                                    PID: 20436
+                                                                                                    Reason: executing service com.google.android.gms/com.google.android.location.reporting.service.DispatchingService
+                                                                                                    ErrorId: 9b793726-33e4-4ec0-8770-190109e046ed
+                                                                                                    Frozen: false
+                                                                                                    Load: 0.0 / 0.0 / 0.0
+                                                                                                    ----- Output from /proc/pressure/memory -----
+                                                                                                    some avg10=0.00 avg60=0.01 avg300=0.22 total=15273072
+                                                                                                    full avg10=0.00 avg60=0.00 avg300=0.00 total=4735526
+                                                                                                    ----- End output from /proc/pressure/memory -----
+                                                                                                    ----- Output from /proc/pressure/cpu -----
+                                                                                                    some avg10=7.44 avg60=15.14 avg300=13.42 total=3157152080
+                                                                                                    full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+                                                                                                    ----- End output from /proc/pressure/cpu -----
+                                                                                                    ----- Output from /proc/pressure/io -----
+                                                                                                    some avg10=0.00 avg60=0.00 avg300=0.05 total=89280337
+                                                                                                    full avg10=0.00 avg60=0.00 avg300=0.00 total=59598862
+                                                                                                    ----- End output from /proc/pressure/io -----
+                                                                                                    
+                                                                                                    CPU usage from 82280ms to 1ms ago (2026-07-22 13:25:05.985 to 2026-07-22 13:26:28.264):
+                                                                                                      9.1% 14637/system_server: 3.3% user + 5.8% kernel / faults: 1287 minor
+                                                                                                      4.5% 17058/com.drivingcoach: 2.7% user + 1.7% kernel / faults: 2187 minor
+                                                                                                      3.6% 20436/com.google.android.gms.persistent: 2.1% user + 1.5% kernel / faults: 9010 minor
+                                                                                                      3.4% 401/android.hardware.sensors-service.multihal: 1% user + 2.3% kernel
+                                                                                                      1.3% 431/android.hardware.graphics.composer3-service.ranchu: 0% user + 1.2% kernel
+                                                                                                      0.8% 466/adbd: 0.3% user + 0.5% kernel
+                                                                                                      0.8% 15622/com.google.android.gms: 0.4% user + 0.4% kernel / faults: 7772 minor 1782 major
+                                                                                                      0.6% 14848/com.android.systemui: 0.2% user + 0.4% kernel / faults: 576 minor
+                                                                                                      0.6% 197/android.system.suspend-service: 0% user + 0.5% kernel
+                                                                                                      0.5% 486/logcat: 0% user + 0.5% kernel
+                                                                                                    3.9% TOTAL: 0.9% user + 1.5% kernel + 0% iowait + 1.3% irq + 0% softirq
+                                                                                                    CPU usage from 119203974ms to 119203974ms ago (1970-01-01 01:00:00.000 to 1970-01-01 01:00:00.000) with 0% awake:
+                                                                                                    0% TOTAL: 0% user + 0% kernel
+2026-07-22 13:26:28.844 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1099.19ms min=1099.19ms max=1099.19ms count=1
+2026-07-22 13:26:30.860 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1007.84ms min=998.06ms max=1017.63ms count=2
+2026-07-22 13:26:31.876 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1014.38ms min=1014.38ms max=1014.38ms count=1
+2026-07-22 13:26:32.896 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.16ms min=1020.16ms max=1020.16ms count=1
+2026-07-22 13:26:33.899 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1002.88ms min=1002.88ms max=1002.88ms count=1
+2026-07-22 13:26:34.918 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.97ms min=1018.97ms max=1018.97ms count=1
+2026-07-22 13:26:35.937 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.11ms min=1018.11ms max=1018.11ms count=1
+2026-07-22 13:26:36.951 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1013.92ms min=1013.92ms max=1013.92ms count=1
+2026-07-22 13:26:37.969 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.07ms min=1018.07ms max=1018.07ms count=1
+2026-07-22 13:26:38.990 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1021.12ms min=1021.12ms max=1021.12ms count=1
+2026-07-22 13:26:40.013 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1022.12ms min=1022.12ms max=1022.12ms count=1
+2026-07-22 13:26:41.024 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1010.91ms min=1010.91ms max=1010.91ms count=1
+2026-07-22 13:26:42.036 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1011.49ms min=1011.49ms max=1011.49ms count=1
+2026-07-22 13:26:43.057 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.81ms min=1020.81ms max=1020.81ms count=1
+2026-07-22 13:26:44.071 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1014.00ms min=1014.00ms max=1014.00ms count=1
+2026-07-22 13:26:45.093 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1021.45ms min=1021.45ms max=1021.45ms count=1
+2026-07-22 13:26:46.096 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1003.24ms min=1003.24ms max=1003.24ms count=1
+2026-07-22 13:26:47.109 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1011.73ms min=1011.73ms max=1011.73ms count=1
+2026-07-22 13:26:48.127 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.13ms min=1017.13ms max=1017.13ms count=1
+2026-07-22 13:26:49.149 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.75ms min=1020.75ms max=1020.75ms count=1
+2026-07-22 13:26:49.793 14637-20861 ActivityManager         system_server                        E  ANR in com.google.android.gms.persistent
+                                                                                                    PID: 20719
+                                                                                                    Reason: executing service com.google.android.gms/.deviceconnection.service.DeviceConnectionWatcherService
+                                                                                                    ErrorId: 744a866b-5a16-41ca-8646-03cdf176814c
+                                                                                                    Frozen: false
+                                                                                                    Load: 0.0 / 0.0 / 0.0
+                                                                                                    ----- Output from /proc/pressure/memory -----
+                                                                                                    some avg10=0.00 avg60=0.01 avg300=0.20 total=15280445
+                                                                                                    full avg10=0.00 avg60=0.00 avg300=0.00 total=4741148
+                                                                                                    ----- End output from /proc/pressure/memory -----
+                                                                                                    ----- Output from /proc/pressure/cpu -----
+                                                                                                    some avg10=7.24 avg60=14.43 avg300=13.44 total=3158822858
+                                                                                                    full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+                                                                                                    ----- End output from /proc/pressure/cpu -----
+                                                                                                    ----- Output from /proc/pressure/io -----
+                                                                                                    some avg10=0.41 avg60=0.28 avg300=0.12 total=89553339
+                                                                                                    full avg10=0.22 avg60=0.15 avg300=0.03 total=59748914
+                                                                                                    ----- End output from /proc/pressure/io -----
+                                                                                                    
+                                                                                                    CPU usage from 21148ms to -4ms ago (2026-07-22 13:26:28.264 to 2026-07-22 13:26:49.416):
+                                                                                                      24% 14637/system_server: 10% user + 14% kernel / faults: 4132 minor
+                                                                                                      8.7% 17058/com.drivingcoach: 5.6% user + 3.1% kernel / faults: 328 minor
+                                                                                                      5.5% 401/android.hardware.sensors-service.multihal: 0.9% user + 4.5% kernel
+                                                                                                      3.7% 15622/com.google.android.gms: 2% user + 1.7% kernel / faults: 5624 minor 23 major
+                                                                                                      2.8% 20688/kworker/0:2-virtio_vsock: 0% user + 2.8% kernel
+                                                                                                      2.4% 20639/com.google.android.gms.unstable: 1% user + 1.3% kernel / faults: 3029 minor 1532 major
+                                                                                                      2.2% 466/adbd: 1% user + 1.2% kernel / faults: 259 minor
+                                                                                                      2.1% 173/logd: 0.3% user + 1.7% kernel / faults: 38 minor
+                                                                                                      1.9% 486/logcat: 0% user + 1.8% kernel
+                                                                                                      1.3% 431/android.hardware.graphics.composer3-service.ranchu: 0.1% user + 1.2% kernel
+                                                                                                    15% TOTAL: 4.8% user + 6.3% kernel + 0.5% iowait + 3.3% irq + 0.2% softirq
+                                                                                                    CPU usage from 119225121ms to 119225121ms ago (1970-01-01 01:00:00.000 to 1970-01-01 01:00:00.000) with 0% awake:
+                                                                                                    0% TOTAL: 0% user + 0% kernel
+2026-07-22 13:26:50.158 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1008.31ms min=1008.31ms max=1008.31ms count=1
+2026-07-22 13:26:51.190 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1031.47ms min=1031.47ms max=1031.47ms count=1
+2026-07-22 13:26:52.234 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1044.36ms min=1044.36ms max=1044.36ms count=1
+2026-07-22 13:26:54.247 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1005.93ms min=997.13ms max=1014.72ms count=2
+2026-07-22 13:26:55.265 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.79ms min=1017.79ms max=1017.79ms count=1
+2026-07-22 13:26:56.283 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.39ms min=1017.39ms max=1017.39ms count=1
+2026-07-22 13:26:57.301 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.06ms min=1018.06ms max=1018.06ms count=1
+2026-07-22 13:26:58.338 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1036.02ms min=1036.02ms max=1036.02ms count=1
+2026-07-22 13:27:00.354 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1008.17ms min=994.96ms max=1021.38ms count=2
+2026-07-22 13:27:01.369 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1014.22ms min=1014.22ms max=1014.22ms count=1
+2026-07-22 13:27:02.386 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.35ms min=1017.35ms max=1017.35ms count=1
+2026-07-22 13:27:03.401 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1013.74ms min=1013.74ms max=1013.74ms count=1
+2026-07-22 13:27:04.422 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.75ms min=1020.75ms max=1020.75ms count=1
+2026-07-22 13:27:05.440 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.17ms min=1018.17ms max=1018.17ms count=1
+2026-07-22 13:27:06.454 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1013.24ms min=1013.24ms max=1013.24ms count=1
+2026-07-22 13:27:07.477 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1023.20ms min=1023.20ms max=1023.20ms count=1
+2026-07-22 13:27:08.499 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.44ms min=1020.44ms max=1020.44ms count=1
+2026-07-22 13:27:09.533 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1032.79ms min=1032.79ms max=1032.79ms count=1
+2026-07-22 13:27:10.539 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1006.26ms min=1006.26ms max=1006.26ms count=1
+2026-07-22 13:27:11.546 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1006.67ms min=1006.67ms max=1006.67ms count=1
+2026-07-22 13:27:12.567 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.56ms min=1020.56ms max=1020.56ms count=1
+2026-07-22 13:27:12.883 14637-20977 ActivityManager         system_server                        E  ANR in com.google.android.gms.unstable
+                                                                                                    PID: 20639
+                                                                                                    Reason: executing service com.google.android.gms/.droidguard.DroidGuardService
+                                                                                                    ErrorId: 239f5f40-4df4-4a8c-990b-aca740b78c7e
+                                                                                                    Frozen: false
+                                                                                                    Load: 0.0 / 0.0 / 0.0
+                                                                                                    ----- Output from /proc/pressure/memory -----
+                                                                                                    some avg10=0.00 avg60=0.00 avg300=0.18 total=15281670
+                                                                                                    full avg10=0.00 avg60=0.00 avg300=0.00 total=4742336
+                                                                                                    ----- End output from /proc/pressure/memory -----
+                                                                                                    ----- Output from /proc/pressure/cpu -----
+                                                                                                    some avg10=14.88 avg60=14.74 avg300=13.58 total=3168985844
+                                                                                                    full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+                                                                                                    ----- End output from /proc/pressure/cpu -----
+                                                                                                    ----- Output from /proc/pressure/io -----
+                                                                                                    some avg10=0.39 avg60=0.49 avg300=0.19 total=89834754
+                                                                                                    full avg10=0.18 avg60=0.24 avg300=0.07 total=59902351
+                                                                                                    ----- End output from /proc/pressure/io -----
+                                                                                                    
+                                                                                                    CPU usage from 23363ms to -3ms ago (2026-07-22 13:26:49.416 to 2026-07-22 13:27:12.782):
+                                                                                                      20% 14637/system_server: 7.5% user + 13% kernel / faults: 1667 minor
+                                                                                                      8.7% 17058/com.drivingcoach: 5.8% user + 2.8% kernel / faults: 253 minor
+                                                                                                      5.3% 401/android.hardware.sensors-service.multihal: 1% user + 4.3% kernel
+                                                                                                      3.2% 20688/kworker/0:2-virtio_vsock: 0% user + 3.2% kernel
+                                                                                                      2.3% 15622/com.google.android.gms: 1% user + 1.2% kernel / faults: 933 minor 7 major
+                                                                                                      1.9% 466/adbd: 0.7% user + 1.2% kernel
+                                                                                                      1.6% 486/logcat: 0% user + 1.5% kernel
+                                                                                                      1.5% 431/android.hardware.graphics.composer3-service.ranchu: 0% user + 1.4% kernel
+                                                                                                      1.4% 173/logd: 0.2% user + 1.1% kernel / faults: 113 minor
+                                                                                                      0.8% 378/statsd: 0% user + 0.8% kernel / faults: 11 minor
+                                                                                                    12% TOTAL: 3.6% user + 5% kernel + 0.5% iowait + 3% irq + 0.1% softirq
+                                                                                                    CPU usage from 119248488ms to 119248488ms ago (1970-01-01 01:00:00.000 to 1970-01-01 01:00:00.000) with 0% awake:
+                                                                                                    0% TOTAL: 0% user + 0% kernel
+2026-07-22 13:27:13.604 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1036.49ms min=1036.49ms max=1036.49ms count=1
+2026-07-22 13:27:14.615 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1010.48ms min=1010.48ms max=1010.48ms count=1
+2026-07-22 13:27:15.643 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1026.96ms min=1026.96ms max=1026.96ms count=1
+2026-07-22 13:27:16.647 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1003.46ms min=1003.46ms max=1003.46ms count=1
+2026-07-22 13:27:17.671 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1023.61ms min=1023.61ms max=1023.61ms count=1
+2026-07-22 13:27:18.684 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1013.04ms min=1013.04ms max=1013.04ms count=1
+2026-07-22 13:27:19.703 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.28ms min=1018.28ms max=1018.28ms count=1
+2026-07-22 13:27:20.725 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1022.13ms min=1022.13ms max=1022.13ms count=1
+2026-07-22 13:27:21.731 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1005.60ms min=1005.60ms max=1005.60ms count=1
+2026-07-22 13:27:22.748 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.46ms min=1017.46ms max=1017.46ms count=1
+2026-07-22 13:27:23.766 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1016.96ms min=1016.96ms max=1016.96ms count=1
+2026-07-22 13:27:24.806 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1040.28ms min=1040.28ms max=1040.28ms count=1
+2026-07-22 13:27:26.829 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1011.38ms min=994.61ms max=1028.15ms count=2
+2026-07-22 13:27:27.838 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1008.64ms min=1008.64ms max=1008.64ms count=1
+2026-07-22 13:27:28.849 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1010.90ms min=1010.90ms max=1010.90ms count=1
+2026-07-22 13:27:29.855 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1005.34ms min=1005.34ms max=1005.34ms count=1
+2026-07-22 13:27:30.880 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1024.85ms min=1024.85ms max=1024.85ms count=1
+2026-07-22 13:27:31.900 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1020.20ms min=1020.20ms max=1020.20ms count=1
+2026-07-22 13:27:33.917 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1008.34ms min=998.85ms max=1017.83ms count=2
+2026-07-22 13:27:34.951 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1033.84ms min=1033.84ms max=1033.84ms count=1
+2026-07-22 13:27:35.974 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.89ms min=1018.89ms max=1018.89ms count=1
+2026-07-22 13:27:37.009 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1035.06ms min=1035.06ms max=1035.06ms count=1
+2026-07-22 13:27:39.021 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1005.81ms min=985.45ms max=1026.17ms count=2
+2026-07-22 13:27:40.036 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1015.08ms min=1015.08ms max=1015.08ms count=1
+2026-07-22 13:27:41.049 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1011.61ms min=1011.61ms max=1011.61ms count=1
+2026-07-22 13:27:42.081 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1031.51ms min=1031.51ms max=1031.51ms count=1
+2026-07-22 13:27:43.097 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1015.91ms min=1015.91ms max=1015.91ms count=1
+2026-07-22 13:27:44.117 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1019.53ms min=1019.53ms max=1019.53ms count=1
+2026-07-22 13:27:45.136 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.77ms min=1017.77ms max=1017.77ms count=1
+2026-07-22 13:27:46.154 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.42ms min=1017.42ms max=1017.42ms count=1
+2026-07-22 13:27:47.164 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1009.63ms min=1009.63ms max=1009.63ms count=1
+2026-07-22 13:27:48.183 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.96ms min=1018.96ms max=1018.96ms count=1
+2026-07-22 13:27:50.219 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.57ms min=997.34ms max=1037.79ms count=2
+2026-07-22 13:27:51.233 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1013.33ms min=1013.33ms max=1013.33ms count=1
+2026-07-22 13:27:52.255 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1021.54ms min=1021.54ms max=1021.54ms count=1
+2026-07-22 13:27:54.274 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1009.04ms min=990.81ms max=1027.27ms count=2
+2026-07-22 13:27:55.281 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1007.06ms min=1007.06ms max=1007.06ms count=1
+2026-07-22 13:27:56.300 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.75ms min=1018.75ms max=1018.75ms count=1
+2026-07-22 13:27:57.340 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1039.12ms min=1039.12ms max=1039.12ms count=1
+2026-07-22 13:27:59.363 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1011.22ms min=996.76ms max=1025.67ms count=2
+2026-07-22 13:28:00.370 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1006.74ms min=1006.74ms max=1006.74ms count=1
+2026-07-22 13:28:01.405 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1034.78ms min=1034.78ms max=1034.78ms count=1
+2026-07-22 13:28:02.415 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1009.06ms min=1009.06ms max=1009.06ms count=1
+2026-07-22 13:28:03.432 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1017.22ms min=1017.22ms max=1017.22ms count=1
+2026-07-22 13:28:04.453 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1019.93ms min=1019.93ms max=1019.93ms count=1
+2026-07-22 13:28:05.465 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1012.04ms min=1012.04ms max=1012.04ms count=1
+2026-07-22 13:28:07.502 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.29ms min=998.28ms max=1038.31ms count=2
+2026-07-22 13:28:08.521 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1018.80ms min=1018.80ms max=1018.80ms count=1
+2026-07-22 13:28:09.533 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1011.95ms min=1011.95ms max=1011.95ms count=1
+2026-07-22 13:28:10.548 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1014.31ms min=1014.31ms max=1014.31ms count=1
+2026-07-22 13:28:11.560 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1012.41ms min=1012.41ms max=1012.41ms count=1
+2026-07-22 13:28:12.582 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1021.93ms min=1021.93ms max=1021.93ms count=1
+2026-07-22 13:28:13.596 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1013.87ms min=1013.87ms max=1013.87ms count=1
+2026-07-22 13:28:14.613 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1016.52ms min=1016.52ms max=1016.52ms count=1
+2026-07-22 13:28:15.626 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1012.75ms min=1012.75ms max=1012.75ms count=1
+2026-07-22 13:28:16.630 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1003.63ms min=1003.63ms max=1003.63ms count=1
+2026-07-22 13:28:17.671 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1040.59ms min=1040.59ms max=1040.59ms count=1
+2026-07-22 13:28:18.681 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1009.51ms min=1009.51ms max=1009.51ms count=1
+2026-07-22 13:28:19.696 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1014.52ms min=1014.52ms max=1014.52ms count=1
+2026-07-22 13:28:20.730 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1033.79ms min=1033.79ms max=1033.79ms count=1
+2026-07-22 13:28:21.752 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1021.58ms min=1021.58ms max=1021.58ms count=1
+2026-07-22 13:28:23.762 17058-17179 EGL_emulation           com.drivingcoach                     D  app_time_stats: avg=1005.26ms min=992.00ms max=1018.51ms count=2
+2026-07-22 13:28:24.756 17058-17058 IPCThreadState          com.drivingcoach                     E  Binder transaction failure: 6983857/29189/-3
+2026-07-22 13:28:24.757 17058-17058 AndroidRuntime          com.drivingcoach                     D  Shutting down VM
+2026-07-22 13:28:24.758 17058-17058 AndroidRuntime          com.drivingcoach                     E  FATAL EXCEPTION: main
+                                                                                                    Process: com.drivingcoach, PID: 17058
+                                                                                                    DeadSystemException: The system died; earlier logs will point to the root cause
+2026-07-22 13:28:24.767 17058-17058 Process                 com.drivingcoach                     I  Sending signal. PID: 17058 SIG: 9
+2026-07-22 13:28:38.944 21177-21256 SystemServerTimingAsync system_server                        D  InitThreadPoolExec:Update app-ops uidState in case package com.drivingcoach changed
+2026-07-22 13:28:38.944 21177-21256 SystemServ...ThreadPool system_server                        D  Started executing Update app-ops uidState in case package com.drivingcoach changed
+2026-07-22 13:28:38.944 21177-21256 SystemServ...ThreadPool system_server                        D  Finished executing Update app-ops uidState in case package com.drivingcoach changed
+2026-07-22 13:28:38.946 21177-21256 SystemServerTimingAsync system_server                        V  InitThreadPoolExec:Update app-ops uidState in case package com.drivingcoach changed took to complete: 2ms
+2026-07-22 13:28:42.350 21177-21177 StorageManagerService   system_server                        V  Package com.drivingcoach does not have legacy storage

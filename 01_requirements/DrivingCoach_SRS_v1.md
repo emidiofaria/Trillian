@@ -279,6 +279,21 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | DP-05 | The Session Result screen shall display the consistency score as a large percentage in the `COACH` tab summary card, with the subtitle 'across {N} laps'. |
 | DP-06 | Sessions shall be fetched from the local Room database as the single source of truth. Remote data from the API shall be written back to Room and consumed from there. |
 
+### 11.1 Session management
+
+| ID | Requirement |
+|---|---|
+| SM-01 | The app shall allow the user to delete a session via long-press context menu on the Home screen session list. |
+| SM-02 | Session deletion shall remove the session record, all associated laps, and all associated coaching insights from the local Room database. |
+| SM-03 | Session deletion shall delete the telemetry JSONL file from local storage if it exists. |
+| SM-04 | Before deletion, the app shall display a confirmation dialog showing the track name and date. |
+| SM-05 | The app shall allow the user to rename a session's track name via long-press context menu on the Home screen session list. |
+| SM-06 | The rename dialog shall pre-fill the current track name and allow editing. |
+| SM-07 | Track name validation: minimum 1 character, maximum 100 characters. Empty names shall be rejected. |
+| SM-08 | Delete and rename operations shall be local-only; they shall not require network connectivity or synchronize with the backend. |
+| SM-09 | After successful deletion, the app shall display a Snackbar confirming the deletion. |
+| SM-10 | After successful rename, the app shall display a Snackbar confirming the rename. |
+
 ---
 
 ## 12. Share accomplishments

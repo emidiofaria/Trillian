@@ -974,3 +974,90 @@ Output: "You nailed Sector 1 — 0ms quicker than average"
 | Date | Fix Applied |
 |------|-------------|
 | (pending) | Sector guard + wording fix required |
+
+---
+
+## Pattern: DeadSystemException (System Server Crash)
+
+### Symptoms
+
+- App crashes with `DeadSystemException`
+- Emulator/device restarts unexpectedly
+- Active recording session lost
+- Logs show "The system died; earlier logs will point to the root cause"
+
+### Signals
+
+| Signal | Location | Threshold |
+|--------|----------|-----------|
+| `DeadSystemException` | Crashlytics/Logcat | Any occurrence |
+| "Binder transaction failure: -3" | Logcat `IPCThreadState` | DEAD_OBJECT error |
+| "The system died" | Logcat `AndroidRuntime` | Fatal exception |
+| ANRs in `com.google.android.gms.*` | Logcat `ActivityManager` | Multiple in succession |
+| Process killed with SIG 9 | Logcat `Process` | SIGKILL after exception |
+
+### Likely Causes
+
+| Cause | Code Path | Evidence |
+|-------|-----------|----------|
+| Emulator GMS instability | Google Play Services | ANRs in gms.persistent/unstable |
+| system_server overload | Android framework | High CPU in system_server |
+| DroidGuard service hang | Security attestation | ANR in DroidGuardService |
+| Emulator resource exhaustion | Virtual environment | Memory/CPU pressure |
+
+### Evidence To Check
+
+1. **Logcat**: Look for ANRs in `com.google.android.gms.*` preceding the crash
+2. **Timeline**: Check for cascading ANRs before `DeadSystemException`
+3. **CPU stats**: Check `/proc/pressure/cpu` in ANR dumps
+4. **Binder logs**: Look for "Binder transaction failure" with error -3 (DEAD_OBJECT)
+5. **Environment**: Was this on emulator or physical device?
+
+### Common Triggers
+
+- Extended recording session on Android emulator
+- Google Play Services background service instability
+- Emulator lacking hardware attestation (DroidGuard issues)
+- High-frequency sensor polling on under-resourced emulator
+- Multiple ANRs overwhelming system_server
+
+### Mitigation
+
+1. **Emulator**: Restart emulator, use physical device for long sessions
+2. **Physical device**: Restart device (rare on real hardware)
+3. **Data recovery**: Check telemetry file — periodic flush may have saved partial data
+
+### App-Level Handling
+
+The app handles `DeadSystemException` gracefully in `DrivingCoachApp.kt`:
+- Global uncaught exception handler detects system death
+- Logs gracefully instead of showing ugly crash report
+- Allows process to terminate cleanly (system will restart everything)
+
+```kotlin
+if (isSystemDeathException(throwable)) {
+    Log.e(TAG, "System crash detected (DeadSystemException)...")
+    // Don't invoke default handler — let process die quietly
+}
+```
+
+### Permanent Fix
+
+1. **Already implemented**: Periodic telemetry flush every 30 seconds minimizes data loss
+2. **Already implemented**: `DeadSystemException` handler for graceful termination
+3. **Testing**: Use physical devices for QA of extended recording sessions
+4. **Documentation**: Note emulator GMS instability as known limitation
+
+### Confidence
+
+**MEDIUM** — This is an Android system-level failure, not an app bug. The app cannot prevent it but can minimize impact through defensive measures (periodic flush, graceful exception handling).
+
+### Related RCA
+
+- `03_incidents/10_emulator_system_crash/10_RCA_emulator_system_server_crash.md`
+
+### Resolution History
+
+| Date | Fix Applied |
+|------|-------------|
+| 2026-07-22 | Periodic flush (30s) + DeadSystemException handler |

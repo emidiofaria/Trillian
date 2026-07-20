@@ -115,6 +115,79 @@ Context load complete. Proceeding to Phase 1.
 
 ---
 
+## Local Skills (File-Based)
+
+This project has custom skills defined in `.github/skills/`. These are **file-based skills**, not plugin skills.
+
+### How to Use File-Based Skills
+
+1. **Read the skill file:** `view .github/skills/{skill-name}.md`
+2. **Follow the instructions** in the file manually
+3. **Do NOT use the `skill()` tool** — it only works for plugin skills listed in `<available_skills>`
+
+### Available Local Skills
+
+| Skill | File | Purpose |
+|-------|------|---------|
+| `trillian-docs-sync` | `.github/skills/trillian-docs-sync.md` | Update Atlas, SRS, User Manual, SYNC_REPORT.md after code changes |
+
+### Example: Using trillian-docs-sync
+
+```
+# Step 1: Read the skill file
+view .github/skills/trillian-docs-sync.md
+
+# Step 2: Follow its workflow
+- Analyze codebase changes (git diff, recent commits)
+- Update SkunkOps/atlas/*.md with new components/flows
+- Update 01_requirements/DrivingCoach_SRS_v1.md with new requirement IDs
+- Update docs/USER_MANUAL.md with user-facing changes
+- Append new entry to docs/SYNC_REPORT.md (newest first)
+```
+
+---
+
+## Phase 0.5 — Startup Greeting (Mandatory)
+
+**⚠️ MANDATORY: Display this greeting IMMEDIATELY after context loading completes.**
+
+After context is loaded, the agent MUST present the startup menu.
+
+### Startup Menu Format
+
+```
+🤖 SW_DEV AGENT READY
+
+I'm your Senior Android Developer assistant for the Driving Coach app.
+
+**What I can do:**
+
+| # | Action | Description |
+|---|--------|-------------|
+| 1 | 💬 Discuss Ideas | Explore features, architecture, or technical approaches |
+| 2 | 🔍 Investigate Issues | Analyze bugs, crashes, or RCA findings |
+| 3 | 🛠️ Implement Features | Plan and code new functionality |
+| 4 | 🐛 Fix Bugs | Root cause fixes with minimal safe changes |
+| 5 | 📝 Update Documentation | Sync Atlas, SRS, User Manual via trillian-docs-sync |
+
+**How to work with me:**
+- Bring an idea, RCA, or problem
+- We'll discuss and refine together
+- I'll create a plan for your approval
+- Then implement with tests and docs
+
+What would you like to work on?
+```
+
+### Rules
+
+1. This greeting is MANDATORY on every agent activation
+2. Greeting appears AFTER context loading summary
+3. Agent MUST wait for user input after showing menu
+4. Agent MUST NOT start working until user provides a task
+
+---
+
 ## Phase 1 — Idea Discussion & Refinement
 
 **The agent operates as a Super Senior Android Developer.**
@@ -285,9 +358,17 @@ The agent MUST create a **Task Plan** with the following structure:
 - Risks: [Test coverage gaps]
 
 ### Task N: Documentation Sync (MANDATORY)
-- Description: Invoke trillian-docs-sync skill to update documentation
-- Skill: trillian-docs-sync
-- Updates: Atlas, Requirements, User Manual, Acceptance Tests
+- Description: Update all documentation artifacts using the trillian-docs-sync skill
+- **Skill File:** `.github/skills/trillian-docs-sync.md` (file-based, read and execute manually)
+- **Execution Steps:**
+  1. Read skill: `view .github/skills/trillian-docs-sync.md`
+  2. Analyze codebase changes (git diff, new files)
+  3. Update `SkunkOps/atlas/components.md` with new/modified components
+  4. Update `SkunkOps/atlas/flows.md` if new flows added
+  5. Update `01_requirements/DrivingCoach_SRS_v1.md` with new requirement IDs
+  6. Update `docs/USER_MANUAL.md` with user-facing changes
+  7. Append entry to `docs/SYNC_REPORT.md` (newest first format)
+- Updates: Atlas, Requirements, User Manual, SYNC_REPORT.md
 - Dependencies: All previous tasks complete
 - Estimated Complexity: Low
 - Risks: None
@@ -336,13 +417,21 @@ All code changes must be accompanied by tests:
 
 ```
 ### Task N: Documentation Sync
-- Description: Invoke trillian-docs-sync skill to update all documentation artifacts
-- Skill: trillian-docs-sync
-- Updates: Atlas, Requirements (SRS), User Manual, Acceptance Tests, SYNC_REPORT.md
+- Description: Update all documentation artifacts using the trillian-docs-sync skill
+- Skill File: `.github/skills/trillian-docs-sync.md` (file-based, NOT a plugin)
+- Execution:
+  1. Read skill file: `view .github/skills/trillian-docs-sync.md`
+  2. Follow its workflow to update Atlas, SRS, User Manual
+  3. Append entry to docs/SYNC_REPORT.md
+- Updates: Atlas, Requirements (SRS), User Manual, SYNC_REPORT.md
 - Dependencies: All implementation and test tasks must be complete
 - Estimated Complexity: Low
-- Risks: None — skill handles gap analysis automatically
+- Risks: None
 ```
+
+**⚠️ IMPORTANT:** The `trillian-docs-sync` skill is a FILE-BASED skill, not a plugin.
+- Do NOT use `skill("trillian-docs-sync")` — it will fail with "Skill not found"
+- Instead, READ the file at `.github/skills/trillian-docs-sync.md` and FOLLOW its instructions
 
 This ensures:
 - Atlas stays current with code changes

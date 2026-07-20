@@ -4,6 +4,182 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-07-22] Crash Resilience Improvements
+
+**Codebase Version:** v2.5-crash-resilience  
+**Trigger:** RCA finding — system crash during emulator recording (incident #10)
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| TelemetryFileWriter.kt | ✅ Updated | +1 method (flush) |
+| TelemetryForegroundService.kt | ✅ Updated | +periodic flush runnable (30s) |
+| DrivingCoachApp.kt | ✅ Updated | +DeadSystemException handler |
+| TelemetryFileWriterIntegrationTest.kt | ✅ Updated | +2 flush tests |
+| components.md | ✅ Updated | +Data Persistence section |
+| failure-patterns.md | ✅ Updated | +DeadSystemException pattern |
+
+### Changes Made
+
+#### TelemetryFileWriter.kt
+```kotlin
++ /**
++  * Flushes buffered data to disk without closing the writer.
++  * Call periodically to minimize data loss on unexpected termination.
++  */
++ suspend fun flush() = withContext(Dispatchers.IO) { ... }
+```
+
+#### TelemetryForegroundService.kt
+```kotlin
++ private const val TELEMETRY_FLUSH_INTERVAL_MS = 30000L // 30s periodic flush
++ 
++ private val periodicFlushRunnable = object : Runnable {
++     override fun run() {
++         serviceScope.launch(Dispatchers.IO) { telemetryWriter?.flush() }
++         handler.postDelayed(this, TELEMETRY_FLUSH_INTERVAL_MS)
++     }
++ }
+```
+
+#### DrivingCoachApp.kt
+```kotlin
++ private fun setupUncaughtExceptionHandler() {
++     Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
++         if (isSystemDeathException(throwable)) {
++             Log.e(TAG, "System crash detected (DeadSystemException)...")
++         } else {
++             defaultHandler?.uncaughtException(thread, throwable)
++         }
++     }
++ }
+```
+
+### New Tests
+
+| Test | Purpose |
+|------|---------|
+| `periodicFlushPersistsDataBeforeClose` | Verifies flush persists data before close |
+| `unflushedDataMayBeLostOnCrash` | Demonstrates why periodic flush matters |
+
+### Atlas Updates
+
+**components.md** — Added Data Persistence section to Telemetry Recording Service:
+```markdown
++ ### Data Persistence
++ | Mechanism | Interval | Purpose |
++ |-----------|----------|---------|
++ | Sample write | On GPS fix (~100ms) | Append to buffer |
++ | Periodic flush | 30 seconds | Persist buffered data |
++ | Close flush | On stop | Final flush |
+```
+
+**failure-patterns.md** — Added DeadSystemException pattern:
+- Symptoms, signals, causes, mitigation
+- Links to RCA `10_RCA_emulator_system_server_crash.md`
+- Documents app-level handling (graceful termination)
+
+### Files Modified
+
+```
+M  app/src/main/java/.../data/telemetry/TelemetryFileWriter.kt     (+15)
+M  app/src/main/java/.../service/TelemetryForegroundService.kt     (+14)
+M  app/src/main/java/.../DrivingCoachApp.kt                        (+45)
+M  app/src/test/java/.../TelemetryFileWriterIntegrationTest.kt     (+75)
+M  SkunkOps/atlas/components.md                                     (+12)
+M  SkunkOps/atlas/failure-patterns.md                               (+85)
+```
+
+### Related Incident
+
+- `03_incidents/10_emulator_system_crash/10_RCA_emulator_system_server_crash.md`
+
+---
+
+## [2026-07-20] Session Management (Delete & Rename)
+
+**Codebase Version:** v2.4-session-management  
+**Trigger:** New feature — long-press context menu for session delete and rename
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| SessionDao.kt | ✅ Updated | +2 DAO methods (deleteById, updateTrackName) |
+| HomeViewModel.kt | ✅ Updated | +2 methods, +2 events |
+| HomeFragment.kt | ✅ Updated | +context menu, +dialogs |
+| HomeViewModelTest.kt | ✅ Created | 6 new unit tests |
+| components.md | ✅ Updated | +Session Management tables |
+| SRS_v1.md | ✅ Updated | +10 requirements (SM-01 to SM-10) |
+| USER_MANUAL.md | ✅ Updated | +Section 5.4 Managing Sessions |
+| build.gradle.kts | ✅ Updated | +testOptions.returnDefaultValues |
+
+### New Requirement IDs
+
+| ID | Description |
+|----|-------------|
+| SM-01 | Delete via long-press context menu |
+| SM-02 | CASCADE delete (session + laps + insights) |
+| SM-03 | Delete telemetry JSONL file |
+| SM-04 | Delete confirmation dialog |
+| SM-05 | Rename via long-press context menu |
+| SM-06 | Rename dialog pre-fills current name |
+| SM-07 | Track name validation (1-100 chars) |
+| SM-08 | Local-only operations |
+| SM-09 | Delete success Snackbar |
+| SM-10 | Rename success Snackbar |
+
+### New DAO Methods
+
+```kotlin
+@Query("DELETE FROM sessions WHERE id = :sessionId")
+suspend fun deleteById(sessionId: Long)
+
+@Query("UPDATE sessions SET trackName = :trackName WHERE id = :sessionId")
+suspend fun updateTrackName(sessionId: Long, trackName: String)
+```
+
+### New ViewModel Methods
+
+```kotlin
+fun deleteSession(sessionId: Long)  // Room delete + file delete + emit event
+fun renameSession(sessionId: Long, newName: String)  // Validate + Room update + emit event
+```
+
+### New Events
+
+```kotlin
+data class ShowSessionDeleted(val trackName: String) : HomeEvent()
+data class ShowSessionRenamed(val newName: String) : HomeEvent()
+```
+
+### New Unit Tests
+
+| Test | Assertion |
+|------|-----------|
+| `deleteSession calls DAO deleteById` | verify(sessionDao).deleteById(42L) |
+| `deleteSession handles missing session gracefully` | No crash when session null |
+| `renameSession calls DAO updateTrackName with trimmed name` | verify(..., "New Track Name") |
+| `renameSession rejects empty name` | verify(never()).updateTrackName() |
+| `renameSession rejects name longer than 100 chars` | verify(never()).updateTrackName() |
+| `renameSession accepts name with exactly 100 chars` | verify().updateTrackName() |
+
+### Files Modified
+
+```
+M  app/src/main/java/.../data/db/dao/SessionDao.kt         (+6)
+M  app/src/main/java/.../ui/home/HomeViewModel.kt          (+48)
+M  app/src/main/java/.../ui/home/HomeFragment.kt           (+55)
+A  app/src/test/java/.../ui/home/HomeViewModelTest.kt      (+165)
+M  app/build.gradle.kts                                     (+5)
+M  SkunkOps/atlas/components.md                            (+18)
+M  01_requirements/DrivingCoach_SRS_v1.md                  (+15)
+M  docs/USER_MANUAL.md                                     (+24)
+```
+
+---
+
 ## [2026-07-16] Track Name Navigation Fix
 
 **Codebase Version:** v2.3-trackname-fix  

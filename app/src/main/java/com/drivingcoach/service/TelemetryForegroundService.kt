@@ -59,6 +59,7 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         private const val GPS_LOCK_TIMEOUT_MS = 5000L
         private const val GPS_SIGNAL_LOST_TIMEOUT_MS = 10000L
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 1000L
+        private const val TELEMETRY_FLUSH_INTERVAL_MS = 30000L // Flush every 30s to minimize data loss
 
         fun startRecording(context: Context, sessionId: Long) {
             val intent = Intent(context, TelemetryForegroundService::class.java).apply {
@@ -122,6 +123,19 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         }
     }
     
+    private val periodicFlushRunnable = object : Runnable {
+        override fun run() {
+            serviceScope.launch(Dispatchers.IO) {
+                try {
+                    telemetryWriter?.flush()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during periodic flush", e)
+                }
+            }
+            handler.postDelayed(this, TELEMETRY_FLUSH_INTERVAL_MS)
+        }
+    }
+    
     private val binder = TelemetryBinder()
     
     inner class TelemetryBinder : Binder() {
@@ -171,6 +185,7 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         Log.d(TAG, "Service destroyed")
         handler.removeCallbacks(notificationUpdateRunnable)
         handler.removeCallbacks(gpsLockTimeoutRunnable)
+        handler.removeCallbacks(periodicFlushRunnable)
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -261,6 +276,9 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         // Start notification updates
         handler.post(notificationUpdateRunnable)
         
+        // Start periodic telemetry flush (every 30s to minimize data loss on crash)
+        handler.postDelayed(periodicFlushRunnable, TELEMETRY_FLUSH_INTERVAL_MS)
+        
         // Update state
         updateState()
     }
@@ -278,6 +296,7 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         // Stop updates
         handler.removeCallbacks(notificationUpdateRunnable)
         handler.removeCallbacks(gpsLockTimeoutRunnable)
+        handler.removeCallbacks(periodicFlushRunnable)
         
         // Unregister listeners
         try {
