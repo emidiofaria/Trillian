@@ -259,6 +259,12 @@ com.drivingcoach/
 - Run all tests: `./05_tests/infra/scripts/run-all-tests.sh`
 - Generate report: `./05_tests/infra/scripts/generate-report.sh`
 
+**Emulator Configuration:**
+- API Level: 30 (Android 11)
+- Device: Pixel 4
+- AVD Name: `DrivingCoach_Test`
+- **Requires:** KVM access (`/dev/kvm`) for hardware acceleration
+
 **Test Execution Commands:**
 ```bash
 # Recommended: Run all + generate report

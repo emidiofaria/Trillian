@@ -4,6 +4,55 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-07-22] Test Documentation Sync to Agent Instructions
+
+**Codebase Version:** v2.7-aspice-tests  
+**Trigger:** Update agent instructions with ASPICE test infrastructure references
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| trillian-docs-sync.md | ✅ Updated | Path references to `05_tests/L4_SYS5_acceptance/` |
+| SW_dev_agent.md | ✅ Updated | Enhanced Step 7 Validation with ASPICE details |
+| RCA_agent.md | ✅ Updated | Added Step 8 Test-Based Verification |
+| system.md (Atlas) | ✅ Updated | Added emulator configuration details |
+
+### Detailed Changes
+
+**trillian-docs-sync.md:**
+- Updated acceptance test path: `human_system_acceptance_tests/` → `05_tests/L4_SYS5_acceptance/`
+- Added full test infrastructure section with ASPICE levels (L1-L4)
+- Updated file locations reference tree
+
+**SW_dev_agent.md (Step 7 — Validation):**
+- Added ASPICE test level reference table
+- Added infrastructure script commands
+- Added emulator management instructions
+- Added KVM requirement documentation
+- Added test report verification workflow
+- Added minimum validation requirements matrix
+
+**RCA_agent.md:**
+- Added new Step 8: Test-Based Verification (optional)
+- Added when-to-use decision table
+- Added test verification output format
+
+**system.md (Atlas):**
+- Added emulator configuration block (API 30, Pixel 4, AVD name)
+- Added KVM access requirement note
+
+### Files Modified
+
+```
+M  .github/skills/trillian-docs-sync.md     (+18, -8)
+M  .github/agents/SW_dev_agent.md           (+65, -25)
+M  .github/agents/RCA_agent.md              (+35, -0)
+M  SkunkOps/atlas/system.md                 (+5, -0)
+```
+
+---
+
 ## [2026-07-22] ASPICE Test Infrastructure
 
 **Codebase Version:** v2.7-aspice-tests  
