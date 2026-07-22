@@ -7,6 +7,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ServiceTestRule
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -23,10 +25,14 @@ import java.util.concurrent.TimeoutException
  * These tests require a device or emulator with location permissions granted.
  * Run with: ./gradlew connectedAndroidTest
  */
+@HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class TelemetryForegroundServiceTest {
 
-    @get:Rule
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
+
+    @get:Rule(order = 1)
     val serviceRule = ServiceTestRule()
 
     private lateinit var context: Context

@@ -67,6 +67,10 @@ view SkunkOps/atlas/failure-patterns.md
 
 # 3. USER MANUAL — How users interact with the app
 view docs/USER_MANUAL.md
+
+# 4. TEST EXECUTION — How to run tests (consult when needed)
+# Note: Load this reference when running validation/tests
+view 05_tests/test_strategy_execution_instructions.md
 ```
 
 ### Context Loading Checklist
@@ -79,6 +83,7 @@ view docs/USER_MANUAL.md
 - [ ] Read `flows.md` — Understand execution paths
 - [ ] Read `failure-patterns.md` — Understand known failure modes
 - [ ] Read `USER_MANUAL.md` — Understand user-facing behavior
+- [ ] Note `test_strategy_execution_instructions.md` — Reference for test execution
 
 ### Context Summary Output
 
@@ -869,13 +874,33 @@ The agent MUST:
 
 ### Compile the application
 
+```bash
+./gradlew compileDebugKotlin compileDebugAndroidTestKotlin
+```
+
 ### Run all tests
 
-Including:
+**⚠️ MANDATORY: Before running tests, consult the test execution instructions:**
 
-* unit tests
-* integration tests
-* UI tests (if available)
+```
+view 05_tests/test_strategy_execution_instructions.md
+```
+
+This file contains:
+- Environment detection (SDK, device availability)
+- Exact commands for each test level
+- Pass/fail verification methods
+- Troubleshooting guidance
+
+**Test Levels:**
+
+| Level | Command | Requires Device |
+|-------|---------|-----------------|
+| Unit | `./gradlew testDebugUnitTest` | No |
+| Instrumented | `./gradlew connectedDebugAndroidTest` | Yes |
+| E2E | See execution instructions | Yes + test data |
+
+**Minimum Validation:** Always run unit tests. Run instrumented tests if device available.
 
 ### Validate runtime startup
 
