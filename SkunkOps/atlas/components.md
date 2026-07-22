@@ -37,6 +37,20 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 - StateFlow of `RecordingState` (observed by `RecordingViewModel`)
 - Enqueued `TelemetryUploadWorker` on session end
 
+### Data Persistence
+
+| Mechanism | Interval | Purpose |
+|-----------|----------|---------|
+| Sample write | On each GPS fix (~100ms) | Append sample to buffer |
+| Periodic flush | 30 seconds | Persist buffered data to disk |
+| Close flush | On stop | Final flush before file close |
+
+**Crash Resilience**: Periodic flush every 30 seconds ensures at most 30 seconds of telemetry data is lost if the app or system crashes unexpectedly. This protects against:
+- System crashes (e.g., `DeadSystemException` from GMS instability)
+- OOM kills
+- Battery death
+- User force-stop
+
 ### Failure Modes
 
 | Mode | Symptom | Cause |
@@ -649,14 +663,28 @@ Manages session lifecycle from creation through recording to results display. Co
 
 ### Inputs
 
-- User actions: start session, stop session, view session
+- User actions: start session, stop session, view session, delete session, rename session
 - Service state changes via `StateFlow`
 
 ### Outputs
 
-- `HomeEvent` (navigation events)
+- `HomeEvent` (navigation events, session deleted/renamed confirmations)
 - `RecordingUiState` (elapsed time, GPS status, lap count)
 - UI updates
+
+### Session Management (HomeViewModel)
+
+| Action | Method | Behavior |
+|--------|--------|----------|
+| Delete | `deleteSession(sessionId)` | Removes session from Room (CASCADE deletes laps + insights), deletes telemetry JSONL file |
+| Rename | `renameSession(sessionId, newName)` | Updates `trackName` in Room, validates 1-100 chars |
+
+### UI Interactions (HomeFragment)
+
+| Gesture | Trigger | Result |
+|---------|---------|--------|
+| Tap session card | `onSessionClick` | Navigate to session results |
+| Long-press session card | `onSessionLongClick` | Show context menu (Rename/Delete) |
 
 ### Failure Modes
 

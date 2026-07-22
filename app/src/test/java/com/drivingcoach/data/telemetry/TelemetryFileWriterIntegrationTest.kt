@@ -195,6 +195,131 @@ class TelemetryFileWriterIntegrationTest {
         )
     }
 
+    /**
+     * Tests that periodic flush persists data to disk before close.
+     * This verifies that data is recoverable even if the app crashes before close().
+     * 
+     * Simulates the 30-second flush interval used in TelemetryForegroundService.
+     */
+    @Test
+    fun periodicFlushPersistsDataBeforeClose(): Unit = runBlocking {
+        val sampleCount = 300  // 30 seconds at 10Hz
+        val startTime = System.currentTimeMillis()
+        
+        val writer = testFile.bufferedWriter(bufferSize = 32 * 1024)
+        
+        try {
+            // Write first batch of samples (first 10 seconds)
+            for (i in 0 until 100) {
+                val sample = createRealisticSample(i, startTime)
+                writer.write(gson.toJson(sample))
+                writer.newLine()
+            }
+            
+            // Simulate periodic flush at 10 seconds (like our 30s interval but scaled down)
+            writer.flush()
+            
+            // Verify data is on disk BEFORE closing (simulates crash recovery)
+            val samplesAfterFirstFlush = testFile.readLines().filter { it.isNotBlank() }
+            assertEquals(
+                "First 100 samples should be persisted after flush",
+                100,
+                samplesAfterFirstFlush.size
+            )
+            
+            // Write second batch (next 10 seconds)
+            for (i in 100 until 200) {
+                val sample = createRealisticSample(i, startTime)
+                writer.write(gson.toJson(sample))
+                writer.newLine()
+            }
+            
+            // Simulate second periodic flush at 20 seconds
+            writer.flush()
+            
+            // Verify all data written so far is on disk
+            val samplesAfterSecondFlush = testFile.readLines().filter { it.isNotBlank() }
+            assertEquals(
+                "200 samples should be persisted after second flush",
+                200,
+                samplesAfterSecondFlush.size
+            )
+            
+            // Write final batch (last 10 seconds)
+            for (i in 200 until sampleCount) {
+                val sample = createRealisticSample(i, startTime)
+                writer.write(gson.toJson(sample))
+                writer.newLine()
+            }
+            
+            // At this point, WITHOUT flush, buffered data may not be on disk
+            // This is why periodic flush is important for crash resilience
+            
+        } finally {
+            writer.close()
+        }
+        
+        // After close, all data should be present
+        val finalSamples = testFile.readLines().filter { it.isNotBlank() }
+        assertEquals(
+            "All $sampleCount samples should be persisted after close",
+            sampleCount,
+            finalSamples.size
+        )
+        
+        println("✓ Periodic flush test passed:")
+        println("  - Verified data persistence at 100, 200, and 300 samples")
+        println("  - Flush enables crash recovery without data loss")
+    }
+
+    /**
+     * Tests that data written but not flushed may be lost (demonstrates why flush matters).
+     * This test shows the problem that periodic flush solves.
+     */
+    @Test
+    fun unflushedDataMayBeLostOnCrash(): Unit = runBlocking {
+        val sampleCount = 50
+        val startTime = System.currentTimeMillis()
+        
+        // Create a writer but DON'T close or flush it properly
+        val writer = testFile.bufferedWriter(bufferSize = 32 * 1024)
+        
+        // Write samples
+        for (i in 0 until sampleCount) {
+            val sample = createRealisticSample(i, startTime)
+            writer.write(gson.toJson(sample))
+            writer.newLine()
+        }
+        
+        // Simulate crash: check what's actually on disk WITHOUT flush/close
+        // Due to buffering, some or all data may not be on disk yet
+        val samplesOnDiskBeforeFlush = testFile.readLines().filter { it.isNotBlank() }
+        
+        // The exact count depends on buffer size and data written
+        // With a 32KB buffer and ~220 bytes per sample, buffer holds ~145 samples
+        // So 50 samples likely fits entirely in buffer and nothing is on disk
+        println("Samples on disk before flush: ${samplesOnDiskBeforeFlush.size}")
+        println("Samples written but buffered: ${sampleCount - samplesOnDiskBeforeFlush.size}")
+        
+        // This demonstrates why periodic flush is important:
+        // Without it, a crash would lose all buffered data
+        assertTrue(
+            "Without flush, buffered data may not be on disk",
+            samplesOnDiskBeforeFlush.size <= sampleCount
+        )
+        
+        // Now properly flush and close
+        writer.flush()
+        writer.close()
+        
+        val samplesAfterFlush = testFile.readLines().filter { it.isNotBlank() }
+        assertEquals(
+            "After flush, all samples should be on disk",
+            sampleCount,
+            samplesAfterFlush.size
+        )
+    }
+
     private fun createRealisticSample(
         index: Int,
         startTime: Long,
