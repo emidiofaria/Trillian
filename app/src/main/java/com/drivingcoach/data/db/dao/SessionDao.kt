@@ -48,4 +48,10 @@ interface SessionDao {
 
     @Query("UPDATE sessions SET startLineLat1 = :lat1, startLineLng1 = :lng1, startLineLat2 = :lat2, startLineLng2 = :lng2 WHERE id = :sessionId")
     suspend fun updateStartLine(sessionId: Long, lat1: Double, lng1: Double, lat2: Double, lng2: Double)
+
+    @Query("DELETE FROM sessions WHERE id = :sessionId")
+    suspend fun deleteById(sessionId: Long)
+
+    @Query("UPDATE sessions SET trackName = :trackName WHERE id = :sessionId")
+    suspend fun updateTrackName(sessionId: Long, trackName: String)
 }

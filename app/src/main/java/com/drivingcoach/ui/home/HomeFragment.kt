@@ -33,9 +33,10 @@ class HomeFragment : Fragment() {
     
     private var trackNameDialog: androidx.appcompat.app.AlertDialog? = null
 
-    private val sessionsAdapter = SessionHistoryAdapter { sessionId ->
-        viewModel.onSessionClick(sessionId)
-    }
+    private val sessionsAdapter = SessionHistoryAdapter(
+        onSessionClick = { sessionId -> viewModel.onSessionClick(sessionId) },
+        onSessionLongClick = { session -> showSessionContextMenu(session) }
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -93,6 +94,52 @@ class HomeFragment : Fragment() {
             .setPositiveButton("Start") { _, _ ->
                 val trackName = editText.text.toString().trim()
                 viewModel.startNewSession(trackName)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showSessionContextMenu(session: SessionSummary) {
+        val options = arrayOf("Rename", "Delete")
+        
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(session.trackName)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showRenameDialog(session)
+                    1 -> showDeleteConfirmation(session)
+                }
+            }
+            .show()
+    }
+
+    private fun showDeleteConfirmation(session: SessionSummary) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Delete Session")
+            .setMessage("Delete \"${session.trackName}\" from ${HomeViewModel.formatDate(session.startedAt)}?\n\nThis will remove the session, all lap data, and coaching insights. This cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                viewModel.deleteSession(session.id)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showRenameDialog(session: SessionSummary) {
+        val editText = EditText(requireContext()).apply {
+            setText(session.trackName)
+            setSelection(session.trackName.length)
+            setPadding(64, 32, 64, 32)
+            setTextColor(0xFFFFFFFF.toInt())
+            setHintTextColor(0xFF888888.toInt())
+            hint = "Track name"
+        }
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Rename Session")
+            .setView(editText)
+            .setPositiveButton("Rename") { _, _ ->
+                val newName = editText.text.toString()
+                viewModel.renameSession(session.id, newName)
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -159,6 +206,12 @@ class HomeFragment : Fragment() {
             is HomeEvent.ShowError -> {
                 Snackbar.make(binding.root, event.message, Snackbar.LENGTH_LONG).show()
             }
+            is HomeEvent.ShowSessionDeleted -> {
+                Snackbar.make(binding.root, "\"${event.trackName}\" deleted", Snackbar.LENGTH_SHORT).show()
+            }
+            is HomeEvent.ShowSessionRenamed -> {
+                Snackbar.make(binding.root, "Renamed to \"${event.newName}\"", Snackbar.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -171,7 +224,8 @@ class HomeFragment : Fragment() {
 }
 
 private class SessionHistoryAdapter(
-    private val onSessionClick: (Long) -> Unit
+    private val onSessionClick: (Long) -> Unit,
+    private val onSessionLongClick: (SessionSummary) -> Unit
 ) : ListAdapter<SessionSummary, SessionHistoryAdapter.SessionViewHolder>(SessionDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SessionViewHolder {
@@ -196,6 +250,15 @@ private class SessionHistoryAdapter(
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
                     onSessionClick(getItem(position).id)
+                }
+            }
+            binding.root.setOnLongClickListener {
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    onSessionLongClick(getItem(position))
+                    true
+                } else {
+                    false
                 }
             }
         }

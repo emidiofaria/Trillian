@@ -230,6 +230,29 @@ Choose Fast for a quick look, Detailed for precise analysis.
 
 **Note:** Speed charts are processed locally from your telemetry file — no internet required!
 
+### 5.4 Managing Sessions
+
+You can rename or delete sessions from the Home screen:
+
+**To rename or delete a session:**
+1. **Long-press** on a session card in the "Recent Sessions" list
+2. A menu will appear with options:
+   - **Rename** — Change the track name
+   - **Delete** — Remove the session
+
+**Renaming a session:**
+- Tap "Rename" to open the rename dialog
+- Enter a new track name (1-100 characters)
+- Tap "Rename" to save
+
+**Deleting a session:**
+- Tap "Delete" to open the confirmation dialog
+- Confirm to permanently delete the session
+- This removes all lap data, coaching insights, and the telemetry file
+- **Warning:** Deletion cannot be undone
+
+**Note:** Delete and rename are local operations only. If you've uploaded the session, data may still exist on the server.
+
 ---
 
 ## 6. Sharing & Profile
