@@ -404,48 +404,6 @@ Provide actionable remediation:
 
 ---
 
-### Step 8 — Test-Based Verification (Optional)
-
-When the root cause hypothesis can be validated through tests, use the ASPICE-aligned test infrastructure to confirm findings.
-
-#### When to Use Test Verification
-
-| Scenario | Recommended |
-|----------|-------------|
-| Code path verification | ✅ Run unit tests covering suspect code |
-| State machine validation | ✅ Run integration tests for state transitions |
-| Regression confirmation | ✅ Write failing test that reproduces bug |
-| Timing/concurrency issues | ⚠️ May not be reliably reproducible |
-| Environment-specific failures | ❌ Tests may not capture |
-
-#### Test Execution Reference
-
-```bash
-# Consult test execution instructions
-view 05_tests/test_strategy_execution_instructions.md
-
-# Run L1 unit tests (fast hypothesis check)
-./05_tests/infra/scripts/run-all-tests.sh --level L1
-
-# Run L2 integration tests (state/service validation)
-./05_tests/infra/scripts/run-all-tests.sh --level L2 --start-emulator
-```
-
-#### Test Verification Output
-
-```
-TEST VERIFICATION:
-- Hypothesis: [root cause hypothesis]
-- Test Level: L1/L2
-- Tests Run: [count]
-- Relevant Failures: [list tests that confirm hypothesis]
-- Verification Status: CONFIRMED / INCONCLUSIVE / CONTRADICTED
-```
-
-**Note:** Test results are supporting evidence, not definitive proof. A passing test suite does not rule out a root cause if the specific failure condition is not covered by tests.
-
----
-
 ## RCA Output Format
 
 ### File Naming Convention
