@@ -51,6 +51,17 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 - Battery death
 - User force-stop
 
+### Runtime Intervals
+
+| Runnable | Interval | Purpose |
+|----------|----------|---------|
+| `uiStateUpdateRunnable` | 100ms (10 Hz) | Smooth timer display in RecordingFragment |
+| `notificationUpdateRunnable` | 1000ms (1 Hz) | Notification bar + GPS signal check |
+| `gpsLockTimeoutRunnable` | 5000ms (once) | GPS lock timeout detection |
+| `periodicFlushRunnable` | 30000ms | Telemetry file flush for crash resilience |
+
+**Design Note**: UI state updates are separated from notification updates to provide smooth millisecond-precision timer display without excessive notification system calls (battery optimization).
+
 ### Failure Modes
 
 | Mode | Symptom | Cause |
