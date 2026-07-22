@@ -163,6 +163,59 @@ class TelemetryForegroundServiceTest {
     }
 
     @Test
+    fun elapsedMsUpdatesAtHighFrequency() {
+        // Tests that elapsed time updates at ~100ms intervals (10 Hz) for smooth UI
+        val intent = Intent(context, TelemetryForegroundService::class.java).apply {
+            action = TelemetryForegroundService.ACTION_START_RECORDING
+            putExtra(TelemetryForegroundService.EXTRA_SESSION_ID, 4L)
+        }
+
+        val binder: IBinder = serviceRule.bindService(intent)
+        val stateFlow = (binder as TelemetryForegroundService.TelemetryBinder).getStateFlow()
+
+        runBlocking {
+            // Wait for recording to start
+            withTimeout(2000) {
+                var state = stateFlow.value
+                while (state !is RecordingState.Recording) {
+                    kotlinx.coroutines.delay(100)
+                    state = stateFlow.value
+                }
+            }
+
+            // Collect elapsed time samples over 500ms
+            val samples = mutableListOf<Long>()
+            val startTime = System.currentTimeMillis()
+            
+            while (System.currentTimeMillis() - startTime < 500) {
+                val state = stateFlow.value
+                if (state is RecordingState.Recording) {
+                    val elapsed = state.elapsedMs
+                    if (samples.isEmpty() || elapsed != samples.last()) {
+                        samples.add(elapsed)
+                    }
+                }
+                kotlinx.coroutines.delay(20) // Sample at 50Hz to catch 10Hz updates
+            }
+
+            // Should have at least 3 distinct samples in 500ms (expecting ~5 at 100ms intervals)
+            // Using 3 as minimum to account for timing variations
+            assertTrue(
+                "Expected at least 3 distinct elapsed time samples in 500ms, got ${samples.size}: $samples",
+                samples.size >= 3
+            )
+            
+            // Verify values are monotonically increasing
+            for (i in 1 until samples.size) {
+                assertTrue(
+                    "Elapsed time should be monotonically increasing: ${samples[i-1]} -> ${samples[i]}",
+                    samples[i] >= samples[i-1]
+                )
+            }
+        }
+    }
+
+    @Test
     fun serviceReturnsValidBinder() {
         val intent = Intent(context, TelemetryForegroundService::class.java)
         val binder: IBinder = serviceRule.bindService(intent)
