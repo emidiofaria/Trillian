@@ -59,6 +59,7 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         private const val GPS_LOCK_TIMEOUT_MS = 5000L
         private const val GPS_SIGNAL_LOST_TIMEOUT_MS = 10000L
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 1000L
+        private const val UI_STATE_UPDATE_INTERVAL_MS = 100L // 10 Hz for smooth timer display
         private const val TELEMETRY_FLUSH_INTERVAL_MS = 30000L // Flush every 30s to minimize data loss
 
         fun startRecording(context: Context, sessionId: Long) {
@@ -107,10 +108,19 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
     private var gyroscope: Sensor? = null
     
     private val handler = Handler(Looper.getMainLooper())
+    
+    // Fast UI state updates (100ms) for smooth timer display
+    private val uiStateUpdateRunnable = object : Runnable {
+        override fun run() {
+            updateElapsedTime()
+            handler.postDelayed(this, UI_STATE_UPDATE_INTERVAL_MS)
+        }
+    }
+    
+    // Slower notification updates (1000ms) to save battery
     private val notificationUpdateRunnable = object : Runnable {
         override fun run() {
             updateNotification()
-            updateElapsedTime()
             checkGpsSignalLost()
             handler.postDelayed(this, NOTIFICATION_UPDATE_INTERVAL_MS)
         }
@@ -183,6 +193,7 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
 
     override fun onDestroy() {
         Log.d(TAG, "Service destroyed")
+        handler.removeCallbacks(uiStateUpdateRunnable)
         handler.removeCallbacks(notificationUpdateRunnable)
         handler.removeCallbacks(gpsLockTimeoutRunnable)
         handler.removeCallbacks(periodicFlushRunnable)
@@ -273,7 +284,10 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         // Set GPS lock timeout
         handler.postDelayed(gpsLockTimeoutRunnable, GPS_LOCK_TIMEOUT_MS)
         
-        // Start notification updates
+        // Start UI state updates (100ms for smooth timer)
+        handler.post(uiStateUpdateRunnable)
+        
+        // Start notification updates (1000ms to save battery)
         handler.post(notificationUpdateRunnable)
         
         // Start periodic telemetry flush (every 30s to minimize data loss on crash)
@@ -294,6 +308,7 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         _state.value = RecordingState.Stopping
         
         // Stop updates
+        handler.removeCallbacks(uiStateUpdateRunnable)
         handler.removeCallbacks(notificationUpdateRunnable)
         handler.removeCallbacks(gpsLockTimeoutRunnable)
         handler.removeCallbacks(periodicFlushRunnable)

@@ -4,6 +4,87 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-07-22] Smooth Timer Display (100ms UI Updates)
+
+**Codebase Version:** v2.6-smooth-timer  
+**Trigger:** User feedback — recording timer display jumps inconsistently
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| TelemetryForegroundService.kt | ✅ Updated | +100ms UI state runnable, separated from notification |
+| TelemetryForegroundServiceTest.kt | ✅ Updated | +1 test (elapsedMsUpdatesAtHighFrequency) |
+| EndToEndTest.kt | ✅ Fixed | Pre-existing compile errors resolved |
+| components.md | ✅ Updated | +Runtime Intervals section |
+
+### Changes Made
+
+#### TelemetryForegroundService.kt
+```diff
++ private const val UI_STATE_UPDATE_INTERVAL_MS = 100L // 10 Hz for smooth timer display
+
++ // Fast UI state updates (100ms) for smooth timer display
++ private val uiStateUpdateRunnable = object : Runnable {
++     override fun run() {
++         updateElapsedTime()
++         handler.postDelayed(this, UI_STATE_UPDATE_INTERVAL_MS)
++     }
++ }
+
++ // Slower notification updates (1000ms) to save battery
+  private val notificationUpdateRunnable = object : Runnable {
+      override fun run() {
+          updateNotification()
+-         updateElapsedTime()
+          checkGpsSignalLost()
+          handler.postDelayed(this, NOTIFICATION_UPDATE_INTERVAL_MS)
+      }
+  }
+```
+
+#### components.md
+```diff
++ ### Runtime Intervals
++ 
++ | Runnable | Interval | Purpose |
++ |----------|----------|---------|
++ | `uiStateUpdateRunnable` | 100ms (10 Hz) | Smooth timer display in RecordingFragment |
++ | `notificationUpdateRunnable` | 1000ms (1 Hz) | Notification bar + GPS signal check |
++ | `gpsLockTimeoutRunnable` | 5000ms (once) | GPS lock timeout detection |
++ | `periodicFlushRunnable` | 30000ms | Telemetry file flush for crash resilience |
++ 
++ **Design Note**: UI state updates are separated from notification updates...
+```
+
+### New Tests
+
+| ID | Test | Purpose |
+|----|------|---------|
+| elapsedMsUpdatesAtHighFrequency | Verify ≥3 distinct elapsed samples in 500ms | Confirms 10Hz update rate |
+
+### Bug Fixes
+
+- **EndToEndTest.kt**: Fixed `rawFilePath = null` → `rawFilePath = ""` (non-null field)
+- **EndToEndTest.kt**: Fixed `ProcessingStatus.NOT_STARTED` → `ProcessingStatus.PENDING`
+
+### Files Modified
+
+```
+M  app/src/main/java/.../service/TelemetryForegroundService.kt  (+17, -2)
+M  app/src/androidTest/java/.../service/TelemetryForegroundServiceTest.kt  (+53)
+M  app/src/androidTest/java/com/drivingcoach/EndToEndTest.kt  (+2, -2)
+M  SkunkOps/atlas/components.md  (+12)
+```
+
+### Design Rationale
+
+- **Why 100ms?** Matches GPS capture rate (10 Hz), provides visually smooth millisecond counter
+- **Why separate runnables?** Notification system calls are heavier; 1Hz is sufficient for notification bar
+- **Performance impact:** Negligible — TextView.setText() is sub-millisecond
+
+---
+
 ## [2026-07-22] Crash Resilience Improvements
 
 **Codebase Version:** v2.5-crash-resilience  
