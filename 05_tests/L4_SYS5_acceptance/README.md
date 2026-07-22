@@ -1,8 +1,24 @@
-# Human System Acceptance Tests
+# L4_SYS5_acceptance — System Qualification Test
+
+**ASPICE Process:** SYS.5 — System Qualification Test  
+**Test Level:** Human Acceptance / System Qualification  
+**Execution Environment:** Real Device at Track (Human-Executed)
+
+---
 
 > **Driving Coach — System Acceptance Test Documentation**
 
 This directory contains comprehensive test documentation for validating the Driving Coach application through human testing at a real track day.
+
+---
+
+## ASPICE Traceability
+
+| ASPICE Requirement | Implementation |
+|--------------------|----------------|
+| SYS.5.BP1 | System qualification strategy → Test checklists below |
+| SYS.5.BP2 | System qualification execution → Human at track |
+| SYS.5.BP3 | Results analysis → 99_ACCEPTANCE_SIGNOFF.md |
 
 ---
 

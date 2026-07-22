@@ -1,6 +1,5 @@
 package com.drivingcoach.ui.recording
 
-import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.navigation.Navigation
 import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
@@ -13,6 +12,7 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.drivingcoach.R
+import com.drivingcoach.testing.launchFragmentInHiltContainer
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.hamcrest.Matchers.containsString
@@ -50,13 +50,13 @@ class RecordingFragmentTest {
         // Launch the fragment with a test session ID
         val bundle = RecordingFragmentArgs(sessionId = 1L).toBundle()
         
-        launchFragmentInContainer<RecordingFragment>(
+        launchFragmentInHiltContainer<RecordingFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_DrivingCoach
-        ).onFragment { fragment ->
+        ) {
             navController.setGraph(R.navigation.nav_graph)
             navController.setCurrentDestination(R.id.recordingFragment)
-            Navigation.setViewNavController(fragment.requireView(), navController)
+            Navigation.setViewNavController(requireView(), navController)
         }
 
         // Assert elapsed time is displayed (initial format)
@@ -72,13 +72,13 @@ class RecordingFragmentTest {
     fun stopButton_isVisibleAndClickable() {
         val bundle = RecordingFragmentArgs(sessionId = 1L).toBundle()
         
-        launchFragmentInContainer<RecordingFragment>(
+        launchFragmentInHiltContainer<RecordingFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_DrivingCoach
-        ).onFragment { fragment ->
+        ) {
             navController.setGraph(R.navigation.nav_graph)
             navController.setCurrentDestination(R.id.recordingFragment)
-            Navigation.setViewNavController(fragment.requireView(), navController)
+            Navigation.setViewNavController(requireView(), navController)
         }
 
         // Assert stop button is displayed
@@ -98,13 +98,13 @@ class RecordingFragmentTest {
     fun gpsStatus_isDisplayed() {
         val bundle = RecordingFragmentArgs(sessionId = 1L).toBundle()
         
-        launchFragmentInContainer<RecordingFragment>(
+        launchFragmentInHiltContainer<RecordingFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_DrivingCoach
-        ).onFragment { fragment ->
+        ) {
             navController.setGraph(R.navigation.nav_graph)
             navController.setCurrentDestination(R.id.recordingFragment)
-            Navigation.setViewNavController(fragment.requireView(), navController)
+            Navigation.setViewNavController(requireView(), navController)
         }
 
         // Assert GPS status container is displayed
@@ -120,13 +120,13 @@ class RecordingFragmentTest {
     fun recordingIndicator_isDisplayed() {
         val bundle = RecordingFragmentArgs(sessionId = 1L).toBundle()
         
-        launchFragmentInContainer<RecordingFragment>(
+        launchFragmentInHiltContainer<RecordingFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_DrivingCoach
-        ).onFragment { fragment ->
+        ) {
             navController.setGraph(R.navigation.nav_graph)
             navController.setCurrentDestination(R.id.recordingFragment)
-            Navigation.setViewNavController(fragment.requireView(), navController)
+            Navigation.setViewNavController(requireView(), navController)
         }
 
         // Assert recording indicator is displayed
@@ -142,13 +142,13 @@ class RecordingFragmentTest {
     fun stopButton_triggersNavigation_whenClicked() {
         val bundle = RecordingFragmentArgs(sessionId = 1L).toBundle()
         
-        launchFragmentInContainer<RecordingFragment>(
+        launchFragmentInHiltContainer<RecordingFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_DrivingCoach
-        ).onFragment { fragment ->
+        ) {
             navController.setGraph(R.navigation.nav_graph)
             navController.setCurrentDestination(R.id.recordingFragment)
-            Navigation.setViewNavController(fragment.requireView(), navController)
+            Navigation.setViewNavController(requireView(), navController)
         }
 
         // Click stop button
@@ -164,13 +164,13 @@ class RecordingFragmentTest {
     fun appLogo_isDisplayed() {
         val bundle = RecordingFragmentArgs(sessionId = 1L).toBundle()
         
-        launchFragmentInContainer<RecordingFragment>(
+        launchFragmentInHiltContainer<RecordingFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_DrivingCoach
-        ).onFragment { fragment ->
+        ) {
             navController.setGraph(R.navigation.nav_graph)
             navController.setCurrentDestination(R.id.recordingFragment)
-            Navigation.setViewNavController(fragment.requireView(), navController)
+            Navigation.setViewNavController(requireView(), navController)
         }
 
         // Assert App logo placeholder is displayed
@@ -182,13 +182,13 @@ class RecordingFragmentTest {
     fun sessionTimeLabel_isDisplayed() {
         val bundle = RecordingFragmentArgs(sessionId = 1L).toBundle()
         
-        launchFragmentInContainer<RecordingFragment>(
+        launchFragmentInHiltContainer<RecordingFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_DrivingCoach
-        ).onFragment { fragment ->
+        ) {
             navController.setGraph(R.navigation.nav_graph)
             navController.setCurrentDestination(R.id.recordingFragment)
-            Navigation.setViewNavController(fragment.requireView(), navController)
+            Navigation.setViewNavController(requireView(), navController)
         }
 
         // Assert session time label is displayed
