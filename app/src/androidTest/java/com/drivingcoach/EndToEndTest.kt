@@ -190,9 +190,9 @@ class EndToEndTest {
                 trackName = "Test Track",
                 startedAt = System.currentTimeMillis(),
                 endedAt = null,
-                rawFilePath = null,
+                rawFilePath = "", // Placeholder - will be set by TelemetryFileWriter
                 uploadStatus = "PENDING",
-                processingStatus = ProcessingStatus.NOT_STARTED.name,
+                processingStatus = ProcessingStatus.PENDING.name,
                 remoteSessionId = null,
                 startLineLat1 = 48.13517,
                 startLineLng1 = 11.5820,
