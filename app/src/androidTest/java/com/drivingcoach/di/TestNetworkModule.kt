@@ -23,9 +23,14 @@ import javax.inject.Singleton
 )
 object TestNetworkModule {
 
+    // Static base URL avoids MockWebServer.url() call during DI initialization
+    // Tests that need MockWebServer can start it and it will listen on port 8080
+    private const val TEST_BASE_URL = "http://localhost:8080/"
+
     @Provides
     @Singleton
     fun provideMockWebServer(): MockWebServer {
+        // Create but don't start - tests will start it when needed
         return MockWebServer()
     }
 
@@ -42,9 +47,9 @@ object TestNetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient, mockWebServer: MockWebServer): Retrofit {
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(mockWebServer.url("/"))
+            .baseUrl(TEST_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
