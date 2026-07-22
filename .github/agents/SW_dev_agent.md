@@ -872,6 +872,33 @@ The agent SHOULD:
 
 The agent MUST execute validation using the ASPICE-aligned test infrastructure.
 
+### Test Level Selection Gate (MANDATORY)
+
+**When user requests test execution, the agent MUST determine test scope:**
+
+| User Request | Action |
+|--------------|--------|
+| "run tests", "run all tests", "execute tests", "validate" | **ASK** which level |
+| "run L1", "run unit tests", "unit tests" | Execute L1 only |
+| "run L2", "run integration tests", "instrumented tests" | Execute L2 only |
+| "run L1 and L2", "run both levels" | Execute both |
+
+**When ambiguous, ask the user:**
+
+```
+Which test level would you like to run?
+
+| Level | Description | Time | Requires |
+|-------|-------------|------|----------|
+| L1 | Unit tests | ~30s | JVM only |
+| L2 | Integration tests | ~3 min | Emulator |
+| Both | L1 + L2 | ~4 min | Emulator |
+```
+
+⚠️ **DO NOT proceed with test execution until level is determined** (either from explicit user request or user selection).
+
+---
+
 ### Compile the application
 
 ```bash
