@@ -4,6 +4,126 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-07-22] Test Documentation Sync to Agent Instructions
+
+**Codebase Version:** v2.7-aspice-tests  
+**Trigger:** Update agent instructions with ASPICE test infrastructure references
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| trillian-docs-sync.md | ✅ Updated | Path references to `05_tests/L4_SYS5_acceptance/` |
+| SW_dev_agent.md | ✅ Updated | Enhanced Step 7 Validation with ASPICE details |
+| RCA_agent.md | ✅ Updated | Added Step 8 Test-Based Verification |
+| system.md (Atlas) | ✅ Updated | Added emulator configuration details |
+
+### Detailed Changes
+
+**trillian-docs-sync.md:**
+- Updated acceptance test path: `human_system_acceptance_tests/` → `05_tests/L4_SYS5_acceptance/`
+- Added full test infrastructure section with ASPICE levels (L1-L4)
+- Updated file locations reference tree
+
+**SW_dev_agent.md (Step 7 — Validation):**
+- Added ASPICE test level reference table
+- Added infrastructure script commands
+- Added emulator management instructions
+- Added KVM requirement documentation
+- Added test report verification workflow
+- Added minimum validation requirements matrix
+
+**RCA_agent.md:**
+- Added new Step 8: Test-Based Verification (optional)
+- Added when-to-use decision table
+- Added test verification output format
+
+**system.md (Atlas):**
+- Added emulator configuration block (API 30, Pixel 4, AVD name)
+- Added KVM access requirement note
+
+### Files Modified
+
+```
+M  .github/skills/trillian-docs-sync.md     (+18, -8)
+M  .github/agents/SW_dev_agent.md           (+65, -25)
+M  .github/agents/RCA_agent.md              (+35, -0)
+M  SkunkOps/atlas/system.md                 (+5, -0)
+```
+
+---
+
+## [2026-07-22] ASPICE Test Infrastructure
+
+**Codebase Version:** v2.7-aspice-tests  
+**Trigger:** User request for ASPICE-aligned test structure with emulator automation
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| 05_tests/ structure | ✅ Reorganized | ASPICE-aligned level folders (L1-L4) |
+| infra/scripts/*.sh | ✅ Created | 6 automation scripts |
+| Test_Strategy.md | ✅ Updated | ASPICE alignment section added |
+| test_strategy_execution_instructions.md | ✅ Updated | Full rewrite with ASPICE naming |
+| system.md (Atlas) | ✅ Updated | Testing Structure section updated |
+| reports/README.md | ✅ Updated | Single-file report format |
+
+### New Structure
+
+```
+05_tests/
+├── L1_SWE4_unit/           # SWE.4 — Unit Verification
+├── L2_SWE5_integration/    # SWE.5 — Integration Test
+├── L3_SWE6_qualification/  # SWE.6 — SW Qualification Test
+├── L4_SYS5_acceptance/     # SYS.5 — System Qualification Test
+├── data/                   # Test data files
+├── infra/
+│   ├── scripts/
+│   │   ├── setup-emulator.sh
+│   │   ├── start-emulator.sh
+│   │   ├── stop-emulator.sh
+│   │   ├── run-instrumented.sh
+│   │   ├── run-all-tests.sh
+│   │   └── generate-report.sh
+│   └── config/
+│       └── avd-config.ini
+└── reports/
+    └── TEST_REPORT_*.md    # Single-file consolidated reports
+```
+
+### Scripts Created
+
+| Script | Purpose |
+|--------|---------|
+| `setup-emulator.sh` | Install emulator, system image (API 30), create AVD |
+| `start-emulator.sh` | Start headless emulator, wait for boot |
+| `stop-emulator.sh` | Graceful emulator shutdown |
+| `run-instrumented.sh` | Run L2 tests with optional emulator auto-start |
+| `run-all-tests.sh` | Master orchestrator (L1 + L2 + report) |
+| `generate-report.sh` | Generate consolidated markdown report |
+
+### Report Format
+
+Single file per execution: `TEST_REPORT_YYYY-MM-DD_HH-MM-SS.md`
+
+Contains:
+- ASPICE-aligned summary table
+- Results per level (or "NOT EXECUTED")
+- Failed test details
+- Environment information
+
+### ASPICE Traceability
+
+| Folder | ASPICE | V-Model Alignment |
+|--------|--------|-------------------|
+| L1_SWE4_unit | SWE.4 | Implementation → Unit Verification |
+| L2_SWE5_integration | SWE.5 | Design → Integration Test |
+| L3_SWE6_qualification | SWE.6 | Architecture → SW Qualification |
+| L4_SYS5_acceptance | SYS.5 | Requirements → System Qualification |
+
+---
+
 ## [2026-07-22] Smooth Timer Display (100ms UI Updates)
 
 **Codebase Version:** v2.6-smooth-timer  

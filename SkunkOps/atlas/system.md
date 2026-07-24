@@ -238,6 +238,45 @@ com.drivingcoach/
 
 ---
 
+## Testing Structure (ASPICE-Aligned)
+
+| Level | Folder | ASPICE | Location | Purpose |
+|-------|--------|--------|----------|---------|
+| L1 | `L1_SWE4_unit` | SWE.4 | `app/src/test/` | Unit Verification |
+| L2 | `L2_SWE5_integration` | SWE.5 | `app/src/androidTest/` | Integration Test |
+| L3 | `L3_SWE6_qualification` | SWE.6 | `app/src/androidTest/e2e/` | SW Qualification Test |
+| L4 | `L4_SYS5_acceptance` | SYS.5 | `05_tests/L4_SYS5_acceptance/` | System Qualification Test |
+
+**Documentation:**
+- Test Strategy: `05_tests/Test_Strategy.md`
+- Agent Execution: `05_tests/test_strategy_execution_instructions.md`
+- Test Data: `05_tests/data/`
+- Traceability: `01_requirements/TRACEABILITY_MATRIX.md`
+
+**Test Infrastructure:**
+- Setup emulator: `./05_tests/infra/scripts/setup-emulator.sh`
+- Start emulator: `./05_tests/infra/scripts/start-emulator.sh`
+- Run all tests: `./05_tests/infra/scripts/run-all-tests.sh`
+- Generate report: `./05_tests/infra/scripts/generate-report.sh`
+
+**Emulator Configuration:**
+- API Level: 30 (Android 11)
+- Device: Pixel 4
+- AVD Name: `DrivingCoach_Test`
+- **Requires:** KVM access (`/dev/kvm`) for hardware acceleration
+
+**Test Execution Commands:**
+```bash
+# Recommended: Run all + generate report
+./05_tests/infra/scripts/run-all-tests.sh
+
+# Or manually:
+./gradlew testDebugUnitTest                  # L1 Unit
+./gradlew connectedDebugAndroidTest          # L2 Integration
+```
+
+---
+
 ## External Services
 
 | Service | Type | Evidence | Status |

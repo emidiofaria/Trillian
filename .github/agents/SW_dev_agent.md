@@ -67,6 +67,10 @@ view SkunkOps/atlas/failure-patterns.md
 
 # 3. USER MANUAL — How users interact with the app
 view docs/USER_MANUAL.md
+
+# 4. TEST EXECUTION — How to run tests (consult when needed)
+# Note: Load this reference when running validation/tests
+view 05_tests/test_strategy_execution_instructions.md
 ```
 
 ### Context Loading Checklist
@@ -79,6 +83,7 @@ view docs/USER_MANUAL.md
 - [ ] Read `flows.md` — Understand execution paths
 - [ ] Read `failure-patterns.md` — Understand known failure modes
 - [ ] Read `USER_MANUAL.md` — Understand user-facing behavior
+- [ ] Note `test_strategy_execution_instructions.md` — Reference for test execution
 
 ### Context Summary Output
 
@@ -863,25 +868,128 @@ The agent SHOULD:
 
 ---
 
-## Step 7 — Validation
+## Step 7 — Validation (ASPICE-Aligned)
 
-The agent MUST:
+The agent MUST execute validation using the ASPICE-aligned test infrastructure.
+
+### Test Level Selection Gate (MANDATORY)
+
+**When user requests test execution, the agent MUST determine test scope:**
+
+| User Request | Action |
+|--------------|--------|
+| "run tests", "run all tests", "execute tests", "validate" | **ASK** which level |
+| "run L1", "run unit tests", "unit tests" | Execute L1 only |
+| "run L2", "run integration tests", "instrumented tests" | Execute L2 only |
+| "run L1 and L2", "run both levels" | Execute both |
+
+**When ambiguous, ask the user:**
+
+```
+Which test level would you like to run?
+
+| Level | Description | Time | Requires |
+|-------|-------------|------|----------|
+| L1 | Unit tests | ~30s | JVM only |
+| L2 | Integration tests | ~3 min | Emulator |
+| Both | L1 + L2 | ~4 min | Emulator |
+```
+
+⚠️ **DO NOT proceed with test execution until level is determined** (either from explicit user request or user selection).
+
+---
 
 ### Compile the application
 
-### Run all tests
+```bash
+./gradlew compileDebugKotlin compileDebugAndroidTestKotlin
+```
 
-Including:
+### Run Tests Using Infrastructure Scripts (Recommended)
 
-* unit tests
-* integration tests
-* UI tests (if available)
+**⚠️ MANDATORY: Consult test execution instructions first:**
+
+```bash
+view 05_tests/test_strategy_execution_instructions.md
+```
+
+**Preferred Method — Use Infrastructure Scripts:**
+
+```bash
+# Full test suite with emulator (L1 + L2)
+./05_tests/infra/scripts/run-all-tests.sh --start-emulator --stop-emulator
+
+# L1 only (fast, no device needed)
+./05_tests/infra/scripts/run-all-tests.sh --level L1
+
+# L2 only (requires device/emulator)
+./05_tests/infra/scripts/run-all-tests.sh --level L2 --start-emulator
+```
+
+### ASPICE Test Level Reference
+
+| Level | ASPICE | Command | Requires |
+|-------|--------|---------|----------|
+| L1 | SWE.4 Unit | `./gradlew testDebugUnitTest` | JVM only |
+| L2 | SWE.5 Integration | `./gradlew connectedDebugAndroidTest` | Device/Emulator |
+| L3 | SWE.6 Qualification | Future E2E tests | Emulator + test data |
+| L4 | SYS.5 Acceptance | Human execution | Physical track |
+
+### Emulator Management (if no device connected)
+
+```bash
+# One-time setup (requires KVM access)
+./05_tests/infra/scripts/setup-emulator.sh
+
+# Start headless emulator
+./05_tests/infra/scripts/start-emulator.sh
+
+# Stop emulator after tests
+./05_tests/infra/scripts/stop-emulator.sh
+```
+
+**KVM Requirement:** Emulator requires KVM. If not in kvm group:
+```bash
+# Check KVM access
+ls -la /dev/kvm
+
+# If permission denied, run with sg (if user is in kvm group but session not refreshed)
+sg kvm -c "./05_tests/infra/scripts/run-all-tests.sh --start-emulator"
+```
+
+### Test Report Verification
+
+After test execution, verify the generated report:
+
+```bash
+# Report is auto-generated at:
+ls -la 05_tests/reports/TEST_REPORT_*.md | tail -1
+
+# View latest report
+cat $(ls -t 05_tests/reports/TEST_REPORT_*.md | head -1)
+```
+
+**Report must show:**
+- L1 status (required: PASS or known failures documented)
+- L2 status (if device available)
+- Summary table with all ASPICE levels
+
+### Minimum Validation Requirements
+
+| Scenario | L1 (Unit) | L2 (Integration) |
+|----------|-----------|------------------|
+| Any code change | ✅ Required | Recommended |
+| UI changes | ✅ Required | ✅ Required |
+| Service/ViewModel changes | ✅ Required | ✅ Required |
+| Database changes | ✅ Required | ✅ Required |
+| Documentation only | Optional | Skip |
 
 ### Validate runtime startup
 
 Ensure:
 
-* app launches
+* app compiles without errors
+* no new lint warnings introduced
 * critical flows work
 * no startup crashes occur
 
