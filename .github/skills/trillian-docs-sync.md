@@ -40,12 +40,20 @@ When invoked, analyze the codebase and update these documentation artifacts **in
 - Sharing & Profile
 - Troubleshooting & FAQ
 
-### 4. Acceptance Tests (`human_system_acceptance_tests/`)
+### 4. Test Infrastructure (`05_tests/`)
+
+| Level | Folder | ASPICE | Update Triggers |
+|-------|--------|--------|-----------------|
+| L1 | `L1_SWE4_unit/` | SWE.4 | New unit tests, test patterns |
+| L2 | `L2_SWE5_integration/` | SWE.5 | New integration tests, Hilt configuration |
+| L3 | `L3_SWE6_qualification/` | SWE.6 | Future E2E tests |
+| L4 | `L4_SYS5_acceptance/` | SYS.5 | Human test checklists, new scenarios |
 
 | File | Purpose | Update Triggers |
 |------|---------|-----------------|
-| `README.md` | Test overview and traceability | New test categories, requirement changes |
-| `*_TESTS.md` | Feature-specific test checklists | Feature changes, new behaviors, UI changes |
+| `Test_Strategy.md` | Overall test strategy | New test levels, approach changes |
+| `test_strategy_execution_instructions.md` | Agent execution guide | Script changes, new commands |
+| `L4_SYS5_acceptance/*_TESTS.md` | Human test checklists | Feature changes, new behaviors |
 
 ---
 
@@ -303,7 +311,7 @@ If you stop in the pits during your session, the app automatically detects this.
 A: Pit stops are detected when you're stationary for at least 30 seconds...
 ```
 
-### 📁 human_system_acceptance_tests/40_SESSION_RECORDING_TESTS.md
+### 📁 05_tests/L4_SYS5_acceptance/40_SESSION_RECORDING_TESTS.md
 
 **Added Test Cases:**
 | ID | Test | Expected Result |
@@ -321,7 +329,7 @@ M  SkunkOps/atlas/system.md                          (+15, -3)
 M  SkunkOps/atlas/components.md                      (+47, -0)
 M  01_requirements/DrivingCoach_SRS_v1.md            (+12, -0)
 M  docs/USER_MANUAL.md                               (+23, -0)
-M  human_system_acceptance_tests/40_SESSION_RECORDING_TESTS.md (+18, -0)
+M  05_tests/L4_SYS5_acceptance/40_SESSION_RECORDING_TESTS.md (+18, -0)
 ```
 
 ---
@@ -411,9 +419,16 @@ Trillian/
 │   ├── components.md          # Component details
 │   ├── flows.md               # Flow diagrams
 │   └── failure-patterns.md    # Known issues
-├── human_system_acceptance_tests/
-│   ├── README.md              # Test overview
-│   └── *_TESTS.md             # Test checklists
+├── 05_tests/
+│   ├── L1_SWE4_unit/          # Unit test references
+│   ├── L2_SWE5_integration/   # Integration test references
+│   ├── L3_SWE6_qualification/ # E2E test references (future)
+│   ├── L4_SYS5_acceptance/    # Human acceptance checklists
+│   │   └── *_TESTS.md
+│   ├── infra/scripts/         # Test automation scripts
+│   ├── reports/               # Generated test reports
+│   ├── Test_Strategy.md       # Test strategy document
+│   └── test_strategy_execution_instructions.md  # Agent reference
 ├── app/src/main/java/         # Android app code
 └── backend/                   # Node.js backend
 ```

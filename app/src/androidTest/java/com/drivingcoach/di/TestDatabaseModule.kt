@@ -7,6 +7,7 @@ import com.drivingcoach.data.db.DatabaseModule
 import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
+import com.drivingcoach.data.db.dao.SessionPreferenceDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -45,5 +46,10 @@ object TestDatabaseModule {
     @Provides
     fun provideCoachingInsightDao(database: DrivingCoachDatabase): CoachingInsightDao {
         return database.coachingInsightDao()
+    }
+
+    @Provides
+    fun provideSessionPreferenceDao(database: DrivingCoachDatabase): SessionPreferenceDao {
+        return database.sessionPreferenceDao()
     }
 }
