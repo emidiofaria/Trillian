@@ -1104,6 +1104,148 @@ Generates coaching insights locally (offline) from lap data stored in Room. Prov
 
 ---
 
+## Component: App Startup / Branded Loading Screen
+
+### Purpose
+
+Owns cold-start initialisation. Resolves whether the user goes to Onboarding, Login or
+Home while presenting the TRILLIAN brand moment with a progress bar tied to **real**
+startup work. Replaces the former main-thread `runBlocking` DataStore read in
+`MainActivity`.
+
+### Key Code Areas
+
+| Element | Path |
+|---------|------|
+| `SplashViewModel` | `app/src/main/java/com/drivingcoach/ui/splash/SplashViewModel.kt` |
+| `SplashFragment` | `app/src/main/java/com/drivingcoach/ui/splash/SplashFragment.kt` |
+| `SplashDestination` | `app/src/main/java/com/drivingcoach/ui/splash/SplashDestination.kt` |
+| `SplashTimings` | `app/src/main/java/com/drivingcoach/ui/splash/SplashTimings.kt` |
+| `@IoDispatcher` | `app/src/main/java/com/drivingcoach/di/IoDispatcher.kt` |
+| Layout | `app/src/main/res/layout/fragment_splash.xml` |
+| Nav entry | `app/src/main/res/navigation/nav_graph.xml` (`startDestination`) |
+| System splash theme | `res/values/themes.xml` → `Theme.DrivingCoach.Splash` |
+
+### Dependencies
+
+| Dependency | Type | Purpose |
+|------------|------|---------|
+| `DataStore<Preferences>` | Injected | Read `onboarding_complete`, `jwt_token` |
+| `SessionDao` | Injected | Room warm-up + pending upload count |
+| `SplashTimings` | Injected | `minDisplayMs` / `timeoutMs` / `warmUpTimeoutMs` (0 in tests) |
+| `@IoDispatcher CoroutineDispatcher` | Injected | Keeps all I/O off the main thread |
+| `androidx.core:core-splashscreen:1.0.1` | Library | Android 12+ system-splash handoff |
+
+### Inputs
+
+- DataStore preferences: `onboarding_complete` (Boolean), `jwt_token` (String)
+- Room: `sessionDao.getPendingUploadSessions()`
+- User tap on `splashRoot` (skip request)
+
+### Outputs
+
+| Output | Consumer |
+|--------|----------|
+| `UiState.progress` (0–100) | `LinearProgressIndicator` |
+| `UiState.stepLabel` (`@StringRes`) | `progressLabel` TextView |
+| `UiState.destination` | `SplashFragment` navigation |
+| `UiState.usedFallback` | Diagnostics / tests |
+| `pendingUploadCount` | Diagnostics, Home upload banner seed |
+
+### Progress Model
+
+| Progress | Step | Real work |
+|----------|------|-----------|
+| 0 % | `splash_step_preferences` | Begin DataStore read |
+| 25 % | `splash_step_database` | Preferences read; open Room |
+| 55 % | `splash_step_uploads` | Pending-upload query returned |
+| 80 % | `splash_step_ready` | Evaluating destination |
+| 100 % | `splash_step_ready` | Ready; minimum display satisfied |
+
+### Failure Modes
+
+| Mode | Cause | Symptom | Handling |
+|------|-------|---------|----------|
+| Essential read timeout | Slow disk | Bar stalls at 25%, then jumps | `withTimeoutOrNull(8 s)` → ONBOARDING, `usedFallback = true` |
+| Warm-up timeout | Slow Room open | None visible | Bounded at 2 s, non-fatal; `pendingUploadCount = 0` |
+| DataStore corruption | Force-kill during write | Unexpected onboarding | Empty prefs → ONBOARDING |
+| Double navigation | Rapid state re-emit | `IllegalArgumentException` | Guarded by `currentDestination` check |
+| Double splash | `installSplashScreen()` after `super.onCreate()` | Icon flash then brand screen | Must be called first |
+| Test slowdown | `minDisplayMs` not zeroed | Every instrumented test pays 1.2 s | Inject `SplashTimings(minDisplayMs = 0)` |
+
+### Observable Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| Progress plateau | UI | Identifies slow init stage |
+| `usedFallback == true` | UI state / test | Essential init exceeded its 8 s budget |
+| `D/SplashViewModel` timings | Logcat | Per-step startup cost (measured: 1.9–3.6 s DataStore, ~1 s Room on emulator) |
+| Absence of `runBlocking` | `MainActivity` source | ANR mitigation intact |
+
+### Recovery/Mitigation
+
+- Separate ceilings for essential vs optional work; the optional warm-up can never change the destination.
+- Fallback is ONBOARDING (safe, idempotent), not LOGIN (would skip permission granting).
+- Tap-to-skip shortens only the cosmetic hold; real init must still complete.
+- All nav actions `popUpTo` the splash inclusively, so Back exits the app.
+
+### Criticality
+
+**HIGH** — every cold start passes through this component; total failure = app unusable.
+
+---
+
+## Component: Home Brand Hero (Collapsing Toolbar)
+
+### Purpose
+
+Presents the TRILLIAN identity on the Home screen while keeping recent sessions and the
+START SESSION call to action reachable. The hero is expanded on arrival and collapses to a
+compact branded bar as the user scrolls.
+
+### Key Code Areas
+
+| Element | Path |
+|---------|------|
+| Layout | `app/src/main/res/layout/fragment_home.xml` |
+| Collapse logic | `HomeFragment.setupHeroCollapse()` |
+
+### Structure
+
+```
+CoordinatorLayout
+└── AppBarLayout (id: appBarLayout)
+    └── CollapsingToolbarLayout (titleEnabled=false)
+        ├── heroContent  [parallax]  emblem + wordmark + kicker + tagline
+        └── Toolbar      [pin]       collapsedBrand (alpha 0→1) + profileButton
+└── NestedScrollView  → upload banner, heroCard, recent sessions, empty state
+└── startSessionButton (MaterialButton pill CTA)
+```
+
+### Behaviour
+
+| Scroll offset | Expanded hero | Collapsed brand |
+|---------------|---------------|-----------------|
+| 0 % | alpha 1.0 | alpha 0.0 |
+| 0–60 % | fades out linearly | 0.0 |
+| 60–100 % | 0.0 | fades in linearly |
+
+`COLLAPSE_FADE_START = 0.6f` in `HomeFragment`'s companion object.
+
+### Failure Modes
+
+| Mode | Cause | Symptom |
+|------|-------|---------|
+| Hero never collapses | Content shorter than scroll range | Static hero (acceptable) |
+| Both brands visible | Fade thresholds overlapping | Visual duplication |
+| Stale id reference | `startSessionFab` → `startSessionButton` rename | Instrumented test compile failure |
+
+### Criticality
+
+**LOW** — cosmetic; failure degrades presentation but not function.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -1119,4 +1261,6 @@ Generates coaching insights locally (offline) from lap data stored in Room. Prov
 | Lap & Coaching Sync | MEDIUM | Delayed insights |
 | Offline Coaching Engine | MEDIUM | No coaching insights |
 | Session State Machine | MEDIUM | UX confusion |
+| App Startup / Branded Loading Screen | HIGH | App unusable (no cold start) |
 | Stale Upload Detection | LOW | Missing UX warning |
+| Home Brand Hero | LOW | Degraded presentation only |

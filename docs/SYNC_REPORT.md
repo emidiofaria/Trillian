@@ -4,6 +4,268 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-07-25] Startup Hardening — Device Verification & Timeout Redesign
+
+**Codebase Version:** v2.8.1-brand-startup-fixes
+**Trigger:** Attempt to execute L2 (SWE.5 integration) tests for the v2.8 branded startup work
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| SplashTimings.kt | ✅ Updated | Essential timeout 3000→8000 ms; new `warmUpTimeoutMs = 2000` |
+| SplashViewModel.kt | ✅ Updated | Essential/optional split, ONBOARDING fallback, permanent timing logs |
+| fragment_splash.xml | ✅ Updated | `fitsSystemWindows`; tagline↔manifesto constraint chain |
+| themes.xml + ic_splash_emblem.xml | ✅ Added/Updated | System-splash icon no longer mask-cropped |
+| strings.xml | ✅ Updated | Footer metrics refreshed (Tests 104, SRS 123) |
+| SplashViewModelTest.kt | ✅ Updated | 13 tests; new warm-up isolation regression test |
+| DrivingCoach_SRS_v1.md | ✅ Updated | UI-03 reworded; **new UI-07** (bounded non-essential warm-up) |
+| TRACEABILITY_MATRIX.md | ✅ Updated | UI-05 corrected to manual-only; UI-07 added |
+| flows.md | ✅ Updated | Split timeout contract, fallback rationale, logcat signals |
+| components.md | ✅ Updated | Failure modes split, measured signals added |
+| failure-patterns.md | ✅ Updated | Post-mitigation table + measured evidence table |
+| USER_MANUAL.md | ✅ Updated | §2.2 "3 seconds" → 8 s ceiling + Onboarding fallback |
+
+### Key Finding — L2 Is a False Green
+
+`./gradlew connectedDebugAndroidTest` reports `BUILD SUCCESSFUL`, but the results XML shows
+`tests=4 failures=0 skipped=4`. **All four L2 classes are class-level `@Ignore`d**
+(`EndToEndTest`, `TelemetryForegroundServiceTest`, `RecordingFragmentTest`,
+`TrackSetupFragmentTest`) for pre-existing reasons unrelated to this work. L2 therefore
+provides **zero** real coverage today. Always parse the results XML, never trust the exit code.
+
+Consequence: the earlier claim that UI-05 was "⚠️ Partial via EndToEndTest" was wrong and has
+been corrected in the traceability matrix.
+
+### Defects Found by Direct Device Verification
+
+Because L2 gave no signal, verification was performed directly on `emulator-5554`.
+
+| # | Defect | Root cause | Fix |
+|---|--------|-----------|-----|
+| 1 | Fresh install landed on **Login**, not Onboarding | 3 s global timeout fired on a *normal* cold start (`DataStore.data.first()` = 3 573 ms); fallback became the common path | Essential timeout → 8 s; warm-up split behind its own 2 s bound; fallback → ONBOARDING |
+| 2 | Splash footer clipped by navigation bar | `MainActivity` applies only left/right insets by design; fragment must opt in | `fitsSystemWindows="true"` on `splashRoot` |
+| 3 | Stale footer metrics string | Not refreshed after test/SRS growth | Updated to Tests 104 / SRS 123 |
+| 4 | Android 12+ system splash icon hard-cropped | Adaptive-icon circular mask vs. full-bleed `ic_launcher_foreground` | New `ic_splash_emblem.xml` (`<inset>` 20%) |
+| 5 | Tagline colliding with manifesto card | No constraint linking the two views | `Top_toBottomOf` + margins + `verticalBias=1.0` |
+
+### Design Rationale — Why ONBOARDING, Not LOGIN
+
+If the preferences read fails we do not know whether the user has onboarded. The costs are
+asymmetric: routing an **already-onboarded** user through Onboarding is a recoverable
+annoyance that still ends at Home; routing a **fresh** user to Login skips permission granting
+entirely and leaves the app unable to record. ONBOARDING is therefore the strictly safer default.
+
+### Design Rationale — Essential vs. Optional Work
+
+The destination decision depends **only** on the preferences read. The Room warm-up is a pure
+optimisation, so it now carries its own 2 s bound and is wrapped in `runCatching`: a slow or
+broken database can never change where the user lands. Guarded by the L1 test
+`slow database warm up does not change the destination`.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| `compileDebugKotlin` / `compileDebugAndroidTestKotlin` / `assembleDebug` | ✅ PASS |
+| L1 (SWE.4 unit) | ✅ **105 tests, 0 failures, 0 skipped** (clean run, emulator stopped) |
+| L1 splash subset | ✅ 13 tests, 0 failures |
+| L2 (SWE.5 integration) | ⚠️ Runs, but 4/4 classes `@Ignore`d — **no coverage** |
+| Device verification (`emulator-5554`) | ✅ Splash renders correctly; destination = Onboarding on fresh install; footer clear of nav bar; Home hero matches mockup; **UI-05 confirmed** (Back from Home exits to launcher) |
+
+Measured startup (Pixel 4 API 30 emulator): cold `datastore read 3 573 ms` →
+`resolved in 4 458 ms`; warm `datastore read 1 878 ms`, `room warm-up 955 ms` →
+`resolved=ONBOARDING in 2 889 ms`.
+
+Note: `TelemetryFileWriterTest > benchmark 18000 samples writes in under 100ms` is
+**load-sensitive**, not a regression — it fails only under CPU contention from a running
+emulator and passes on a clean run.
+
+### Open Items
+
+- Four `@Ignore`d L2 classes make the entire L2 level decorative — recommend a follow-up to
+  un-ignore at minimum `EndToEndTest`, which would give real automated UI-05 coverage.
+- The 8 s essential budget is derived from emulator measurements; real-device figures are
+  unknown and it may be tunable downward.
+- The three `Log.d` startup timing statements are currently unconditional; decide whether to
+  gate them behind `BuildConfig.DEBUG`.
+
+---
+
+## [2026-07-24] Branded Loading Screen & Home Brand Hero
+
+**Codebase Version:** v2.8-brand-startup  
+**Trigger:** TRILLIAN brand mockup implementation — splash loading screen + collapsing Home hero
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| system.md | ✅ Updated | +6/-3 (splash module, SplashScreen dep, ANR risk closed) |
+| components.md | ✅ Updated | +141 lines (2 new components) |
+| flows.md | ✅ Updated | +74/-16 (startup flow fully rewritten) |
+| failure-patterns.md | ✅ Updated | +80/-45 (DataStore ANR marked MITIGATED) |
+| DrivingCoach_SRS_v1.md | ✅ Updated | ON-01 reworded, +6 requirements (§3a) |
+| TRACEABILITY_MATRIX.md | ✅ Updated | +6 rows, new UI category (83% covered) |
+| USER_MANUAL.md | ✅ Updated | §2.2 new, §4.0 new, §2.3–2.5 renumbered |
+
+### New Requirement IDs
+
+- **UI-01** — Branded loading screen with progress tied to real initialisation work
+- **UI-02** — Minimum display time (1.2 s) with tap-to-skip
+- **UI-03** — 3 s initialisation timeout with Login fallback
+- **UI-04** — Startup state resolved off the main thread
+- **UI-05** — Loading screen removed from the back stack
+- **UI-06** — Home brand hero collapses on scroll
+
+**Modified:** ON-01 (reworded — start destination is now resolved asynchronously)
+
+### Architectural Change
+
+The `runBlocking` DataStore read at `MainActivity:68` — a **P1 documented ANR risk** in
+`failure-patterns.md` — has been removed. Startup state now resolves in `SplashViewModel`
+on an injected `@IoDispatcher`, bounded by `withTimeoutOrNull(3000)` with a Login fallback.
+The pattern is now marked **✅ MITIGATED** and downgraded from P1 to Closed.
+
+### Detailed Changes
+
+#### 📁 SkunkOps/atlas/system.md
+
+```diff
+  ├── recording/
+- │   └── session/
++ │   ├── session/
++ │   └── splash/               # Branded loading screen (startup resolution)
+
++ | Splash | AndroidX Core SplashScreen | 1.0.1 | `installSplashScreen()`, Android 12+ handoff |
+
+- | **Blocking DataStore read** | MEDIUM | `runBlocking` in `MainActivity.setupNavigation()` | Move to suspending |
++ | ~~**Blocking DataStore read**~~ | ✅ RESOLVED v2.8 | Was `runBlocking` … | Replaced by async `SplashViewModel` |
+```
+
+#### 📁 SkunkOps/atlas/components.md
+
+**Added Section: App Startup / Branded Loading Screen** (criticality HIGH) — key code areas,
+dependencies, the 5-stage progress model, failure modes, observable signals.
+
+**Added Section: Home Brand Hero (Collapsing Toolbar)** (criticality LOW) — layout structure,
+scroll/alpha behaviour table, failure modes.
+
+#### 📁 SkunkOps/atlas/flows.md
+
+**Rewrote: Flow: App Startup & Navigation Resolution**
+
+```diff
+- → DataStore.data.first() [BLOCKING runBlocking]
+- → NavController.setStartDestination()
++ → installSplashScreen()
++ → NavController starts at splashFragment
++ → SplashViewModel.start()
++   → withTimeoutOrNull(3000) { withContext(IO) { … } }
++   → awaitMinimumDisplay(1200)  [skippable]
++ → navigate(popUpTo splashFragment inclusive)
+```
+
+Added a **Timing Contract** table and rewrote Async Boundaries, Failure Points,
+Retry/Recovery and Operational Signals.
+
+#### 📁 SkunkOps/atlas/failure-patterns.md
+
+```diff
+- ## Pattern: DataStore ANR on Startup
++ ## Pattern: DataStore ANR on Startup — ✅ MITIGATED (v2.8)
+
+- | DataStore ANR on Startup | MEDIUM | HIGH | HIGH | P1 |
++ | DataStore ANR on Startup | ~~MEDIUM~~ MITIGATED | HIGH | HIGH | ~~P1~~ Closed (v2.8) |
+```
+
+Added *Regression Signals*, *Current Behaviour (post-mitigation)*, a Permanent Fix status
+table, and a *Regression Guard* pointing at `SplashViewModelTest`.
+
+#### 📁 01_requirements/DrivingCoach_SRS_v1.md
+
+**Added Requirements (new §3a — Application startup and branding):**
+
+| ID | Requirement |
+|----|-------------|
+| UI-01 | The app SHALL display a branded loading screen on cold start with a progress indicator reflecting real initialisation work |
+| UI-02 | The loading screen SHALL remain visible for a minimum of 1.2 s and SHALL be dismissible early by tapping |
+| UI-03 | Startup initialisation SHALL be bounded by a 3 s timeout, after which the app SHALL navigate to Login |
+| UI-04 | Startup state resolution SHALL NOT block the main thread |
+| UI-05 | The loading screen SHALL be removed from the back stack on navigation |
+| UI-06 | The Home screen SHALL present a brand hero that collapses as the user scrolls |
+
+#### 📁 01_requirements/TRACEABILITY_MATRIX.md
+
+```diff
++ | Startup & Branding (UI) | 6 | 5 | 83% ✅ |
+- | **TOTAL** | **~179** | **~37** | **~21%** |
++ | **TOTAL** | **~185** | **~42** | **~23%** |
+```
+
+#### 📁 docs/USER_MANUAL.md
+
+**Added Section 2.2 — The Loading Screen**: explains the progress bar reflects real work, the
+step-by-step table, the ~1 s typical / 3 s maximum wait, tap-to-skip, and Back-exits-app.
+
+**Added Section 4.0 — The Home Screen**: describes the collapsing brand hero, the persistent
+profile button, and the content below it.
+
+**Renumbered:** 2.2→2.3 (First Launch & Permissions), 2.3→2.4 (Creating Your Account),
+2.4→2.5 (Logging In).
+
+### Validation
+
+| Level | ASPICE | Result |
+|-------|--------|--------|
+| L1 unit | SWE.4 | ✅ 104 tests, 0 failures (12 new in `SplashViewModelTest`) |
+| Compile (main) | — | ✅ `compileDebugKotlin` |
+| Compile (androidTest) | — | ✅ `compileDebugAndroidTestKotlin` |
+| L2 instrumented | SWE.5 | ⏸️ Not run (requires emulator/KVM) |
+| Visual verification | — | ⏸️ Not performed |
+
+### Files Modified
+
+```
+M  SkunkOps/atlas/system.md                          (+6, -3)
+M  SkunkOps/atlas/components.md                      (+141, -0)
+M  SkunkOps/atlas/flows.md                           (+74, -16)
+M  SkunkOps/atlas/failure-patterns.md                (+80, -45)
+M  01_requirements/DrivingCoach_SRS_v1.md            (+16, -2)
+M  01_requirements/TRACEABILITY_MATRIX.md            (+12, -3)
+M  docs/USER_MANUAL.md                               (+49, -5)
+M  app/build.gradle.kts                              (+1)
+M  app/src/main/AndroidManifest.xml                  (+1, -1)
+M  app/src/main/java/com/drivingcoach/di/AppModule.kt (+11)
+M  app/src/main/java/com/drivingcoach/ui/MainActivity.kt (+3, -23)
+M  app/src/main/java/com/drivingcoach/ui/home/HomeFragment.kt (+28, -4)
+M  app/src/main/res/layout/fragment_home.xml         (+150, -41)
+M  app/src/main/res/navigation/nav_graph.xml         (+26, -2)
+M  app/src/main/res/values/{colors,dimens,strings,themes,type}.xml
+M  app/src/androidTest/java/com/drivingcoach/EndToEndTest.kt (+2, -2)
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashViewModel.kt
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashFragment.kt
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashDestination.kt
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashTimings.kt
+A  app/src/main/java/com/drivingcoach/di/IoDispatcher.kt
+A  app/src/main/res/layout/fragment_splash.xml
+A  app/src/main/res/drawable/{ic_helmet_emblem,bg_hero_ring,ic_dot}.xml
+A  app/src/test/java/com/drivingcoach/ui/splash/SplashViewModelTest.kt
+```
+
+### Recommendations
+
+- [ ] **Visual check needed** — `ic_helmet_emblem.xml` was hand-authored and has never been
+      rendered; the emblem may need tuning
+- [ ] **L2 run needed** — collapsing hero animation and splash→destination routing unverified
+      on a device (requires emulator/KVM)
+- [ ] Add L2 coverage for UI-06 (hero collapse) — currently uncovered
+- [ ] DataStore corruption recovery remains open (falls back to empty preferences)
+- [ ] Pre-existing: SRS AD-04 mandates Firebase Auth but the code uses JWT-in-DataStore —
+      still unreconciled
+
+---
+
 ## [2026-07-22] Test Documentation Sync to Agent Instructions
 
 **Codebase Version:** v2.7-aspice-tests  

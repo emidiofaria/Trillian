@@ -8,7 +8,12 @@ Runtime execution flows for RCA localization in Driving Coach Android app.
 
 ### Goal
 
-Determine correct start destination (Onboarding vs Login vs Home) and initialize app state.
+Show the branded loading screen, resolve startup state off the main thread, and hand the
+user to the correct destination (Onboarding vs Login vs Home).
+
+> **Changed in v2.8** — the former `runBlocking` DataStore read in
+> `MainActivity.setupNavigation()` has been removed. Startup state is now resolved
+> asynchronously by `SplashViewModel` while the branded loading screen is visible.
 
 ### Trigger
 
@@ -21,11 +26,25 @@ Determine correct start destination (Onboarding vs Login vs Home) and initialize
 Application.onCreate()
 → Hilt injection completes
 → MainActivity.onCreate()
-→ DataStore.data.first() [BLOCKING runBlocking]
-→ Check KEY_ONBOARDING_COMPLETE preference
-→ NavController.setStartDestination()
-  → If onboarding incomplete: OnboardingFragment
-  → If onboarding complete: default nav_graph (LoginFragment or HomeFragment)
+  → installSplashScreen()            [system splash, Android 12+ handoff]
+  → super.onCreate()
+  → NavController starts at splashFragment (static start destination)
+→ SplashFragment.onViewCreated()
+  → SplashViewModel.start()          [idempotent]
+    → withTimeoutOrNull(timeoutMs = 8000)          [essential]
+      → publish  0%  "preferences"
+      → withContext(IO) { dataStore.data.first() }       → 25%
+      → withTimeoutOrNull(warmUpTimeoutMs = 2000)  [optional, non-fatal]
+          { withContext(IO) { sessionDao.getPendingUploadSessions() } }  → 55%
+      → evaluate pending uploads                          → 80%
+      → resolve destination                               → 100%
+    → awaitMinimumDisplay(minDisplayMs = 1200)  [skippable by tap]
+    → emit UiState(destination = …)
+→ SplashFragment observes destination
+→ NavController.navigate(action, popUpTo splashFragment inclusive)
+  → onboarding incomplete       : OnboardingFragment
+  → onboarding complete + token : HomeFragment
+  → otherwise                   : LoginFragment
 → observeAuthEvents() starts collecting AuthEventBus
 ```
 
@@ -33,8 +52,14 @@ Application.onCreate()
 
 | Boundary | Type | Location |
 |----------|------|----------|
-| DataStore read | `runBlocking` (blocks main thread) | `MainActivity.setupNavigation()` |
+| DataStore read | `withContext(@IoDispatcher)` | `SplashViewModel.resolveStartupState()` |
+| Room warm-up / pending uploads | `withContext(@IoDispatcher)` | `SplashViewModel.resolveStartupState()` |
+| Essential init timeout | `withTimeoutOrNull(timeoutMs)` | `SplashViewModel.start()` |
+| Optional warm-up timeout | `withTimeoutOrNull(warmUpTimeoutMs)` | `SplashViewModel.resolveStartupState()` |
+| Minimum brand display | `delay()` loop in `viewModelScope` | `SplashViewModel.awaitMinimumDisplay()` |
 | AuthEventBus collection | `lifecycleScope.launch` | `MainActivity.observeAuthEvents()` |
+
+**Main thread is never blocked during startup.**
 
 ### Persistence Boundaries
 
@@ -42,40 +67,64 @@ Application.onCreate()
 |---------|-----|---------|
 | DataStore | `onboarding_complete` | Skip onboarding on subsequent launches |
 | DataStore | `jwt_token` | Determines auth state |
+| Room | `sessions` (pending uploads) | Warm-up + Home upload banner seed |
 
 ### External Dependencies
 
 None (local-only flow).
 
+### Timing Contract
+
+| Parameter | Default | Injected via | Purpose |
+|-----------|---------|--------------|---------|
+| `minDisplayMs` | 1200 ms | `SplashTimings` (`AppModule`) | Brand moment; set to 0 in tests |
+| `timeoutMs` | 8000 ms | `SplashTimings` (`AppModule`) | Ceiling on the **essential** preferences read |
+| `warmUpTimeoutMs` | 2000 ms | `SplashTimings` (`AppModule`) | Ceiling on the **optional** Room warm-up |
+| `PROGRESS_TICK_MS` | 60 ms | `SplashViewModel` constant | Progress bar smoothness |
+
 ### Failure Points
 
 | Stage | Failure | Symptom | Propagation |
 |-------|---------|---------|-------------|
-| DataStore read | Corruption | `runBlocking` exception → crash | App won't start |
-| DataStore read | Slow disk I/O | ANR (main thread blocked) | User sees "App not responding" |
-| NavController | Invalid graph | `IllegalStateException` | Crash |
+| DataStore read | Corruption | Empty preferences returned | Treated as fresh install → Onboarding |
+| DataStore read | Slow disk I/O | Progress bar stalls at 25% | Bounded by 8 s timeout → Onboarding fallback |
+| Room open | Migration failure / stall | Warm-up returns null | Non-fatal: `pendingUploadCount = 0`, destination unaffected |
+| Init overall | Exceeds `timeoutMs` | `usedFallback = true` | Navigates to Onboarding, never hangs |
+| NavController | Double navigation | `IllegalArgumentException` | Guarded by `currentDestination` check |
 
 ### Retry/Recovery Behavior
 
-- **No retry**: `runBlocking` either succeeds or crashes
-- **DataStore fallback**: Returns empty preferences on corruption → treated as fresh install
-- **Recovery**: Reinstall clears corrupted DataStore
+- **Timeout fallback**: `withTimeoutOrNull` → `SplashDestination.ONBOARDING`, `usedFallback = true`.
+  Onboarding is chosen over Login deliberately: the two mistakes are not symmetric. Re-running
+  onboarding for an already-onboarded user is a recoverable annoyance that still ends at Home,
+  whereas dropping a *fresh* user at Login skips permission granting and leaves the app unable
+  to record. The user is never stranded on the loading screen.
+- **DataStore fallback**: Returns empty preferences on corruption → treated as fresh install.
+- **Skip**: Tapping the splash sets `skipRequested`, which only shortens the cosmetic hold.
+  Real initialisation must still complete — the app never navigates to a blind destination.
+- **Back stack**: All three navigation actions use `popUpTo="@id/splashFragment"` with
+  `popUpToInclusive="true"`, so Back from the first real screen exits the app.
 
 ### User-Visible Symptoms
 
 | Symptom | Cause |
 |---------|-------|
-| Black screen on launch | DataStore ANR |
-| Crash on launch | NavController misconfiguration |
+| Loading screen sits at 25% then jumps to Onboarding | DataStore slow → timeout fallback |
 | Unexpected onboarding | DataStore corruption (preference lost) |
+| Double splash (icon flash then brand screen) | `installSplashScreen()` not called before `super.onCreate()` |
+| Back returns to loading screen | `popUpToInclusive` missing on a nav action |
 
 ### Operational Signals
 
 | Signal | Location | Meaning |
 |--------|----------|---------|
 | `MainActivity onCreate` | Logcat | Startup initiated |
-| ANR trace | `/data/anr/` | Main thread blocked >5s |
-| `DataStore` exceptions | Logcat | Preference read failure |
+| `UiState.progress` plateau | UI | Which init step is slow |
+| `UiState.usedFallback == true` | UI state / test assert | Essential init exceeded its 8 s budget |
+| `D/SplashViewModel: datastore read took Nms` | Logcat | Per-step startup timing |
+| `D/SplashViewModel: room warm-up took Nms` | Logcat | Warm-up cost; `result=null` means it was cut short |
+| `D/SplashViewModel: startup resolved=X in Nms` | Logcat | Final destination and total budget used |
+| ANR trace | `/data/anr/` | Should no longer occur for startup (see failure-patterns) |
 
 ---
 

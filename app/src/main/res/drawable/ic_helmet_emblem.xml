@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Original stylised racing helmet emblem for the Trillian brand mark.
+    Drawn in-house; not a reproduction of any real driver's livery.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Helmet shell -->
+    <path
+        android:fillColor="#F2C230"
+        android:pathData="M60,16 C84,16 104,35 104,60 L104,76 C104,85 97,92 88,92 L48,92 C30,92 16,78 16,60 C16,35 36,16 60,16 Z" />
+
+    <!-- Upper livery band -->
+    <path
+        android:fillColor="#1E9E52"
+        android:pathData="M30,34 C36,24 46,17 57,16 C69,15 80,19 88,26 L82,33 C76,27 67,24 58,25 C48,26 40,29 34,37 Z" />
+
+    <!-- Accent band -->
+    <path
+        android:fillColor="#1C69D4"
+        android:pathData="M34,39 C41,31 49,28 58,28 C68,27 77,30 84,36 L80,41 C74,36 66,34 58,34 C50,34 43,37 38,43 Z" />
+
+    <!-- Rear livery sweep -->
+    <path
+        android:fillColor="#1E9E52"
+        android:pathData="M88,26 C96,33 101,43 102,54 L93,56 C92,46 88,38 82,32 Z" />
+
+    <!-- Visor aperture -->
+    <path
+        android:fillColor="#15171C"
+        android:pathData="M26,58 C27,45 36,35 49,33 L74,33 C78,33 81,36 81,40 L81,54 C81,58 78,61 74,61 L31,63 C28,63 26,61 26,58 Z" />
+
+    <!-- Visor reflection -->
+    <path
+        android:fillColor="#3C5F96"
+        android:pathData="M31,55 C32,46 39,39 49,38 L70,38 C73,38 74,40 73,42 L68,50 C66,53 63,54 60,54 L34,58 C32,58 31,57 31,55 Z" />
+
+    <!-- Chin bar shading -->
+    <path
+        android:fillColor="#C99A1E"
+        android:pathData="M28,70 C36,74 47,76 60,76 C74,76 87,73 96,68 L96,76 C96,85 89,92 80,92 L48,92 C38,92 30,86 27,78 Z" />
+
+    <!-- Side fastener -->
+    <path
+        android:fillColor="#E8E8E8"
+        android:pathData="M88,60 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+
+    <!-- Visor pivot -->
+    <path
+        android:fillColor="#E8E8E8"
+        android:pathData="M79,36 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+</vector>

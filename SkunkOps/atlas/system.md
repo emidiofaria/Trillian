@@ -44,7 +44,8 @@ com.drivingcoach/
 │   ├── onboarding/
 │   ├── profile/
 │   ├── recording/
-│   └── session/
+│   ├── session/
+│   └── splash/               # Branded loading screen (startup resolution)
 └── util/                     # Formatting utilities
 ```
 
@@ -231,6 +232,7 @@ com.drivingcoach/
 | Networking | Retrofit + OkHttp | 2.11.0 / 4.12.0 | `ApiService`, `NetworkModule` |
 | JSON | Gson | (via Retrofit) | `GsonConverterFactory` |
 | Background Work | WorkManager | 2.9.0 | `TelemetryUploadWorker` |
+| Splash | AndroidX Core SplashScreen | 1.0.1 | `installSplashScreen()`, Android 12+ handoff |
 | Charting | MPAndroidChart | 3.1.0 | Speed visualization |
 | ViewPager | ViewPager2 | 1.1.0 | Session result tabs |
 | Testing | JUnit4, Mockito, Espresso | — | Test dependencies |
@@ -492,7 +494,7 @@ No CI/CD workflow files found in `.github/workflows/` or other common locations.
 
 | Risk | Severity | Evidence | Mitigation |
 |------|----------|----------|------------|
-| **Blocking DataStore read** | MEDIUM | `runBlocking` in `MainActivity.setupNavigation()` | Move to suspending or use default |
+| ~~**Blocking DataStore read**~~ | ✅ RESOLVED v2.8 | Was `runBlocking` in `MainActivity.setupNavigation()` | Replaced by async `SplashViewModel` resolution on `@IoDispatcher` |
 | **No splash/loading state** | LOW | Direct navigation decision | Add proper splash handling |
 
 ---
