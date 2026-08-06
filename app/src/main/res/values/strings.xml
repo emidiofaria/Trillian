@@ -40,4 +40,21 @@
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="back">Back</string>
+
+    <!-- Brand Hero / Splash -->
+    <string name="hero_wordmark">TRILLIAN</string>
+    <string name="hero_kicker">Driving Coach</string>
+    <string name="hero_tagline">Track-day lap coaching</string>
+    <string name="manifesto_title">Rule #1: Don\'t Touch the Code!!</string>
+    <string name="manifesto_body">V-Model Engineered by Specs,\nExtensively Proven by Tests.</string>
+    <string name="hero_footer_metrics">Tests - 104 ; 0 lines Human Code; SRS - 123 Requirements ; SDLC - AI first</string>
+    <string name="hero_emblem_description">Trillian racing helmet emblem</string>
+    <string name="splash_skip_hint">Tap to skip</string>
+    <string name="splash_progress_format">%1$d%%</string>
+
+    <!-- Splash initialisation steps -->
+    <string name="splash_step_preferences">Loading preferences…</string>
+    <string name="splash_step_database">Opening session database…</string>
+    <string name="splash_step_uploads">Checking pending uploads…</string>
+    <string name="splash_step_ready">Ready</string>
 </resources>

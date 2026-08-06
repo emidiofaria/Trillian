@@ -132,8 +132,8 @@ class EndToEndTest {
         // Assert empty state is shown (since we have no sessions)
         onView(withId(R.id.emptyStateContainer)).check(matches(isDisplayed()))
 
-        // Tap FAB to start new session
-        onView(withId(R.id.startSessionFab)).perform(click())
+        // Tap the CTA to start new session
+        onView(withId(R.id.startSessionButton)).perform(click())
 
         // Enter track name in dialog
         Thread.sleep(300)
