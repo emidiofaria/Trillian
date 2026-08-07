@@ -738,7 +738,7 @@ Encrypted key-value storage for auth tokens and user profile data. Replaces Shar
 
 ### Key Code Areas
 
-- `di/AppModule.kt` — DataStore provider
+- `di/DataStoreModule.kt` — DataStore provider (isolated so tests can substitute it)
 - `AuthRepository.kt` — token read/write
 - `AuthInterceptor.kt` — token read
 
@@ -1181,6 +1181,7 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 | `usedFallback == true` | UI state / test | Essential init exceeded its 8 s budget |
 | `D/SplashViewModel` timings | Logcat | Per-step startup cost (measured: 1.9–3.6 s DataStore, ~1 s Room on emulator) |
 | Absence of `runBlocking` | `MainActivity` source | ANR mitigation intact |
+| `MainThreadResponsivenessProbe.worstLatencyMs` | L2 `SplashMainThreadTest` | >2000 ms means startup work returned to the main thread |
 
 ### Recovery/Mitigation
 
@@ -1188,6 +1189,24 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 - Fallback is ONBOARDING (safe, idempotent), not LOGIN (would skip permission granting).
 - Tap-to-skip shortens only the cosmetic hold; real init must still complete.
 - All nav actions `popUpTo` the splash inclusively, so Back exits the app.
+
+### Test Hooks
+
+`SplashTimings` and the preferences `DataStore` are provided by dedicated Hilt modules
+(`SplashModule`, `DataStoreModule`) precisely so instrumented tests can replace one without
+disturbing the rest of the graph:
+
+| Goal | Uninstall | Substitute |
+|------|-----------|------------|
+| Pin the loading screen on screen for assertions | `SplashModule` | `SplashTimings(minDisplayMs = 60_000)` |
+| Force the timeout fallback | `SplashModule` + `DataStoreModule` | short `timeoutMs` + `StallingPreferencesDataStore` |
+| Land directly on Home | `SplashModule` + `DataStoreModule` | `SeededPreferencesDataStore(onboarding + token)` |
+
+> **Do not** try to prove UI-04 with an Espresso interaction. Espresso waits for the main
+> looper to become idle rather than failing, so a `runBlocking(60 s)` on the main thread made
+> an Espresso-based test merely slow — it still passed. Latency sampling from a background
+> thread (`MainThreadResponsivenessProbe`) is what actually detects the regression; this was
+> confirmed empirically by reintroducing the block and observing the test go red.
 
 ### Criticality
 

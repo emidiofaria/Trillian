@@ -284,12 +284,24 @@ If any of these reappear, the mitigation has been reverted or bypassed:
 
 ### Regression Guard
 
-`SplashViewModelTest` (L1) asserts the timeout fallback, the non-blocking destination
-resolution and the skip semantics. A failure there indicates this pattern is returning.
+**L1 —** `SplashViewModelTest` asserts the timeout fallback, the non-blocking destination
+resolution and the skip semantics.
+
+**L2 —** `SplashMainThreadTest` (`app/src/androidTest/.../ui/splash/`) runs the real
+`MainActivity` against a `StallingPreferencesDataStore` and samples main-looper round-trip
+latency from a background thread via `MainThreadResponsivenessProbe`. Budget: **2000 ms**.
+
+> ⚠️ **Espresso is not a valid detector for this pattern.** Espresso synchronises *with* the
+> main looper — it waits for idle rather than timing out — so a deliberately reintroduced
+> `runBlocking { delay(60_000) }` in `SplashFragment.onViewCreated` left an Espresso-click
+> based test **passing**, just slower. The latency probe caught the same injected regression
+> immediately: `main thread was unresponsive for 15000ms during startup (budget 2000ms)`.
+> Any future "must not block" assertion must be falsified the same way before it is trusted.
 
 ### Confidence
 
-**HIGH** — root cause removed and covered by unit tests.
+**HIGH** — root cause removed, covered by unit tests, and the instrumented guard has been
+empirically falsified (proven to fail when the defect is reintroduced).
 
 ---
 

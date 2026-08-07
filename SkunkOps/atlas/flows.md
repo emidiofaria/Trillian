@@ -77,10 +77,25 @@ None (local-only flow).
 
 | Parameter | Default | Injected via | Purpose |
 |-----------|---------|--------------|---------|
-| `minDisplayMs` | 1200 ms | `SplashTimings` (`AppModule`) | Brand moment; set to 0 in tests |
-| `timeoutMs` | 8000 ms | `SplashTimings` (`AppModule`) | Ceiling on the **essential** preferences read |
-| `warmUpTimeoutMs` | 2000 ms | `SplashTimings` (`AppModule`) | Ceiling on the **optional** Room warm-up |
+| `minDisplayMs` | 1200 ms | `SplashTimings` (`SplashModule`) | Brand moment; set to 0 in tests |
+| `timeoutMs` | 8000 ms | `SplashTimings` (`SplashModule`) | Ceiling on the **essential** preferences read |
+| `warmUpTimeoutMs` | 2000 ms | `SplashTimings` (`SplashModule`) | Ceiling on the **optional** Room warm-up |
 | `PROGRESS_TICK_MS` | 60 ms | `SplashViewModel` constant | Progress bar smoothness |
+
+### Automated Verification (L2)
+
+| Stage of this flow | Instrumented test | SRS |
+|--------------------|-------------------|-----|
+| Branded screen rendered, progress determinate | `SplashScreenTest` | UI-01 |
+| Minimum hold honoured, tap-to-skip | `SplashScreenTest` | UI-02 |
+| Essential timeout → Onboarding (never Login) | `SplashFallbackTest` | UI-03 |
+| Main thread stays responsive while init stalls | `SplashMainThreadTest` | UI-04 |
+| Splash popped inclusively; Back exits the app | `StartupBackStackTest` | UI-05 |
+| Home hero collapse/expand after handoff | `HomeHeroTest` | UI-06 |
+
+These tests drive the real `MainActivity` and substitute only `SplashModule` /
+`DataStoreModule`, so the navigation graph and fragment lifecycle exercised are the
+production ones.
 
 ### Failure Points
 

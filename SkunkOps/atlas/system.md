@@ -35,7 +35,10 @@ com.drivingcoach/
 │   ├── repository/           # Data repositories
 │   ├── telemetry/            # Telemetry capture and file I/O
 │   └── worker/               # WorkManager background jobs
-├── di/                       # Hilt modules
+├── di/                       # Hilt modules (AppModule, DataStoreModule,
+│                             #   DispatcherModule, SplashModule, NetworkModule, …)
+│                             # Split by concern so instrumented tests can
+│                             # @UninstallModules one binding at a time.
 ├── domain/                   # Domain layer (empty - use cases not yet extracted)
 ├── service/                  # Foreground service
 ├── ui/                       # Presentation layer (Fragments, ViewModels)
