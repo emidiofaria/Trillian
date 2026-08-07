@@ -68,3 +68,11 @@ Thumbs.db
 *.tmp
 *.temp
 *.bak
+
+# ============================================
+# Build outputs & test artifacts (not source of truth)
+# ============================================
+# Signed/unsigned APK archives kept locally for device testing
+/releases/
+# Generated test run reports (regenerated on every run)
+05_tests/reports/TEST_REPORT_*.md

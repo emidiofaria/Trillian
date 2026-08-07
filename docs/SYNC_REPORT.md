@@ -4,6 +4,139 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-08-06] L2 Integration Coverage for Branded Startup (SWE.5)
+
+**Trigger:** SRS UI-01…UI-06 were nominally covered, but the L2 suite was a *false green* —
+all four existing instrumented classes carry a class-level `@Ignore`, and Gradle reports
+`BUILD SUCCESSFUL` for a fully skipped suite. UI-05 was manual-only and UI-06 had no
+coverage at all.
+
+**Outcome:** 5 new instrumented test classes (18 executing tests, 0 failures, 0 skipped),
+enabled by a Hilt module split. Documentation realigned to reflect real, executing coverage.
+
+### Summary
+
+| Area | Change |
+|------|--------|
+| Production | `AppModule` split into `DataStoreModule`, `DispatcherModule`, `SplashModule` |
+| Tests | +5 L2 classes (18 tests), +3 shared test fixtures |
+| Requirements | UI-01…UI-06 promoted to L2; UI-05 ⚠️→✅, UI-06 ❌→✅ |
+| Atlas | Test hooks, L2 verification table, strengthened regression guard |
+
+### Key Finding — Espresso Cannot Detect a Blocked Main Thread
+
+The first UI-04 design asserted "main thread is not blocked" by performing an Espresso click
+during a stalled startup. To validate it, the original defect was deliberately reintroduced:
+
+```kotlin
+// SplashFragment.onViewCreated — TEMPORARY, for falsification only
+runBlocking { delay(60_000) }
+```
+
+The Espresso-based test **still passed**. Espresso synchronises *with* the main looper — it
+waits for idle rather than timing out — so blocking the main thread only makes it slower.
+
+The replacement detector samples main-looper round-trip latency from a background thread:
+
+```kotlin
+// MainThreadResponsivenessProbe.kt
+private const val SAMPLE_INTERVAL_MS = 50L
+private const val PER_SAMPLE_TIMEOUT_MS = 15_000L
+// posts a Runnable to Handler(Looper.getMainLooper()), records worstLatencyMs
+```
+
+Re-running the falsification with the probe in place produced:
+
+```
+main thread was unresponsive for 15000ms during startup (budget 2000ms)
+```
+
+The injected block was then fully reverted (`SplashFragment.kt` verified clean).
+**Rule adopted:** any "must not block" assertion is untrusted until it has been falsified.
+
+### Files Changed
+
+```
+ M app/src/main/java/com/drivingcoach/di/AppModule.kt                (-28 lines, now context only)
+ A app/src/main/java/com/drivingcoach/di/DataStoreModule.kt
+ A app/src/main/java/com/drivingcoach/di/DispatcherModule.kt
+ A app/src/main/java/com/drivingcoach/di/SplashModule.kt
+ A app/src/androidTest/java/com/drivingcoach/testing/FakePreferencesDataStores.kt
+ A app/src/androidTest/java/com/drivingcoach/testing/NavigationTestExtensions.kt
+ A app/src/androidTest/java/com/drivingcoach/testing/MainThreadResponsivenessProbe.kt
+ A app/src/androidTest/java/com/drivingcoach/ui/splash/SplashScreenTest.kt        (6 tests, UI-01/02)
+ A app/src/androidTest/java/com/drivingcoach/ui/splash/SplashFallbackTest.kt      (3 tests, UI-03)
+ A app/src/androidTest/java/com/drivingcoach/ui/splash/SplashMainThreadTest.kt    (3 tests, UI-04)
+ A app/src/androidTest/java/com/drivingcoach/StartupBackStackTest.kt              (2 tests, UI-05)
+ A app/src/androidTest/java/com/drivingcoach/ui/home/HomeHeroTest.kt              (4 tests, UI-06)
+ M 01_requirements/TRACEABILITY_MATRIX.md
+ M SkunkOps/atlas/system.md
+ M SkunkOps/atlas/components.md
+ M SkunkOps/atlas/flows.md
+ M SkunkOps/atlas/failure-patterns.md
+ M 05_tests/L2_SWE5_integration/README.md
+ M docs/SYNC_REPORT.md
+```
+
+### Documentation Updates
+
+**`01_requirements/TRACEABILITY_MATRIX.md`**
+- UI-01…UI-04: level `L1` → `L1 + L2`, test column now names the L2 class.
+- UI-05: `Manual` / ⚠️ *No automated test* → `L2` / `StartupBackStackTest` / ✅.
+- UI-06: ❌ *Not covered* → ✅ `HomeHeroTest`.
+- Startup & Branding category: **71% ⚠️ → 100% ✅**; TOTAL **~42 → ~44 (~24%)**.
+- New "Coverage caveat — `@Ignore`d L2 classes" callout above the matrix, naming the eight
+  rows whose ✅ is backed by a skipped class and giving the XML-parsing verification command.
+
+**`SkunkOps/atlas/system.md`**
+- Repository-layout `di/` entry now enumerates the split modules and states *why*
+  (per-binding `@UninstallModules` in tests).
+
+**`SkunkOps/atlas/components.md`**
+- Preferences DataStore component: key code area `di/AppModule.kt` → `di/DataStoreModule.kt`.
+- Branded Startup component: new **Test Hooks** section — a goal→uninstall→substitute table
+  plus the "do not use Espresso for UI-04" warning.
+- New observable signal row: `MainThreadResponsivenessProbe.worstLatencyMs`.
+
+**`SkunkOps/atlas/flows.md`**
+- Timing-contract table: `SplashTimings` now injected via `SplashModule` (was `AppModule`).
+- New **Automated Verification (L2)** section mapping each stage of the startup flow to its
+  instrumented test and SRS ID.
+
+**`SkunkOps/atlas/failure-patterns.md`**
+- *DataStore ANR on Startup* → **Regression Guard** rewritten: L1 + L2 split, the 2000 ms
+  latency budget, and the Espresso falsification evidence.
+- Confidence rationale extended to "empirically falsified".
+
+**`05_tests/L2_SWE5_integration/README.md`**
+- Test-location tree updated with all new files and `@Ignore` markers on legacy classes.
+- New **"`BUILD SUCCESSFUL` Is Not Evidence"** section with the JUnit-XML parsing snippet.
+- New **Test Isolation Strategy** section explaining the module split and why the fallback
+  and main-thread tests must live in separate classes.
+
+**`docs/USER_MANUAL.md`** — *no change required.* This work added test coverage and
+refactored DI only; no user-visible behaviour changed.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| `assembleDebug` / `compileDebugKotlin` | ✅ PASS |
+| `compileDebugAndroidTestKotlin` | ✅ PASS |
+| L1 (SWE.4 unit) | ✅ **105 tests, 0 failures, 0 skipped** |
+| L2 new (SWE.5) | ✅ **18 tests, 0 failures, 0 skipped** |
+| L2 legacy | ⚠️ 4 classes still `@Ignore`d — out of scope, tracked separately |
+| UI-04 detector falsification | ✅ Fails when the defect is reintroduced |
+
+### Known Gaps / Follow-ups
+
+- The 4 legacy `@Ignore`d L2 classes remain decorative; un-ignoring them is separate work.
+- `MAX_ACCEPTABLE_LATENCY_MS = 2_000` is emulator-derived and may need tuning on slower CI.
+- The three `Log.d` startup-timing statements are unconditional; consider gating behind
+  `BuildConfig.DEBUG`.
+
+---
+
 ## [2026-07-25] Startup Hardening — Device Verification & Timeout Redesign
 
 **Codebase Version:** v2.8.1-brand-startup-fixes
