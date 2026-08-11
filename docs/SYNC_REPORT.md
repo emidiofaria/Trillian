@@ -4,6 +4,83 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-08-11] Build Versioning (versionCode / versionName)
+
+**Codebase Version:** v2.8  
+**Trigger:** `versionName` had been frozen at `1.0.0` / `versionCode 1` across all 20 shipped APKs
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `app/build.gradle.kts` | ✅ Updated | +17 −2 (derived version + APK output naming) |
+| system.md | ✅ Updated | +49 −2 (Versioning Scheme section, corrected build-config table) |
+| USER_MANUAL.md | ✅ Updated | +9 (how to find your app version, for support requests) |
+| `L4/03_ANDROID_BUILD.md` | ✅ Updated | +13 −4 (corrected stale APK paths, added version-verification check) |
+| components.md | ⏭️ No change | No component behaviour changed |
+| flows.md | ⏭️ No change | No runtime flow changed |
+| failure-patterns.md | ⏭️ No change | Build-config issue, not a runtime failure mode |
+| SRS_v1.md | ⏭️ No change | No functional/user requirement affected — build metadata only |
+
+### Problem
+
+Version identity existed **only in `releases/` filenames**. Every APK from v1.0 to v2.8
+reported `versionCode 1` / `versionName 1.0.0` internally, so:
+
+- `adb` and the launcher's app-info screen could not distinguish any two releases
+- a future crash reporter would attribute every crash to "1.0.0"
+- users could not report which build they were on
+- upgrade/downgrade semantics were undefined (equal `versionCode`)
+
+### Change
+
+`appVersionName` is now the single source of truth in `app/build.gradle.kts`;
+`versionCode` is **derived** (`major*100 + minor`) so the two cannot drift:
+
+| | Before | After |
+|---|---|---|
+| `versionName` | `1.0.0` | `2.8` |
+| `versionCode` | `1` | `208` (derived) |
+| APK filename | `app-debug.apk` | `DrivingCoach-v2.8-debug.apk` (generated) |
+
+The generated filename is the important half: it makes a mislabelled copy into `releases/`
+structurally impossible, which was the actual origin of the drift.
+
+**Bump procedure:** edit `appVersionName` only. Never hand-edit `versionCode`.
+
+### Verification
+
+Confirmed against the built binary, not the Gradle declaration:
+
+```
+$ aapt2 dump badging app/build/outputs/apk/debug/DrivingCoach-v2.8-debug.apk | head -1
+package: name='com.drivingcoach' versionCode='208' versionName='2.8' ...
+```
+
+- `assembleDebug` — SUCCESSFUL
+- L1 — **109 tests / 0 failures / 0 skipped** (forced `--rerun`; an initial run reported
+  `UP-TO-DATE` and was discarded as a stale result)
+- `releases/DrivingCoach-v2.8-helmet-artwork.apk` refreshed — the previous copy reported `1.0.0`
+
+### Decisions
+
+- **No `-debug` versionName suffix.** Considered, since every APK in `releases/` is a debug
+  build; the user opted for a plain `2.8` in both variants.
+- **No in-app version display.** There is no About/Settings screen; adding one is a feature,
+  not a build fix. Documented as a known gap in system.md and worked around in USER_MANUAL.md
+  by pointing users at the OS app-info screen.
+
+### Known Gaps
+
+| Gap | Impact |
+|-----|--------|
+| Version not surfaced in-app | Users must use Settings → Apps → Driving Coach |
+| `versionCode 1 → 208` | Devices with an existing install cannot downgrade to an older APK without uninstalling first |
+| Bump is manual | Nothing enforces that `appVersionName` is incremented before a release copy |
+| No CI | Unchanged — the version check in `03_ANDROID_BUILD.md` is a human step |
+
+---
+
 ## [2026-08-11] Helmet Emblem Artwork (Incident 11)
 
 **Codebase Version:** v2.8-helmet-artwork  
