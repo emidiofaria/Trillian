@@ -123,6 +123,8 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | UI-04 | Startup state resolution (onboarding flag, authentication token, pending uploads) shall be performed off the main thread. The app shall not block the main thread during startup. |
 | UI-05 | The loading screen shall not remain on the navigation back stack; pressing back from the first functional screen shall exit the app. |
 | UI-06 | The Home screen shall display a collapsing brand hero (emblem, wordmark, kicker) that collapses to a pinned bar on scroll, with the Start Session control remaining visible at all times. |
+| UI-08 | The helmet emblem shall be supplied as a single `@drawable/ic_helmet_emblem` resource across all density buckets, and shall render undistorted and uncropped at every size it is displayed (132dp splash, 88dp Home hero, 36dp collapsed brand bar). |
+| UI-09 | Brand artwork shall be verified by measurement of the asset itself — square canvas, content aspect ratio 1.00 ± 0.05, content centred within 3 % of each axis, and a fully transparent border — rather than by presence-only assertions. |
 
 ---
 

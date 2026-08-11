@@ -97,6 +97,13 @@ These tests drive the real `MainActivity` and substitute only `SplashModule` /
 `DataStoreModule`, so the navigation graph and fragment lifecycle exercised are the
 production ones.
 
+**What these tests deliberately do not cover:** the emblem *artwork*. Every
+assertion above that touches the emblem checks `isDisplayed()`, which passes for
+any drawable — including a blank one. That gap allowed Incident 11 (deformed
+emblem) to ship. Artwork geometry is measured separately at L1 by
+`BrandAssetGeometryTest` (UI-08, UI-09), which asserts against the asset file
+rather than the rendered view.
+
 ### Failure Points
 
 | Stage | Failure | Symptom | Propagation |

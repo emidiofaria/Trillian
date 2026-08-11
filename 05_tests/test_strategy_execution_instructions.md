@@ -159,6 +159,36 @@ app/build/test-results/testDebugUnitTest/*.xml
 | Compilation error | Build fails before tests | Fix code first |
 | Test timeout | Stuck on single test | Check for infinite loops |
 | Missing dependencies | ClassNotFoundException | Run `./gradlew dependencies` |
+| `Unresolved reference 'BufferedImage'` | Test uses `java.awt` / `javax.imageio` | Neither exists on the Android unit-test classpath. Use `com.drivingcoach.brand.ArgbBitmap` |
+
+### 3.5 Brand Asset Gate
+
+`com.drivingcoach.brand.BrandAssetGeometryTest` measures the helmet emblem
+artwork on disk (UI-08, UI-09). Run it alone with:
+
+```bash
+./gradlew :app:testDebugUnitTest --tests 'com.drivingcoach.brand.*'
+```
+
+It includes a **falsification test** that requires the gate to reject the known
+deformed emblem from Incident 11. If you see:
+
+```
+gate accepted the known-deformed legacy emblem — the gate is not falsifiable
+```
+
+the assertions have been weakened into a no-op — fix the thresholds, do not
+delete the test.
+
+To regenerate the emblem density buckets or check artwork outside Gradle:
+
+```bash
+python3 -m venv /tmp/brandvenv && /tmp/brandvenv/bin/pip install pillow numpy
+/tmp/brandvenv/bin/python 05_tests/infra/scripts/brand-asset.py check
+/tmp/brandvenv/bin/python 05_tests/infra/scripts/brand-asset.py build docs/brand/helmet_source.png
+```
+
+`pillow` and `numpy` are deliberately **not** app build dependencies.
 
 ---
 

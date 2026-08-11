@@ -52,6 +52,24 @@ com.drivingcoach/
 └── util/                     # Formatting utilities
 ```
 
+Brand artwork lives outside the Kotlin tree and is verified independently:
+
+```
+app/src/main/res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/
+                              # ic_helmet_emblem.webp — lossless, 132/198/264/396/528 px.
+                              # There is deliberately NO drawable/ic_helmet_emblem.xml;
+                              # a same-named vector would be a resource-merger conflict.
+app/src/test/java/com/drivingcoach/brand/
+                              # BrandAssetGeometryTest — L1 geometry gate.
+                              # ArgbBitmap — minimal PNG reader, because android.jar
+                              #   provides neither java.awt nor javax.imageio.
+app/src/test/resources/brand/ # Geometry master + the legacy deformed emblem, kept so
+                              #   the gate can be proven to reject known-bad artwork.
+docs/brand/helmet_source.png  # Source illustration.
+05_tests/infra/scripts/brand-asset.py
+                              # Regenerates every bucket bit-for-bit; also a check mode.
+```
+
 ### Major Runtime Responsibilities
 
 | Responsibility | Component |

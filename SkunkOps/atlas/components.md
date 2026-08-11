@@ -1258,10 +1258,93 @@ CoordinatorLayout
 | Hero never collapses | Content shorter than scroll range | Static hero (acceptable) |
 | Both brands visible | Fade thresholds overlapping | Visual duplication |
 | Stale id reference | `startSessionFab` → `startSessionButton` rename | Instrumented test compile failure |
+| Emblem artwork deformed | Brand asset geometry defect (see *Brand Asset Pipeline*) | Emblem renders squashed at all three sizes; `isDisplayed()` tests still pass |
+| Emblem clipped by ring | Content bbox exceeds the `bg_hero_ring` radius | Artwork edges cut off inside the navy disc |
 
 ### Criticality
 
 **LOW** — cosmetic; failure degrades presentation but not function.
+
+---
+
+## Component: Brand Asset Pipeline (Helmet Emblem)
+
+### Purpose
+
+Supplies the single `@drawable/ic_helmet_emblem` resource consumed by every
+branded surface. Introduced by the Incident 11 fix, which replaced a
+hand-authored vector with a raster emblem derived from owner-supplied artwork.
+
+### Key Code Areas
+
+| Element | Path |
+|---------|------|
+| Shipped asset | `res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_helmet_emblem.webp` |
+| Source artwork | `docs/brand/helmet_source.png` |
+| Build + check tool | `05_tests/infra/scripts/brand-asset.py` |
+| Geometry gate (L1) | `app/src/test/java/com/drivingcoach/brand/BrandAssetGeometryTest.kt` |
+| PNG decoder for the gate | `app/src/test/java/com/drivingcoach/brand/ArgbBitmap.kt` |
+| Geometry master | `app/src/test/resources/brand/ic_helmet_emblem_master.png` |
+| Negative fixture | `app/src/test/resources/brand/legacy_deformed_emblem.png` |
+
+### Render Sites
+
+| # | Surface | Layout | Size |
+|---|---------|--------|------|
+| 1 | Splash fragment | `fragment_splash.xml` | 132dp inside `bg_hero_ring` |
+| 2 | System splash window | `res/drawable/ic_splash_emblem.xml` | 20 % inset wrapper |
+| 3 | Home hero | `fragment_home.xml` | 88dp |
+| 4 | Home collapsed brand bar | `fragment_home.xml` | `@dimen/hero_emblem_collapsed` (36dp) |
+
+All four resolve the same resource name, so a single asset change corrects — or
+breaks — every surface at once.
+
+### Density Buckets
+
+| Bucket | Pixels | Derivation |
+|--------|--------|------------|
+| mdpi | 132 | 1× of the 132dp render site |
+| hdpi | 198 | 1.5× |
+| xhdpi | 264 | 2× |
+| xxhdpi | 396 | 3× |
+| xxxhdpi | 528 | 4× — matches the 533px source crop, so nothing is upscaled |
+
+### Invariants
+
+Enforced by `BrandAssetGeometryTest`, and mirrored by `brand-asset.py check`:
+
+| Invariant | Threshold | Why |
+|-----------|-----------|-----|
+| Content aspect | 1.00 ± 0.05 | The Incident 11 emblem was 0.866 — squashed |
+| Canvas square | exact | `fitCenter` would otherwise letterbox |
+| Content centred | ≤ 3 % off each axis | The old shell sat 6/120 units high |
+| Transparent border | zero edge alpha | Prevents clipping inside `bg_hero_ring` |
+| Legible at 36dp | > 15 % opaque | The smallest render site must still read |
+| No `drawable/ic_helmet_emblem.xml` | must not exist | Same-name vector + bitmap is a resource-merger conflict |
+
+### Failure Modes
+
+| Mode | Cause | Symptom | Detection |
+|------|-------|---------|-----------|
+| Deformed artwork | Non-square content bbox | Emblem squashed on every surface | `emblemMasterSatisfiesBrandGeometry` |
+| Gate becomes a no-op | Assertions weakened | Defects pass silently | `gateRejectsTheLegacyDeformedEmblem` |
+| Missing density bucket | Partial asset drop | Blurry or absent emblem on some devices | `emblemDensityBucketsAreCompleteAndCorrectlySized` |
+| Vector resurrected | `.xml` re-added beside the WebP | Non-deterministic resource merge | `noConflictingVectorEmblemRemains` |
+| Master drifts from shipped buckets | Buckets regenerated without the master | Gate measures artwork that is not shipped | Bucket dimension check + `brand-asset.py build` reproducibility |
+| Dark edge fringing | Non-premultiplied RGBA downsample | Halo around the emblem on dark backgrounds | Visual review; `brand-asset.py` premultiplies |
+
+### Signals
+
+| Signal | Where | Meaning |
+|--------|-------|---------|
+| `content aspect 1.00 +/- 0.05` FAIL | `brand-asset.py check` | Artwork is deformed |
+| `gate accepted the known-deformed legacy emblem` | L1 failure message | The gate has stopped being falsifiable |
+| Bit-identical rebuild | `brand-asset.py build` | Shipped assets are reproducible from source |
+
+### Criticality
+
+**LOW** — cosmetic. Escalated in review weight because the defect is visible on
+the first screen shown at cold start and is invisible to presence-only tests.
 
 ---
 
@@ -1283,3 +1366,4 @@ CoordinatorLayout
 | App Startup / Branded Loading Screen | HIGH | App unusable (no cold start) |
 | Stale Upload Detection | LOW | Missing UX warning |
 | Home Brand Hero | LOW | Degraded presentation only |
+| Brand Asset Pipeline | LOW | Deformed or missing emblem on all branded surfaces |

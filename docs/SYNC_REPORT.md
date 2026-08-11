@@ -4,6 +4,158 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-08-11] Helmet Emblem Artwork (Incident 11)
+
+**Codebase Version:** v2.8-helmet-artwork  
+**Trigger:** Incident 11 fix — hand-authored vector emblem replaced with a measured raster asset
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| system.md | ✅ Updated | +18 lines (brand artifact locations) |
+| components.md | ✅ Updated | +84 lines (1 new component, 2 new failure modes on Home Brand Hero) |
+| flows.md | ✅ Updated | +7 lines (coverage-gap callout on the L2 startup table) |
+| failure-patterns.md | ✅ Updated | +95 lines (1 new pattern — first static-asset pattern) |
+| SRS_v1.md | ✅ Updated | +2 requirements (UI-08, UI-09) |
+| TRACEABILITY_MATRIX.md | ✅ Updated | +2 rows, UI category 7 → 9, TOTAL ~44 → ~46 |
+| L1_SWE4_unit/README.md | ✅ Updated | +28 lines (brand gate section, test layout) |
+| test_strategy_execution_instructions.md | ✅ Updated | +30 lines (§3.5 brand gate, new common issue) |
+| L4_SYS5_acceptance/20_ONBOARDING_TESTS.md | ✅ Updated | +28 lines (new BRD suite, 1 test) |
+| USER_MANUAL.md | ⏭️ No change | Emblem is described generically; no workflow or UI behaviour changed |
+
+### New Requirement IDs
+- **UI-08** — emblem supplied as one resource across all densities, undistorted at 132/88/36dp
+- **UI-09** — brand artwork verified by measurement, not presence-only assertions
+
+### New Test Case IDs
+- **BRD-01** — Helmet Emblem Renders Correctly at All Sizes (L4, human visual)
+
+### Detailed Changes
+
+#### 📁 SkunkOps/atlas/components.md
+
+**Added Section: Brand Asset Pipeline (Helmet Emblem)** — render sites, density
+buckets, six invariants with thresholds, six failure modes with their detecting
+test, and signals.
+
+**Modified: Home Brand Hero → Failure Modes**
+```diff
++ | Emblem artwork deformed | Brand asset geometry defect | Emblem renders squashed at all three sizes; `isDisplayed()` tests still pass |
++ | Emblem clipped by ring | Content bbox exceeds the `bg_hero_ring` radius | Artwork edges cut off inside the navy disc |
+```
+
+**Modified: Criticality Matrix**
+```diff
++ | Brand Asset Pipeline | LOW | Deformed or missing emblem on all branded surfaces |
+```
+
+#### 📁 SkunkOps/atlas/failure-patterns.md
+
+**Added Pattern: Brand Asset Geometry (Unverified Static Artwork)** — the first
+static-asset pattern in the Atlas. Its defining signal is that there is **no
+signal**: static assets ship broken and never throw.
+
+Records the generalisation that cost two incidents:
+```
+An assertion that cannot fail when the defect is present is not coverage.
+```
+
+#### 📁 SkunkOps/atlas/system.md
+
+**Added:** brand artwork layout block — the five WebP buckets, the deliberate
+absence of `drawable/ic_helmet_emblem.xml`, the L1 gate package, test fixtures,
+source art, and the build script.
+
+#### 📁 01_requirements/DrivingCoach_SRS_v1.md
+
+| ID | Requirement |
+|----|-------------|
+| UI-08 | The helmet emblem shall be supplied as a single `@drawable/ic_helmet_emblem` resource across all density buckets, and shall render undistorted and uncropped at 132dp, 88dp and 36dp |
+| UI-09 | Brand artwork shall be verified by measurement of the asset itself — square canvas, aspect 1.00 ± 0.05, centred within 3 %, transparent border — rather than by presence-only assertions |
+
+#### 📁 05_tests/
+
+**L1_SWE4_unit/README.md** — added a *Brand Asset Gate* section documenting all
+four tests and, specifically, why the falsification test exists:
+
+```
+A gate that has never been observed to fail is indistinguishable from a no-op.
+```
+
+**test_strategy_execution_instructions.md** — added §3.5 with the targeted run
+command, the venv setup for `brand-asset.py`, and how to interpret the
+falsification failure message. Added a common-issue row for
+`Unresolved reference 'BufferedImage'`, since `android.jar` provides neither
+`java.awt` nor `javax.imageio` — the reason `ArgbBitmap` exists.
+
+**L4_SYS5_acceptance/20_ONBOARDING_TESTS.md** — added a new **BRD** suite with
+`BRD-01`, a 7-step human visual check across all three emblem sizes plus edge
+quality and cross-density crispness. A human check is warranted precisely
+because the automated L2 suite could not see this defect.
+
+#### 📁 03_incidents/11_helmet_emblem_deformed/
+
+- Incident status `Open — Awaiting RCA` → `Resolved`; **acceptance criterion 5
+  removed** at the project owner's request (artwork is their own work).
+- Added a Resolution section with per-criterion verification and validation results.
+- Added an RCA addendum recording that the fix **diverged** from the RCA's own
+  recommendation, and that the proposed bilateral-symmetry constraint was
+  deliberately dropped — the supplied artwork is a side profile, and the RCA had
+  already measured asymmetry as *not* being the defect.
+
+### Code Changes Documented
+
+| Change | Detail |
+|--------|--------|
+| Removed | `res/drawable/ic_helmet_emblem.xml` (9 hand-authored paths, −56 lines) |
+| Added | 5 lossless WebP density buckets (389 KB total) |
+| Added | `BrandAssetGeometryTest` + `ArgbBitmap` (4 tests, incl. a falsification test) |
+| Added | `05_tests/infra/scripts/brand-asset.py` (build + check) |
+| Added | `docs/brand/helmet_source.png` |
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| Build | `assembleDebug` BUILD SUCCESSFUL |
+| L1 | 109 tests, 0 failures, 0 skipped (was 105) |
+| L2 | 26 tests, 0 failures, 4 skipped (pre-existing `@Ignore`) |
+| On-device | Pixel 4 / API 30 — splash + Home hero verified; ring 318px vs emblem 226px, no clipping |
+| Reproducibility | `brand-asset.py build` reproduces all 5 buckets bit-for-bit |
+
+### Files Modified
+
+```
+M  SkunkOps/atlas/system.md                                     (+18, -0)
+M  SkunkOps/atlas/components.md                                 (+84, -0)
+M  SkunkOps/atlas/flows.md                                      (+7, -0)
+M  SkunkOps/atlas/failure-patterns.md                           (+95, -0)
+M  01_requirements/DrivingCoach_SRS_v1.md                       (+2, -0)
+M  01_requirements/TRACEABILITY_MATRIX.md                       (+5, -3)
+M  05_tests/L1_SWE4_unit/README.md                              (+28, -0)
+M  05_tests/test_strategy_execution_instructions.md             (+30, -0)
+M  05_tests/L4_SYS5_acceptance/20_ONBOARDING_TESTS.md           (+28, -0)
+M  03_incidents/11_helmet_emblem_deformed/11_helmet_emblem_deformed.md   (+146, -0)
+M  03_incidents/11_helmet_emblem_deformed/11_RCA_unconstrained_hand_authored_vector.md (+358, -0)
+A  05_tests/infra/scripts/brand-asset.py                        (+259)
+A  app/src/test/java/com/drivingcoach/brand/BrandAssetGeometryTest.kt (+170)
+A  app/src/test/java/com/drivingcoach/brand/ArgbBitmap.kt       (+157)
+A  app/src/main/res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_helmet_emblem.webp
+A  app/src/test/resources/brand/{ic_helmet_emblem_master,legacy_deformed_emblem}.png
+A  docs/brand/helmet_source.png
+D  app/src/main/res/drawable/ic_helmet_emblem.xml               (-56)
+```
+
+### Recommendations
+
+- [ ] **No CI exists** (`.github/workflows/` absent) — the new L1 gate only runs manually
+- [ ] Launcher icon still uses separate `ic_launcher_foreground.png` artwork — brand inconsistency
+- [ ] `versionName` remains `1.0.0`; versioning lives only in `releases/` filenames
+- [ ] 4 legacy L2 classes remain `@Ignore`d
+
+---
+
 ## [2026-08-06] L2 Integration Coverage for Branded Startup (SWE.5)
 
 **Trigger:** SRS UI-01…UI-06 were nominally covered, but the L2 suite was a *false green* —
