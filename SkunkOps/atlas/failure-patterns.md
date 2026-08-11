@@ -1099,3 +1099,98 @@ if (isSystemDeathException(throwable)) {
 | Date | Fix Applied |
 |------|-------------|
 | 2026-07-22 | Periodic flush (30s) + DeadSystemException handler |
+
+---
+
+## Pattern: Brand Asset Geometry (Unverified Static Artwork)
+
+The first *static asset* pattern in this Atlas. Every other pattern here
+describes runtime behaviour; this one ships broken and never throws.
+
+### Symptoms
+
+- A brand asset renders visibly wrong — squashed, off-centre, clipped or blank.
+- The defect appears on **every** surface referencing the resource at once.
+- Nothing crashes, no exception is logged, and no test fails.
+- Frequently reported by a human looking at the screen, not by telemetry.
+
+### Signals
+
+| Signal | Source | Meaning |
+|--------|--------|---------|
+| No signal at all | — | **This is the defining characteristic.** Static assets emit nothing |
+| `content aspect ... FAIL` | `brand-asset.py check` | Artwork geometry is out of tolerance |
+| Bucket dimension mismatch | `BrandAssetGeometryTest` | Shipped densities drifted from the master |
+
+### Likely Causes
+
+| Cause | Detail |
+|-------|--------|
+| Hand-authored geometry with no shared construction reference | Paths drawn independently, with no centre line, silhouette or bounding constraint to check against |
+| Merged on code inspection | `pathData` strings are unreadable, so review approves text that was never rendered |
+| Presence-only test assertions | `isDisplayed()` passes for any drawable, including a blank one |
+| Non-premultiplied RGBA downsample | Backing colour bleeds into edge pixels, producing a fringe on dark backgrounds |
+| Same-name vector and bitmap | Resource merger picks one non-deterministically |
+
+### Evidence To Check
+
+1. Render the asset **in isolation, composited**, at every shipped size — not in
+   an IDE preview of a single layer.
+2. Measure the content bounding box. Compare its aspect and centre against the
+   canvas. This is the single most diagnostic measurement.
+3. Measure each layer's spill outside the intended silhouette *before* assuming
+   misalignment. In Incident 11 that hypothesis was wrong: 7 of 8 layers spilled
+   0.0 %, and the shell itself was the defect.
+4. Check the containing views for `scaleType` and fixed-size mismatches, then
+   rule them out explicitly rather than leaving them as a suspicion.
+5. Read the assertions that cover the asset and ask whether any of them
+   *could* have failed while the defect was present.
+
+### Common Triggers
+
+- A branding or visual-identity commit.
+- Replacing artwork without regenerating every density bucket.
+- Adding a bitmap alongside a same-named vector.
+
+### Mitigation
+
+Measure the artwork, do not inspect its source. The gate must assert geometry:
+square canvas, content aspect within tolerance, centred content, transparent
+border, and legibility at the smallest render site.
+
+### Permanent Fix
+
+| Control | Implementation |
+|---------|----------------|
+| Geometry gate | `BrandAssetGeometryTest` (L1) measures the committed master |
+| Falsification | `gateRejectsTheLegacyDeformedEmblem` runs the same assertions against the known-bad asset and requires them to fail |
+| Reproducibility | `brand-asset.py build` regenerates every bucket bit-for-bit from `docs/brand/helmet_source.png` |
+| Conflict guard | Asserts no same-named vector coexists with the bitmaps |
+
+### Generalisation
+
+**An assertion that cannot fail when the defect is present is not coverage.**
+This is the second time this repository has hit that failure of reasoning — the
+first was Espresso main-thread assertions that could not observe an ANR. Any new
+gate should be run against a known-bad input before it is trusted.
+
+### Confidence
+
+**HIGH** — root cause measured, both original hypotheses falsified.
+
+### Related RCA
+
+`03_incidents/11_helmet_emblem_deformed/11_RCA_unconstrained_hand_authored_vector.md`
+
+### Resolution History
+
+| Date | Action |
+|------|--------|
+| 2026-08-11 | Incident 11 raised: helmet emblem deformed on all surfaces |
+| 2026-08-11 | RCA falsified both reported hypotheses; shell measured 88x76 in a 120x120 viewport |
+| 2026-08-11 | Vector replaced with owner-supplied raster across 5 density buckets; L1 geometry gate added and proven falsifiable |
+
+### Open Gap
+
+The repository has **no CI** (`.github/workflows/` does not exist), so this gate
+only runs when someone runs it locally.

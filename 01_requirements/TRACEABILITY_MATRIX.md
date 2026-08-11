@@ -2,7 +2,7 @@
 
 Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test cases.
 
-**Last Updated:** 2026-08-06 (updated by trillian-docs-sync — Startup & Branding UI-01…UI-07 now covered at L2)
+**Last Updated:** 2026-08-11 (updated by trillian-docs-sync — brand asset geometry UI-08, UI-09 added and covered at L1)
 
 ---
 
@@ -23,10 +23,10 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Driver Progression (DP) | 6 | 0 | 0% ⚠️ |
 | Session Management (SM) | 10 | 4 | 40% ⚠️ |
 | Share (SH) | 6 | 0 | 0% ⚠️ |
-| Startup & Branding (UI) | 7 | 7 | 100% ✅ |
+| Startup & Branding (UI) | 9 | 9 | 100% ✅ |
 | Non-Functional (NF) | 13 | 1 | 8% ⚠️ |
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
-| **TOTAL** | **~186** | **~44** | **~24%** |
+| **TOTAL** | **~188** | **~46** | **~24%** |
 
 > ⚠️ **Coverage caveat — `@Ignore`d L2 classes.** Eight rows below cite
 > `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or
@@ -51,6 +51,8 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | UI-05 | Loading screen popped from back stack | L2 | `StartupBackStackTest` | ✅ |
 | UI-06 | Home brand hero collapses on scroll | L2 | `HomeHeroTest` | ✅ |
 | UI-07 | Warm-up bounded, does not affect destination | L1 | `SplashViewModelTest` | ✅ |
+| UI-08 | Emblem renders undistorted at all densities and sizes | L1 + L4 | `BrandAssetGeometryTest`, `BRD-01` (human visual) | ✅ |
+| UI-09 | Brand artwork verified by measurement, not presence | L1 + L4 | `BrandAssetGeometryTest` (incl. falsification against the legacy asset), `BRD-01` | ✅ |
 | **Track Setup** | | | | |
 | TS-02 | UI elements displayed | L2 | `TrackSetupFragmentTest` | ✅ |
 | TS-03 | GPS status indicator | L2 | `TrackSetupFragmentTest` | ✅ |
