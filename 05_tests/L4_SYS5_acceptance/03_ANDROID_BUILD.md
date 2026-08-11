@@ -144,11 +144,17 @@ Create or edit `app/src/main/res/values/secrets.xml`:
 | Build succeeds | "BUILD SUCCESSFUL" | ☐ |
 | No compilation errors | Clean console output | ☐ |
 | APK generated | File exists at output path | ☐ |
+| APK reports correct version | `aapt2 dump badging <apk>` shows the expected `versionCode`/`versionName` — **not** `versionCode='1'` | ☐ |
 
 **APK location:**
 ```bash
-ls -la app/build/outputs/apk/debug/app-debug.apk
+ls -la app/build/outputs/apk/debug/DrivingCoach-v*-debug.apk
 ```
+
+> APK filenames are generated from `appVersionName` in `app/build.gradle.kts`
+> (e.g. `DrivingCoach-v2.8-debug.apk`), so the name always matches the version
+> the binary reports. Verify with:
+> `aapt2 dump badging <apk> | head -1`
 
 ---
 
@@ -218,7 +224,7 @@ android {
 
 **APK location:**
 ```bash
-ls -la app/build/outputs/apk/release/app-release.apk
+ls -la app/build/outputs/apk/release/DrivingCoach-v*-release.apk
 ```
 
 ---
@@ -270,10 +276,13 @@ If "unauthorized":
 **Via command line:**
 ```bash
 # Debug build
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/DrivingCoach-v*-debug.apk
 
 # Release build
-adb install -r app/build/outputs/apk/release/app-release.apk
+adb install -r app/build/outputs/apk/release/DrivingCoach-v*-release.apk
+
+# Confirm the installed version matches what you expect
+adb shell dumpsys package com.drivingcoach | grep -E "versionCode|versionName"
 ```
 
 **Via Android Studio:**

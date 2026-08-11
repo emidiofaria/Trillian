@@ -436,8 +436,37 @@ while (processingStatus in [PENDING, UPLOADING, DETECTING_LAPS, GENERATING_COACH
 | ProGuard/R8 | Disabled (`isMinifyEnabled = false`) |
 | Compile SDK | 35 |
 | Target SDK | 35 |
-| Version Code | 1 |
-| Version Name | 1.0.0 |
+| Version Code | 208 (derived: `major*100 + minor`) |
+| Version Name | 2.8 (single source of truth in `app/build.gradle.kts`) |
+
+### Versioning Scheme
+
+`app/build.gradle.kts` declares `appVersionName` as the **single source of truth**. The
+version code is derived from it, so the two can never drift:
+
+```kotlin
+val appVersionName = "2.8"
+val appVersionCode = appVersionName.split(".").let { it[0].toInt() * 100 + it[1].toInt() }
+```
+
+| Property | Rule |
+|----------|------|
+| `versionName` | `major.minor`, matching the `releases/` filename series |
+| `versionCode` | `major*100 + minor` — monotonic across the whole v1.0 (100) → v2.8 (208) history |
+| Headroom | 99 minor releases per major |
+| APK filename | Emitted as `DrivingCoach-v<versionName>-<variant>.apk` by an `applicationVariants` output rule |
+
+**Why:** before v2.8 the version was frozen at `versionCode 1` / `versionName 1.0.0` while
+20 distinct APKs shipped. Version identity existed **only in `releases/` filenames**, so
+on-device builds, `adb`, and any future crash reporter could not distinguish releases. The
+auto-generated APK filename closes the loop — a copy into `releases/` cannot be labelled with
+a version the binary does not actually report.
+
+**Bump procedure:** edit `appVersionName` only. Never hand-edit `versionCode`.
+
+**Known gap:** no in-app About/Settings screen surfaces the version to users; it is currently
+observable only via `aapt2 dump badging`, `adb shell dumpsys package com.drivingcoach`, or
+the launcher's app-info screen.
 
 ### Build Types
 

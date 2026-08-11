@@ -437,8 +437,17 @@ If you're still having issues:
 3. Contact support with:
    - Your email address
    - Device model and Android version
+   - **The Driving Coach version** (see below)
    - Description of the issue
    - Screenshots if helpful
+
+### Finding your app version
+
+Driving Coach doesn't yet show its version inside the app. To find it:
+
+**Settings → Apps → Driving Coach** — the version is shown at the bottom of the app info screen (e.g. `2.8`).
+
+This tells support exactly which build you're running, which is often the fastest way to identify a known issue.
 
 ---
 
