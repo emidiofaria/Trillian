@@ -18,6 +18,61 @@
 
 ## Test Suite: TS — Track Setup Flow
 
+### TS-00: GPS Warm-Up on Home
+
+**Objective:** Verify the GPS readiness chip absorbs the cold time-to-first-fix before the user
+reaches Track Setup, and that acquisition timings are recorded.
+
+**Setup:** Force-stop the app and turn Location OFF then ON, so the next fix is genuinely cold.
+Stand outdoors with clear sky view. Have a stopwatch ready.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Launch the app, start the stopwatch | Home appears | ☐ |
+| 2 | Observe the chip below the tagline | Amber "Acquiring GPS…" | ☐ |
+| 3 | Wait, watching the chip | Turns green "GPS ready"; note the stopwatch time | ☐ |
+| 4 | Tap FAB, enter a name, open Track Setup | GPS status populates in **< 5 s** (not 30–60 s) | ☐ |
+| 5 | Back out to Home, go to Profile → About | Last GPS acquisition timings shown | ☐ |
+| 6 | Compare | About's time-to-accurate-fix ≈ your step 3 stopwatch reading | ☐ |
+
+**Requirement Coverage:** TS-16, TS-17, TS-19
+
+---
+
+### TS-00b: Warm-Up Stops When It Should
+
+**Objective:** Verify the receiver is not held open indefinitely.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | On Home, wait for green chip | "GPS ready" | ☐ |
+| 2 | Press Home (background the app), wait 30 s | — | ☐ |
+| 3 | Reopen the app | Chip restarts at amber, or goes green quickly | ☐ |
+| 4 | Leave the app open on Home for 3+ minutes | Chip disappears (idle ceiling) | ☐ |
+| 5 | Navigate away and back to Home | Chip reappears and searching restarts | ☐ |
+| 6 | Deny/revoke location permission, relaunch | Chip stays hidden; no crash | ☐ |
+
+**Requirement Coverage:** TS-18
+
+---
+
+### TS-00c: Track Setup Survives an Interruption
+
+**Objective:** Regression guard for the defect where location updates never resumed after the
+screen switched off — the field symptom was "Acquiring GPS…" forever.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Open Track Setup, wait for GPS status | Satellites/accuracy shown | ☐ |
+| 2 | Press the power button (screen off), wait 20 s | — | ☐ |
+| 3 | Unlock, return to Track Setup | GPS status resumes updating within seconds | ☐ |
+| 4 | Switch to another app, wait 20 s, return | GPS status resumes updating | ☐ |
+| 5 | Capture Point A | Capture succeeds with a fresh, live position | ☐ |
+
+**Requirement Coverage:** TS-15
+
+---
+
 ### TS-01: Access Track Setup Screen
 
 **Objective:** Verify Track Setup screen is accessible from Home.
@@ -251,6 +306,9 @@
 
 | Test ID | Test Name | Status |
 |---------|-----------|--------|
+| TS-00 | GPS Warm-Up on Home | ☐ Pass ☐ Fail |
+| TS-00b | Warm-Up Stops When It Should | ☐ Pass ☐ Fail |
+| TS-00c | Track Setup Survives an Interruption | ☐ Pass ☐ Fail |
 | TS-01 | Access Track Setup Screen | ☐ Pass ☐ Fail |
 | TS-02 | GPS Status Display | ☐ Pass ☐ Fail |
 | TS-03 | Capture Point A | ☐ Pass ☐ Fail |
@@ -279,5 +337,5 @@
 
 ---
 
-*Document ID: SAT-TS-001 | Version: 2.0 | Date: 2026-07-10*
+*Document ID: SAT-TS-001 | Version: 2.1 | Date: 2026-08-26*
 *Updated: Replaced Google Maps tap-based line drawing with two-point GPS capture workflow*
