@@ -1121,6 +1121,7 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 | `SplashFragment` | `app/src/main/java/com/drivingcoach/ui/splash/SplashFragment.kt` |
 | `SplashDestination` | `app/src/main/java/com/drivingcoach/ui/splash/SplashDestination.kt` |
 | `SplashTimings` | `app/src/main/java/com/drivingcoach/ui/splash/SplashTimings.kt` |
+| `SplashVisibilitySignal` | `app/src/main/java/com/drivingcoach/ui/splash/SplashVisibilitySignal.kt` |
 | `@IoDispatcher` | `app/src/main/java/com/drivingcoach/di/IoDispatcher.kt` |
 | Layout | `app/src/main/res/layout/fragment_splash.xml` |
 | Nav entry | `app/src/main/res/navigation/nav_graph.xml` (`startDestination`) |
@@ -1132,13 +1133,14 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 |------------|------|---------|
 | `DataStore<Preferences>` | Injected | Read `onboarding_complete`, `jwt_token` |
 | `SessionDao` | Injected | Room warm-up + pending upload count |
-| `SplashTimings` | Injected | `minDisplayMs` / `timeoutMs` / `warmUpTimeoutMs` (0 in tests) |
+| `SplashTimings` | Injected | `minDisplayMs` / `introDisplayMs` / `timeoutMs` / `warmUpTimeoutMs` / `visibilityTimeoutMs` (0 in tests) |
+| `SplashVisibilitySignal` | Injected | Reports when the platform splash exits, which anchors the display budget |
 | `@IoDispatcher CoroutineDispatcher` | Injected | Keeps all I/O off the main thread |
 | `androidx.core:core-splashscreen:1.0.1` | Library | Android 12+ system-splash handoff |
 
 ### Inputs
 
-- DataStore preferences: `onboarding_complete` (Boolean), `jwt_token` (String)
+- DataStore preferences: `onboarding_complete` (Boolean), `jwt_token` (String), `splash_launch_count` (Int)
 - Room: `sessionDao.getPendingUploadSessions()`
 - User tap on `splashRoot` (skip request)
 
@@ -1150,6 +1152,7 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 | `UiState.stepLabel` (`@StringRes`) | `progressLabel` TextView |
 | `UiState.destination` | `SplashFragment` navigation |
 | `UiState.usedFallback` | Diagnostics / tests |
+| `UiState.hintLabel` (`@StringRes`) | `splashHint` TextView |
 | `pendingUploadCount` | Diagnostics, Home upload banner seed |
 
 ### Progress Model
@@ -1172,6 +1175,9 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 | Double navigation | Rapid state re-emit | `IllegalArgumentException` | Guarded by `currentDestination` check |
 | Double splash | `installSplashScreen()` after `super.onCreate()` | Icon flash then brand screen | Must be called first |
 | Test slowdown | `minDisplayMs` not zeroed | Every instrumented test pays 1.2 s | Inject `SplashTimings(minDisplayMs = 0)` |
+| Test slowdown (silent) | `introDisplayMs` not pinned | Every instrumented test pays 4 s on a fresh install — a *slowdown*, not a failure, so it is easy to miss | Every L2 module overriding `SplashModule` must set `introDisplayMs` explicitly |
+| Launch counter never settles | Counter written on every launch | Unbounded preference writes for the life of the install | Write stops once `launchCount >= INTRO_LAUNCH_COUNT` |
+| Intro hold applied to a returning user | Launch-count read failed | 4 s hold on every launch | `displayBudgetMs` initialised to `minDisplayMs`, so a failed read degrades to the *fast* path |
 
 ### Observable Signals
 
@@ -1180,6 +1186,8 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 | Progress plateau | UI | Identifies slow init stage |
 | `usedFallback == true` | UI state / test | Essential init exceeded its 8 s budget |
 | `D/SplashViewModel` timings | Logcat | Per-step startup cost (measured: 1.9–3.6 s DataStore, ~1 s Room on emulator) |
+| `D/SplashViewModel: splash visible Nms after start` | Logcat | The handoff was reported. Cross-check against the platform's `I/ActivityTaskManager: Displayed` line — they agreed to ~17 ms on the API 30 emulator |
+| `W/SplashViewModel: handoff never reported` | Logcat | The exit listener did not fire; the budget silently fell back to being measured from startup, so the manifesto is short again |
 | Absence of `runBlocking` | `MainActivity` source | ANR mitigation intact |
 | `MainThreadResponsivenessProbe.worstLatencyMs` | L2 `SplashMainThreadTest` | >2000 ms means startup work returned to the main thread |
 
@@ -1187,7 +1195,11 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 
 - Separate ceilings for essential vs optional work; the optional warm-up can never change the destination.
 - Fallback is ONBOARDING (safe, idempotent), not LOGIN (would skip permission granting).
-- Tap-to-skip shortens only the cosmetic hold; real init must still complete.
+- Tap-to-skip shortens only the cosmetic hold; real init must still complete. The tap is never
+  *required*: the screen always auto-advances, so a user who does not notice the hint is never stuck.
+- The introduction window (first `INTRO_LAUNCH_COUNT` = 3 launches held for `introDisplayMs`
+  = 4000 ms) reuses the preferences read the splash already performs, so it costs no extra
+  startup I/O. Both constants are single named values, deliberately easy to tune.
 - All nav actions `popUpTo` the splash inclusively, so Back exits the app.
 
 ### Test Hooks
@@ -1201,6 +1213,8 @@ disturbing the rest of the graph:
 | Pin the loading screen on screen for assertions | `SplashModule` | `SplashTimings(minDisplayMs = 60_000)` |
 | Force the timeout fallback | `SplashModule` + `DataStoreModule` | short `timeoutMs` + `StallingPreferencesDataStore` |
 | Land directly on Home | `SplashModule` + `DataStoreModule` | `SeededPreferencesDataStore(onboarding + token)` |
+| Exercise the first-run introduction hold | `SplashModule` + `DataStoreModule` | `SeededPreferencesDataStore()` (no launch count) + long `introDisplayMs` |
+| Prove a returning user is *not* held | `SplashModule` + `DataStoreModule` | `SeededPreferencesDataStore(splash_launch_count = 3)` + long `introDisplayMs` |
 
 > **Do not** try to prove UI-04 with an Espresso interaction. Espresso waits for the main
 > looper to become idle rather than failing, so a `runBlocking(60 s)` on the main thread made
@@ -1348,6 +1362,59 @@ the first screen shown at cold start and is invisible to presence-only tests.
 
 ---
 
+## Component: About Screen (Brand & Build Identity)
+
+### Purpose
+
+Permanent, user-reachable home for the engineering manifesto and the build identity. Exists
+because the loading screen — the only other place the manifesto appears — is transient by
+design, and because a user reporting a bug previously had no way to state which build they
+were running.
+
+### Key Code Areas
+
+| Element | Path |
+|---------|------|
+| `AboutFragment` | `app/src/main/java/com/drivingcoach/ui/about/AboutFragment.kt` |
+| Layout | `app/src/main/res/layout/fragment_about.xml` |
+| Entry point | `app/src/main/res/layout/fragment_profile.xml` (`aboutButton`) |
+| Nav action | `res/navigation/nav_graph.xml` → `action_profile_to_about` |
+| Version source | `BuildConfig.VERSION_NAME` / `VERSION_CODE` |
+
+### Dependencies
+
+| Dependency | Type | Purpose |
+|------------|------|---------|
+| `BuildConfig` | Generated | Version name and code |
+| `NavController` | Fragment-scoped | Entry from Profile, `popBackStack()` on Up |
+
+No Hilt injection, no ViewModel, no I/O — the screen is entirely static apart from the
+version string, so there is nothing to fail asynchronously.
+
+### Design Constraints
+
+| Constraint | Rationale |
+|------------|-----------|
+| Reuses `manifesto_title`, `manifesto_body`, `hero_*` string resources | The loading screen and About screen render the *same* text; sharing the resources makes drift structurally impossible rather than merely discouraged |
+| Root is a `NestedScrollView` | Unlike `fragment_profile.xml`, the content is long enough to overflow at large font scales |
+| Version is read, never typed | A hardcoded version is a version that will eventually be wrong; `BuildConfig` derives from the same `appVersionName` that names the APK |
+
+### Failure Modes
+
+| Mode | Cause | Symptom | Handling |
+|------|-------|---------|----------|
+| Screen unreachable | Nav action removed or misdirected | Dead button | Runtime failure only — caught by `AboutScreenTest.aboutIsReachableFromTheProfileScreen`, which asserts the resulting destination id |
+| `BuildConfig` missing | `buildFeatures { buildConfig = true }` removed | **Compile** failure | Fails fast; AGP 8 omits `BuildConfig` unless explicitly enabled |
+| Version disagrees with the APK | Hand-edited `versionCode` | Bug reports cite a build that does not exist | `reportedVersionMatchesTheInstalledPackage` compares `BuildConfig` against `PackageManager` |
+| Content clipped | Large font scale | Version row unreachable | `NestedScrollView` |
+
+### Criticality
+
+**LOW** — informational. Raised in review weight because it is the screen a user is asked to
+quote when reporting any other defect.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -1367,3 +1434,4 @@ the first screen shown at cold start and is invisible to presence-only tests.
 | Stale Upload Detection | LOW | Missing UX warning |
 | Home Brand Hero | LOW | Degraded presentation only |
 | Brand Asset Pipeline | LOW | Deformed or missing emblem on all branded surfaces |
+| About Screen | LOW | Version and manifesto unreachable in-app; bug reports lose build identity |

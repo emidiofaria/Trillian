@@ -15,6 +15,7 @@ import com.drivingcoach.R
 import com.drivingcoach.data.api.AuthEvent
 import com.drivingcoach.data.api.AuthEventBus
 import com.drivingcoach.databinding.ActivityMainBinding
+import com.drivingcoach.ui.splash.SplashVisibilitySignal
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -26,16 +27,30 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var authEventBus: AuthEventBus
 
+    @Inject
+    lateinit var splashVisibility: SplashVisibilitySignal
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Hands the Android 12+ system splash over to our branded screen without a
         // second flash of the launcher icon.
-        installSplashScreen()
+        val systemSplash = installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        
+
+        // SRS UI-02: the exit listener fires at the one instant that matters — when the
+        // system splash is removed and the branded screen becomes visible. It is set here,
+        // after super.onCreate(), because installSplashScreen() must run before it and Hilt
+        // has not injected the field until then. The splash cannot exit before the first
+        // frame, which is well after onCreate returns, so the listener is never set late.
+        systemSplash.setOnExitAnimationListener { provider ->
+            splashVisibility.markVisible()
+            // Mandatory: the system splash stays up forever if the provider is not removed.
+            provider.remove()
+        }
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

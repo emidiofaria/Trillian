@@ -71,6 +71,9 @@ class HomeHeroTest {
         @Singleton
         fun provideSplashTimings(): SplashTimings = SplashTimings(
             minDisplayMs = 0L,
+            // Pinned explicitly: inheriting the 4 s introduction hold would add
+            // that cost to every test in this class.
+            introDisplayMs = 0L,
             timeoutMs = SplashTimings.DEFAULT_TIMEOUT_MS,
             warmUpTimeoutMs = SplashTimings.DEFAULT_WARM_UP_TIMEOUT_MS
         )

@@ -49,6 +49,9 @@ android {
 
     buildFeatures {
         viewBinding = true
+        // Required for BuildConfig.VERSION_NAME/VERSION_CODE, consumed by the About screen.
+        // AGP 8 stopped generating BuildConfig unless explicitly asked.
+        buildConfig = true
     }
     
     testOptions {

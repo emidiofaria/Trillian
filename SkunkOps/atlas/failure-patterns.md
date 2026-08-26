@@ -1194,3 +1194,72 @@ gate should be run against a known-bad input before it is trusted.
 
 The repository has **no CI** (`.github/workflows/` does not exist), so this gate
 only runs when someone runs it locally.
+
+---
+
+## Pattern: Timing Budget Anchored to the Wrong Instant (FP-TIMING-ANCHOR)
+
+### Symptoms
+
+- A screen with a configured minimum display time is visibly shorter than that number.
+- Raising the configured number helps only partially, and the shortfall returns whenever
+  device or startup speed changes.
+- Automated tests pass: they assert the *budget was applied*, which it was.
+
+### Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `D/SplashViewModel: splash visible Nms after start` | Logcat | Size of the gap being (mis)charged to the budget |
+| `I/ActivityTaskManager: Displayed <pkg>/<activity>: +Xms` | Logcat | Platform's own first-frame marker — the ground truth |
+| Gap between the two above | Derived | The error in the anchor. Should be tens of ms, not hundreds |
+| `W/SplashViewModel: handoff never reported` | Logcat | Fallback path taken; budget silently reverts to the old, short behaviour |
+
+### Root Cause
+
+On Android 12+ (and through `androidx.core:core-splashscreen` below it) a cold start shows
+**two** screens: the platform splash window, which the OS holds until the activity's first
+frame is composited, and then the app's own screen. Any clock started in `onCreate`,
+`onViewCreated`, or a ViewModel `init` is running while the *platform* splash is still on
+screen. A budget measured from there is partly spent on a screen the user cannot read.
+
+### Why It Recurred
+
+The first fix moved the anchor to `View.doOnPreDraw`, which *sounds* like a first-frame
+signal and is not: it fires during the fragment's layout pass, still ~1.0–1.4 s before the
+window is presented. Measured error by anchor:
+
+| Anchor | Error | Delivered from a 4000 ms budget |
+|--------|-------|--------------------------------|
+| ViewModel `start()` | ~1700 ms | ~2.3 s |
+| `View.doOnPreDraw` | ~1000–1400 ms | ~2.6–3.0 s |
+| `SplashScreen.setOnExitAnimationListener` | ~17 ms | ~4.0 s |
+
+Worse, the second attempt's own evidence — "the anchor fires 1.0–1.4 s *before* `Displayed`"
+— was read as confirmation rather than as the remaining defect. A signal firing *before*
+the ground-truth marker is early by definition.
+
+### Mitigation
+
+- Anchor to `SplashScreen.setOnExitAnimationListener`; it fires exactly at the handoff.
+  Remember to call `provider.remove()`, or the platform splash never goes away.
+- Always validate a timing anchor against `ActivityTaskManager: Displayed`. It is free,
+  it is the platform's own measurement, and it is not subject to the same mistake.
+- Keep a bounded fallback so a missing signal degrades the hold rather than hanging it.
+- Do **not** try to assert this arithmetic with Espresso. Espresso waits for the main thread
+  to fall idle before it looks, and on a loaded emulator that wait can outlast the window
+  being measured — the assertion then fails without a defect. Gate the arithmetic at L1 with
+  an injected clock, and mutation-verify it.
+
+### Confidence
+
+**HIGH** — measured on device across repeated cold starts; the corrected anchor agrees with
+the platform's own first-frame marker to ~17 ms.
+
+### Resolution History
+
+| Date | Action |
+|------|--------|
+| 2026-08-11 | Introduction window shipped with the budget anchored to `start()` |
+| 2026-08-12 | User reported the manifesto still unreadable; `doOnPreDraw` anchor measured ~1.2 s early |
+| 2026-08-12 | Re-anchored to the platform splash exit via `SplashVisibilitySignal`; error now ~17 ms |

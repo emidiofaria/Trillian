@@ -58,6 +58,11 @@ class SplashFragment : Fragment() {
                     binding.progressLabel.contentDescription =
                         getString(state.stepLabel)
 
+                    // The hint itself is excluded from accessibility; the tappable root
+                    // carries the announcement so TalkBack reads it once, not twice.
+                    binding.splashHint.text = getString(state.hintLabel)
+                    binding.splashRoot.contentDescription = getString(state.hintLabel)
+
                     state.destination?.let(::navigateTo)
                 }
             }
