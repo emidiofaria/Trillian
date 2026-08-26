@@ -48,8 +48,12 @@ Driving Coach captures GPS and motion data while you drive on track, then analyz
 
 ### 2.2 The Loading Screen
 
-Every time you open the app, you're greeted by the **TRILLIAN** loading screen — the helmet
-emblem, the wordmark, and a short engineering note.
+Every time you open the app you'll see two screens in quick succession. First Android shows
+the helmet emblem on its own — that's the phone launching the app, and its length is out of
+our hands. Then the **TRILLIAN** loading screen takes over: the emblem, the wordmark, and a
+short engineering note.
+
+The timings below all describe that **second** screen.
 
 The progress bar underneath is **not decoration**. It tracks the app actually getting ready:
 
@@ -64,6 +68,16 @@ The progress bar underneath is **not decoration**. It tracks the app actually ge
 slow it may take a little longer, but the app will never make you wait more than 8 seconds —
 after that it moves on regardless and takes you to the setup screens, so you can always get
 going.
+
+**Why does it linger on the first few launches?** The loading screen carries a short
+engineering note, and at normal speed it disappears before anyone could actually read it. So
+on the **first 3 launches** after you install the app the screen is held for about 4 seconds
+and invites you to *"Tap to continue"*. Those 4 seconds are counted from the moment the
+loading screen actually appears, so a slow-starting phone doesn't eat into your reading time. From the 4th launch onwards it gets out of your way
+and shows *"Tap to skip"* instead.
+
+You are never *required* to tap. The screen always moves on by itself — the tap only makes it
+faster. If you missed the note, you can read it any time under **Profile → About Trillian**.
 
 **In a hurry?** Tap anywhere on the loading screen to skip the wait. The app still finishes
 getting ready in the background, so nothing is skipped that matters.
@@ -322,7 +336,15 @@ Tap your **Profile** (top right icon) to see:
 - All-time best lap time
 - Display name and email
 
-### 6.3 Signing Out
+### 6.3 About Trillian
+
+Tap **About Trillian** at the bottom of the Profile screen. This screen is the permanent home
+for the brand and the engineering note that flashes past on the loading screen, plus the
+**app version** (for example `2.8 (208)`).
+
+If you're reporting a problem, this is the screen to quote the version from.
+
+### 6.4 Signing Out
 
 1. Go to Profile
 2. Scroll down and tap **Sign Out**
@@ -443,9 +465,12 @@ If you're still having issues:
 
 ### Finding your app version
 
-Driving Coach doesn't yet show its version inside the app. To find it:
+Open **Profile → About Trillian**. The version is shown near the bottom of the screen, for
+example `2.8 (208)`. Please quote the whole thing, including the number in brackets — it tells
+us exactly which build you have.
 
-**Settings → Apps → Driving Coach** — the version is shown at the bottom of the app info screen (e.g. `2.8`).
+(You can also find it the long way round, via **Settings → Apps → Driving Coach**, but the
+About screen is quicker.)
 
 This tells support exactly which build you're running, which is often the fastest way to identify a known issue.
 

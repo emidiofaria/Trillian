@@ -464,9 +464,12 @@ a version the binary does not actually report.
 
 **Bump procedure:** edit `appVersionName` only. Never hand-edit `versionCode`.
 
-**Known gap:** no in-app About/Settings screen surfaces the version to users; it is currently
-observable only via `aapt2 dump badging`, `adb shell dumpsys package com.drivingcoach`, or
-the launcher's app-info screen.
+**Known gap (closed in v2.8):** the version is now surfaced in-app on the **About** screen
+(`Profile → About Trillian`), read from `BuildConfig.VERSION_NAME` / `VERSION_CODE` and
+rendered as `2.8 (208)`. This required enabling `buildFeatures { buildConfig = true }` —
+AGP 8 does not generate `BuildConfig` by default, and nothing in the app had referenced it
+before, so its absence was invisible until the About screen needed it. The version remains
+observable externally via `aapt2 dump badging` and `adb shell dumpsys package com.drivingcoach`.
 
 ### Build Types
 

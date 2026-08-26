@@ -47,6 +47,61 @@ one specific device usually means that density bucket is missing — check with
 
 ---
 
+### BRD-02: Engineering Manifesto Is Actually Readable
+
+**Objective:** Verify the first-run introduction window does what it exists to do.
+The manifesto is 14 words; at a normal reading pace it needs roughly 4 seconds,
+and the returning-user budget of 1200 ms is about a third of that. Only a human
+can judge whether it was *readable*, which is why this is an L4 test — the
+automated tests can only prove the *budget* was applied.
+
+**Watch for the two-screen trap.** Cold start shows the emblem alone on black first
+(the platform splash, owned by the OS) and the branded loading screen second. The
+budget belongs to the *second* screen. Twice the budget was anchored too early and
+was partly spent behind the emblem, delivering ~2.3 s and then ~2.6 s of a nominal
+4 s. If the manifesto feels short again, check *which* screen you were timing.
+
+**Precondition:** App freshly installed (or storage cleared), so the launch
+counter starts at zero.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Cold start the app for the first time | Two screens in succession: first the emblem alone on black (the platform splash), then the loading screen with the manifesto card | ☐ |
+| 2 | Judge the **second** screen only | The loading screen — not the emblem-alone screen — is the one that holds; hint reads **"Tap to continue"** | ☐ |
+| 3 | Read the manifesto card without hurrying | You finish reading it before the screen moves on | ☐ |
+| 4 | Do **not** tap anything | The app proceeds on its own — a tap is never required | ☐ |
+| 5 | Launch the app a 2nd and 3rd time | Same longer hold, same "Tap to continue" hint | ☐ |
+| 6 | Launch the app a 4th time | Hold is noticeably shorter; hint now reads **"Tap to skip"** | ☐ |
+| 7 | Launch a 5th time and tap the screen immediately | Loading screen disappears at once; app still lands on the correct screen | ☐ |
+| 8 | Go to **Profile → About Trillian** | Same manifesto is shown, readable for as long as you like | ☐ |
+
+**Requirement Coverage:** UI-02, UI-10, UI-11
+
+**Note:** The hold is measured from the moment the loading screen becomes visible,
+so the full budget is delivered on that screen regardless of how slow startup was.
+If step 3 fails on real hardware the fix is to raise `introDisplayMs` in
+`SplashTimings.kt` — the number now means what it says.
+
+---
+
+### BRD-03: About Screen Reports the Build
+
+**Objective:** Verify the version a user would quote in a bug report is correct.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Sign in and open **Profile** | An **About Trillian** button is visible above Sign Out | ☐ |
+| 2 | Tap **About Trillian** | About screen opens showing emblem, wordmark, tagline and manifesto | ☐ |
+| 3 | Read the Version row | Shows name and code, e.g. `2.8 (208)` | ☐ |
+| 4 | Compare with the installed APK filename | Filename `DrivingCoach-v2.8-debug.apk` agrees with the displayed version | ☐ |
+| 5 | Compare with **Settings → Apps → Driving Coach** | Android reports the same version | ☐ |
+| 6 | Press Back | Returns to Profile, not to the loading screen | ☐ |
+| 7 | Set device font size to Largest and reopen About | Content scrolls; nothing is clipped or overlapping | ☐ |
+
+**Requirement Coverage:** UI-11, UI-12
+
+---
+
 ## Test Suite: ONB — Onboarding Flow
 
 ### ONB-01: First Launch Shows Onboarding

@@ -29,9 +29,12 @@ app/src/androidTest/java/com/drivingcoach/
 │   └── MainThreadResponsivenessProbe.kt        # Main-looper latency sampler
 ├── ui/
 │   ├── splash/
-│   │   ├── SplashScreenTest.kt                 # UI-01, UI-02
+│   │   ├── SplashScreenTest.kt                 # UI-01, UI-02, UI-10
+│   │   ├── SplashIntroductionTest.kt           # UI-02 (first-run hold + returning user)
 │   │   ├── SplashFallbackTest.kt               # UI-03
 │   │   └── SplashMainThreadTest.kt             # UI-04
+│   ├── about/
+│   │   └── AboutScreenTest.kt                  # UI-11, UI-12
 │   └── home/
 │       └── HomeHeroTest.kt                     # UI-06
 ├── StartupBackStackTest.kt                     # UI-05
@@ -59,6 +62,46 @@ EOF
 ```
 
 A class reported as `tests=1 skipped=1 name="null"` executed nothing.
+
+---
+
+## ⚠️ New `SplashTimings` Fields Propagate Silently
+
+`SplashTimings` is constructed with **named arguments** in every L2 module that overrides
+`SplashModule`. A field with a default therefore reaches all of them without any compile
+error — and if that default is a *duration*, the result is a slower suite rather than a
+failing one, which is exactly the kind of regression that gets ignored.
+
+`introDisplayMs` (4000 ms) is the current example. Every module below pins it explicitly:
+
+```
+SplashScreenTest · SplashIntroductionTest · SplashReturningUserTest
+SplashFallbackTest · SplashMainThreadTest · StartupBackStackTest · HomeHeroTest
+```
+
+`visibilityTimeoutMs` (2000 ms) is the newer one, and it behaves differently: it is only
+*reached* when the platform splash never reports its exit. Under `ActivityScenario` the
+report does arrive, so it normally costs nothing — but if it ever stops arriving, every
+splash test pays 2 s and the suite gets slower rather than red. `W/SplashViewModel: handoff
+never reported` in logcat is the direct confirmation.
+
+**Any new L2 class that overrides `SplashModule` must pin `introDisplayMs` too.** To check for a leak,
+compare per-test durations against the recorded baseline rather than trusting the total:
+
+```bash
+python3 - <<'EOF'
+import glob, xml.etree.ElementTree as ET
+rows = []
+for p in glob.glob('app/build/outputs/androidTest-results/connected/**/*.xml', recursive=True):
+    for tc in ET.parse(p).getroot().iter('testcase'):
+        rows.append((float(tc.get('time')), tc.get('classname').split('.')[-1], tc.get('name')))
+for t, c, n in sorted(rows, reverse=True)[:10]:
+    print(f"{t:7.2f}  {c} > {n}")
+EOF
+```
+
+Baseline (API 30 emulator, 30 executed tests): total ~114 s, slowest test ~7.4 s. A class
+that suddenly costs 4 s per test has inherited the introduction budget.
 
 ---
 
