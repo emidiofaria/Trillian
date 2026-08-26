@@ -2,6 +2,7 @@ package com.drivingcoach.di
 
 import android.content.Context
 import androidx.work.WorkManager
+import androidx.work.testing.WorkManagerTestInitHelper
 import com.drivingcoach.data.api.ApiService
 import com.drivingcoach.data.api.AuthInterceptor
 import dagger.Module
@@ -64,6 +65,16 @@ object TestNetworkModule {
     @Provides
     @Singleton
     fun provideWorkManager(@ApplicationContext context: Context): WorkManager {
-        return WorkManager.getInstance(context)
+        // The app disables WorkManagerInitializer in its manifest and initialises WorkManager
+        // itself, which never happens under instrumentation. Any ViewModel that injects
+        // WorkManager -- SessionResultViewModel, for one -- would otherwise crash the whole
+        // instrumentation process on the first screen that uses it.
+        //
+        // The test initialiser also swaps in a test driver, so enqueued work stays parked
+        // behind its constraints instead of firing real uploads during a UI test.
+        return runCatching { WorkManager.getInstance(context) }.getOrElse {
+            WorkManagerTestInitHelper.initializeTestWorkManager(context)
+            WorkManager.getInstance(context)
+        }
     }
 }
