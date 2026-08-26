@@ -6,6 +6,14 @@ plugins {
     id("androidx.navigation.safeargs.kotlin")
 }
 
+// Single source of truth for the app version. Release APKs in releases/ are named
+// from this value, so the filename can never disagree with what the app reports.
+val appVersionName = "2.8"
+
+// major*100 + minor keeps codes monotonic across the whole v1.0 -> v2.8 history
+// (1.0 -> 100, 2.8 -> 208) and leaves room for 99 minor releases per major.
+val appVersionCode = appVersionName.split(".").let { it[0].toInt() * 100 + it[1].toInt() }
+
 android {
     namespace = "com.drivingcoach"
     compileSdk = 35
@@ -14,8 +22,8 @@ android {
         applicationId = "com.drivingcoach"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "com.drivingcoach.HiltTestRunner"
     }
@@ -46,6 +54,13 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+                .outputFileName = "DrivingCoach-v$appVersionName-$name.apk"
+        }
+    }
 }
 
 kapt {
@@ -57,6 +72,7 @@ kapt {
 dependencies {
     // AndroidX Core
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     
     // Material Design

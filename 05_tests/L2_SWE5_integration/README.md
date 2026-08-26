@@ -22,9 +22,59 @@ app/src/androidTest/java/com/drivingcoach/
 │   └── local/
 │       └── dao/          # Room DAO tests
 ├── service/
-│   └── TelemetryForegroundServiceTest.kt
-└── EndToEndTest.kt       # Component integration tests
+│   └── TelemetryForegroundServiceTest.kt      (@Ignore)
+├── testing/                                    # Shared L2 fixtures
+│   ├── FakePreferencesDataStores.kt            # Stalling / seeded DataStore fakes
+│   ├── NavigationTestExtensions.kt             # awaitUntil, currentDestinationId
+│   └── MainThreadResponsivenessProbe.kt        # Main-looper latency sampler
+├── ui/
+│   ├── splash/
+│   │   ├── SplashScreenTest.kt                 # UI-01, UI-02
+│   │   ├── SplashFallbackTest.kt               # UI-03
+│   │   └── SplashMainThreadTest.kt             # UI-04
+│   └── home/
+│       └── HomeHeroTest.kt                     # UI-06
+├── StartupBackStackTest.kt                     # UI-05
+└── EndToEndTest.kt                             (@Ignore)
 ```
+
+---
+
+## ⚠️ `BUILD SUCCESSFUL` Is Not Evidence
+
+Gradle reports success for a suite in which **every class is `@Ignore`d**. Four legacy
+classes (`EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest`,
+`TelemetryForegroundServiceTest`) are currently in that state, so the exit code alone proves
+nothing.
+
+Always parse the JUnit XML after a run:
+
+```bash
+python3 - <<'EOF'
+import glob, xml.etree.ElementTree as ET
+for f in glob.glob('app/build/outputs/androidTest-results/connected/**/*.xml', recursive=True):
+    r = ET.parse(f).getroot()
+    print(r.get('name'), 'tests=', r.get('tests'), 'failures=', r.get('failures'), 'skipped=', r.get('skipped'))
+EOF
+```
+
+A class reported as `tests=1 skipped=1 name="null"` executed nothing.
+
+---
+
+## Test Isolation Strategy
+
+Startup dependencies are provided by narrow Hilt modules so a test can replace exactly one:
+
+| Module | Provides | Replaced to |
+|--------|----------|-------------|
+| `SplashModule` | `SplashTimings` | Pin the loading screen, or force a short timeout |
+| `DataStoreModule` | Preferences `DataStore` | Stall startup, or seed an onboarded user |
+| `DispatcherModule` | `@IoDispatcher` | (available; not currently overridden) |
+
+Each `@HiltAndroidTest` class declares its own nested `@Module`, so per-class values do not
+collide. This is why `SplashFallbackTest` (short timeout) and `SplashMainThreadTest` (long
+timeout) must be separate classes.
 
 ---
 
@@ -72,6 +122,8 @@ adb devices
 
 | Component | Purpose |
 |-----------|---------|
+| Branded startup (`SplashFragment` + `SplashViewModel` + NavGraph) | SRS UI-01…UI-05 |
+| Home brand hero (`AppBarLayout` collapse) | SRS UI-06 |
 | Room DAOs | Database operations, queries |
 | Services | TelemetryForegroundService, notifications |
 | Content Providers | Data sharing between components |

@@ -738,7 +738,7 @@ Encrypted key-value storage for auth tokens and user profile data. Replaces Shar
 
 ### Key Code Areas
 
-- `di/AppModule.kt` — DataStore provider
+- `di/DataStoreModule.kt` — DataStore provider (isolated so tests can substitute it)
 - `AuthRepository.kt` — token read/write
 - `AuthInterceptor.kt` — token read
 
@@ -1104,6 +1104,250 @@ Generates coaching insights locally (offline) from lap data stored in Room. Prov
 
 ---
 
+## Component: App Startup / Branded Loading Screen
+
+### Purpose
+
+Owns cold-start initialisation. Resolves whether the user goes to Onboarding, Login or
+Home while presenting the TRILLIAN brand moment with a progress bar tied to **real**
+startup work. Replaces the former main-thread `runBlocking` DataStore read in
+`MainActivity`.
+
+### Key Code Areas
+
+| Element | Path |
+|---------|------|
+| `SplashViewModel` | `app/src/main/java/com/drivingcoach/ui/splash/SplashViewModel.kt` |
+| `SplashFragment` | `app/src/main/java/com/drivingcoach/ui/splash/SplashFragment.kt` |
+| `SplashDestination` | `app/src/main/java/com/drivingcoach/ui/splash/SplashDestination.kt` |
+| `SplashTimings` | `app/src/main/java/com/drivingcoach/ui/splash/SplashTimings.kt` |
+| `@IoDispatcher` | `app/src/main/java/com/drivingcoach/di/IoDispatcher.kt` |
+| Layout | `app/src/main/res/layout/fragment_splash.xml` |
+| Nav entry | `app/src/main/res/navigation/nav_graph.xml` (`startDestination`) |
+| System splash theme | `res/values/themes.xml` → `Theme.DrivingCoach.Splash` |
+
+### Dependencies
+
+| Dependency | Type | Purpose |
+|------------|------|---------|
+| `DataStore<Preferences>` | Injected | Read `onboarding_complete`, `jwt_token` |
+| `SessionDao` | Injected | Room warm-up + pending upload count |
+| `SplashTimings` | Injected | `minDisplayMs` / `timeoutMs` / `warmUpTimeoutMs` (0 in tests) |
+| `@IoDispatcher CoroutineDispatcher` | Injected | Keeps all I/O off the main thread |
+| `androidx.core:core-splashscreen:1.0.1` | Library | Android 12+ system-splash handoff |
+
+### Inputs
+
+- DataStore preferences: `onboarding_complete` (Boolean), `jwt_token` (String)
+- Room: `sessionDao.getPendingUploadSessions()`
+- User tap on `splashRoot` (skip request)
+
+### Outputs
+
+| Output | Consumer |
+|--------|----------|
+| `UiState.progress` (0–100) | `LinearProgressIndicator` |
+| `UiState.stepLabel` (`@StringRes`) | `progressLabel` TextView |
+| `UiState.destination` | `SplashFragment` navigation |
+| `UiState.usedFallback` | Diagnostics / tests |
+| `pendingUploadCount` | Diagnostics, Home upload banner seed |
+
+### Progress Model
+
+| Progress | Step | Real work |
+|----------|------|-----------|
+| 0 % | `splash_step_preferences` | Begin DataStore read |
+| 25 % | `splash_step_database` | Preferences read; open Room |
+| 55 % | `splash_step_uploads` | Pending-upload query returned |
+| 80 % | `splash_step_ready` | Evaluating destination |
+| 100 % | `splash_step_ready` | Ready; minimum display satisfied |
+
+### Failure Modes
+
+| Mode | Cause | Symptom | Handling |
+|------|-------|---------|----------|
+| Essential read timeout | Slow disk | Bar stalls at 25%, then jumps | `withTimeoutOrNull(8 s)` → ONBOARDING, `usedFallback = true` |
+| Warm-up timeout | Slow Room open | None visible | Bounded at 2 s, non-fatal; `pendingUploadCount = 0` |
+| DataStore corruption | Force-kill during write | Unexpected onboarding | Empty prefs → ONBOARDING |
+| Double navigation | Rapid state re-emit | `IllegalArgumentException` | Guarded by `currentDestination` check |
+| Double splash | `installSplashScreen()` after `super.onCreate()` | Icon flash then brand screen | Must be called first |
+| Test slowdown | `minDisplayMs` not zeroed | Every instrumented test pays 1.2 s | Inject `SplashTimings(minDisplayMs = 0)` |
+
+### Observable Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| Progress plateau | UI | Identifies slow init stage |
+| `usedFallback == true` | UI state / test | Essential init exceeded its 8 s budget |
+| `D/SplashViewModel` timings | Logcat | Per-step startup cost (measured: 1.9–3.6 s DataStore, ~1 s Room on emulator) |
+| Absence of `runBlocking` | `MainActivity` source | ANR mitigation intact |
+| `MainThreadResponsivenessProbe.worstLatencyMs` | L2 `SplashMainThreadTest` | >2000 ms means startup work returned to the main thread |
+
+### Recovery/Mitigation
+
+- Separate ceilings for essential vs optional work; the optional warm-up can never change the destination.
+- Fallback is ONBOARDING (safe, idempotent), not LOGIN (would skip permission granting).
+- Tap-to-skip shortens only the cosmetic hold; real init must still complete.
+- All nav actions `popUpTo` the splash inclusively, so Back exits the app.
+
+### Test Hooks
+
+`SplashTimings` and the preferences `DataStore` are provided by dedicated Hilt modules
+(`SplashModule`, `DataStoreModule`) precisely so instrumented tests can replace one without
+disturbing the rest of the graph:
+
+| Goal | Uninstall | Substitute |
+|------|-----------|------------|
+| Pin the loading screen on screen for assertions | `SplashModule` | `SplashTimings(minDisplayMs = 60_000)` |
+| Force the timeout fallback | `SplashModule` + `DataStoreModule` | short `timeoutMs` + `StallingPreferencesDataStore` |
+| Land directly on Home | `SplashModule` + `DataStoreModule` | `SeededPreferencesDataStore(onboarding + token)` |
+
+> **Do not** try to prove UI-04 with an Espresso interaction. Espresso waits for the main
+> looper to become idle rather than failing, so a `runBlocking(60 s)` on the main thread made
+> an Espresso-based test merely slow — it still passed. Latency sampling from a background
+> thread (`MainThreadResponsivenessProbe`) is what actually detects the regression; this was
+> confirmed empirically by reintroducing the block and observing the test go red.
+
+### Criticality
+
+**HIGH** — every cold start passes through this component; total failure = app unusable.
+
+---
+
+## Component: Home Brand Hero (Collapsing Toolbar)
+
+### Purpose
+
+Presents the TRILLIAN identity on the Home screen while keeping recent sessions and the
+START SESSION call to action reachable. The hero is expanded on arrival and collapses to a
+compact branded bar as the user scrolls.
+
+### Key Code Areas
+
+| Element | Path |
+|---------|------|
+| Layout | `app/src/main/res/layout/fragment_home.xml` |
+| Collapse logic | `HomeFragment.setupHeroCollapse()` |
+
+### Structure
+
+```
+CoordinatorLayout
+└── AppBarLayout (id: appBarLayout)
+    └── CollapsingToolbarLayout (titleEnabled=false)
+        ├── heroContent  [parallax]  emblem + wordmark + kicker + tagline
+        └── Toolbar      [pin]       collapsedBrand (alpha 0→1) + profileButton
+└── NestedScrollView  → upload banner, heroCard, recent sessions, empty state
+└── startSessionButton (MaterialButton pill CTA)
+```
+
+### Behaviour
+
+| Scroll offset | Expanded hero | Collapsed brand |
+|---------------|---------------|-----------------|
+| 0 % | alpha 1.0 | alpha 0.0 |
+| 0–60 % | fades out linearly | 0.0 |
+| 60–100 % | 0.0 | fades in linearly |
+
+`COLLAPSE_FADE_START = 0.6f` in `HomeFragment`'s companion object.
+
+### Failure Modes
+
+| Mode | Cause | Symptom |
+|------|-------|---------|
+| Hero never collapses | Content shorter than scroll range | Static hero (acceptable) |
+| Both brands visible | Fade thresholds overlapping | Visual duplication |
+| Stale id reference | `startSessionFab` → `startSessionButton` rename | Instrumented test compile failure |
+| Emblem artwork deformed | Brand asset geometry defect (see *Brand Asset Pipeline*) | Emblem renders squashed at all three sizes; `isDisplayed()` tests still pass |
+| Emblem clipped by ring | Content bbox exceeds the `bg_hero_ring` radius | Artwork edges cut off inside the navy disc |
+
+### Criticality
+
+**LOW** — cosmetic; failure degrades presentation but not function.
+
+---
+
+## Component: Brand Asset Pipeline (Helmet Emblem)
+
+### Purpose
+
+Supplies the single `@drawable/ic_helmet_emblem` resource consumed by every
+branded surface. Introduced by the Incident 11 fix, which replaced a
+hand-authored vector with a raster emblem derived from owner-supplied artwork.
+
+### Key Code Areas
+
+| Element | Path |
+|---------|------|
+| Shipped asset | `res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_helmet_emblem.webp` |
+| Source artwork | `docs/brand/helmet_source.png` |
+| Build + check tool | `05_tests/infra/scripts/brand-asset.py` |
+| Geometry gate (L1) | `app/src/test/java/com/drivingcoach/brand/BrandAssetGeometryTest.kt` |
+| PNG decoder for the gate | `app/src/test/java/com/drivingcoach/brand/ArgbBitmap.kt` |
+| Geometry master | `app/src/test/resources/brand/ic_helmet_emblem_master.png` |
+| Negative fixture | `app/src/test/resources/brand/legacy_deformed_emblem.png` |
+
+### Render Sites
+
+| # | Surface | Layout | Size |
+|---|---------|--------|------|
+| 1 | Splash fragment | `fragment_splash.xml` | 132dp inside `bg_hero_ring` |
+| 2 | System splash window | `res/drawable/ic_splash_emblem.xml` | 20 % inset wrapper |
+| 3 | Home hero | `fragment_home.xml` | 88dp |
+| 4 | Home collapsed brand bar | `fragment_home.xml` | `@dimen/hero_emblem_collapsed` (36dp) |
+
+All four resolve the same resource name, so a single asset change corrects — or
+breaks — every surface at once.
+
+### Density Buckets
+
+| Bucket | Pixels | Derivation |
+|--------|--------|------------|
+| mdpi | 132 | 1× of the 132dp render site |
+| hdpi | 198 | 1.5× |
+| xhdpi | 264 | 2× |
+| xxhdpi | 396 | 3× |
+| xxxhdpi | 528 | 4× — matches the 533px source crop, so nothing is upscaled |
+
+### Invariants
+
+Enforced by `BrandAssetGeometryTest`, and mirrored by `brand-asset.py check`:
+
+| Invariant | Threshold | Why |
+|-----------|-----------|-----|
+| Content aspect | 1.00 ± 0.05 | The Incident 11 emblem was 0.866 — squashed |
+| Canvas square | exact | `fitCenter` would otherwise letterbox |
+| Content centred | ≤ 3 % off each axis | The old shell sat 6/120 units high |
+| Transparent border | zero edge alpha | Prevents clipping inside `bg_hero_ring` |
+| Legible at 36dp | > 15 % opaque | The smallest render site must still read |
+| No `drawable/ic_helmet_emblem.xml` | must not exist | Same-name vector + bitmap is a resource-merger conflict |
+
+### Failure Modes
+
+| Mode | Cause | Symptom | Detection |
+|------|-------|---------|-----------|
+| Deformed artwork | Non-square content bbox | Emblem squashed on every surface | `emblemMasterSatisfiesBrandGeometry` |
+| Gate becomes a no-op | Assertions weakened | Defects pass silently | `gateRejectsTheLegacyDeformedEmblem` |
+| Missing density bucket | Partial asset drop | Blurry or absent emblem on some devices | `emblemDensityBucketsAreCompleteAndCorrectlySized` |
+| Vector resurrected | `.xml` re-added beside the WebP | Non-deterministic resource merge | `noConflictingVectorEmblemRemains` |
+| Master drifts from shipped buckets | Buckets regenerated without the master | Gate measures artwork that is not shipped | Bucket dimension check + `brand-asset.py build` reproducibility |
+| Dark edge fringing | Non-premultiplied RGBA downsample | Halo around the emblem on dark backgrounds | Visual review; `brand-asset.py` premultiplies |
+
+### Signals
+
+| Signal | Where | Meaning |
+|--------|-------|---------|
+| `content aspect 1.00 +/- 0.05` FAIL | `brand-asset.py check` | Artwork is deformed |
+| `gate accepted the known-deformed legacy emblem` | L1 failure message | The gate has stopped being falsifiable |
+| Bit-identical rebuild | `brand-asset.py build` | Shipped assets are reproducible from source |
+
+### Criticality
+
+**LOW** — cosmetic. Escalated in review weight because the defect is visible on
+the first screen shown at cold start and is invisible to presence-only tests.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -1119,4 +1363,7 @@ Generates coaching insights locally (offline) from lap data stored in Room. Prov
 | Lap & Coaching Sync | MEDIUM | Delayed insights |
 | Offline Coaching Engine | MEDIUM | No coaching insights |
 | Session State Machine | MEDIUM | UX confusion |
+| App Startup / Branded Loading Screen | HIGH | App unusable (no cold start) |
 | Stale Upload Detection | LOW | Missing UX warning |
+| Home Brand Hero | LOW | Degraded presentation only |
+| Brand Asset Pipeline | LOW | Deformed or missing emblem on all branded surfaces |

@@ -40,4 +40,12 @@
     <color name="colorOnSurface">#FFFFFF</color>
     <color name="colorOnSurfaceVariant">#B0B0B0</color>
     <color name="colorOutline">#404040</color>
+
+    <!-- Brand Hero / Splash -->
+    <color name="hero_ring_stroke">#8FA9D8</color>
+    <color name="hero_emblem_bg">#173B6E</color>
+    <color name="manifesto_surface">#1F1F1F</color>
+    <!-- 4.6:1 on #0D0D0D — meets WCAG AA for small text -->
+    <color name="footer_text">#8A8A8A</color>
+    <color name="progress_track">#2A2A2A</color>
 </resources>

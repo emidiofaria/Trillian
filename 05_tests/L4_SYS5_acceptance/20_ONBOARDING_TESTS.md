@@ -20,6 +20,33 @@ Settings → Apps → Driving Coach → Storage → Clear Data
 
 ---
 
+## Test Suite: BRD — Branding & Visual Identity
+
+### BRD-01: Helmet Emblem Renders Correctly at All Sizes
+
+**Objective:** Verify the helmet emblem is undistorted and uncropped on every
+surface it appears. Added after Incident 11, where a deformed emblem shipped
+because automated tests only asserted the emblem was *present*, not that it was
+*correct*. A human must look at it.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Cold start the app | System splash shows the helmet on a dark background | ☐ |
+| 2 | Observe the helmet shape | Clearly reads as a racing helmet — not squashed, stretched or lopsided | ☐ |
+| 3 | Observe the branded loading screen (132dp emblem) | Helmet sits centred inside the navy ring with visible clearance on all sides | ☐ |
+| 4 | Reach the Home screen | Hero emblem (88dp) renders identically, just smaller | ☐ |
+| 5 | Inspect the emblem edges against the dark background | No dark halo, fringe or jagged staircase around the outline | ☐ |
+| 6 | Scroll Home down until the hero collapses | Small emblem (36dp) in the brand bar is still recognisable as a helmet | ☐ |
+| 7 | Rotate the device / test on a second device of a different density | Emblem is crisp, not blurry or pixelated | ☐ |
+
+**Requirement Coverage:** UI-08, UI-09
+
+**Note:** Densities ship at 132/198/264/396/528 px (mdpi→xxxhdpi). Blurriness on
+one specific device usually means that density bucket is missing — check with
+`./gradlew :app:testDebugUnitTest --tests 'com.drivingcoach.brand.*'`.
+
+---
+
 ## Test Suite: ONB — Onboarding Flow
 
 ### ONB-01: First Launch Shows Onboarding
@@ -276,6 +303,7 @@ Settings → Apps → Driving Coach → Storage → Clear Data
 
 | Test ID | Test Name | Status |
 |---------|-----------|--------|
+| BRD-01 | Helmet Emblem Renders Correctly at All Sizes | ☐ Pass ☐ Fail |
 | ONB-01 | First Launch Shows Onboarding | ☐ Pass ☐ Fail |
 | ONB-02 | Onboarding Page Content | ☐ Pass ☐ Fail |
 | ONB-03 | Permission Grant — All Accepted | ☐ Pass ☐ Fail |

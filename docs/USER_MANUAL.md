@@ -46,7 +46,32 @@ Driving Coach captures GPS and motion data while you drive on track, then analyz
 2. Open the installer and tap **Install**
 3. If prompted about unknown sources, tap **Settings** → enable **Allow from this source** → tap **Install**
 
-### 2.2 First Launch & Permissions
+### 2.2 The Loading Screen
+
+Every time you open the app, you're greeted by the **TRILLIAN** loading screen — the helmet
+emblem, the wordmark, and a short engineering note.
+
+The progress bar underneath is **not decoration**. It tracks the app actually getting ready:
+
+| Bar | What's happening |
+|-----|------------------|
+| Preparing your garage | Reading your settings |
+| Warming up the telemetry | Opening your local session database |
+| Checking pending uploads | Looking for sessions still waiting to sync |
+| Ready to roll | Taking you to the right screen |
+
+**How long does it take?** Usually one to three seconds. If your phone is busy or storage is
+slow it may take a little longer, but the app will never make you wait more than 8 seconds —
+after that it moves on regardless and takes you to the setup screens, so you can always get
+going.
+
+**In a hurry?** Tap anywhere on the loading screen to skip the wait. The app still finishes
+getting ready in the background, so nothing is skipped that matters.
+
+**Pressing Back** on the first screen after loading closes the app — it won't send you back
+to the loading screen.
+
+### 2.3 First Launch & Permissions
 
 When you first open Driving Coach, you'll be asked to grant permissions:
 
@@ -58,7 +83,7 @@ When you first open Driving Coach, you'll be asked to grant permissions:
 
 **Important:** Choose **"Allow all the time"** for location when prompted. This ensures accurate recording even if the screen turns off.
 
-### 2.3 Creating Your Account
+### 2.4 Creating Your Account
 
 1. Tap **Register** on the welcome screen
 2. Enter your details:
@@ -68,7 +93,7 @@ When you first open Driving Coach, you'll be asked to grant permissions:
 3. Tap **Create Account**
 4. You're in! You'll see the Home screen with your session list (empty for now)
 
-### 2.4 Logging In
+### 2.5 Logging In
 
 Already have an account?
 
@@ -115,6 +140,25 @@ Before recording, you need to tell the app where your start/finish line is. This
 ---
 
 ## 4. Recording a Session
+
+### 4.0 The Home Screen
+
+Once you're signed in, Home is your base. At the top sits the **brand hero** — the helmet
+emblem, the TRILLIAN wordmark and the tagline.
+
+**It gets out of your way.** As you scroll down through your recent sessions, the big hero
+smoothly shrinks into a slim branded bar at the top, freeing the screen for your data. Scroll
+back up and it expands again. Your profile button stays reachable in that bar the whole time.
+
+Below the hero you'll find:
+
+- Any **pending upload** notice, if sessions are still waiting to sync
+- Your **best lap** card
+- **Recent sessions**, newest first
+- A **START SESSION** button — your way into a new run
+
+If you haven't recorded anything yet, you'll see a friendly empty state instead of the
+session list. The START SESSION button works exactly the same either way.
 
 ### 4.1 Starting a Recording
 
@@ -393,8 +437,17 @@ If you're still having issues:
 3. Contact support with:
    - Your email address
    - Device model and Android version
+   - **The Driving Coach version** (see below)
    - Description of the issue
    - Screenshots if helpful
+
+### Finding your app version
+
+Driving Coach doesn't yet show its version inside the app. To find it:
+
+**Settings → Apps → Driving Coach** — the version is shown at the bottom of the app info screen (e.g. `2.8`).
+
+This tells support exactly which build you're running, which is often the fastest way to identify a known issue.
 
 ---
 

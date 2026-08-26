@@ -202,68 +202,106 @@ Operational failure patterns for RCA acceleration in Driving Coach Android app.
 
 ---
 
-## Pattern: DataStore ANR on Startup
+## Pattern: DataStore ANR on Startup — ✅ MITIGATED (v2.8)
 
-### Symptoms
+> **Status: RESOLVED.** The `runBlocking` DataStore read in `MainActivity.setupNavigation()`
+> was removed when the branded loading screen landed. Startup state is now resolved by
+> `SplashViewModel` on `@IoDispatcher` with an 8 s essential timeout and an Onboarding fallback.
+> This pattern is retained for historical RCA context and regression detection.
+
+### Symptoms (historical)
 
 - App shows "Not Responding" dialog on launch
 - Black screen for >5 seconds
 - ANR trace in `/data/anr/`
 - Startup time significantly degraded
 
-### Signals
+### Regression Signals
+
+If any of these reappear, the mitigation has been reverted or bypassed:
 
 | Signal | Location | Threshold |
 |--------|----------|-----------|
-| ANR dialog | User device | Any occurrence |
-| `runBlocking` on main thread | Stack trace | `MainActivity.setupNavigation()` |
-| Slow DataStore read | Systrace | >100ms |
-| Main thread blocked | ANR trace | DataStore.data.first() |
+| ANR dialog on launch | User device | Any occurrence |
+| `runBlocking` on main thread | Stack trace | Any occurrence in startup path |
+| Main thread blocked | ANR trace | `DataStore.data.first()` |
+| Loading screen never dismisses | UI | >8 s (essential timeout should have fired) |
 
-### Likely Causes
+### Current Behaviour (post-mitigation)
 
-| Cause | Code Path | Evidence |
-|-------|-----------|----------|
-| Blocking DataStore read | `MainActivity:68-69` `runBlocking` | Stack trace shows DataStore |
-| Slow disk I/O | Device storage | Low-end device or full storage |
-| DataStore file corruption | `preferences_pb` file | Parse errors in logs |
-| Large preferences file | Accumulated data | File size >1MB |
-| Encrypted storage slow | Hardware crypto | Older devices |
+| Condition | Old behaviour | New behaviour |
+|-----------|---------------|---------------|
+| Slow disk I/O | Main thread blocked → ANR | Progress bar stalls; essential timeout → Onboarding |
+| DataStore corruption | `runBlocking` exception → crash | Empty prefs → Onboarding |
+| Essential work > 8 s | Indefinite block | `usedFallback = true` → Onboarding |
+| Room warm-up > 2 s | Deferred, first screen janks | Warm-up abandoned; destination unaffected |
+| Room migration on startup | Deferred, first screen janks | Warmed during loading screen (bounded) |
+
+### Measured Evidence (emulator, Pixel 4 API 30)
+
+| Measurement | Cold start (first ever launch) | Warm start |
+|-------------|-------------------------------|------------|
+| `DataStore.data.first()` | ~3 570 ms | ~1 880 ms |
+| Room warm-up query | — | ~955 ms |
+| Total startup resolve | ~4 460 ms | ~2 890 ms |
+
+> The original 3 s global timeout fired on **normal** cold starts, making the fallback the
+> common path rather than the exceptional one. This is why the essential budget was raised to
+> 8 s and non-essential warm-up was split out behind its own 2 s bound.
+>
+> The fallback destination was changed from Login to **Onboarding** on an asymmetric-cost
+> argument: if preferences cannot be read we do not know whether the user has onboarded.
+> Routing an already-onboarded user through Onboarding is a recoverable annoyance that still
+> ends at Home; routing a fresh user to Login skips permission granting entirely and leaves
+> the app unable to record.
 
 ### Evidence To Check
 
-1. **ANR traces**: `/data/anr/anr_*` files, look for `runBlocking` in stack
-2. **Systrace**: Capture startup trace, look for disk I/O blocking main thread
-3. **DataStore file**: Size of `driving_coach_prefs.preferences_pb`
-4. **Device info**: Storage health, available space, device tier
-5. **Logcat**: DataStore exceptions during startup
+1. **Verify mitigation is present**: `MainActivity` must contain no `runBlocking`
+2. **`SplashViewModel.uiState.usedFallback`** — `true` means essential init exceeded its 8 s budget
+3. **Logcat timings** (tag `SplashViewModel`) — `datastore read took Xms`,
+   `room warm-up took Xms, result=N`, `startup resolved=DEST in Xms`
+4. **Progress plateau** — the step label identifies which init stage is slow
+5. **DataStore file**: size of `driving_coach_prefs.preferences_pb`
+6. **Device info**: storage health, available space, device tier
 
-### Common Triggers
-
-- App installed on slow internal storage
-- Device storage nearly full
-- DataStore file corrupted by force-kill during write
-- First launch after app update
-- Cold start after long idle period
-
-### Mitigation
+### Mitigation (user-side, if slow startup persists)
 
 1. Force stop app, clear cache, relaunch
 2. Free device storage space
 3. Clear app data (loses preferences, requires re-login)
-4. Uninstall/reinstall app
 
-### Permanent Fix
+### Permanent Fix — IMPLEMENTED
 
-- Replace `runBlocking` with async initialization + splash screen
-- Use `ViewModel` init block with proper async handling
-- Implement `Initializer` from AndroidX Startup
-- Add DataStore migration/corruption recovery
-- Cache onboarding state in memory after first read
+| Fix | Status | Location |
+|-----|--------|----------|
+| Replace `runBlocking` with async init + splash screen | ✅ Done | `SplashViewModel`, `SplashFragment` |
+| Bounded startup with fallback destination | ✅ Done | `withTimeoutOrNull(timings.timeoutMs)` |
+| Non-essential warm-up isolated behind own bound | ✅ Done | `withTimeoutOrNull(timings.warmUpTimeoutMs)` + `runCatching` |
+| Room warm-up before first query | ✅ Done | `sessionDao.getPendingUploadSessions()` |
+| System-splash handoff (no double splash) | ✅ Done | `installSplashScreen()`, `Theme.DrivingCoach.Splash` |
+| DataStore migration/corruption recovery | ⚠️ Open | Still falls back to empty preferences |
+
+### Regression Guard
+
+**L1 —** `SplashViewModelTest` asserts the timeout fallback, the non-blocking destination
+resolution and the skip semantics.
+
+**L2 —** `SplashMainThreadTest` (`app/src/androidTest/.../ui/splash/`) runs the real
+`MainActivity` against a `StallingPreferencesDataStore` and samples main-looper round-trip
+latency from a background thread via `MainThreadResponsivenessProbe`. Budget: **2000 ms**.
+
+> ⚠️ **Espresso is not a valid detector for this pattern.** Espresso synchronises *with* the
+> main looper — it waits for idle rather than timing out — so a deliberately reintroduced
+> `runBlocking { delay(60_000) }` in `SplashFragment.onViewCreated` left an Espresso-click
+> based test **passing**, just slower. The latency probe caught the same injected regression
+> immediately: `main thread was unresponsive for 15000ms during startup (budget 2000ms)`.
+> Any future "must not block" assertion must be falsified the same way before it is trusted.
 
 ### Confidence
 
-**HIGH** — Direct `runBlocking` call in `MainActivity:68` is documented ANR risk
+**HIGH** — root cause removed, covered by unit tests, and the instrumented guard has been
+empirically falsified (proven to fail when the defect is reintroduced).
 
 ---
 
@@ -793,7 +831,7 @@ Operational failure patterns for RCA acceleration in Driving Coach Android app.
 | Telemetry Upload Retry Exhaustion | HIGH | MEDIUM | HIGH | P1 |
 | GPS Lock Failure | HIGH | HIGH | HIGH | P1 |
 | Foreground Service Start Blocked | MEDIUM | HIGH | HIGH | P1 |
-| DataStore ANR on Startup | MEDIUM | HIGH | HIGH | P1 |
+| DataStore ANR on Startup | ~~MEDIUM~~ MITIGATED | HIGH | HIGH | ~~P1~~ Closed (v2.8) |
 | Session State Desync | MEDIUM | MEDIUM | MEDIUM | P2 |
 | Auth Token Expiration Loop | MEDIUM | MEDIUM | HIGH | P2 |
 | Telemetry File Missing | LOW | HIGH | HIGH | P2 |
@@ -1061,3 +1099,98 @@ if (isSystemDeathException(throwable)) {
 | Date | Fix Applied |
 |------|-------------|
 | 2026-07-22 | Periodic flush (30s) + DeadSystemException handler |
+
+---
+
+## Pattern: Brand Asset Geometry (Unverified Static Artwork)
+
+The first *static asset* pattern in this Atlas. Every other pattern here
+describes runtime behaviour; this one ships broken and never throws.
+
+### Symptoms
+
+- A brand asset renders visibly wrong — squashed, off-centre, clipped or blank.
+- The defect appears on **every** surface referencing the resource at once.
+- Nothing crashes, no exception is logged, and no test fails.
+- Frequently reported by a human looking at the screen, not by telemetry.
+
+### Signals
+
+| Signal | Source | Meaning |
+|--------|--------|---------|
+| No signal at all | — | **This is the defining characteristic.** Static assets emit nothing |
+| `content aspect ... FAIL` | `brand-asset.py check` | Artwork geometry is out of tolerance |
+| Bucket dimension mismatch | `BrandAssetGeometryTest` | Shipped densities drifted from the master |
+
+### Likely Causes
+
+| Cause | Detail |
+|-------|--------|
+| Hand-authored geometry with no shared construction reference | Paths drawn independently, with no centre line, silhouette or bounding constraint to check against |
+| Merged on code inspection | `pathData` strings are unreadable, so review approves text that was never rendered |
+| Presence-only test assertions | `isDisplayed()` passes for any drawable, including a blank one |
+| Non-premultiplied RGBA downsample | Backing colour bleeds into edge pixels, producing a fringe on dark backgrounds |
+| Same-name vector and bitmap | Resource merger picks one non-deterministically |
+
+### Evidence To Check
+
+1. Render the asset **in isolation, composited**, at every shipped size — not in
+   an IDE preview of a single layer.
+2. Measure the content bounding box. Compare its aspect and centre against the
+   canvas. This is the single most diagnostic measurement.
+3. Measure each layer's spill outside the intended silhouette *before* assuming
+   misalignment. In Incident 11 that hypothesis was wrong: 7 of 8 layers spilled
+   0.0 %, and the shell itself was the defect.
+4. Check the containing views for `scaleType` and fixed-size mismatches, then
+   rule them out explicitly rather than leaving them as a suspicion.
+5. Read the assertions that cover the asset and ask whether any of them
+   *could* have failed while the defect was present.
+
+### Common Triggers
+
+- A branding or visual-identity commit.
+- Replacing artwork without regenerating every density bucket.
+- Adding a bitmap alongside a same-named vector.
+
+### Mitigation
+
+Measure the artwork, do not inspect its source. The gate must assert geometry:
+square canvas, content aspect within tolerance, centred content, transparent
+border, and legibility at the smallest render site.
+
+### Permanent Fix
+
+| Control | Implementation |
+|---------|----------------|
+| Geometry gate | `BrandAssetGeometryTest` (L1) measures the committed master |
+| Falsification | `gateRejectsTheLegacyDeformedEmblem` runs the same assertions against the known-bad asset and requires them to fail |
+| Reproducibility | `brand-asset.py build` regenerates every bucket bit-for-bit from `docs/brand/helmet_source.png` |
+| Conflict guard | Asserts no same-named vector coexists with the bitmaps |
+
+### Generalisation
+
+**An assertion that cannot fail when the defect is present is not coverage.**
+This is the second time this repository has hit that failure of reasoning — the
+first was Espresso main-thread assertions that could not observe an ANR. Any new
+gate should be run against a known-bad input before it is trusted.
+
+### Confidence
+
+**HIGH** — root cause measured, both original hypotheses falsified.
+
+### Related RCA
+
+`03_incidents/11_helmet_emblem_deformed/11_RCA_unconstrained_hand_authored_vector.md`
+
+### Resolution History
+
+| Date | Action |
+|------|--------|
+| 2026-08-11 | Incident 11 raised: helmet emblem deformed on all surfaces |
+| 2026-08-11 | RCA falsified both reported hypotheses; shell measured 88x76 in a 120x120 viewport |
+| 2026-08-11 | Vector replaced with owner-supplied raster across 5 density buckets; L1 geometry gate added and proven falsifiable |
+
+### Open Gap
+
+The repository has **no CI** (`.github/workflows/` does not exist), so this gate
+only runs when someone runs it locally.

@@ -24,6 +24,17 @@
     <!-- Bottom Navigation -->
     <dimen name="bottom_nav_height">56dp</dimen>
     
+    <!-- Brand Hero / Splash -->
+    <dimen name="hero_emblem_size">180dp</dimen>
+    <dimen name="hero_emblem_home">120dp</dimen>
+    <dimen name="hero_emblem_collapsed">36dp</dimen>
+    <dimen name="hero_expanded_height">300dp</dimen>
+    <dimen name="hero_collapsed_height">64dp</dimen>
+    <dimen name="cta_pill_height">56dp</dimen>
+    <dimen name="cta_pill_radius">28dp</dimen>
+    <dimen name="splash_progress_height">4dp</dimen>
+    <dimen name="splash_progress_width">200dp</dimen>
+
     <!-- Lap Time Card -->
     <dimen name="lap_card_min_height">80dp</dimen>
     <dimen name="delta_badge_padding_horizontal">8dp</dimen>

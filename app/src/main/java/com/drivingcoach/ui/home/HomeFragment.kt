@@ -18,10 +18,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.drivingcoach.databinding.FragmentHomeBinding
 import com.drivingcoach.databinding.ItemSessionHistoryBinding
 import com.drivingcoach.util.LapTimeFormatter
+import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @AndroidEntryPoint
 class HomeFragment : Fragment() {
@@ -37,6 +39,11 @@ class HomeFragment : Fragment() {
         onSessionClick = { sessionId -> viewModel.onSessionClick(sessionId) },
         onSessionLongClick = { session -> showSessionContextMenu(session) }
     )
+
+    private companion object {
+        /** Collapse ratio at which the pinned brand bar starts fading in. */
+        const val COLLAPSE_FADE_START = 0.6f
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -65,8 +72,8 @@ class HomeFragment : Fragment() {
             viewModel.onProfileClick()
         }
 
-        // FAB: Start new session
-        binding.startSessionFab.setOnClickListener {
+        // Start new session
+        binding.startSessionButton.setOnClickListener {
             showTrackNameDialog()
         }
         
@@ -74,6 +81,27 @@ class HomeFragment : Fragment() {
         binding.dismissBannerButton.setOnClickListener {
             viewModel.dismissUploadBanner()
         }
+
+        setupHeroCollapse()
+    }
+
+    /**
+     * Cross-fades the pinned brand bar in as the hero collapses, so the two never
+     * overlap visually (SRS UI-06).
+     */
+    private fun setupHeroCollapse() {
+        binding.appBarLayout.addOnOffsetChangedListener(
+            AppBarLayout.OnOffsetChangedListener { appBarLayout, verticalOffset ->
+                val range = appBarLayout.totalScrollRange
+                if (range == 0) return@OnOffsetChangedListener
+
+                val collapseRatio = abs(verticalOffset).toFloat() / range
+                binding.heroContent.alpha = (1f - collapseRatio * 1.6f).coerceIn(0f, 1f)
+                binding.collapsedBrand.alpha =
+                    ((collapseRatio - COLLAPSE_FADE_START) / (1f - COLLAPSE_FADE_START))
+                        .coerceIn(0f, 1f)
+            }
+        )
     }
 
     private fun showTrackNameDialog() {

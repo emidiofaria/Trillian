@@ -4,11 +4,10 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
@@ -16,20 +15,14 @@ import com.drivingcoach.R
 import com.drivingcoach.data.api.AuthEvent
 import com.drivingcoach.data.api.AuthEventBus
 import com.drivingcoach.databinding.ActivityMainBinding
-import com.drivingcoach.ui.onboarding.OnboardingFragment
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    @Inject
-    lateinit var dataStore: DataStore<Preferences>
-    
     @Inject
     lateinit var authEventBus: AuthEventBus
 
@@ -37,6 +30,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Hands the Android 12+ system splash over to our branded screen without a
+        // second flash of the launcher icon.
+        installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         
@@ -64,18 +60,8 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
 
-        // Check onboarding status and set start destination
-        val onboardingComplete = runBlocking {
-            dataStore.data.first()[OnboardingFragment.KEY_ONBOARDING_COMPLETE] ?: false
-        }
-
-        if (!onboardingComplete) {
-            // Set onboarding as start destination
-            val navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
-            navGraph.setStartDestination(R.id.onboardingFragment)
-            navController.graph = navGraph
-        }
-
+        // Start destination is always the splash screen; it resolves onboarding and auth
+        // state off the main thread and navigates onward (SRS UI-04).
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.recordingFragment -> hideSystemUI()
