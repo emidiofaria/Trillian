@@ -26,6 +26,7 @@ app/src/androidTest/java/com/drivingcoach/
 ├── testing/                                    # Shared L2 fixtures
 │   ├── FakePreferencesDataStores.kt            # Stalling / seeded DataStore fakes
 │   ├── NavigationTestExtensions.kt             # awaitUntil, currentDestinationId
+│   ├── ScriptedLocationUpdates.kt              # Deterministic LocationUpdates fake
 │   └── MainThreadResponsivenessProbe.kt        # Main-looper latency sampler
 ├── ui/
 │   ├── splash/
@@ -35,11 +36,31 @@ app/src/androidTest/java/com/drivingcoach/
 │   │   └── SplashMainThreadTest.kt             # UI-04
 │   ├── about/
 │   │   └── AboutScreenTest.kt                  # UI-11, UI-12
+│   ├── tracksetup/
+│   │   └── TrackSetupResubscribeTest.kt        # TS-15 (resubscribe regression guard)
 │   └── home/
-│       └── HomeHeroTest.kt                     # UI-06
+│       ├── HomeHeroTest.kt                     # UI-06
+│       └── HomeGpsChipTest.kt                  # TS-16, TS-17, TS-18
 ├── StartupBackStackTest.kt                     # UI-05
 └── EndToEndTest.kt                             (@Ignore)
 ```
+
+---
+
+## Location Is Injected, Not Real
+
+`LocationUpdates` is a Hilt binding, so L2 classes that need GPS behaviour
+`@UninstallModules(LocationModule::class)` and provide `ScriptedLocationUpdates` instead.
+That fake emits real `android.location.Location` objects on demand and counts
+`subscribeCount` / `activeSubscriptions`.
+
+Those two counters are the whole point of `TrackSetupResubscribeTest`: a subscription that is
+torn down on stop and never restored is invisible to any assertion about *content*, and only
+shows up as a count that fails to increase. Never replace those assertions with "is the text
+still there" checks — a permanently frozen screen passes those.
+
+Anything that overrides `LocationModule` must also provide `WarmUpTimings` and the
+`@ApplicationScope CoroutineScope`, since they live in the same module.
 
 ---
 

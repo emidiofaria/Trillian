@@ -4,6 +4,80 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-08-26] GPS Warm-Up on Home
+
+**Codebase Version:** v2.8 (branch `UX_start_GPS_early`)  
+**Trigger:** Field report — 45 s wait for GPS at the start/finish line during a manual track test
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| components.md | ✅ Updated | +78 lines — new component `GPS Warm-Up (LocationWarmUp)` |
+| flows.md | ✅ Updated | +103/-13 — new flow `GPS Warm-Up (Home)`; Track Setup flow rewritten onto `LocationUpdates` + `repeatOnLifecycle` |
+| failure-patterns.md | ✅ Updated | +57 lines — new pattern `Location Subscription Not Restored After Stop` (✅ FIXED) |
+| SRS_v1.md | ✅ Updated | +5 requirements (TS-16…TS-20); TS-15 amended |
+| TRACEABILITY_MATRIX.md | ✅ Updated | +6 covered rows; TS coverage 40% → 60% |
+| USER_MANUAL.md | ✅ Updated | New §3.0 "The GPS Badge"; §3.1, §6.3, §7 updated |
+| L2 README | ✅ Updated | Tree updated; new section "Location Is Injected, Not Real" |
+| 30_TRACK_SETUP_TESTS.md | ✅ Updated | +3 human test cases (TS-00, TS-00b, TS-00c) |
+
+### New Requirement IDs
+
+- **TS-16** — Warm-up starts when Home becomes visible
+- **TS-17** — Home GPS readiness chip (hidden / amber / green)
+- **TS-18** — Stops on background and after a 3-minute idle ceiling
+- **TS-19** — Time-to-first-fix metrics recorded and shown on About
+- **TS-20** — Warm-up exposes readiness only, never a position
+
+**Amended:** TS-15 — now names `FusedLocationProviderClient` behind the `LocationUpdates`
+abstraction (the SRS had said `LocationManager`/`GPS_PROVIDER`; the code has used Fused since
+before this change) and adds the resubscribe-on-STARTED obligation.
+
+### New Test IDs
+
+- L4: `TS-00`, `TS-00b`, `TS-00c`
+- L2: `HomeGpsChipTest` (6 tests), `TrackSetupResubscribeTest` (4 tests)
+- L1: `LocationWarmUpTest` (17 tests), 4 new tests in `HomeViewModelTest`
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4) | ✅ 142/142 passed |
+| L2 (SWE.5) | ✅ 40 tests, 0 failures (4 skipped — pre-existing `@Ignore`d legacy classes) |
+| L4 (SYS.5) | ⏳ New checklist items pending the next track day |
+
+### Defect Recorded
+
+`TrackSetupFragment` subscribed to location once in `onViewCreated()` while `onStop()`
+removed updates — so any screen-off or app switch left "Acquiring GPS…" on screen
+**permanently**. This may well be what the 45 s field report actually was. Fixed structurally
+with `repeatOnLifecycle(STARTED)`; guarded by `TrackSetupResubscribeTest`.
+
+### Files Modified
+
+```
+M  SkunkOps/atlas/components.md                              (+78)
+M  SkunkOps/atlas/flows.md                                   (+103, -13)
+M  SkunkOps/atlas/failure-patterns.md                        (+57)
+M  01_requirements/DrivingCoach_SRS_v1.md                    (+6, -1)
+M  01_requirements/TRACEABILITY_MATRIX.md                    (+9, -3)
+M  docs/USER_MANUAL.md                                       (+55, -8)
+M  05_tests/L2_SWE5_integration/README.md                    (+22, -1)
+M  05_tests/L4_SYS5_acceptance/30_TRACK_SETUP_TESTS.md       (+59, -1)
+```
+
+### Recommendations
+
+- [ ] Run the L4 TS-00 checklist at the next track day and record the About-screen timings —
+      this converts "45 seconds" from anecdote into evidence
+- [ ] Audit for other `onViewCreated()`-subscribe / `onStop()`-cancel pairs; the same defect
+      class may exist elsewhere
+- [ ] Revisit the 3-minute idle ceiling once real usage data exists
+
+---
+
 ## [2026-08-12] Splash Display Budget Anchored to the Platform Handoff
 
 **Codebase Version:** v2.8  
