@@ -138,6 +138,63 @@ Operational failure patterns for RCA acceleration in Driving Coach Android app.
 
 ---
 
+## Pattern: Location Subscription Not Restored After Stop — ✅ FIXED (GPS warm-up work)
+
+### Symptoms (historical)
+
+- Track Setup shows "Acquiring GPS…" **forever**, not just for a cold-fix duration
+- Satellite count and accuracy frozen at their last values, or never populated
+- Both CAPTURE buttons remain disabled indefinitely
+- Backing out to Home and re-entering Track Setup clears it — the giveaway
+
+### Signals
+
+| Signal | Meaning |
+|--------|---------|
+| GPS status stuck after a screen-off | Subscription was torn down and never restored |
+| Recovery only after re-navigating to the screen | View recreation, not resubscription, is what fixed it |
+| Measured TTFF (About screen) small while the user reports a long wait | The wait was this defect, not GNSS physics |
+
+### Likely Cause
+
+`TrackSetupFragment` subscribed to location exactly once, from `onViewCreated()`, while
+`onStop()` removed updates. The fragment view survives a stop/start cycle, so
+`onViewCreated()` does not run again — nothing ever resubscribed. Every screen-off,
+notification pull or app switch therefore killed location updates permanently. This is
+overwhelmingly likely while walking to the track edge.
+
+### Common Triggers
+
+- Screen timeout / manual screen-off while walking to the start/finish line
+- Switching apps (camera, messages) mid-setup
+- Any system dialog that stops the activity
+
+### Permanent Fix — IMPLEMENTED
+
+`TrackSetupFragment` now collects through
+`viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED)` over the injected
+`LocationUpdates` abstraction. The subscription is structurally tied to the STARTED state:
+it is torn down on stop and recreated on start, with no manual `onStop()` override to get
+out of sync. The former `FusedLocationProviderClient`/`LocationCallback` pair was removed.
+
+### Regression Guard
+
+`TrackSetupResubscribeTest` (L2) drives the activity to `CREATED` and back to `RESUMED` and
+asserts the subscription count increases and capture still unlocks on an accurate fix. With
+the old code the count stays at 1 and the screen never recovers.
+
+### Generalisation
+
+Any `Flow` subscription created in `onViewCreated()` and cancelled in `onStop()` has this
+bug. Audit for the pattern rather than fixing instances one at a time — `repeatOnLifecycle`
+is the correct construct.
+
+### Confidence
+
+**HIGH** — Defect and fix both verified in `TrackSetupFragment`; guarded at L2.
+
+---
+
 ## Pattern: Foreground Service Start Blocked (Android 12+)
 
 ### Symptoms
