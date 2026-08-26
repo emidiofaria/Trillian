@@ -10,6 +10,8 @@
 [![Requirements](https://img.shields.io/badge/SRS-117%20requirements-blue)]()
 [![SDLC](https://img.shields.io/badge/SDLC-AI--First-orange)]()
 
+
+An Android driving coach built entirely by AI agents using specification-driven development, Test Driven Development and a V-model-inspired verification process.
 ---
 
 ## The Audacious Premise
