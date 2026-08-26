@@ -9,6 +9,8 @@ import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.location.GpsReadiness
+import com.drivingcoach.data.location.LocationWarmUp
 import com.drivingcoach.service.TelemetryForegroundService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -65,8 +67,24 @@ sealed class HomeEvent {
 class HomeViewModel @Inject constructor(
     private val sessionDao: SessionDao,
     private val lapDao: LapDao,
+    private val locationWarmUp: LocationWarmUp,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
+
+    /**
+     * GPS readiness for the hero chip (SRS TS-16, TS-17).
+     *
+     * Home is the last screen where the user is still busy — reading lap times, deciding
+     * which track to set up — so it is the last chance to pay the cold time-to-first-fix
+     * somewhere other than in front of a disabled Capture button.
+     */
+    val gpsReadiness: StateFlow<GpsReadiness> = locationWarmUp.readiness
+
+    /** Called when Home becomes visible. Idempotent; also refreshes the idle ceiling. */
+    fun startGpsWarmUp() = locationWarmUp.start()
+
+    /** Called when Home stops. Releases the chip so backgrounding never keeps GPS alive. */
+    fun stopGpsWarmUp() = locationWarmUp.stop()
 
     // Single-user MVP: no userId filtering needed
     

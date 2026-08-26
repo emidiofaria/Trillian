@@ -59,6 +59,17 @@
     <string name="about_button">About Trillian</string>
     <string name="about_version_label">Version</string>
     <string name="about_version_format">%1$s (%2$d)</string>
+    <string name="about_gps_label">Last GPS acquisition</string>
+    <string name="about_gps_never">Not measured yet</string>
+    <string name="about_gps_format">%1$s to first fix · %2$s to ±10 m</string>
+    <string name="about_gps_seconds_format">%1$.1f s</string>
+    <string name="about_gps_pending">not reached</string>
+
+    <!-- GPS readiness (Home hero) -->
+    <string name="gps_chip_acquiring">GPS · acquiring…</string>
+    <string name="gps_chip_ready">GPS ready · ±%1$.0f m</string>
+    <string name="gps_chip_acquiring_description">Satellite fix in progress. Wait for GPS ready before setting the start line.</string>
+    <string name="gps_chip_ready_description">Satellite fix ready to %1$.0f metres. You can set the start line now.</string>
 
     <!-- Splash initialisation steps -->
     <string name="splash_step_preferences">Loading preferences…</string>
