@@ -400,7 +400,7 @@ Tap your **Profile** (top right icon) to see:
 
 Tap **About Trillian** at the bottom of the Profile screen. This screen is the permanent home
 for the brand and the engineering note that flashes past on the loading screen, plus the
-**app version** (for example `2.9 (209)`) and your **last GPS acquisition** timings — how
+**app version** (for example `2.91 (291)`) and your **last GPS acquisition** timings — how
 long the last fix took, and how long until it was accurate enough to use.
 
 If you're reporting a problem, this is the screen to quote the version from — and the GPS
@@ -533,7 +533,7 @@ If you're still having issues:
 ### Finding your app version
 
 Open **Profile → About Trillian**. The version is shown near the bottom of the screen, for
-example `2.9 (209)`. Please quote the whole thing, including the number in brackets — it tells
+example `2.91 (291)`. Please quote the whole thing, including the number in brackets — it tells
 us exactly which build you have.
 
 (You can also find it the long way round, via **Settings → Apps → Driving Coach**, but the
