@@ -121,27 +121,61 @@ Forgot your password? Contact support for a reset link.
 
 ## 3. Before Your Track Day
 
+### 3.0 The GPS Badge — Open the App Early
+
+The first GPS fix of the day is the slow one. Your phone has to download fresh satellite data
+before it can tell you where you are, and outdoors from cold that genuinely takes **30 to 60
+seconds**. No app can make that faster — but Driving Coach can make it happen while you're
+still in the paddock instead of while you're standing at the track edge.
+
+**So: open the app a couple of minutes before you walk out.** The moment the Home screen
+appears, the app starts hunting for satellites.
+
+Watch the small badge under the TRILLIAN tagline on Home:
+
+| Badge | Meaning | What to do |
+|-------|---------|------------|
+| *(nothing)* | Not searching — usually location permission isn't granted | Grant location permission (see 2.3) |
+| 🟠 **Acquiring GPS…** | Searching for satellites | Wait — this is the slow part |
+| 🟢 **GPS ready** | Good fix, accurate to 10 m or better | Walk out and capture your line |
+
+**Wait for green before you walk to the start/finish line.** Do that and Track Setup will be
+ready the moment you arrive, instead of making you stand there watching a spinner.
+
+A few practical notes:
+
+- Get out from under a roof, an awning or a garage — GPS needs a clear view of the sky.
+- Searching stops when you leave the app, and after 3 minutes of sitting on Home, so it
+  doesn't quietly drain your battery. Just reopen Home and it starts again.
+- The badge is only about *readiness*. Your actual start-line points are always taken fresh,
+  at the moment you tap CAPTURE, from a live reading.
+- Curious how long it actually took? **Profile → About** shows the timings from your last
+  acquisition. That's the number to quote if you ever report a slow lock.
+
 ### 3.1 Setting Up the Start/Finish Line
 
 Before recording, you need to tell the app where your start/finish line is. This lets the app automatically split your session into individual laps.
 
 **How to capture the line:**
 
-1. From the Home screen, tap the **+** button (Start New Session)
-2. You'll see the **Track Setup** screen
-3. Walk to **one edge** of the track at the start/finish line
-4. Wait for GPS accuracy to show **< 5 meters** (the better, the better!)
-5. Tap **Capture Point A**
-6. Walk across the track to the **opposite edge** of the start/finish line
-7. Tap **Capture Point B**
-8. You'll see the distance between points — it should be roughly the track width (typically 10-15 meters)
-9. Tap **Start Recording** when ready
+1. Open the app and wait for the **🟢 GPS ready** badge on Home (see 3.0)
+2. Tap the **+** button (Start New Session)
+3. You'll see the **Track Setup** screen
+4. Walk to **one edge** of the track at the start/finish line
+5. Wait for GPS accuracy to show **< 5 meters** (the better, the better!)
+6. Tap **Capture Point A**
+7. Walk across the track to the **opposite edge** of the start/finish line
+8. Tap **Capture Point B**
+9. You'll see the distance between points — it should be roughly the track width (typically 10-15 meters)
+10. Tap **Start Recording** when ready
 
 **Tips for best results:**
 - Walk to the actual track edge, not the pit lane
 - Wait for good GPS signal before capturing each point
 - The line should cross the entire track width
 - Pick a spot you'll definitely cross every lap (not a chicane)
+- If your screen switches off or you jump to another app mid-setup, that's fine — GPS picks
+  straight back up when you return to the screen
 
 ### 3.2 Phone Mounting Tips
 
@@ -366,9 +400,11 @@ Tap your **Profile** (top right icon) to see:
 
 Tap **About Trillian** at the bottom of the Profile screen. This screen is the permanent home
 for the brand and the engineering note that flashes past on the loading screen, plus the
-**app version** (for example `2.8 (208)`).
+**app version** (for example `2.9 (209)`) and your **last GPS acquisition** timings — how
+long the last fix took, and how long until it was accurate enough to use.
 
-If you're reporting a problem, this is the screen to quote the version from.
+If you're reporting a problem, this is the screen to quote the version from — and the GPS
+timings too, if the problem was a slow lock.
 
 ### 6.4 Signing Out
 
@@ -391,6 +427,11 @@ If you're reporting a problem, this is the screen to quote the version from.
 3. Restart the app
 4. Toggle Location off/on in your phone settings
 5. Wait 1-2 minutes for GPS lock
+6. Open the app early and wait for the **🟢 GPS ready** badge on Home before walking out
+   (see 3.0) — the first fix of the day is always the slow one
+7. Check **Profile → About**: it shows how long your last fix actually took. If that number
+   is small but you waited a long time, mention it when you report the problem — it means
+   something other than satellite reception was at fault
 
 ### Session Stuck on "Processing"
 
@@ -492,7 +533,7 @@ If you're still having issues:
 ### Finding your app version
 
 Open **Profile → About Trillian**. The version is shown near the bottom of the screen, for
-example `2.8 (208)`. Please quote the whole thing, including the number in brackets — it tells
+example `2.9 (209)`. Please quote the whole thing, including the number in brackets — it tells
 us exactly which build you have.
 
 (You can also find it the long way round, via **Settings → Apps → Driving Coach**, but the

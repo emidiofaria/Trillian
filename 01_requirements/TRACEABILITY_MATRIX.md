@@ -2,7 +2,7 @@
 
 Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test cases.
 
-**Last Updated:** 2026-08-11 (updated by trillian-docs-sync — brand asset geometry UI-08, UI-09 added and covered at L1)
+**Last Updated:** 2026-08-12 (updated by trillian-docs-sync — GPS warm-up TS-16 to TS-20 added, TS-15 amended and now covered)
 
 ---
 
@@ -12,7 +12,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 |----------|--------------|---------|----------|
 | User Management (UM) | 19 | 0 | 0% ❌ |
 | Onboarding (ON) | 8 | 0 | 0% ❌ |
-| Track Setup (TS) | 15 | 6 | 40% ⚠️ |
+| Track Setup (TS) | 20 | 12 | 60% ⚠️ |
 | Session Recording (SR) | 11 | 4 | 36% ⚠️ |
 | Telemetry Capture (TC) | 12 | 4 | 33% ⚠️ |
 | Telemetry Upload (TU) | 13 | 4 | 31% ⚠️ |
@@ -26,7 +26,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Startup & Branding (UI) | 9 | 9 | 100% ✅ |
 | Non-Functional (NF) | 13 | 1 | 8% ⚠️ |
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
-| **TOTAL** | **~188** | **~46** | **~24%** |
+| **TOTAL** | **~193** | **~52** | **~27%** |
 
 > ⚠️ **Coverage caveat — `@Ignore`d L2 classes.** Eight rows below cite
 > `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or
@@ -60,6 +60,12 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | TS-06 | Point B disabled initially | L2 | `TrackSetupFragmentTest` | ✅ |
 | TS-08 | Haversine distance | L1 | `GeoUtilsTest` | ✅ |
 | TS-12 | Start Recording disabled | L2 | `TrackSetupFragmentTest` | ✅ |
+| TS-15 | Fused updates; resubscribe after stop/start | L2 | `TrackSetupResubscribeTest` (executing, not `@Ignore`d) | ✅ |
+| TS-16 | Warm-up starts when Home becomes visible | L1 + L2 | `LocationWarmUpTest`, `HomeViewModelTest`, `HomeGpsChipTest` | ✅ |
+| TS-17 | Home GPS readiness chip states | L1 + L2 | `LocationWarmUpTest`, `HomeGpsChipTest` | ✅ |
+| TS-18 | Warm-up stops on background / 3 min idle ceiling | L1 + L2 | `LocationWarmUpTest`, `HomeViewModelTest`, `HomeGpsChipTest` | ✅ |
+| TS-19 | Time-to-first-fix metrics recorded and shown on About | L1 | `LocationWarmUpTest` | ✅ |
+| TS-20 | Warm-up exposes readiness only, never a position | L1 | `LocationWarmUpTest` | ✅ |
 | **Session Recording** | | | | |
 | SR-04 | Elapsed time MM:SS.mmm | L2 | `TelemetryForegroundServiceTest` | ✅ |
 | SR-05 | GPS status indicator | L2 | `TelemetryForegroundServiceTest` | ✅ |

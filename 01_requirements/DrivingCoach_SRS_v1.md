@@ -149,7 +149,12 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | TS-12 | The 'START RECORDING' button shall remain disabled until both points are captured and the line passes validation (≥3m). |
 | TS-13 | On 'START RECORDING', the two lat/lng pairs (startLineLat1, startLineLng1, startLineLat2, startLineLng2) shall be stored in the `SessionEntity` in Room. |
 | TS-14 | The instruction text shall read: "Walk to each edge of the track at the start/finish line and capture two GPS points." |
-| TS-15 | The app shall use Android LocationManager with GPS_PROVIDER for location updates with 1-second interval and 0-metre minimum distance. |
+| TS-15 | The app shall request location updates through `FusedLocationProviderClient` at `PRIORITY_HIGH_ACCURACY` with a 1-second interval, behind the `LocationUpdates` abstraction. Track Setup shall subscribe whenever its view is at least STARTED and unsubscribe when it is not, so that location updates resume after a screen-off, app switch or any other stop/start cycle. |
+| TS-16 | The app shall begin acquiring a GPS fix as soon as the Home screen becomes visible, so that the time-to-first-fix elapses while the user is still preparing rather than while standing at the start/finish line. |
+| TS-17 | The Home screen shall display a GPS readiness chip reflecting acquisition state: hidden when idle, "Acquiring GPS…" (amber) while no fix of ≤10 m accuracy has been received, and "GPS ready" (green) once one has. |
+| TS-18 | GPS warm-up shall stop when the Home screen is no longer visible, and shall stop automatically after 3 minutes of continuous warm-up without a recording starting, so that the receiver is not held open indefinitely. |
+| TS-19 | The app shall record the time-to-first-fix and the time-to-first-accurate-fix (≤10 m) of the most recent acquisition and display them on the About screen, so that GPS acquisition delays reported by users can be diagnosed with measured evidence. |
+| TS-20 | Warm-up shall expose readiness only and shall never supply a position to start/finish line capture; captured points shall always come from a live location update that independently satisfies the ≤10 m accuracy gate. |
 
 ---
 

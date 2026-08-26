@@ -265,6 +265,92 @@ OnboardingFragment.onViewCreated()
 
 ---
 
+## Flow: GPS Warm-Up (Home)
+
+### Goal
+
+Absorb the GNSS time-to-first-fix (TTFF) while the user is still on the Home screen, so that
+the 30–60 s cold-fix wait does not land on Track Setup where the user is standing at the
+track edge unable to do anything (SRS TS-16 to TS-20).
+
+### Trigger
+
+- `HomeFragment.onStart()` — every time Home becomes visible
+
+### Execution Path
+
+```
+HomeFragment.onStart()
+→ HomeViewModel.startGpsWarmUp()
+  → LocationWarmUp.start()
+    → if already running: restartIdleCeiling() and return   (idempotent)
+    → readiness = Acquiring
+    → locationUpdates.updates(intervalMs = 1000)
+      → FusedLocationUpdates.positionUpdates() via callbackFlow, PRIORITY_HIGH_ACCURACY
+    → [CONTINUOUS] onFix(LocationFix)
+        → first fix ever this cycle       → record timeToFirstFixMs
+        → first fix with accuracy ≤ 10 m  → record timeToAccurateFixMs
+                                          → readiness = Ready(accuracyM)
+        → GpsAcquisitionMetricsStore.record(...)   [DATASTORE WRITE, non-fatal]
+    → [PARALLEL] idle ceiling: delay(180_000) → stop()
+→ HomeViewModel.gpsReadiness (StateFlow) → HomeFragment.updateGpsChip()
+    Idle      → chip gone
+    Acquiring → amber "Acquiring GPS…"
+    Ready     → green "GPS ready"
+
+HomeFragment.onStop()
+→ HomeViewModel.stopGpsWarmUp() → LocationWarmUp.stop()
+  → cancel collection job, cancel ceiling job, readiness = Idle
+```
+
+### Async Boundaries
+
+| Boundary | Type | Location |
+|----------|------|----------|
+| Location updates | `callbackFlow` | `FusedLocationUpdates.positionUpdates()` |
+| Warm-up collection | `@ApplicationScope CoroutineScope` job | `LocationWarmUp.start()` |
+| Idle ceiling | Separate coroutine `delay(180 s)` | `LocationWarmUp.restartIdleCeiling()` |
+| Readiness observation | `StateFlow` + `repeatOnLifecycle(STARTED)` | `HomeFragment` |
+
+### Persistence Boundaries
+
+| Storage | Data | Trigger |
+|---------|------|---------|
+| DataStore `gps_acquisition` | `timeToFirstFixMs`, `timeToAccurateFixMs`, `recordedAtMs` | Each acquisition milestone |
+
+### External Dependencies
+
+- GPS hardware, `FusedLocationProviderClient`, Google Play Services Location API
+
+### Safety Invariant
+
+`LocationWarmUp` exposes **readiness only — never a `Location`**. A stale warm-up fix reused
+as Point A would silently offset the start/finish line and corrupt every lap time in the
+session. Capture reads live updates and applies its own ≤10 m accuracy gate (SRS TS-20).
+
+### Failure Points
+
+| Stage | Failure | Symptom | Propagation |
+|-------|---------|---------|-------------|
+| Permission not granted | `hasPermission()` false | Chip stays hidden | Warm-up no-ops; Track Setup still prompts |
+| Indoors / no sky view | No fix arrives | Chip stuck amber | Same latency as before the feature — no regression |
+| Idle ceiling fires | 3 min with Home visible | Chip returns to hidden | Re-entering Home restarts warm-up |
+| DataStore write fails | I/O error | Metrics missing on About | Caught, non-fatal; warm-up continues |
+
+### Operational Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `GpsReadiness` | `HomeViewModel.gpsReadiness` | Idle / Acquiring / Ready(accuracy) |
+| Time-to-first-fix | About screen | How long any fix took |
+| Time-to-accurate-fix | About screen | How long a usable (≤10 m) fix took |
+
+> **Diagnostic value.** The reported 45 s wait was never measured. These two numbers make the
+> next report evidence-based: a large TTFF is cold-fix physics, a small TTFF with a large
+> user-perceived wait points at a subscription/lifecycle defect instead.
+
+---
+
 ## Flow: Track Setup (Start Line Capture)
 
 ### Goal
@@ -287,11 +373,11 @@ HomeFragment: User taps FAB
 → HomeFragment observes event
   → findNavController().navigate(actionHomeToTrackSetup)
 → TrackSetupFragment.onViewCreated()
-  → fusedLocationClient = LocationServices.getFusedLocationProviderClient()
   → checkPermissionsAndStart()
-→ startLocationUpdates()
-  → fusedLocationClient.requestLocationUpdates(PRIORITY_HIGH_ACCURACY, 1000ms)
-→ [CONTINUOUS] locationCallback.onLocationResult()
+→ collectLocationUpdates()
+  → viewLifecycleOwner.repeatOnLifecycle(STARTED)      (resubscribes after every stop/start)
+    → locationUpdates.positionUpdates(1000ms)          (LocationUpdates abstraction)
+→ [CONTINUOUS] onLocation(location)
   → TrackSetupViewModel.updateGpsStatus(accuracy, satelliteCount)
 → User walks to track edge A, taps "Capture A"
   → TrackSetupViewModel.setPointA(location)
@@ -309,11 +395,15 @@ HomeFragment: User taps FAB
     → viewModel.startRecording(newSessionId)
 ```
 
+> By the time this flow runs, the receiver is normally already warm from the Home warm-up
+> flow above, so the fix here is a hot/warm reacquisition (seconds) rather than a cold TTFF.
+
 ### Async Boundaries
 
 | Boundary | Type | Location |
 |----------|------|----------|
-| Location updates | `LocationCallback` | `onLocationResult()` |
+| Location updates | `Flow<Location>` from `LocationUpdates` | `collectLocationUpdates()` |
+| Subscription lifecycle | `repeatOnLifecycle(STARTED)` | `TrackSetupFragment` |
 | State observation | `StateFlow.collectLatest` | `TrackSetupFragment` |
 | Session creation | `viewModelScope.launch` | `RecordingViewModel` |
 
@@ -325,7 +415,7 @@ HomeFragment: User taps FAB
 
 ### External Dependencies
 
-- GPS hardware (via `FusedLocationProviderClient`)
+- GPS hardware (via `FusedLocationProviderClient`, behind `LocationUpdates`)
 - Google Play Services Location API
 
 ### Failure Points
@@ -335,6 +425,7 @@ HomeFragment: User taps FAB
 | GPS acquisition | No location updates | "Acquiring GPS..." indefinitely | Buttons disabled |
 | Permission | Denied | Snackbar, navigate back | Flow blocked |
 | Points too close | Distance < 3m | "Minimum 3m required" hint | Cannot proceed |
+| Screen-off / app switch | *(fixed)* subscription never restored | Was: permanent "Acquiring GPS..." | See failure-patterns: Location Subscription Not Restored |
 
 ### Operational Signals
 
