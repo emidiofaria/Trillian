@@ -2,7 +2,7 @@
 
 ### *"I Swear I Didn't Write a Single Line"*
 
-> An AI Driving Coach built entirely with an AI-first approach — spec, code, tests, ops, docs — with ZERO human-written code.
+> An Android Driving Coach built entirely with an AI-first approach — spec, code, tests, ops, docs — with ZERO human-written code.  using specification-driven development, Test Driven Development and a V-model-inspired verification process. 
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
 [![Tests](https://img.shields.io/badge/tests-84%20passing-brightgreen)]()
@@ -10,8 +10,6 @@
 [![Requirements](https://img.shields.io/badge/SRS-117%20requirements-blue)]()
 [![SDLC](https://img.shields.io/badge/SDLC-AI--First-orange)]()
 
-
-An Android driving coach built entirely by AI agents using specification-driven development, Test Driven Development and a V-model-inspired verification process.
 ---
 
 ## The Audacious Premise
