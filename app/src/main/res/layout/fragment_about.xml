@@ -128,6 +128,26 @@
                 android:layout_marginTop="@dimen/spacing_xs"
                 tools:text="2.8 (208)" />
 
+            <!--
+                GPS diagnostics (SRS TS-19). Readable without a cable, because the
+                measurement that matters is taken at a racetrack.
+            -->
+            <TextView
+                android:id="@+id/gpsLabel"
+                style="@style/TextAppearance.DrivingCoach.Footer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:text="@string/about_gps_label" />
+
+            <TextView
+                android:id="@+id/gpsValue"
+                style="@style/TextAppearance.DrivingCoach.Kicker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                tools:text="4.2 s to first fix · 11.0 s to ±10 m" />
+
             <TextView
                 android:id="@+id/footerMetrics"
                 style="@style/TextAppearance.DrivingCoach.Footer"

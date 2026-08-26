@@ -104,6 +104,84 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 
 ---
 
+## Component: GPS Warm-Up (`LocationWarmUp`)
+
+### Purpose
+
+Starts GNSS acquisition as soon as the Home screen is visible so that the cold time-to-first-fix
+(TTFF, typically 30–60 s: ephemeris download) elapses while the user is still preparing, instead
+of on the Track Setup screen where they are standing at the track edge with nothing to do.
+Publishes readiness for the Home hero chip and records TTFF metrics for diagnosis.
+
+Implements SRS TS-16 to TS-20.
+
+### Key Code Areas
+
+- `data/location/LocationWarmUp.kt` — `@Singleton` state machine; `start()` / `stop()` / `onFix()`
+- `data/location/LocationUpdates.kt` — abstraction seam; `positionUpdates()` (raw `Location`) and `updates()` (reduced `LocationFix`)
+- `data/location/FusedLocationUpdates.kt` — Play Services impl, `callbackFlow` + `PRIORITY_HIGH_ACCURACY`
+- `data/location/GpsReadiness.kt` — `Idle | Acquiring | Ready(accuracyM)`, `READY_ACCURACY_M = 10f`
+- `data/location/WarmUpTimings.kt` — `intervalMs = 1000`, `idleCeilingMs = 180_000`
+- `data/location/GpsAcquisitionMetricsStore.kt` — DataStore-backed TTFF metrics
+- `di/LocationModule.kt` — `@Binds LocationUpdates`, `@ApplicationScope CoroutineScope`, timings
+- `ui/home/HomeViewModel.kt` / `HomeFragment.kt` — lifecycle wiring and the readiness chip
+- `ui/about/AboutFragment.kt` — renders the last acquisition metrics
+
+### Dependencies
+
+- `FusedLocationProviderClient` (Google Play Services Location)
+- DataStore Preferences (metrics only)
+- `@ApplicationScope CoroutineScope` — warm-up outlives a single fragment view
+
+### Inputs
+
+- `HomeFragment.onStart()` / `onStop()`
+- Location fixes (accuracy in metres, timestamp)
+
+### Outputs
+
+- `StateFlow<GpsReadiness>` — consumed by `HomeViewModel.gpsReadiness`
+- `GpsAcquisition(timeToFirstFixMs, timeToAccurateFixMs, recordedAtMs)` in DataStore
+
+### Safety Invariant
+
+**Readiness only — never a `Location`.** Handing a warm-up position to start-line capture would
+let a stale fix become Point A and silently offset every lap time in the session. Capture
+subscribes to live updates and applies its own ≤10 m gate (SRS TS-20).
+
+### Design Notes
+
+| Decision | Rationale |
+|----------|-----------|
+| Two-method `LocationUpdates` | `updates()` reduces to `LocationFix` so warm-up logic is JVM-testable; `android.location.Location` is a stub on the JVM and reports accuracy 0 |
+| Idempotent `start()` | Repeated Home visits refresh the idle ceiling instead of stacking subscriptions |
+| 3-minute idle ceiling | Bounds battery/receiver cost if the app is left open on Home |
+| Secondary `@Inject constructor` | Dagger cannot inject the `now: () -> Long` clock lambda used by tests |
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| Permission not granted | Chip stays hidden, no warm-up | `hasPermission()` false — Track Setup still prompts |
+| No fix indoors | Chip stuck amber "Acquiring GPS…" | No sky view; identical latency to pre-feature behaviour |
+| Idle ceiling reached | Chip disappears after 3 min | By design; re-entering Home restarts |
+| Metrics write fails | About shows no acquisition data | DataStore I/O — caught, non-fatal |
+
+### Observable Signals
+
+| Signal | Location |
+|--------|----------|
+| GPS chip state (hidden / amber / green) | Home hero |
+| Time-to-first-fix, time-to-accurate-fix | About screen |
+| `GpsReadiness` | `HomeViewModel.gpsReadiness` |
+
+### Criticality
+
+**MEDIUM** — Not on the data-capture path. Failure degrades to the previous behaviour
+(waiting for the fix on Track Setup); it cannot corrupt telemetry or lap times.
+
+---
+
 ## Component: Local Lap Detector
 
 ### Purpose

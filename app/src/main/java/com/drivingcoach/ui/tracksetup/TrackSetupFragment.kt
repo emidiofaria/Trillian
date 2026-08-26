@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.GradientDrawable
 import android.location.Location
 import android.os.Bundle
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,18 +19,14 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.drivingcoach.R
+import com.drivingcoach.data.location.LocationUpdates
 import com.drivingcoach.databinding.FragmentTrackSetupBinding
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Locale
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class TrackSetupFragment : Fragment() {
@@ -43,8 +38,20 @@ class TrackSetupFragment : Fragment() {
     
     private val args: TrackSetupFragmentArgs by navArgs()
 
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    @Inject
+    lateinit var locationUpdates: LocationUpdates
+
     private var currentLocation: Location? = null
+
+    /**
+     * The permission prompt is asked at most once per screen visit. Without this, a denial
+     * would re-prompt every time the screen restarts — including the restart that follows
+     * the denial dialog itself — trapping the user in a loop.
+     */
+    private var permissionRequested = false
+
+    /** Guards against two collectors being started for the same view. */
+    private var collecting = false
 
     private val requiredPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -56,31 +63,9 @@ class TrackSetupFragment : Fragment() {
     ) { permissions ->
         val allGranted = permissions.entries.all { it.value }
         if (allGranted) {
-            startLocationUpdates()
+            collectLocationUpdates()
         } else {
             showPermissionDeniedMessage()
-        }
-    }
-
-    private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation?.let { location ->
-                currentLocation = location
-                viewModel.updateGpsStatus(
-                    accuracy = location.accuracy,
-                    satelliteCount = if (location.extras?.containsKey("satellites") == true) {
-                        location.extras?.getInt("satellites") ?: 0
-                    } else {
-                        // Estimate based on accuracy (emulator fallback)
-                        when {
-                            location.accuracy <= 5f -> 12
-                            location.accuracy <= 10f -> 8
-                            location.accuracy <= 20f -> 5
-                            else -> 3
-                        }
-                    }
-                )
-            }
         }
     }
 
@@ -95,8 +80,6 @@ class TrackSetupFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
         setupUI()
         observeViewModel()
@@ -215,34 +198,58 @@ class TrackSetupFragment : Fragment() {
         }
 
         if (missingPermissions.isEmpty()) {
-            startLocationUpdates()
-        } else {
+            collectLocationUpdates()
+        } else if (!permissionRequested) {
+            permissionRequested = true
             permissionLauncher.launch(missingPermissions.toTypedArray())
         }
     }
 
-    private fun startLocationUpdates() {
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
+    /**
+     * Collects fixes for as long as the screen is STARTED.
+     *
+     * [repeatOnLifecycle] restarts the collection on every return to STARTED, which is the
+     * whole point: subscribing once at view creation meant a screen-off, notification pull
+     * or app switch tore the updates down for good, leaving "Acquiring GPS..." on screen
+     * forever rather than for 45 seconds (SRS TS-15).
+     *
+     * Guarded so the permission callback and [onViewCreated] cannot both start a collector.
+     */
+    private fun collectLocationUpdates() {
+        if (collecting) return
+        collecting = true
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                locationUpdates.positionUpdates(LOCATION_INTERVAL_MS).collect(::onLocation)
+            }
         }
+    }
 
-        val locationRequest = LocationRequest.Builder(
-            Priority.PRIORITY_HIGH_ACCURACY,
-            1000L // 1 second interval
-        ).apply {
-            setMinUpdateIntervalMillis(500L)
-            setWaitForAccurateLocation(false)
-        }.build()
-
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.getMainLooper()
+    private fun onLocation(location: Location) {
+        currentLocation = location
+        viewModel.updateGpsStatus(
+            accuracy = location.accuracy,
+            satelliteCount = satelliteCountOf(location)
         )
+    }
+
+    /**
+     * Fused location does not carry a satellite count on every device, and emulators never
+     * do, so accuracy stands in for it (SRS TS-03). The displayed count is indicative; the
+     * capture gate is driven by accuracy, which is always present.
+     */
+    private fun satelliteCountOf(location: Location): Int {
+        val reported = location.extras?.takeIf { it.containsKey(SATELLITES_KEY) }
+            ?.getInt(SATELLITES_KEY)
+        if (reported != null && reported > 0) return reported
+
+        return when {
+            location.accuracy <= 5f -> 12
+            location.accuracy <= 10f -> 8
+            location.accuracy <= 20f -> 5
+            else -> 3
+        }
     }
 
     private fun showPermissionDeniedMessage() {
@@ -270,13 +277,16 @@ class TrackSetupFragment : Fragment() {
         findNavController().navigate(action)
     }
 
-    override fun onStop() {
-        super.onStop()
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
+        // The collector is scoped to the view lifecycle, so it is already gone; the flag has
+        // to follow it or a recreated view would never resubscribe.
+        collecting = false
         _binding = null
+    }
+
+    private companion object {
+        const val LOCATION_INTERVAL_MS = 1000L
+        const val SATELLITES_KEY = "satellites"
     }
 }
