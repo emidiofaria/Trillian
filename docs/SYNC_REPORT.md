@@ -4,6 +4,90 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-08-26] Session Telemetry Export (Developer Share)
+
+**Codebase Version:** v2.9 (branch `FT-Dev-telemtry-export`)  
+**Trigger:** Hidden developer telemetry export + fixing silent share failures
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| components.md | ✅ Updated | +63 lines (1 new component: Session Share & Telemetry Export) |
+| flows.md | ✅ Updated | +87 lines (1 new flow: Session Share, both branches) |
+| failure-patterns.md | ✅ Updated | +86 lines (2 new patterns: FP-TEST-HANG, FP-TEST-WORKMANAGER) |
+| DrivingCoach_SRS_v1.md | ✅ Updated | +5 requirements (SH-07 → SH-11) |
+| TRACEABILITY_MATRIX.md | ✅ Updated | +1 row (SH-07→11) |
+| USER_MANUAL.md | ✅ Updated | New §6.1.1 "Sending a Diagnostic File" + share error note |
+| 80_SHARE_AND_PROFILE_TESTS.md | ✅ Updated | +4 acceptance tests (SHARE-07 → SHARE-10) |
+| L2_SWE5_integration/README.md | ✅ Updated | Test tree + new "Espresso Prerequisites" section |
+
+### New Requirement IDs
+
+- **SH-07** — hidden telemetry export via long-press, event consumed (no tooltip)
+- **SH-08** — ZIP bundle: `telemetry.jsonl` (byte-for-byte) + `session.json` (diagnostics)
+- **SH-09** — shared as `application/zip` via `ACTION_SEND` + FileProvider
+- **SH-10** — share failures surfaced via Snackbar; never silent
+- **SH-11** — **read-only invariant**: sharing never modifies recorded session data
+
+### New Test IDs
+
+| Level | IDs |
+|-------|-----|
+| L1 | 14 tests in `SessionShareBuilderTest` |
+| L2 | 6 tests in `SessionShareTest` (SH-07, SH-08, SH-10, SH-11) |
+| L4 | SHARE-07, SHARE-08, SHARE-09, SHARE-10 |
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 | **134 / 134 passed**, 0 skipped |
+| L2 | **36 tests, 0 failures**, 4 pre-existing `@Ignore` skips; all 6 share tests executed |
+| Mutation check (L1) | Made the builder delete its source file → **4 read-only tests failed** as designed |
+| Mutation check (L2) | Detached `attachTelemetryExportGesture()` → **3 gesture tests failed** as designed |
+
+### Notes
+
+- Plan deviation: the planned L1 test *"image path yields an `image/png` intent"* is not
+  JVM-testable (`Bitmap.compress` is stubbed by `isReturnDefaultValues`, and `FileProvider`
+  needs a real context). That coverage moved to L2 (`tappingShareSendsTheSessionCardImage`).
+- Two pre-existing defects fixed along the way: share failures were caught and discarded
+  (`// Handle error silently`), and share-card cache files were never pruned.
+- Two test-infrastructure gaps fixed: the emulator never disabled animations, and
+  `TestNetworkModule` could not provide a `WorkManager` under instrumentation (which crashed
+  the whole instrumentation process for any WorkManager-backed screen).
+
+### Files Modified
+
+```
+A  app/src/main/java/com/drivingcoach/util/SessionShareBuilder.kt          (+221)
+A  app/src/test/java/com/drivingcoach/util/SessionShareBuilderTest.kt      (+329)
+A  app/src/androidTest/java/com/drivingcoach/ui/session/SessionShareTest.kt (+276)
+M  app/src/main/java/com/drivingcoach/ui/session/SessionResultFragment.kt  (+130, -20)
+M  app/src/main/res/values/strings.xml                                     (+11)
+M  app/src/androidTest/java/com/drivingcoach/di/TestNetworkModule.kt       (+12, -1)
+M  05_tests/infra/scripts/start-emulator.sh                                (+15)
+M  SkunkOps/atlas/components.md                                            (+63)
+M  SkunkOps/atlas/flows.md                                                 (+87)
+M  SkunkOps/atlas/failure-patterns.md                                      (+86)
+M  01_requirements/DrivingCoach_SRS_v1.md                                  (+5)
+M  01_requirements/TRACEABILITY_MATRIX.md                                  (+1)
+M  docs/USER_MANUAL.md                                                     (+26)
+M  05_tests/L4_SYS5_acceptance/80_SHARE_AND_PROFILE_TESTS.md               (+65)
+M  05_tests/L2_SWE5_integration/README.md                                  (+24, -1)
+```
+
+### Recommendations
+
+- [ ] The long-press gesture is inherently fragile (no compile-time anchor). If
+      `SessionShareTest` is ever `@Ignore`d, the export is effectively unprotected.
+- [ ] Consider surfacing the export in a developer-options screen once one exists.
+- [ ] Deferred: backend/Android `MIN_DISTANCE_FROM_START_M` mismatch (200 m vs 50 m) and
+      the live lap display feature.
+
+---
+
 ## [2026-08-12] Splash Display Budget Anchored to the Platform Handoff
 
 **Codebase Version:** v2.8  
