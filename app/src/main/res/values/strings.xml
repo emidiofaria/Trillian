@@ -76,4 +76,15 @@
     <string name="splash_step_database">Opening session database…</string>
     <string name="splash_step_uploads">Checking pending uploads…</string>
     <string name="splash_step_ready">Ready</string>
+
+    <!-- Session sharing -->
+    <string name="share_card_text">Check out my lap time at %1$s! 🏎️</string>
+    <string name="share_card_chooser_title">Share your achievement</string>
+    <string name="share_export_preparing">Preparing telemetry export…</string>
+    <string name="share_export_chooser_title">Export telemetry bundle</string>
+    <string name="share_export_text">Driving Coach telemetry export — %1$s. Contains GPS location data for this session.</string>
+    <string name="share_error_generic">Couldn\'t share this session. Please try again.</string>
+    <string name="share_error_session_unavailable">Session details aren\'t loaded yet.</string>
+    <string name="share_error_telemetry_missing">Telemetry file is no longer available for this session.</string>
+    <string name="share_error_export_failed">Couldn\'t build the telemetry export.</string>
 </resources>

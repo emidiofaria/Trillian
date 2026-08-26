@@ -1320,3 +1320,89 @@ the platform's own first-frame marker to ~17 ms.
 | 2026-08-11 | Introduction window shipped with the budget anchored to `start()` |
 | 2026-08-12 | User reported the manifesto still unreadable; `doOnPreDraw` anchor measured ~1.2 s early |
 | 2026-08-12 | Re-anchored to the platform splash exit via `SplashVisibilitySignal`; error now ~17 ms |
+
+---
+
+## Pattern: Instrumented Test Hangs Forever Instead of Failing (FP-TEST-HANG)
+
+### Symptoms
+
+- A `connectedAndroidTest` run reaches `TestRunner: started: <test>` and then produces no
+  further output. Ever. No failure, no timeout, no stack trace.
+- The emulator is alive and responsive; `adb devices` is healthy.
+- CI or a human eventually kills the run, and the JUnit XML shows an empty `<failure></failure>`
+  or nothing at all.
+
+### Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `I/MonitoringInstr: Stubbing intent Intent { act=MAIN ... cmp=<pkg>/.testing.HiltTestActivity }` | Logcat | **The test stubbed its own host activity launch.** The screen will never appear |
+| `testTimeoutSeconds=31536000` in `AndroidJUnitRunner: onCreate Bundle[...]` | Logcat | The default per-test timeout is *one year* — nothing will rescue a stuck test |
+| Last `TestRunner: started:` with no matching `finished:` | Logcat | Identifies the exact stuck test |
+
+### Root Causes
+
+| Cause | Mechanism |
+|-------|-----------|
+| `Intents.intending(anyIntent())` called **before** launching the screen | Espresso-Intents stubs *every* outgoing intent, including the one `launchFragmentInHiltContainer`/`ActivityScenario` uses to start the host activity. The activity never starts and the launch blocks forever |
+| An Espresso call wrapped in a polling loop (`awaitUntil { runCatching { onView(...) } }`) | `onView` blocks internally until the UI thread is idle. Wrapping it cannot impose a deadline — the loop never gets control back, so the wrapper's timeout is decorative |
+| A never-ending animation on screen | Espresso synchronises on UI-thread idleness. An indeterminate `ProgressBar` (upload spinner, loading indicator) never lets the thread go idle |
+
+### Mitigations
+
+- **Never stub `anyIntent()` before the screen is up.** Call `Intents.init()` *after* the
+  fragment/activity is displayed and stub the narrowest matcher that works — for a share
+  sheet, `hasAction(Intent.ACTION_CHOOSER)`.
+- **Never wrap `onView`/`intended` in a retry loop for synchronisation.** Espresso already
+  waits. Use a bare call and let it fail. Use polling only for genuinely off-thread results
+  (work handed to `Dispatchers.IO`), and accept that such a poll is bounded only if the
+  Espresso call inside it can return.
+- **Disable animations on the emulator.** `start-emulator.sh` now sets
+  `window_animation_scale`, `transition_animation_scale` and `animator_duration_scale` to 0.
+  This is a documented Espresso prerequisite, not an optimisation.
+- **Seed test state that avoids indeterminate spinners** (e.g. a `COMPLETE`/`DONE` session
+  rather than one mid-upload).
+- When a run does hang, read `adb logcat -s TestRunner:I` for the last `started:` line, then
+  the surrounding logcat for `MonitoringInstr`. Do not guess.
+
+### Confidence
+
+**HIGH** — reproduced and fixed on 2026-08-26 while adding `SessionShareTest`; the
+`Stubbing intent ... HiltTestActivity` line named the cause exactly.
+
+---
+
+## Pattern: WorkManager Uninitialised Under Instrumentation (FP-TEST-WORKMANAGER)
+
+### Symptoms
+
+- Instrumentation dies with `Process crashed.` almost immediately after a test starts.
+- Gradle reports a failure with an empty `<failure></failure>` body; `adb logcat -b crash` is empty.
+- Only tests that open a screen backed by a WorkManager-injecting ViewModel are affected.
+
+### Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `IllegalStateException: WorkManager is not initialized properly.` | Logcat (`TestRunner`, `MonitoringInstr`) | The app disables `WorkManagerInitializer` in its manifest and initialises WorkManager itself — which never happens under instrumentation |
+| `at ...TestNetworkModule.provideWorkManager` | Stack trace | Hilt tried to satisfy a `WorkManager` dependency |
+| `W/ActivityManager: Crash of app com.drivingcoach running instrumentation` | Logcat | The whole test process, not just one test, is gone |
+
+### Mitigation
+
+`TestNetworkModule.provideWorkManager` falls back to
+`WorkManagerTestInitHelper.initializeTestWorkManager(context)` when `getInstance` throws.
+The test initialiser installs a test driver, so enqueued work stays parked behind its
+constraints rather than firing real uploads during a UI test.
+
+### Lesson
+
+A crash inside DI takes down the entire instrumentation process, so the JUnit XML is
+useless and the crash buffer may be empty. The stack trace exists **only** in the live
+logcat main buffer — capture it with `adb logcat > file` *during* the run rather than
+trying to recover it afterwards.
+
+### Confidence
+
+**HIGH** — observed and fixed on 2026-08-26.

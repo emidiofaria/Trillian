@@ -331,6 +331,11 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | SH-04 | The bitmap shall be saved to the app's FileProvider cache directory and shared via `Intent.ACTION_SEND` with MIME type `image/png` through the Android Share Sheet. |
 | SH-05 | The FileProvider authority shall be `${applicationId}.fileprovider`. |
 | SH-06 | Share is a V1 placeholder for future social features. No social backend infrastructure is required in V1. |
+| SH-07 | The Session Result screen shall expose a hidden developer telemetry export via a **long-press** on the share icon. The gesture shall consume the long-press event so that no tooltip is shown. |
+| SH-08 | The telemetry export shall produce a ZIP bundle containing exactly two entries: `telemetry.jsonl` (a byte-for-byte copy of the recorded telemetry file) and `session.json` (session metadata, start line, lap records, app version/build and device model/SDK level). |
+| SH-09 | The ZIP bundle shall be shared via `Intent.ACTION_SEND` with MIME type `application/zip` through the Android Share Sheet, using the same FileProvider authority as SH-05. |
+| SH-10 | Share failures shall be reported to the user via a Snackbar. The app shall never fail a share silently. A missing telemetry file shall be reported as a distinct, non-fatal error rather than raising an exception. |
+| SH-11 | Sharing shall be strictly **read-only** with respect to recorded data. Neither share path shall create, modify, rename or delete any session record, lap record or telemetry file. All share artifacts shall be written only inside the app's share cache directory (`cacheDir/shared/`), and shall be pruned after 24 hours. Pruning shall only remove artifacts the app itself created and shall not recurse into subdirectories. |
 
 ---
 
