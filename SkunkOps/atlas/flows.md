@@ -1302,6 +1302,93 @@ None (local-only).
 
 ---
 
+## Flow: Session Share (Card and Telemetry Export)
+
+### Goal
+
+Get session data off the phone — as an image for people, or as a diagnostic bundle for
+developers — without touching the recorded session itself.
+
+### Trigger
+
+- **Tap** the toolbar share icon → image card
+- **Long-press** the toolbar share icon → telemetry ZIP (hidden, SRS SH-07)
+
+### Execution Path
+
+```
+                    SessionResultFragment.setupToolbar()
+                                 │
+              ┌──────────────────┴──────────────────┐
+              │                                     │
+   setOnMenuItemClickListener        attachTelemetryExportGesture()
+              │                        toolbar.post { findViewById(action_share)
+              │                                        .setOnLongClickListener }
+              │                                     │
+        shareSessionCard()                   shareTelemetryBundle()
+              │                                     │
+  ┌───────────┴───────────┐         ┌───────────────┴───────────────┐
+  │ uiState.session ?: err│         │ uiState.session ?: err        │
+  │ Dispatchers.Default:  │         │ Snackbar "Preparing export…"  │
+  │   ShareCardGenerator  │         │ Dispatchers.IO:               │
+  │ Dispatchers.IO:       │         │   pruneStaleArtifacts()       │
+  │   prune + write PNG   │         │   copy telemetry → ZIP        │
+  └───────────┬───────────┘         │   + session.json (Gson)       │
+              │                     └───────────────┬───────────────┘
+              │                                     │
+              │                       Success(file) │ Failure(reason)
+              │                                     │        │
+              └──────────────┬──────────────────────┘        │
+                             ▼                                ▼
+                      startChooser()                   showShareError()
+              FileProvider.getUriForFile                  Snackbar
+              ACTION_SEND + image/png | application/zip
+              FLAG_GRANT_READ_URI_PERMISSION
+```
+
+### Async Boundaries
+
+| Boundary | Dispatcher | Note |
+|----------|-----------|------|
+| Card rendering | `Dispatchers.Default` | CPU-bound bitmap work |
+| File IO (PNG write, ZIP assembly) | `Dispatchers.IO` | Keeps the toolbar responsive |
+| Chooser launch | Main | Resumes on `viewLifecycleOwner.lifecycleScope` |
+
+### Persistence Boundaries
+
+**None on the write side for session data — this is the defining property of the flow.**
+The only writes are new files under `cacheDir/shared/`. No DAO is called, no telemetry
+file is opened for writing, nothing is renamed or deleted outside the share cache
+(SRS SH-11).
+
+### Failure Points
+
+| Point | Failure | Result |
+|-------|---------|--------|
+| `uiState.session` still null | Screen not loaded yet | Snackbar, no send |
+| Telemetry file missing/not a file | Old session, deleted file | `Failure(TELEMETRY_FILE_MISSING)` → Snackbar |
+| ZIP write | Full cache, IO error | `Failure(EXPORT_FAILED)` → Snackbar |
+| `startActivity` | No handler, bad FileProvider config | Caught, logged, Snackbar |
+| Long-press listener not attached | `post` ran after view destruction, or `setupToolbar` refactored | **Silent** — export simply unreachable; covered only by L2 tests |
+
+### User-Visible Symptoms
+
+| Symptom | Meaning |
+|---------|---------|
+| "Preparing export…" then a share sheet | Normal export |
+| "Telemetry file not found" | Session has no raw file (predates the feature, or file removed) |
+| "Couldn't prepare the share" | Card generation or chooser failed — previously this was *silent* |
+
+### Operational Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `E/SessionResultFragment: Failed to share session card` | Logcat | Card path threw |
+| `E/SessionResultFragment: Failed to start share chooser` | Logcat | FileProvider/intent problem |
+| Files in `cacheDir/shared/` | Device | Share artifacts, auto-pruned after 24 h |
+
+---
+
 ## Summary: Critical Flow Dependencies
 
 ```

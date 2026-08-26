@@ -114,6 +114,71 @@
 
 ---
 
+### SHARE-07: Telemetry Export Gesture
+
+**Objective:** Verify the hidden developer export is reachable and does not disturb the tap path.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Open a session recorded on this device | Session Result screen shown | ☐ |
+| 2 | **Tap** the share icon | Image share card appears (not the ZIP) | ☐ |
+| 3 | Dismiss the share sheet | Returns to Session Result | ☐ |
+| 4 | **Press and hold** the share icon | "Preparing export…" appears, then a share sheet | ☐ |
+| 5 | Observe during the long-press | **No "Share" tooltip appears** | ☐ |
+
+**Requirement Coverage:** SH-07
+
+---
+
+### SHARE-08: Telemetry Bundle Contents
+
+**Objective:** Verify the exported ZIP is complete and usable for debugging.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Long-press share, send the file to yourself | `.zip` received | ☐ |
+| 2 | Open the archive | Contains exactly `telemetry.jsonl` and `session.json` | ☐ |
+| 3 | Open `telemetry.jsonl` | Same GPS samples as the recorded session | ☐ |
+| 4 | Open `session.json` | Track name, start line, lap times, app version/build, phone model, SDK level all present | ☐ |
+| 5 | Check the file name | Starts with `telemetry_`, contains a sanitised track name and a date | ☐ |
+| 6 | Share the same session again | MIME type is `application/zip`; export succeeds again | ☐ |
+
+**Requirement Coverage:** SH-08, SH-09
+
+---
+
+### SHARE-09: Export Failure Is Visible
+
+**Objective:** Verify a failed export is reported rather than silently ignored.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Open a session whose telemetry file no longer exists (e.g. an older session) | Session Result screen shown | ☐ |
+| 2 | Long-press the share icon | Snackbar: "Telemetry file not found" | ☐ |
+| 3 | Observe | No share sheet opens, app does not crash | ☐ |
+| 4 | Tap share (card path) on a normal session | Still works | ☐ |
+
+**Requirement Coverage:** SH-10
+
+---
+
+### SHARE-10: Sharing Does Not Alter Recorded Data
+
+**Objective:** Verify sharing is strictly read-only — the safety property of the feature.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Note the session's lap count, lap times and best lap | Recorded on paper | ☐ |
+| 2 | Long-press share and complete an export | Share sheet opens | ☐ |
+| 3 | Return to the session | Lap count, lap times and best lap **unchanged** | ☐ |
+| 4 | Repeat the export 3 times | Succeeds every time; data still unchanged | ☐ |
+| 5 | Reopen the app and check the session list | Session still present, unmodified | ☐ |
+| 6 | Wait 24 h (or change device date), then reopen and share | Old cached exports pruned; recorded sessions untouched | ☐ |
+
+**Requirement Coverage:** SH-11
+
+---
+
 ## Test Suite: PROF — Profile Screen
 
 ### PROF-01: Profile Screen Access

@@ -327,6 +327,32 @@ Show off your results!
    - Your display name
 4. Share via messages, social media, or save to gallery
 
+If something goes wrong while preparing the card, the app now tells you with a
+message at the bottom of the screen instead of appearing to do nothing.
+
+### 6.1.1 Sending a Diagnostic File (for bug reports)
+
+If you hit a problem and want to help get it fixed, you can send the raw data
+from a session straight to the developer.
+
+1. Open the session that went wrong
+2. **Press and hold** the **Share** button (a normal tap gives you the picture card instead)
+3. Wait a moment while the file is packaged
+4. Pick an app — email, chat, cloud storage — and send it
+
+**What's inside:** the file is a `.zip` containing the session's raw recording plus
+a small summary (track name, lap times, your app version and phone model). That
+recording includes the **exact GPS path you drove**, so only send it to someone
+you trust.
+
+**What it does *not* do:** exporting never changes, moves or deletes anything.
+Your session, your laps and your recording stay exactly as they were — you can
+export the same session as many times as you like.
+
+If the original recording is no longer on your phone, you'll see
+*"Telemetry file not found"* and nothing is sent. Older sessions recorded before
+this feature existed may not have a file to share.
+
 ### 6.2 Your Statistics
 
 Tap your **Profile** (top right icon) to see:

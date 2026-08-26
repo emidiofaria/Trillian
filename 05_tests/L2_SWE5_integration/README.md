@@ -35,11 +35,32 @@ app/src/androidTest/java/com/drivingcoach/
 │   │   └── SplashMainThreadTest.kt             # UI-04
 │   ├── about/
 │   │   └── AboutScreenTest.kt                  # UI-11, UI-12
-│   └── home/
-│       └── HomeHeroTest.kt                     # UI-06
+│   ├── home/
+│   │   └── HomeHeroTest.kt                     # UI-06
+│   └── session/
+│       └── SessionShareTest.kt                 # SH-07, SH-08, SH-10, SH-11
 ├── StartupBackStackTest.kt                     # UI-05
 └── EndToEndTest.kt                             (@Ignore)
 ```
+
+---
+
+## ⚠️ Espresso Prerequisites (learned the hard way)
+
+Two things will make an instrumented test **hang forever rather than fail** — the runner's
+default per-test timeout is one year (`testTimeoutSeconds=31536000`):
+
+1. **Never call `Intents.intending(anyIntent())` before the screen is launched.** It stubs
+   the intent that starts `HiltTestActivity`, so the screen never appears. Call
+   `Intents.init()` *after* launch and stub the narrowest matcher possible.
+2. **Never wrap `onView`/`intended` in a retry loop.** They block internally until the UI
+   thread is idle, so the wrapper's timeout never gets a chance to fire.
+
+Animations must be off. `05_tests/infra/scripts/start-emulator.sh` now sets
+`window_animation_scale`, `transition_animation_scale` and `animator_duration_scale` to `0`;
+without this, any screen with an indeterminate `ProgressBar` deadlocks the suite.
+
+See `SkunkOps/atlas/failure-patterns.md` → **FP-TEST-HANG** and **FP-TEST-WORKMANAGER**.
 
 ---
 
