@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    System splash icon. The Android 12+ splash masks its icon to a circle and only the
+    inner ~2/3 is safe, so the emblem is inset to avoid the hard crop that the full-bleed
+    launcher foreground suffers from.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_helmet_emblem"
+    android:inset="20%" />

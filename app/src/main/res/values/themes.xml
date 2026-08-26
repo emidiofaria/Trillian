@@ -29,6 +29,13 @@
         <item name="colorOnError">@color/text_primary</item>
     </style>
 
+    <!-- Splash theme: hands over to Theme.DrivingCoach once the app is drawn -->
+    <style name="Theme.DrivingCoach.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/colorBackground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_emblem</item>
+        <item name="postSplashScreenTheme">@style/Theme.DrivingCoach</item>
+    </style>
+
     <!-- Button Styles -->
     <style name="Widget.DrivingCoach.Button.Primary" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/colorPrimary</item>

@@ -4,6 +4,630 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-08-11] Build Versioning (versionCode / versionName)
+
+**Codebase Version:** v2.8  
+**Trigger:** `versionName` had been frozen at `1.0.0` / `versionCode 1` across all 20 shipped APKs
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `app/build.gradle.kts` | ✅ Updated | +17 −2 (derived version + APK output naming) |
+| system.md | ✅ Updated | +49 −2 (Versioning Scheme section, corrected build-config table) |
+| USER_MANUAL.md | ✅ Updated | +9 (how to find your app version, for support requests) |
+| `L4/03_ANDROID_BUILD.md` | ✅ Updated | +13 −4 (corrected stale APK paths, added version-verification check) |
+| components.md | ⏭️ No change | No component behaviour changed |
+| flows.md | ⏭️ No change | No runtime flow changed |
+| failure-patterns.md | ⏭️ No change | Build-config issue, not a runtime failure mode |
+| SRS_v1.md | ⏭️ No change | No functional/user requirement affected — build metadata only |
+
+### Problem
+
+Version identity existed **only in `releases/` filenames**. Every APK from v1.0 to v2.8
+reported `versionCode 1` / `versionName 1.0.0` internally, so:
+
+- `adb` and the launcher's app-info screen could not distinguish any two releases
+- a future crash reporter would attribute every crash to "1.0.0"
+- users could not report which build they were on
+- upgrade/downgrade semantics were undefined (equal `versionCode`)
+
+### Change
+
+`appVersionName` is now the single source of truth in `app/build.gradle.kts`;
+`versionCode` is **derived** (`major*100 + minor`) so the two cannot drift:
+
+| | Before | After |
+|---|---|---|
+| `versionName` | `1.0.0` | `2.8` |
+| `versionCode` | `1` | `208` (derived) |
+| APK filename | `app-debug.apk` | `DrivingCoach-v2.8-debug.apk` (generated) |
+
+The generated filename is the important half: it makes a mislabelled copy into `releases/`
+structurally impossible, which was the actual origin of the drift.
+
+**Bump procedure:** edit `appVersionName` only. Never hand-edit `versionCode`.
+
+### Verification
+
+Confirmed against the built binary, not the Gradle declaration:
+
+```
+$ aapt2 dump badging app/build/outputs/apk/debug/DrivingCoach-v2.8-debug.apk | head -1
+package: name='com.drivingcoach' versionCode='208' versionName='2.8' ...
+```
+
+- `assembleDebug` — SUCCESSFUL
+- L1 — **109 tests / 0 failures / 0 skipped** (forced `--rerun`; an initial run reported
+  `UP-TO-DATE` and was discarded as a stale result)
+- `releases/DrivingCoach-v2.8-helmet-artwork.apk` refreshed — the previous copy reported `1.0.0`
+
+### Decisions
+
+- **No `-debug` versionName suffix.** Considered, since every APK in `releases/` is a debug
+  build; the user opted for a plain `2.8` in both variants.
+- **No in-app version display.** There is no About/Settings screen; adding one is a feature,
+  not a build fix. Documented as a known gap in system.md and worked around in USER_MANUAL.md
+  by pointing users at the OS app-info screen.
+
+### Known Gaps
+
+| Gap | Impact |
+|-----|--------|
+| Version not surfaced in-app | Users must use Settings → Apps → Driving Coach |
+| `versionCode 1 → 208` | Devices with an existing install cannot downgrade to an older APK without uninstalling first |
+| Bump is manual | Nothing enforces that `appVersionName` is incremented before a release copy |
+| No CI | Unchanged — the version check in `03_ANDROID_BUILD.md` is a human step |
+
+---
+
+## [2026-08-11] Helmet Emblem Artwork (Incident 11)
+
+**Codebase Version:** v2.8-helmet-artwork  
+**Trigger:** Incident 11 fix — hand-authored vector emblem replaced with a measured raster asset
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| system.md | ✅ Updated | +18 lines (brand artifact locations) |
+| components.md | ✅ Updated | +84 lines (1 new component, 2 new failure modes on Home Brand Hero) |
+| flows.md | ✅ Updated | +7 lines (coverage-gap callout on the L2 startup table) |
+| failure-patterns.md | ✅ Updated | +95 lines (1 new pattern — first static-asset pattern) |
+| SRS_v1.md | ✅ Updated | +2 requirements (UI-08, UI-09) |
+| TRACEABILITY_MATRIX.md | ✅ Updated | +2 rows, UI category 7 → 9, TOTAL ~44 → ~46 |
+| L1_SWE4_unit/README.md | ✅ Updated | +28 lines (brand gate section, test layout) |
+| test_strategy_execution_instructions.md | ✅ Updated | +30 lines (§3.5 brand gate, new common issue) |
+| L4_SYS5_acceptance/20_ONBOARDING_TESTS.md | ✅ Updated | +28 lines (new BRD suite, 1 test) |
+| USER_MANUAL.md | ⏭️ No change | Emblem is described generically; no workflow or UI behaviour changed |
+
+### New Requirement IDs
+- **UI-08** — emblem supplied as one resource across all densities, undistorted at 132/88/36dp
+- **UI-09** — brand artwork verified by measurement, not presence-only assertions
+
+### New Test Case IDs
+- **BRD-01** — Helmet Emblem Renders Correctly at All Sizes (L4, human visual)
+
+### Detailed Changes
+
+#### 📁 SkunkOps/atlas/components.md
+
+**Added Section: Brand Asset Pipeline (Helmet Emblem)** — render sites, density
+buckets, six invariants with thresholds, six failure modes with their detecting
+test, and signals.
+
+**Modified: Home Brand Hero → Failure Modes**
+```diff
++ | Emblem artwork deformed | Brand asset geometry defect | Emblem renders squashed at all three sizes; `isDisplayed()` tests still pass |
++ | Emblem clipped by ring | Content bbox exceeds the `bg_hero_ring` radius | Artwork edges cut off inside the navy disc |
+```
+
+**Modified: Criticality Matrix**
+```diff
++ | Brand Asset Pipeline | LOW | Deformed or missing emblem on all branded surfaces |
+```
+
+#### 📁 SkunkOps/atlas/failure-patterns.md
+
+**Added Pattern: Brand Asset Geometry (Unverified Static Artwork)** — the first
+static-asset pattern in the Atlas. Its defining signal is that there is **no
+signal**: static assets ship broken and never throw.
+
+Records the generalisation that cost two incidents:
+```
+An assertion that cannot fail when the defect is present is not coverage.
+```
+
+#### 📁 SkunkOps/atlas/system.md
+
+**Added:** brand artwork layout block — the five WebP buckets, the deliberate
+absence of `drawable/ic_helmet_emblem.xml`, the L1 gate package, test fixtures,
+source art, and the build script.
+
+#### 📁 01_requirements/DrivingCoach_SRS_v1.md
+
+| ID | Requirement |
+|----|-------------|
+| UI-08 | The helmet emblem shall be supplied as a single `@drawable/ic_helmet_emblem` resource across all density buckets, and shall render undistorted and uncropped at 132dp, 88dp and 36dp |
+| UI-09 | Brand artwork shall be verified by measurement of the asset itself — square canvas, aspect 1.00 ± 0.05, centred within 3 %, transparent border — rather than by presence-only assertions |
+
+#### 📁 05_tests/
+
+**L1_SWE4_unit/README.md** — added a *Brand Asset Gate* section documenting all
+four tests and, specifically, why the falsification test exists:
+
+```
+A gate that has never been observed to fail is indistinguishable from a no-op.
+```
+
+**test_strategy_execution_instructions.md** — added §3.5 with the targeted run
+command, the venv setup for `brand-asset.py`, and how to interpret the
+falsification failure message. Added a common-issue row for
+`Unresolved reference 'BufferedImage'`, since `android.jar` provides neither
+`java.awt` nor `javax.imageio` — the reason `ArgbBitmap` exists.
+
+**L4_SYS5_acceptance/20_ONBOARDING_TESTS.md** — added a new **BRD** suite with
+`BRD-01`, a 7-step human visual check across all three emblem sizes plus edge
+quality and cross-density crispness. A human check is warranted precisely
+because the automated L2 suite could not see this defect.
+
+#### 📁 03_incidents/11_helmet_emblem_deformed/
+
+- Incident status `Open — Awaiting RCA` → `Resolved`; **acceptance criterion 5
+  removed** at the project owner's request (artwork is their own work).
+- Added a Resolution section with per-criterion verification and validation results.
+- Added an RCA addendum recording that the fix **diverged** from the RCA's own
+  recommendation, and that the proposed bilateral-symmetry constraint was
+  deliberately dropped — the supplied artwork is a side profile, and the RCA had
+  already measured asymmetry as *not* being the defect.
+
+### Code Changes Documented
+
+| Change | Detail |
+|--------|--------|
+| Removed | `res/drawable/ic_helmet_emblem.xml` (9 hand-authored paths, −56 lines) |
+| Added | 5 lossless WebP density buckets (389 KB total) |
+| Added | `BrandAssetGeometryTest` + `ArgbBitmap` (4 tests, incl. a falsification test) |
+| Added | `05_tests/infra/scripts/brand-asset.py` (build + check) |
+| Added | `docs/brand/helmet_source.png` |
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| Build | `assembleDebug` BUILD SUCCESSFUL |
+| L1 | 109 tests, 0 failures, 0 skipped (was 105) |
+| L2 | 26 tests, 0 failures, 4 skipped (pre-existing `@Ignore`) |
+| On-device | Pixel 4 / API 30 — splash + Home hero verified; ring 318px vs emblem 226px, no clipping |
+| Reproducibility | `brand-asset.py build` reproduces all 5 buckets bit-for-bit |
+
+### Files Modified
+
+```
+M  SkunkOps/atlas/system.md                                     (+18, -0)
+M  SkunkOps/atlas/components.md                                 (+84, -0)
+M  SkunkOps/atlas/flows.md                                      (+7, -0)
+M  SkunkOps/atlas/failure-patterns.md                           (+95, -0)
+M  01_requirements/DrivingCoach_SRS_v1.md                       (+2, -0)
+M  01_requirements/TRACEABILITY_MATRIX.md                       (+5, -3)
+M  05_tests/L1_SWE4_unit/README.md                              (+28, -0)
+M  05_tests/test_strategy_execution_instructions.md             (+30, -0)
+M  05_tests/L4_SYS5_acceptance/20_ONBOARDING_TESTS.md           (+28, -0)
+M  03_incidents/11_helmet_emblem_deformed/11_helmet_emblem_deformed.md   (+146, -0)
+M  03_incidents/11_helmet_emblem_deformed/11_RCA_unconstrained_hand_authored_vector.md (+358, -0)
+A  05_tests/infra/scripts/brand-asset.py                        (+259)
+A  app/src/test/java/com/drivingcoach/brand/BrandAssetGeometryTest.kt (+170)
+A  app/src/test/java/com/drivingcoach/brand/ArgbBitmap.kt       (+157)
+A  app/src/main/res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_helmet_emblem.webp
+A  app/src/test/resources/brand/{ic_helmet_emblem_master,legacy_deformed_emblem}.png
+A  docs/brand/helmet_source.png
+D  app/src/main/res/drawable/ic_helmet_emblem.xml               (-56)
+```
+
+### Recommendations
+
+- [ ] **No CI exists** (`.github/workflows/` absent) — the new L1 gate only runs manually
+- [ ] Launcher icon still uses separate `ic_launcher_foreground.png` artwork — brand inconsistency
+- [ ] `versionName` remains `1.0.0`; versioning lives only in `releases/` filenames
+- [ ] 4 legacy L2 classes remain `@Ignore`d
+
+---
+
+## [2026-08-06] L2 Integration Coverage for Branded Startup (SWE.5)
+
+**Trigger:** SRS UI-01…UI-06 were nominally covered, but the L2 suite was a *false green* —
+all four existing instrumented classes carry a class-level `@Ignore`, and Gradle reports
+`BUILD SUCCESSFUL` for a fully skipped suite. UI-05 was manual-only and UI-06 had no
+coverage at all.
+
+**Outcome:** 5 new instrumented test classes (18 executing tests, 0 failures, 0 skipped),
+enabled by a Hilt module split. Documentation realigned to reflect real, executing coverage.
+
+### Summary
+
+| Area | Change |
+|------|--------|
+| Production | `AppModule` split into `DataStoreModule`, `DispatcherModule`, `SplashModule` |
+| Tests | +5 L2 classes (18 tests), +3 shared test fixtures |
+| Requirements | UI-01…UI-06 promoted to L2; UI-05 ⚠️→✅, UI-06 ❌→✅ |
+| Atlas | Test hooks, L2 verification table, strengthened regression guard |
+
+### Key Finding — Espresso Cannot Detect a Blocked Main Thread
+
+The first UI-04 design asserted "main thread is not blocked" by performing an Espresso click
+during a stalled startup. To validate it, the original defect was deliberately reintroduced:
+
+```kotlin
+// SplashFragment.onViewCreated — TEMPORARY, for falsification only
+runBlocking { delay(60_000) }
+```
+
+The Espresso-based test **still passed**. Espresso synchronises *with* the main looper — it
+waits for idle rather than timing out — so blocking the main thread only makes it slower.
+
+The replacement detector samples main-looper round-trip latency from a background thread:
+
+```kotlin
+// MainThreadResponsivenessProbe.kt
+private const val SAMPLE_INTERVAL_MS = 50L
+private const val PER_SAMPLE_TIMEOUT_MS = 15_000L
+// posts a Runnable to Handler(Looper.getMainLooper()), records worstLatencyMs
+```
+
+Re-running the falsification with the probe in place produced:
+
+```
+main thread was unresponsive for 15000ms during startup (budget 2000ms)
+```
+
+The injected block was then fully reverted (`SplashFragment.kt` verified clean).
+**Rule adopted:** any "must not block" assertion is untrusted until it has been falsified.
+
+### Files Changed
+
+```
+ M app/src/main/java/com/drivingcoach/di/AppModule.kt                (-28 lines, now context only)
+ A app/src/main/java/com/drivingcoach/di/DataStoreModule.kt
+ A app/src/main/java/com/drivingcoach/di/DispatcherModule.kt
+ A app/src/main/java/com/drivingcoach/di/SplashModule.kt
+ A app/src/androidTest/java/com/drivingcoach/testing/FakePreferencesDataStores.kt
+ A app/src/androidTest/java/com/drivingcoach/testing/NavigationTestExtensions.kt
+ A app/src/androidTest/java/com/drivingcoach/testing/MainThreadResponsivenessProbe.kt
+ A app/src/androidTest/java/com/drivingcoach/ui/splash/SplashScreenTest.kt        (6 tests, UI-01/02)
+ A app/src/androidTest/java/com/drivingcoach/ui/splash/SplashFallbackTest.kt      (3 tests, UI-03)
+ A app/src/androidTest/java/com/drivingcoach/ui/splash/SplashMainThreadTest.kt    (3 tests, UI-04)
+ A app/src/androidTest/java/com/drivingcoach/StartupBackStackTest.kt              (2 tests, UI-05)
+ A app/src/androidTest/java/com/drivingcoach/ui/home/HomeHeroTest.kt              (4 tests, UI-06)
+ M 01_requirements/TRACEABILITY_MATRIX.md
+ M SkunkOps/atlas/system.md
+ M SkunkOps/atlas/components.md
+ M SkunkOps/atlas/flows.md
+ M SkunkOps/atlas/failure-patterns.md
+ M 05_tests/L2_SWE5_integration/README.md
+ M docs/SYNC_REPORT.md
+```
+
+### Documentation Updates
+
+**`01_requirements/TRACEABILITY_MATRIX.md`**
+- UI-01…UI-04: level `L1` → `L1 + L2`, test column now names the L2 class.
+- UI-05: `Manual` / ⚠️ *No automated test* → `L2` / `StartupBackStackTest` / ✅.
+- UI-06: ❌ *Not covered* → ✅ `HomeHeroTest`.
+- Startup & Branding category: **71% ⚠️ → 100% ✅**; TOTAL **~42 → ~44 (~24%)**.
+- New "Coverage caveat — `@Ignore`d L2 classes" callout above the matrix, naming the eight
+  rows whose ✅ is backed by a skipped class and giving the XML-parsing verification command.
+
+**`SkunkOps/atlas/system.md`**
+- Repository-layout `di/` entry now enumerates the split modules and states *why*
+  (per-binding `@UninstallModules` in tests).
+
+**`SkunkOps/atlas/components.md`**
+- Preferences DataStore component: key code area `di/AppModule.kt` → `di/DataStoreModule.kt`.
+- Branded Startup component: new **Test Hooks** section — a goal→uninstall→substitute table
+  plus the "do not use Espresso for UI-04" warning.
+- New observable signal row: `MainThreadResponsivenessProbe.worstLatencyMs`.
+
+**`SkunkOps/atlas/flows.md`**
+- Timing-contract table: `SplashTimings` now injected via `SplashModule` (was `AppModule`).
+- New **Automated Verification (L2)** section mapping each stage of the startup flow to its
+  instrumented test and SRS ID.
+
+**`SkunkOps/atlas/failure-patterns.md`**
+- *DataStore ANR on Startup* → **Regression Guard** rewritten: L1 + L2 split, the 2000 ms
+  latency budget, and the Espresso falsification evidence.
+- Confidence rationale extended to "empirically falsified".
+
+**`05_tests/L2_SWE5_integration/README.md`**
+- Test-location tree updated with all new files and `@Ignore` markers on legacy classes.
+- New **"`BUILD SUCCESSFUL` Is Not Evidence"** section with the JUnit-XML parsing snippet.
+- New **Test Isolation Strategy** section explaining the module split and why the fallback
+  and main-thread tests must live in separate classes.
+
+**`docs/USER_MANUAL.md`** — *no change required.* This work added test coverage and
+refactored DI only; no user-visible behaviour changed.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| `assembleDebug` / `compileDebugKotlin` | ✅ PASS |
+| `compileDebugAndroidTestKotlin` | ✅ PASS |
+| L1 (SWE.4 unit) | ✅ **105 tests, 0 failures, 0 skipped** |
+| L2 new (SWE.5) | ✅ **18 tests, 0 failures, 0 skipped** |
+| L2 legacy | ⚠️ 4 classes still `@Ignore`d — out of scope, tracked separately |
+| UI-04 detector falsification | ✅ Fails when the defect is reintroduced |
+
+### Known Gaps / Follow-ups
+
+- The 4 legacy `@Ignore`d L2 classes remain decorative; un-ignoring them is separate work.
+- `MAX_ACCEPTABLE_LATENCY_MS = 2_000` is emulator-derived and may need tuning on slower CI.
+- The three `Log.d` startup-timing statements are unconditional; consider gating behind
+  `BuildConfig.DEBUG`.
+
+---
+
+## [2026-07-25] Startup Hardening — Device Verification & Timeout Redesign
+
+**Codebase Version:** v2.8.1-brand-startup-fixes
+**Trigger:** Attempt to execute L2 (SWE.5 integration) tests for the v2.8 branded startup work
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| SplashTimings.kt | ✅ Updated | Essential timeout 3000→8000 ms; new `warmUpTimeoutMs = 2000` |
+| SplashViewModel.kt | ✅ Updated | Essential/optional split, ONBOARDING fallback, permanent timing logs |
+| fragment_splash.xml | ✅ Updated | `fitsSystemWindows`; tagline↔manifesto constraint chain |
+| themes.xml + ic_splash_emblem.xml | ✅ Added/Updated | System-splash icon no longer mask-cropped |
+| strings.xml | ✅ Updated | Footer metrics refreshed (Tests 104, SRS 123) |
+| SplashViewModelTest.kt | ✅ Updated | 13 tests; new warm-up isolation regression test |
+| DrivingCoach_SRS_v1.md | ✅ Updated | UI-03 reworded; **new UI-07** (bounded non-essential warm-up) |
+| TRACEABILITY_MATRIX.md | ✅ Updated | UI-05 corrected to manual-only; UI-07 added |
+| flows.md | ✅ Updated | Split timeout contract, fallback rationale, logcat signals |
+| components.md | ✅ Updated | Failure modes split, measured signals added |
+| failure-patterns.md | ✅ Updated | Post-mitigation table + measured evidence table |
+| USER_MANUAL.md | ✅ Updated | §2.2 "3 seconds" → 8 s ceiling + Onboarding fallback |
+
+### Key Finding — L2 Is a False Green
+
+`./gradlew connectedDebugAndroidTest` reports `BUILD SUCCESSFUL`, but the results XML shows
+`tests=4 failures=0 skipped=4`. **All four L2 classes are class-level `@Ignore`d**
+(`EndToEndTest`, `TelemetryForegroundServiceTest`, `RecordingFragmentTest`,
+`TrackSetupFragmentTest`) for pre-existing reasons unrelated to this work. L2 therefore
+provides **zero** real coverage today. Always parse the results XML, never trust the exit code.
+
+Consequence: the earlier claim that UI-05 was "⚠️ Partial via EndToEndTest" was wrong and has
+been corrected in the traceability matrix.
+
+### Defects Found by Direct Device Verification
+
+Because L2 gave no signal, verification was performed directly on `emulator-5554`.
+
+| # | Defect | Root cause | Fix |
+|---|--------|-----------|-----|
+| 1 | Fresh install landed on **Login**, not Onboarding | 3 s global timeout fired on a *normal* cold start (`DataStore.data.first()` = 3 573 ms); fallback became the common path | Essential timeout → 8 s; warm-up split behind its own 2 s bound; fallback → ONBOARDING |
+| 2 | Splash footer clipped by navigation bar | `MainActivity` applies only left/right insets by design; fragment must opt in | `fitsSystemWindows="true"` on `splashRoot` |
+| 3 | Stale footer metrics string | Not refreshed after test/SRS growth | Updated to Tests 104 / SRS 123 |
+| 4 | Android 12+ system splash icon hard-cropped | Adaptive-icon circular mask vs. full-bleed `ic_launcher_foreground` | New `ic_splash_emblem.xml` (`<inset>` 20%) |
+| 5 | Tagline colliding with manifesto card | No constraint linking the two views | `Top_toBottomOf` + margins + `verticalBias=1.0` |
+
+### Design Rationale — Why ONBOARDING, Not LOGIN
+
+If the preferences read fails we do not know whether the user has onboarded. The costs are
+asymmetric: routing an **already-onboarded** user through Onboarding is a recoverable
+annoyance that still ends at Home; routing a **fresh** user to Login skips permission granting
+entirely and leaves the app unable to record. ONBOARDING is therefore the strictly safer default.
+
+### Design Rationale — Essential vs. Optional Work
+
+The destination decision depends **only** on the preferences read. The Room warm-up is a pure
+optimisation, so it now carries its own 2 s bound and is wrapped in `runCatching`: a slow or
+broken database can never change where the user lands. Guarded by the L1 test
+`slow database warm up does not change the destination`.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| `compileDebugKotlin` / `compileDebugAndroidTestKotlin` / `assembleDebug` | ✅ PASS |
+| L1 (SWE.4 unit) | ✅ **105 tests, 0 failures, 0 skipped** (clean run, emulator stopped) |
+| L1 splash subset | ✅ 13 tests, 0 failures |
+| L2 (SWE.5 integration) | ⚠️ Runs, but 4/4 classes `@Ignore`d — **no coverage** |
+| Device verification (`emulator-5554`) | ✅ Splash renders correctly; destination = Onboarding on fresh install; footer clear of nav bar; Home hero matches mockup; **UI-05 confirmed** (Back from Home exits to launcher) |
+
+Measured startup (Pixel 4 API 30 emulator): cold `datastore read 3 573 ms` →
+`resolved in 4 458 ms`; warm `datastore read 1 878 ms`, `room warm-up 955 ms` →
+`resolved=ONBOARDING in 2 889 ms`.
+
+Note: `TelemetryFileWriterTest > benchmark 18000 samples writes in under 100ms` is
+**load-sensitive**, not a regression — it fails only under CPU contention from a running
+emulator and passes on a clean run.
+
+### Open Items
+
+- Four `@Ignore`d L2 classes make the entire L2 level decorative — recommend a follow-up to
+  un-ignore at minimum `EndToEndTest`, which would give real automated UI-05 coverage.
+- The 8 s essential budget is derived from emulator measurements; real-device figures are
+  unknown and it may be tunable downward.
+- The three `Log.d` startup timing statements are currently unconditional; decide whether to
+  gate them behind `BuildConfig.DEBUG`.
+
+---
+
+## [2026-07-24] Branded Loading Screen & Home Brand Hero
+
+**Codebase Version:** v2.8-brand-startup  
+**Trigger:** TRILLIAN brand mockup implementation — splash loading screen + collapsing Home hero
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| system.md | ✅ Updated | +6/-3 (splash module, SplashScreen dep, ANR risk closed) |
+| components.md | ✅ Updated | +141 lines (2 new components) |
+| flows.md | ✅ Updated | +74/-16 (startup flow fully rewritten) |
+| failure-patterns.md | ✅ Updated | +80/-45 (DataStore ANR marked MITIGATED) |
+| DrivingCoach_SRS_v1.md | ✅ Updated | ON-01 reworded, +6 requirements (§3a) |
+| TRACEABILITY_MATRIX.md | ✅ Updated | +6 rows, new UI category (83% covered) |
+| USER_MANUAL.md | ✅ Updated | §2.2 new, §4.0 new, §2.3–2.5 renumbered |
+
+### New Requirement IDs
+
+- **UI-01** — Branded loading screen with progress tied to real initialisation work
+- **UI-02** — Minimum display time (1.2 s) with tap-to-skip
+- **UI-03** — 3 s initialisation timeout with Login fallback
+- **UI-04** — Startup state resolved off the main thread
+- **UI-05** — Loading screen removed from the back stack
+- **UI-06** — Home brand hero collapses on scroll
+
+**Modified:** ON-01 (reworded — start destination is now resolved asynchronously)
+
+### Architectural Change
+
+The `runBlocking` DataStore read at `MainActivity:68` — a **P1 documented ANR risk** in
+`failure-patterns.md` — has been removed. Startup state now resolves in `SplashViewModel`
+on an injected `@IoDispatcher`, bounded by `withTimeoutOrNull(3000)` with a Login fallback.
+The pattern is now marked **✅ MITIGATED** and downgraded from P1 to Closed.
+
+### Detailed Changes
+
+#### 📁 SkunkOps/atlas/system.md
+
+```diff
+  ├── recording/
+- │   └── session/
++ │   ├── session/
++ │   └── splash/               # Branded loading screen (startup resolution)
+
++ | Splash | AndroidX Core SplashScreen | 1.0.1 | `installSplashScreen()`, Android 12+ handoff |
+
+- | **Blocking DataStore read** | MEDIUM | `runBlocking` in `MainActivity.setupNavigation()` | Move to suspending |
++ | ~~**Blocking DataStore read**~~ | ✅ RESOLVED v2.8 | Was `runBlocking` … | Replaced by async `SplashViewModel` |
+```
+
+#### 📁 SkunkOps/atlas/components.md
+
+**Added Section: App Startup / Branded Loading Screen** (criticality HIGH) — key code areas,
+dependencies, the 5-stage progress model, failure modes, observable signals.
+
+**Added Section: Home Brand Hero (Collapsing Toolbar)** (criticality LOW) — layout structure,
+scroll/alpha behaviour table, failure modes.
+
+#### 📁 SkunkOps/atlas/flows.md
+
+**Rewrote: Flow: App Startup & Navigation Resolution**
+
+```diff
+- → DataStore.data.first() [BLOCKING runBlocking]
+- → NavController.setStartDestination()
++ → installSplashScreen()
++ → NavController starts at splashFragment
++ → SplashViewModel.start()
++   → withTimeoutOrNull(3000) { withContext(IO) { … } }
++   → awaitMinimumDisplay(1200)  [skippable]
++ → navigate(popUpTo splashFragment inclusive)
+```
+
+Added a **Timing Contract** table and rewrote Async Boundaries, Failure Points,
+Retry/Recovery and Operational Signals.
+
+#### 📁 SkunkOps/atlas/failure-patterns.md
+
+```diff
+- ## Pattern: DataStore ANR on Startup
++ ## Pattern: DataStore ANR on Startup — ✅ MITIGATED (v2.8)
+
+- | DataStore ANR on Startup | MEDIUM | HIGH | HIGH | P1 |
++ | DataStore ANR on Startup | ~~MEDIUM~~ MITIGATED | HIGH | HIGH | ~~P1~~ Closed (v2.8) |
+```
+
+Added *Regression Signals*, *Current Behaviour (post-mitigation)*, a Permanent Fix status
+table, and a *Regression Guard* pointing at `SplashViewModelTest`.
+
+#### 📁 01_requirements/DrivingCoach_SRS_v1.md
+
+**Added Requirements (new §3a — Application startup and branding):**
+
+| ID | Requirement |
+|----|-------------|
+| UI-01 | The app SHALL display a branded loading screen on cold start with a progress indicator reflecting real initialisation work |
+| UI-02 | The loading screen SHALL remain visible for a minimum of 1.2 s and SHALL be dismissible early by tapping |
+| UI-03 | Startup initialisation SHALL be bounded by a 3 s timeout, after which the app SHALL navigate to Login |
+| UI-04 | Startup state resolution SHALL NOT block the main thread |
+| UI-05 | The loading screen SHALL be removed from the back stack on navigation |
+| UI-06 | The Home screen SHALL present a brand hero that collapses as the user scrolls |
+
+#### 📁 01_requirements/TRACEABILITY_MATRIX.md
+
+```diff
++ | Startup & Branding (UI) | 6 | 5 | 83% ✅ |
+- | **TOTAL** | **~179** | **~37** | **~21%** |
++ | **TOTAL** | **~185** | **~42** | **~23%** |
+```
+
+#### 📁 docs/USER_MANUAL.md
+
+**Added Section 2.2 — The Loading Screen**: explains the progress bar reflects real work, the
+step-by-step table, the ~1 s typical / 3 s maximum wait, tap-to-skip, and Back-exits-app.
+
+**Added Section 4.0 — The Home Screen**: describes the collapsing brand hero, the persistent
+profile button, and the content below it.
+
+**Renumbered:** 2.2→2.3 (First Launch & Permissions), 2.3→2.4 (Creating Your Account),
+2.4→2.5 (Logging In).
+
+### Validation
+
+| Level | ASPICE | Result |
+|-------|--------|--------|
+| L1 unit | SWE.4 | ✅ 104 tests, 0 failures (12 new in `SplashViewModelTest`) |
+| Compile (main) | — | ✅ `compileDebugKotlin` |
+| Compile (androidTest) | — | ✅ `compileDebugAndroidTestKotlin` |
+| L2 instrumented | SWE.5 | ⏸️ Not run (requires emulator/KVM) |
+| Visual verification | — | ⏸️ Not performed |
+
+### Files Modified
+
+```
+M  SkunkOps/atlas/system.md                          (+6, -3)
+M  SkunkOps/atlas/components.md                      (+141, -0)
+M  SkunkOps/atlas/flows.md                           (+74, -16)
+M  SkunkOps/atlas/failure-patterns.md                (+80, -45)
+M  01_requirements/DrivingCoach_SRS_v1.md            (+16, -2)
+M  01_requirements/TRACEABILITY_MATRIX.md            (+12, -3)
+M  docs/USER_MANUAL.md                               (+49, -5)
+M  app/build.gradle.kts                              (+1)
+M  app/src/main/AndroidManifest.xml                  (+1, -1)
+M  app/src/main/java/com/drivingcoach/di/AppModule.kt (+11)
+M  app/src/main/java/com/drivingcoach/ui/MainActivity.kt (+3, -23)
+M  app/src/main/java/com/drivingcoach/ui/home/HomeFragment.kt (+28, -4)
+M  app/src/main/res/layout/fragment_home.xml         (+150, -41)
+M  app/src/main/res/navigation/nav_graph.xml         (+26, -2)
+M  app/src/main/res/values/{colors,dimens,strings,themes,type}.xml
+M  app/src/androidTest/java/com/drivingcoach/EndToEndTest.kt (+2, -2)
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashViewModel.kt
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashFragment.kt
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashDestination.kt
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashTimings.kt
+A  app/src/main/java/com/drivingcoach/di/IoDispatcher.kt
+A  app/src/main/res/layout/fragment_splash.xml
+A  app/src/main/res/drawable/{ic_helmet_emblem,bg_hero_ring,ic_dot}.xml
+A  app/src/test/java/com/drivingcoach/ui/splash/SplashViewModelTest.kt
+```
+
+### Recommendations
+
+- [ ] **Visual check needed** — `ic_helmet_emblem.xml` was hand-authored and has never been
+      rendered; the emblem may need tuning
+- [ ] **L2 run needed** — collapsing hero animation and splash→destination routing unverified
+      on a device (requires emulator/KVM)
+- [ ] Add L2 coverage for UI-06 (hero collapse) — currently uncovered
+- [ ] DataStore corruption recovery remains open (falls back to empty preferences)
+- [ ] Pre-existing: SRS AD-04 mandates Firebase Auth but the code uses JWT-in-DataStore —
+      still unreconciled
+
+---
+
 ## [2026-07-22] Test Documentation Sync to Agent Instructions
 
 **Codebase Version:** v2.7-aspice-tests  

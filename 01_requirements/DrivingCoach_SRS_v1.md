@@ -12,6 +12,7 @@
 1. [Architecture decisions](#1-architecture-decisions)
 2. [User management](#2-user-management)
 3. [Onboarding and permissions](#3-onboarding-and-permissions)
+4. [Application startup and branding](#3a-application-startup-and-branding)
 4. [Track setup — start/finish line](#4-track-setup--startfinish-line)
 5. [Session recording](#5-session-recording)
 6. [Telemetry capture](#6-telemetry-capture)
@@ -100,7 +101,7 @@ These decisions are locked. All requirements and implementation prompts reflect 
 
 | ID | Requirement |
 |---|---|
-| ON-01 | On first launch, the app shall display an onboarding screen before any other screen. |
+| ON-01 | On first launch, the app shall display the branded loading screen, followed by the onboarding screen before any other functional screen. |
 | ON-02 | Onboarding shall consist of three information pages presented in a ViewPager2: Location tracking, Motion analysis, Data privacy. |
 | ON-03 | The onboarding screen shall have a single 'GRANT PERMISSIONS & START' button that requests the following permissions: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACTIVITY_RECOGNITION`. |
 | ON-04 | If all permissions are granted, the app shall mark onboarding as complete in DataStore and navigate to the Login screen. |
@@ -108,6 +109,22 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | ON-06 | If the user taps 'SKIP' after a denial, the app shall still mark onboarding as complete and navigate to Login. The missing permission will be re-requested when recording starts. |
 | ON-07 | Onboarding shall only be shown once. On all subsequent launches, the app shall skip directly to Login (or Home if already signed in). |
 | ON-08 | Onboarding completion state shall be persisted in `DataStore<Preferences>` with key `onboarding_complete`. |
+
+---
+
+## 3a. Application startup and branding
+
+| ID | Requirement |
+|---|---|
+| UI-01 | On cold start the app shall display a branded loading screen showing the Trillian emblem, wordmark, kicker, tagline, engineering manifesto, and a determinate progress indicator reflecting actual initialisation progress. |
+| UI-02 | The loading screen shall be displayed for a minimum of 1200 ms and shall be dismissible early by tapping anywhere on it. |
+| UI-03 | If essential startup state (preferences) cannot be read within 8000 ms, the app shall proceed to Onboarding rather than blocking. Onboarding is the safe default because it is idempotent and still grants required permissions, whereas skipping it can leave the app unable to record. |
+| UI-07 | Non-essential startup warm-up (database open, pending-upload lookup) shall be bounded independently at 2000 ms and shall not influence the startup destination. |
+| UI-04 | Startup state resolution (onboarding flag, authentication token, pending uploads) shall be performed off the main thread. The app shall not block the main thread during startup. |
+| UI-05 | The loading screen shall not remain on the navigation back stack; pressing back from the first functional screen shall exit the app. |
+| UI-06 | The Home screen shall display a collapsing brand hero (emblem, wordmark, kicker) that collapses to a pinned bar on scroll, with the Start Session control remaining visible at all times. |
+| UI-08 | The helmet emblem shall be supplied as a single `@drawable/ic_helmet_emblem` resource across all density buckets, and shall render undistorted and uncropped at every size it is displayed (132dp splash, 88dp Home hero, 36dp collapsed brand bar). |
+| UI-09 | Brand artwork shall be verified by measurement of the asset itself — square canvas, content aspect ratio 1.00 ± 0.05, content centred within 3 % of each axis, and a fully transparent border — rather than by presence-only assertions. |
 
 ---
 
