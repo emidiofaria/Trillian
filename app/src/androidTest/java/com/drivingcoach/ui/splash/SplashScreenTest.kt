@@ -23,6 +23,7 @@ import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.UninstallModules
 import dagger.hilt.components.SingletonComponent
+import org.hamcrest.Matchers.containsStringIgnoringCase
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -40,6 +41,8 @@ import javax.inject.Singleton
  * - **SRS UI-01** — every brand element inflates and is visible, and the progress indicator
  *   is determinate and reflects real initialisation progress.
  * - **SRS UI-02** — tapping the screen cuts the brand hold short.
+ * - **SRS UI-10** — the tap affordance is visible on screen, not only announced to
+ *   accessibility services.
  *
  * The minimum display time is pinned far longer than any assertion needs, so the loading
  * screen is *deterministically* on screen while the test runs. Racing the real 1200 ms
@@ -60,6 +63,9 @@ class SplashScreenTest {
         @Singleton
         fun provideSplashTimings(): SplashTimings = SplashTimings(
             minDisplayMs = PINNED_MIN_DISPLAY_MS,
+            // Pinned explicitly: inheriting the 4 s introduction hold would add
+            // that cost to every test in this class.
+            introDisplayMs = PINNED_MIN_DISPLAY_MS,
             timeoutMs = SplashTimings.DEFAULT_TIMEOUT_MS,
             warmUpTimeoutMs = SplashTimings.DEFAULT_WARM_UP_TIMEOUT_MS
         )
@@ -93,6 +99,14 @@ class SplashScreenTest {
         onView(withId(R.id.manifestoTitle)).check(matches(isDisplayed()))
         onView(withId(R.id.manifestoBody)).check(matches(isDisplayed()))
         onView(withId(R.id.progressIndicator)).check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun tapAffordanceIsVisibleNotJustAnAccessibilityLabel() {
+        // Regression guard: the hint previously existed only as a contentDescription on the
+        // root, so a sighted user had no indication the screen could be tapped at all.
+        onView(withId(R.id.splashHint)).check(matches(isCompletelyDisplayed()))
+        onView(withId(R.id.splashHint)).check(matches(withText(containsStringIgnoringCase("tap"))))
     }
 
     @Test

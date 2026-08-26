@@ -117,7 +117,7 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | ID | Requirement |
 |---|---|
 | UI-01 | On cold start the app shall display a branded loading screen showing the Trillian emblem, wordmark, kicker, tagline, engineering manifesto, and a determinate progress indicator reflecting actual initialisation progress. |
-| UI-02 | The loading screen shall be displayed for a minimum of 1200 ms and shall be dismissible early by tapping anywhere on it. |
+| UI-02 | The loading screen shall be displayed for a minimum of 1200 ms and shall be dismissible early by tapping anywhere on it. On the first 3 launches of an installation the minimum display time shall instead be 4000 ms, so the engineering manifesto can be read at least once. The minimum display time shall be measured from the moment the loading screen becomes visible to the user — that is, from the removal of the platform splash window — and not from the start of initialisation. The screen shall always dismiss itself automatically; a tap shall never be required to proceed. |
 | UI-03 | If essential startup state (preferences) cannot be read within 8000 ms, the app shall proceed to Onboarding rather than blocking. Onboarding is the safe default because it is idempotent and still grants required permissions, whereas skipping it can leave the app unable to record. |
 | UI-07 | Non-essential startup warm-up (database open, pending-upload lookup) shall be bounded independently at 2000 ms and shall not influence the startup destination. |
 | UI-04 | Startup state resolution (onboarding flag, authentication token, pending uploads) shall be performed off the main thread. The app shall not block the main thread during startup. |
@@ -125,6 +125,9 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | UI-06 | The Home screen shall display a collapsing brand hero (emblem, wordmark, kicker) that collapses to a pinned bar on scroll, with the Start Session control remaining visible at all times. |
 | UI-08 | The helmet emblem shall be supplied as a single `@drawable/ic_helmet_emblem` resource across all density buckets, and shall render undistorted and uncropped at every size it is displayed (132dp splash, 88dp Home hero, 36dp collapsed brand bar). |
 | UI-09 | Brand artwork shall be verified by measurement of the asset itself — square canvas, content aspect ratio 1.00 ± 0.05, content centred within 3 % of each axis, and a fully transparent border — rather than by presence-only assertions. |
+| UI-10 | The loading screen shall display a visible hint indicating that it can be tapped. The hint shall read "Tap to continue" while the introduction window is active and "Tap to skip" thereafter. An accessibility label alone shall not satisfy this requirement. |
+| UI-11 | The engineering manifesto and brand identity shall have a permanent home in an About screen reachable from Profile, so that they remain readable independently of the transient loading screen. |
+| UI-12 | The About screen shall display the build identity (version name and version code) read from `BuildConfig`, so that a user-reported version is derived from the same source of truth that names the APK. |
 
 ---
 

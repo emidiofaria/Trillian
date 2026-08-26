@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    tools:context=".ui.about.AboutFragment">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:navigationIcon="@drawable/ic_back"
+        app:title="@string/about_title"
+        app:titleTextAppearance="@style/TextAppearance.DrivingCoach.LapNumber"
+        app:titleTextColor="@color/colorOnSurface" />
+
+    <!-- Scrollable so the manifesto and version survive large font scales and short
+         screens; unlike the splash, this screen has no time limit and must stay readable. -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/spacing_lg"
+            android:paddingBottom="@dimen/spacing_xl">
+
+            <FrameLayout
+                android:layout_width="@dimen/hero_emblem_size"
+                android:layout_height="@dimen/hero_emblem_size"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:background="@drawable/bg_hero_ring">
+
+                <ImageView
+                    android:layout_width="132dp"
+                    android:layout_height="132dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/hero_emblem_description"
+                    android:src="@drawable/ic_helmet_emblem" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/wordmark"
+                style="@style/TextAppearance.DrivingCoach.Wordmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:text="@string/hero_wordmark" />
+
+            <TextView
+                android:id="@+id/kicker"
+                style="@style/TextAppearance.DrivingCoach.Kicker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:text="@string/hero_kicker" />
+
+            <TextView
+                android:id="@+id/tagline"
+                style="@style/TextAppearance.DrivingCoach.Tagline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:text="@string/hero_tagline" />
+
+            <!-- Same string resources as the splash, so the two can never drift apart. -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xl"
+                app:cardBackgroundColor="@color/manifesto_surface"
+                app:cardCornerRadius="@dimen/card_corner_radius"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/spacing_lg"
+                    android:paddingVertical="@dimen/spacing_md">
+
+                    <TextView
+                        android:id="@+id/manifestoTitle"
+                        style="@style/TextAppearance.DrivingCoach.Manifesto.Title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="@string/manifesto_title" />
+
+                    <TextView
+                        android:id="@+id/manifestoBody"
+                        style="@style/TextAppearance.DrivingCoach.Manifesto.Body"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/spacing_xs"
+                        android:gravity="center"
+                        android:text="@string/manifesto_body" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/versionLabel"
+                style="@style/TextAppearance.DrivingCoach.Footer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xl"
+                android:text="@string/about_version_label" />
+
+            <TextView
+                android:id="@+id/versionValue"
+                style="@style/TextAppearance.DrivingCoach.Kicker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                tools:text="2.8 (208)" />
+
+            <TextView
+                android:id="@+id/footerMetrics"
+                style="@style/TextAppearance.DrivingCoach.Footer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xl"
+                android:gravity="center"
+                android:text="@string/hero_footer_metrics" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

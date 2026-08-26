@@ -49,6 +49,10 @@ class ProfileFragment : Fragment() {
         binding.signOutButton.setOnClickListener {
             showSignOutConfirmation()
         }
+
+        binding.aboutButton.setOnClickListener {
+            findNavController().navigate(R.id.action_profile_to_about)
+        }
     }
 
     private fun showSignOutConfirmation() {
