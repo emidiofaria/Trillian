@@ -204,6 +204,21 @@ log_info "Verifying emulator is responsive..."
 }
 
 # =============================================================================
+# Disable animations (required by Espresso)
+# =============================================================================
+# Espresso synchronises by waiting for the UI thread to go idle. An animation
+# that never ends -- an indeterminate ProgressBar, for instance -- means the
+# thread is never idle, and the test hangs forever rather than failing. The
+# Android test docs require these scales to be zero on any device running
+# Espresso; without them, screens such as Session Result (which shows an
+# upload spinner) deadlock the whole suite.
+log_info "Disabling animations for Espresso..."
+for SCALE in window_animation_scale transition_animation_scale animator_duration_scale; do
+    "$ADB" -s "$DEVICE_ID" shell settings put global "$SCALE" 0 || \
+        log_warn "Could not set $SCALE; Espresso tests may hang on animated views."
+done
+
+# =============================================================================
 # Summary
 # =============================================================================
 echo ""
