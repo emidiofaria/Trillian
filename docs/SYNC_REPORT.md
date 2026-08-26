@@ -4,6 +4,189 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-08-12] Splash Display Budget Anchored to the Platform Handoff
+
+**Codebase Version:** v2.8  
+**Trigger:** User report — the engineering manifesto was still unreadable on first run
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| components.md | ✅ Updated | `SplashVisibilitySignal` added; 2 new logcat signals |
+| flows.md | ✅ Updated | Operational note rewritten with the measured anchor-error table |
+| failure-patterns.md | ✅ Updated | +69 lines — new pattern `FP-TIMING-ANCHOR` |
+| SRS_v1.md | ✅ Updated | UI-02 revised (no new IDs) |
+| USER_MANUAL.md | ✅ Updated | §2.2 — the two-screen cold start explained |
+| 20_ONBOARDING_TESTS.md | ✅ Updated | BRD-02 rewritten around the two-screen trap |
+| L2 README | ✅ Updated | `visibilityTimeoutMs` propagation note |
+
+### The Defect
+
+SRS UI-02 promises a 4000 ms hold on the branded loading screen. It was being measured from
+`SplashViewModel.start()`, which runs while the *platform* splash — the emblem alone on
+black — still owns the window. The user therefore read the manifesto for far less than the
+budget claimed.
+
+A first attempt on 2026-08-11 moved the anchor to `View.doOnPreDraw`. That fires during the
+fragment's layout pass, still ~1.2 s before the window is presented, so it only halved the
+error. Measured against the platform's own `ActivityTaskManager: Displayed` marker:
+
+| Anchor | Error | Delivered from a 4000 ms budget |
+|--------|-------|--------------------------------|
+| `start()` | ~1700 ms | ~2.3 s |
+| `doOnPreDraw` | ~1000–1400 ms | ~2.6–3.0 s |
+| `setOnExitAnimationListener` (current) | **~17 ms** | **~4.0 s** |
+
+### The Fix
+
+`SplashVisibilitySignal` (`@ActivityRetainedScoped`, a `CompletableDeferred<Long>`) carries
+the handoff instant from `MainActivity` — which owns the platform splash — to
+`SplashViewModel`, which owns the budget. The wait is bounded by the new
+`SplashTimings.visibilityTimeoutMs` (2000 ms) and falls back to the startup clock, so a
+missing signal degrades the hold instead of hanging it.
+
+`@ActivityRetainedScoped` rather than `@Singleton` is deliberate: a process-wide instance
+would leak the first launch's timestamp into every later one, which is harmless in
+production but would silently delete the hold across an instrumented suite.
+
+### No New Requirement IDs
+
+UI-02 was **revised**, not replaced — the requirement always meant "this screen for 4 s";
+the implementation simply measured it from the wrong instant.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4) | 120 tests, 0 failures — mutation-verified: reverting the anchor fails `hold is measured from the handoff, not from start` |
+| L2 (SWE.5) | 34 tests, 0 failures (30 executed, 4 legacy `@Ignore`) |
+| Device | Handoff agreed with `ActivityTaskManager: Displayed` to 16 ms and 18 ms across cold starts |
+
+### Deliberately Not Covered at L2
+
+An L2 assertion on this arithmetic would have to observe a 4 s window through Espresso,
+which waits for main-thread idleness before it looks; on a loaded emulator that wait can
+outlast the window. A first attempt did exactly that — green in the suite, red in isolation
+— and was removed rather than left as a flaky gate. The reasoning is recorded in
+`SplashIntroductionTest.kt` so it is not re-attempted.
+
+### Files Modified
+
+```
+A  app/src/main/java/com/drivingcoach/ui/splash/SplashVisibilitySignal.kt   (+38)
+M  app/src/main/java/com/drivingcoach/ui/MainActivity.kt                    (+17, -2)
+M  app/src/main/java/com/drivingcoach/ui/splash/SplashViewModel.kt          (+86, -3)
+M  app/src/main/java/com/drivingcoach/ui/splash/SplashTimings.kt            (+23, -2)
+M  app/src/test/java/com/drivingcoach/ui/splash/SplashViewModelTest.kt      (+313, -5)
+M  SkunkOps/atlas/failure-patterns.md                                       (+69)
+M  SkunkOps/atlas/components.md                                             (+71, -3)
+M  SkunkOps/atlas/flows.md                                                  (+39, -2)
+M  01_requirements/DrivingCoach_SRS_v1.md                                   (+4, -1)
+M  docs/USER_MANUAL.md                                                      (+30, -5)
+M  05_tests/L4_SYS5_acceptance/20_ONBOARDING_TESTS.md                       (+55)
+M  05_tests/L2_SWE5_integration/README.md                                   (+44, -1)
+```
+
+### Recommendations
+
+- [ ] Judge BRD-02 on real hardware. 4.0 s against ~3.5 s of reading is a thin margin; if it
+      still feels short, `introDisplayMs` is now a number that means what it says.
+- [ ] Separately, the platform splash itself runs 3.0–3.7 s on the API 30 emulator because
+      the first frame waits on a ~2 s DataStore read. Shortening that is untouched work.
+
+---
+
+## [2026-08-11] First-Run Introduction Window + About Screen
+
+**Codebase Version:** v2.8 (versionCode 208)
+**Trigger:** The engineering manifesto on the loading screen was unreadable — 14 words held
+for 1200 ms, against the ~4 s a normal reader needs.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `SRS_v1.md` | ✅ Updated | +4, −1 (UI-02 revised; UI-10, UI-11, UI-12 added) |
+| `atlas/components.md` | ✅ Updated | +67, −3 (1 new component, splash failure modes + test hooks) |
+| `atlas/flows.md` | ✅ Updated | +22, −2 (timing contract, execution path, L2 coverage, readability caveat) |
+| `atlas/system.md` | ✅ Updated | +6, −3 ("no in-app version" gap closed) |
+| `USER_MANUAL.md` | ✅ Updated | +23, −3 (§2.2 rewritten, §6.3 added, version lookup replaced) |
+| `L2_SWE5_integration/README.md` | ✅ Updated | +38, −1 (new classes; `SplashTimings` propagation warning + baseline) |
+| `L4_SYS5_acceptance/20_ONBOARDING_TESTS.md` | ✅ Updated | +47 (BRD-02, BRD-03) |
+| `atlas/failure-patterns.md` | ⏭️ Not changed | No new *pattern* — the new failure modes are component-local and recorded in `components.md` |
+
+### New Requirement IDs
+
+- **UI-10** — visible tap affordance on the loading screen (an accessibility label alone does not satisfy it)
+- **UI-11** — manifesto has a permanent home in an About screen reachable from Profile
+- **UI-12** — About screen reports the build identity from `BuildConfig`
+
+**Revised:** **UI-02** — adds the 4000 ms introduction window for the first 3 launches, and
+states explicitly that a tap is *never required* to proceed.
+
+### New Test IDs
+
+- **BRD-02** (L4) — Engineering manifesto is actually readable
+- **BRD-03** (L4) — About screen reports the build
+
+### Verification
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4) | **117 / 0 / 0** — 8 new splash tests |
+| L2 (SWE.5) | **34 tests, 0 failures** (30 executed, 4 legacy `@Ignore`) — 8 new |
+| On-device | Logcat confirms `budget=4000ms` on launches 1–3 and `budget=1200ms` from launch 4; launch counter correctly stops incrementing at 3 |
+| Visual | Loading screen verified on emulator with the new "Tap to continue" hint; Profile verified showing the About entry point |
+
+### Notable Findings
+
+1. **`BuildConfig` was not generated.** AGP 8 omits it unless `buildFeatures { buildConfig = true }`
+   is set. Nothing in the app had referenced it, so the About screen would not have compiled.
+2. **The introduction budget is a floor on *total* splash time, not on *readable* time.**
+   It is measured from `SplashViewModel.start()`, so slow initialisation consumes part of it
+   (measured: 1.4–3.4 s on the API 30 emulator). Documented in `flows.md`; `introDisplayMs`
+   is a single constant if the field says it is still too fast.
+3. **`hero_footer_metrics` was stale** — claimed "Tests - 104 ; SRS - 123 Requirements" against
+   an actual 147 tests and 220 requirement IDs. Corrected, since the About screen now makes
+   this claim permanently readable rather than momentary.
+
+### Files Modified
+
+```
+M  01_requirements/DrivingCoach_SRS_v1.md                    (+4,  -1)
+M  05_tests/L2_SWE5_integration/README.md                    (+38, -1)
+M  05_tests/L4_SYS5_acceptance/20_ONBOARDING_TESTS.md        (+47, -0)
+M  SkunkOps/atlas/components.md                              (+67, -3)
+M  SkunkOps/atlas/flows.md                                   (+22, -2)
+M  SkunkOps/atlas/system.md                                  (+6,  -3)
+M  docs/USER_MANUAL.md                                       (+23, -3)
+M  app/build.gradle.kts                                      (+3,  -0)
+M  app/src/main/java/.../ui/splash/SplashViewModel.kt        (+59, -1)
+M  app/src/main/java/.../ui/splash/SplashTimings.kt          (+16, -1)
+M  app/src/main/java/.../ui/splash/SplashFragment.kt         (+5,  -0)
+M  app/src/main/java/.../ui/profile/ProfileFragment.kt       (+4,  -0)
+M  app/src/main/res/layout/fragment_splash.xml               (+17, -1)
+M  app/src/main/res/layout/fragment_profile.xml              (+13, -0)
+M  app/src/main/res/navigation/nav_graph.xml                 (+12, -1)
+M  app/src/main/res/values/strings.xml                       (+9,  -1)
+M  app/src/test/java/.../ui/splash/SplashViewModelTest.kt    (+206, -4)
+M  5x L2 test classes (introDisplayMs pinned)                (+26, -0)
+A  app/src/main/java/.../ui/about/AboutFragment.kt           (55 lines)
+A  app/src/main/res/layout/fragment_about.xml                (142 lines)
+A  app/src/androidTest/java/.../ui/about/AboutScreenTest.kt  (132 lines)
+A  app/src/androidTest/java/.../splash/SplashIntroductionTest.kt (199 lines)
+```
+
+### Recommendations
+
+- [ ] Validate the 4 s window on real hardware (BRD-02); the emulator's slow startup makes it
+      the pessimistic case, but a fast phone may make 4 s feel long.
+- [ ] Still **no CI** (`.github/workflows/` absent) — every gate here runs on demand only.
+- [ ] `Log.d` startup calls could now be gated behind `BuildConfig.DEBUG`, newly available.
+
+---
+
 ## [2026-08-11] Build Versioning (versionCode / versionName)
 
 **Codebase Version:** v2.8  

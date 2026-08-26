@@ -34,11 +34,16 @@ Application.onCreate()
     → withTimeoutOrNull(timeoutMs = 8000)          [essential]
       → publish  0%  "preferences"
       → withContext(IO) { dataStore.data.first() }       → 25%
+      → applyIntroductionBudget(prefs[splash_launch_count] ?: 0)
+          → launchCount < 3 : displayBudget = introDisplayMs (4000), hint "Tap to continue",
+                              and write launchCount + 1   [failure logged, non-fatal]
+          → otherwise       : displayBudget = minDisplayMs (1200), hint "Tap to skip",
+                              no write
       → withTimeoutOrNull(warmUpTimeoutMs = 2000)  [optional, non-fatal]
           { withContext(IO) { sessionDao.getPendingUploadSessions() } }  → 55%
       → evaluate pending uploads                          → 80%
       → resolve destination                               → 100%
-    → awaitMinimumDisplay(minDisplayMs = 1200)  [skippable by tap]
+    → awaitMinimumDisplay(displayBudgetMs)      [skippable by tap, never required]
     → emit UiState(destination = …)
 → SplashFragment observes destination
 → NavController.navigate(action, popUpTo splashFragment inclusive)
@@ -77,7 +82,9 @@ None (local-only flow).
 
 | Parameter | Default | Injected via | Purpose |
 |-----------|---------|--------------|---------|
-| `minDisplayMs` | 1200 ms | `SplashTimings` (`SplashModule`) | Brand moment; set to 0 in tests |
+| `minDisplayMs` | 1200 ms | `SplashTimings` (`SplashModule`) | Brand moment for a returning user; set to 0 in tests |
+| `introDisplayMs` | 4000 ms | `SplashTimings` (`SplashModule`) | Brand moment on the first `INTRO_LAUNCH_COUNT` launches, long enough to read the manifesto; **must be pinned in every L2 module that overrides `SplashModule`** |
+| `INTRO_LAUNCH_COUNT` | 3 | `SplashTimings` constant | How many launches get the longer hold |
 | `timeoutMs` | 8000 ms | `SplashTimings` (`SplashModule`) | Ceiling on the **essential** preferences read |
 | `warmUpTimeoutMs` | 2000 ms | `SplashTimings` (`SplashModule`) | Ceiling on the **optional** Room warm-up |
 | `PROGRESS_TICK_MS` | 60 ms | `SplashViewModel` constant | Progress bar smoothness |
@@ -88,6 +95,10 @@ None (local-only flow).
 |--------------------|-------------------|-----|
 | Branded screen rendered, progress determinate | `SplashScreenTest` | UI-01 |
 | Minimum hold honoured, tap-to-skip | `SplashScreenTest` | UI-02 |
+| First-run introduction hold applied | `SplashIntroductionTest` | UI-02 |
+| Returning user *not* held by the introduction | `SplashReturningUserTest` | UI-02 |
+| Tap affordance visible, not accessibility-only | `SplashScreenTest` | UI-10 |
+| Manifesto has a permanent home; version shown | `AboutScreenTest` | UI-11, UI-12 |
 | Essential timeout → Onboarding (never Login) | `SplashFallbackTest` | UI-03 |
 | Main thread stays responsive while init stalls | `SplashMainThreadTest` | UI-04 |
 | Splash popped inclusively; Back exits the app | `StartupBackStackTest` | UI-05 |
@@ -96,6 +107,32 @@ None (local-only flow).
 These tests drive the real `MainActivity` and substitute only `SplashModule` /
 `DataStoreModule`, so the navigation graph and fragment lifecycle exercised are the
 production ones.
+
+**Operational note — the introduction budget is measured from the handoff, not from
+startup.** Cold start shows two screens in succession: the platform splash window (the
+emblem alone on black, owned by the OS and held until the activity's first frame is
+composited) and then the branded loading screen. `displayBudgetMs` is measured from the
+*second* of those becoming visible.
+
+That anchor is supplied by `SplashVisibilitySignal`: `MainActivity` reports the platform
+splash's exit, and `SplashViewModel` waits for it — bounded by `visibilityTimeoutMs`, after
+which it falls back to measuring from startup rather than stalling.
+
+This was wrong twice, and both mistakes cost readable time:
+
+| Anchor | Error vs. the true handoff | Readable manifesto (4000 ms budget) |
+|--------|---------------------------|-------------------------------------|
+| `start()` (original) | ~1700 ms early | ~2.3 s |
+| Fragment `doOnPreDraw` | ~1000–1400 ms early | ~2.6–3.0 s |
+| Platform splash exit (current) | ~17 ms | ~4.0 s |
+
+`doOnPreDraw` is the trap worth remembering: it fires during the fragment's layout pass,
+while the platform splash still owns the window, so it looks like a first-frame signal and
+is not one. The authoritative marker is `SplashScreen.setOnExitAnimationListener`, which can
+be checked against the platform's own `ActivityTaskManager: Displayed` logcat line.
+
+If the manifesto still reads as too fast in the field, raise `introDisplayMs`; it is a
+single named constant, and the budget it names is now the time actually delivered.
 
 **What these tests deliberately do not cover:** the emblem *artwork*. Every
 assertion above that touches the emblem checks `isDisplayed()`, which passes for
