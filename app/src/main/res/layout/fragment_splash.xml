@@ -132,11 +132,27 @@
         style="@style/TextAppearance.DrivingCoach.Footer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/spacing_lg"
-        app:layout_constraintBottom_toTopOf="@id/footerMetrics"
+        android:layout_marginBottom="@dimen/spacing_sm"
+        app:layout_constraintBottom_toTopOf="@id/splashHint"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         tools:text="45%" />
+
+    <!-- Visible tap affordance (SRS UI-02). Previously this hint existed only as a
+         contentDescription on the root, so sighted users had no indication the screen
+         could be tapped at all. -->
+    <TextView
+        android:id="@+id/splashHint"
+        style="@style/TextAppearance.DrivingCoach.Footer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_lg"
+        android:alpha="0.7"
+        android:importantForAccessibility="no"
+        app:layout_constraintBottom_toTopOf="@id/footerMetrics"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:text="Tap to continue" />
 
     <TextView
         android:id="@+id/footerMetrics"
