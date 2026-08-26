@@ -1493,6 +1493,69 @@ quote when reporting any other defect.
 
 ---
 
+## Component: Session Share & Telemetry Export
+
+### Purpose
+
+Turns a finished session into something that can leave the phone: a social image card
+(tap) and a developer diagnostic bundle (long-press). Both paths are strictly read-only
+with respect to recorded data — the export exists to *diagnose* lost sessions, so an
+export that could itself corrupt one would defeat its own purpose.
+
+### Key Code Areas
+
+| Area | Location |
+|------|----------|
+| Bundle assembly, metadata, cache pruning | `app/src/main/java/com/drivingcoach/util/SessionShareBuilder.kt` |
+| Gesture wiring, chooser, error surfacing | `app/src/main/java/com/drivingcoach/ui/session/SessionResultFragment.kt` |
+| Image card rendering | `app/src/main/java/com/drivingcoach/util/ShareCardGenerator.kt` |
+| FileProvider paths | `app/src/main/res/xml/file_paths.xml` (`<cache-path name="shared_images" path="shared/">`) |
+
+### Structure
+
+| Element | Detail |
+|---------|--------|
+| `buildTelemetryBundle(session, laps)` | Returns `ShareResult.Success(file)` or `ShareResult.Failure(reason)` — failure is a value, never an exception |
+| `Reason` | `TELEMETRY_FILE_MISSING`, `EXPORT_FAILED` |
+| ZIP entries | `telemetry.jsonl` (byte-for-byte copy), `session.json` (Gson metadata) |
+| `pruneStaleArtifacts()` | Deletes `telemetry_*` / `session_share_*` older than 24 h, immediate children only |
+| Output location | `cacheDir/shared/` — already covered by the existing FileProvider cache path |
+
+### Design Constraints
+
+| Constraint | Rationale |
+|------------|-----------|
+| Primary constructor takes a `File` dir + primitives + `now: () -> Long`; a secondary `@Inject` constructor supplies the real values | Makes the entire ZIP pipeline JVM-testable. Dagger cannot inject a lambda, hence the two-constructor split (same pattern as `LocationWarmUp`) |
+| Gson, not `org.json` | `unitTests.isReturnDefaultValues = true` stubs every `android.jar` method, so `org.json` would silently emit empty objects in L1 tests and the tests would pass while the metadata was blank |
+| Receives entities and a directory — never a DAO, never `TelemetryFileWriter` | The read-only invariant (SRS SH-11) holds **by construction**: there is no write path to session data to misuse |
+| Writes only into `cacheDir/shared/`, never `filesDir` | Avoids exposing the telemetry directory through the FileProvider |
+| Prune never recurses | A recursive delete rooted near user data is a data-loss incident waiting for a path bug |
+
+### Failure Modes
+
+| Mode | Cause | Symptom | Handling |
+|------|-------|---------|----------|
+| Telemetry file absent | Session predates the feature, or file removed | Snackbar "Telemetry file not found" | `Failure(TELEMETRY_FILE_MISSING)`; no exception, nothing sent |
+| Path is a directory | Corrupted `rawFilePath` | Same as above | Explicitly treated as missing rather than throwing on read |
+| ZIP write fails | Cache full / IO error | Snackbar, logged at `Log.e` | `Failure(EXPORT_FAILED)` |
+| Chooser cannot start | No handler app, FileProvider misconfigured | Snackbar | try/catch around `startActivity` |
+| **Long-press listener silently detached** | Refactor of `setupToolbar`, or `findViewById` returning null before layout | Export becomes unreachable, with no compile error and no crash | The *only* defence is `SessionShareTest` — three of its tests fail if `attachTelemetryExportGesture()` stops being called (verified by deliberately detaching it) |
+| Cache growth | Share artifacts were never cleaned up (pre-existing defect) | Slow disk bloat | 24 h prune on every share |
+
+### Signals
+
+- `Log.e(TAG, "Failed to share session card"| "Failed to start share chooser")`
+- User-visible Snackbars are the primary signal; the previous code caught and discarded
+  every share exception, which made a broken button and a dead button indistinguishable.
+
+### Criticality
+
+**LOW** for the image card. **MEDIUM** for the telemetry export — it is not on any user
+happy path, but it is the mechanism by which every *other* defect gets diagnosed, so its
+silent failure is disproportionately expensive.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |

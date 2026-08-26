@@ -119,6 +119,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | AI-01→14 | Backend coaching | Backend tests | 🟡 Medium |
 | **Share** | | | |
 | SH-01→06 | Share card | L1 | 🟢 Low |
+| SH-07→11 | Telemetry export (hidden gesture, ZIP bundle, read-only invariant) | L1 + L2 | 🟢 Low |
 
 ---
 
