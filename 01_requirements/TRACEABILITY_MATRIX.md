@@ -2,7 +2,7 @@
 
 Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test cases.
 
-**Last Updated:** 2026-08-12 (updated by trillian-docs-sync — GPS warm-up TS-16 to TS-20 added, TS-15 amended and now covered)
+**Last Updated:** 2026-09-03 (updated by trillian-docs-sync — driver profile DR-01 to DR-08 added and fully covered; UM-01 to UM-17 deferred to V2)
 
 ---
 
@@ -10,7 +10,8 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 
 | Category | Requirements | Covered | Coverage |
 |----------|--------------|---------|----------|
-| User Management (UM) | 19 | 0 | 0% ❌ |
+| User Management (UM) | 19 | 0 | *deferred to V2 — 17 of 19 out of scope for V1* |
+| Driver Profile (DR) | 8 | 8 | 100% ✅ |
 | Onboarding (ON) | 8 | 0 | 0% ❌ |
 | Track Setup (TS) | 20 | 12 | 60% ⚠️ |
 | Session Recording (SR) | 11 | 4 | 36% ⚠️ |
@@ -26,7 +27,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Startup & Branding (UI) | 9 | 9 | 100% ✅ |
 | Non-Functional (NF) | 13 | 1 | 8% ⚠️ |
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
-| **TOTAL** | **~193** | **~52** | **~27%** |
+| **TOTAL** | **~201** | **~60** | **~30%** |
 
 > ⚠️ **Coverage caveat — `@Ignore`d L2 classes.** Eight rows below cite
 > `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or
@@ -53,6 +54,15 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | UI-07 | Warm-up bounded, does not affect destination | L1 | `SplashViewModelTest` | ✅ |
 | UI-08 | Emblem renders undistorted at all densities and sizes | L1 + L4 | `BrandAssetGeometryTest`, `BRD-01` (human visual) | ✅ |
 | UI-09 | Brand artwork verified by measurement, not presence | L1 + L4 | `BrandAssetGeometryTest` (incl. falsification against the legacy asset), `BRD-01` | ✅ |
+| **Driver Profile** | | | | |
+| DR-01 | Driver Name screen shown after onboarding | L1 + L2 | `SplashViewModelTest`, `DriverNameFlowTest` | ✅ |
+| DR-02 | Name 2–100 chars; action disabled while invalid | L1 + L2 | `DriverProfileStoreTest` (bounds 1/2/100/101), `DriverNameViewModelTest`, `DriverNameFlowTest` | ✅ |
+| DR-03 | Name trimmed before persistence | L1 + L2 | `DriverProfileStoreTest`, `DriverNameFlowTest.surroundingWhitespaceIsTrimmedFromTheSavedName` | ✅ |
+| DR-04 | `user_name` + `driver_profile_complete` written atomically | L1 | `DriverProfileStoreTest` (round-trip, flag independence) | ✅ |
+| DR-05 | Relaunch goes straight to Home; destination resolution order | L1 + L2 | `SplashViewModelTest`, `DriverNameFlowTest.aSavedDriverGoesStraightToHomeOnRelaunch`, `StartupBackStackTest` | ✅ |
+| DR-06 | Rename from Profile; never re-keys sessions | L1 + L2 | `ProfileViewModelTest` (asserts database untouched), `DriverNameFlowTest.theSavedNameIsShownOnTheProfileScreen` | ✅ |
+| DR-07 | Clear User Data — confirm, wipe Room + files + prefs, return to Onboarding | L1 | `ProfileViewModelTest` (`inOrder`: paths read before `clearAllTables()`) | ✅ |
+| DR-08 | No auth or demo-mode affordance; "LET'S RACE!!" CTA | L2 | `DriverNameFlowTest.theDemoModeShortcutIsGone` | ✅ |
 | **Track Setup** | | | | |
 | TS-02 | UI elements displayed | L2 | `TrackSetupFragmentTest` | ✅ |
 | TS-03 | GPS status indicator | L2 | `TrackSetupFragmentTest` | ✅ |
@@ -102,12 +112,14 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 
 | Req ID | Requirement Summary | Recommended Level | Priority |
 |--------|---------------------|-------------------|----------|
-| **User Management** | | | |
-| UM-01→06 | Registration flow | L1 + L2 | 🔴 High |
-| UM-07→15 | Login/session mgmt | L1 + L2 | 🔴 High |
-| UM-16→19 | Sign out, profile | L2 | 🟡 Medium |
+| **User Management** *(deferred to V2)* | | | |
+| UM-01→06 | Registration flow | L1 + L2 | ⏸️ V2 — not implemented in V1 |
+| UM-07→15 | Login/session mgmt | L1 + L2 | ⏸️ V2 — not implemented in V1 |
+| UM-16→17 | Sign out | — | ⏸️ V2 — superseded in V1 by DR-07 |
+| UM-18, UM-19 | Profile stats and avatar initials | L1 + L2 | 🟡 Medium — partially exercised by `ProfileViewModelTest` and `DriverNameFlowTest` |
 | **Onboarding** | | | |
-| ON-01→08 | Permission flow | L2 | 🔴 High |
+| ON-01→03, ON-05, ON-06, ON-08 | Permission flow | L2 | 🔴 High |
+| ON-04, ON-07 | Hand-off to Driver Name / straight to Home | L1 + L2 | ✅ Covered via DR-01 and DR-05 |
 | **Lap Detection** | | | |
 | LD-02, LD-03 | Detection algorithm | L1 | 🔴 High |
 | LD-05 | 20,000ms guard | L1 (boundary) | 🔴 High |

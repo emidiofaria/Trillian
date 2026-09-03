@@ -19,6 +19,12 @@
             app:popUpToInclusive="true" />
 
         <action
+            android:id="@+id/action_splash_to_driver_name"
+            app:destination="@id/driverNameFragment"
+            app:popUpTo="@id/splashFragment"
+            app:popUpToInclusive="true" />
+
+        <action
             android:id="@+id/action_splash_to_login"
             app:destination="@id/loginFragment"
             app:popUpTo="@id/splashFragment"
@@ -38,14 +44,39 @@
         android:label="Onboarding"
         tools:layout="@layout/fragment_onboarding">
 
+        <!--
+            Onboarding hands over to driver naming, not straight to Home (SRS ON-04, DR-02).
+            It previously jumped to Home, which meant a first launch and every launch after
+            it took different paths and the app appeared to "forget" the driver.
+        -->
         <action
-            android:id="@+id/action_onboarding_to_home"
+            android:id="@+id/action_onboarding_to_driver_name"
+            app:destination="@id/driverNameFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- First-run local driver identity (SRS DR-01 … DR-08) -->
+    <fragment
+        android:id="@+id/driverNameFragment"
+        android:name="com.drivingcoach.ui.driver.DriverNameFragment"
+        android:label="Driver"
+        tools:layout="@layout/fragment_driver_name">
+
+        <action
+            android:id="@+id/action_driver_name_to_home"
             app:destination="@id/homeFragment"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
     </fragment>
 
-    <!-- Auth Flow -->
+    <!--
+        Auth Flow — V2 placeholder, unreachable in V1.
+
+        Retained rather than deleted so that reinstating Firebase Authentication is a
+        matter of restoring the navigation edges and filling in the fragments, instead of
+        rebuilding the screens from scratch. See SRS UM-01 … UM-17 (deferred to V2).
+    -->
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.drivingcoach.ui.auth.LoginFragment"
