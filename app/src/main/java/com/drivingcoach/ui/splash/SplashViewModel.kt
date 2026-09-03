@@ -9,8 +9,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drivingcoach.R
-import com.drivingcoach.data.api.AuthInterceptor
 import com.drivingcoach.data.db.dao.SessionDao
+import com.drivingcoach.data.profile.DriverProfileStore
 import com.drivingcoach.di.IoDispatcher
 import com.drivingcoach.ui.onboarding.OnboardingFragment
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,6 +38,7 @@ import javax.inject.Inject
 class SplashViewModel @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val sessionDao: SessionDao,
+    private val driverProfileStore: DriverProfileStore,
     private val timings: SplashTimings,
     private val visibility: SplashVisibilitySignal,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
@@ -82,11 +83,12 @@ class SplashViewModel @Inject constructor(
 
             // SRS UI-03: a slow or failed initialisation must never block the user.
             //
-            // The fallback is ONBOARDING, not LOGIN. If the preferences read fails we do not
-            // know whether this user has onboarded, and the two mistakes are not equally
-            // costly: sending an onboarded user through onboarding again is a recoverable
-            // annoyance that still ends at Home, whereas sending a *fresh* user to Login
-            // skips permission granting entirely and leaves the app unable to record.
+            // The fallback is ONBOARDING, and deliberately not the later steps. If the
+            // preferences read fails we do not know whether this user has onboarded, and
+            // the two mistakes are not equally costly: sending an established driver
+            // through onboarding again is a recoverable annoyance that still ends at Home,
+            // whereas skipping straight to naming or Home skips permission granting
+            // entirely and leaves the app unable to record.
             val destination = resolved ?: SplashDestination.ONBOARDING
 
             // SRS UI-02: hold the brand moment for the minimum display time, walking the
@@ -118,7 +120,12 @@ class SplashViewModel @Inject constructor(
         Log.d(TAG, "datastore read took ${System.currentTimeMillis() - prefsStart}ms")
         val onboardingComplete =
             preferences[OnboardingFragment.KEY_ONBOARDING_COMPLETE] ?: false
-        val hasToken = !preferences[AuthInterceptor.KEY_JWT].isNullOrBlank()
+
+        // V1 has no backend, so there is no token to find and the old `hasToken` branch was
+        // dead the moment demo mode became the only way in — it sent every returning driver
+        // back to a Login screen that could not log anyone in. Local identity replaces it.
+        // V2 reinstates an authentication branch here (SRS UM-01 … UM-17).
+        val driverProfileComplete = driverProfileStore.profileFrom(preferences) != null
 
         // SRS UI-02: the manifesto needs roughly 4 s to read, but charging that to every
         // cold start would tax the track-day path forever. Spend it on the first few
@@ -146,8 +153,8 @@ class SplashViewModel @Inject constructor(
 
         return when {
             !onboardingComplete -> SplashDestination.ONBOARDING
-            hasToken -> SplashDestination.HOME
-            else -> SplashDestination.LOGIN
+            !driverProfileComplete -> SplashDestination.DRIVER_NAME
+            else -> SplashDestination.HOME
         }
     }
 

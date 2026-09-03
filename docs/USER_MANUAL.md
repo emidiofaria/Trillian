@@ -97,25 +97,33 @@ When you first open Driving Coach, you'll be asked to grant permissions:
 
 **Important:** Choose **"Allow all the time"** for location when prompted. This ensures accurate recording even if the screen turns off.
 
-### 2.4 Creating Your Account
+### 2.4 Telling Trillian Your Name
 
-1. Tap **Register** on the welcome screen
-2. Enter your details:
-   - **Display Name** — how you'll appear in the app (2-100 characters)
-   - **Email** — your email address
-   - **Password** — at least 8 characters
-3. Tap **Create Account**
-4. You're in! You'll see the Home screen with your session list (empty for now)
+There are no accounts, no passwords, and no email addresses in this version. Trillian just
+needs to know what to call you.
 
-### 2.5 Logging In
+1. After permissions, you'll see the **Driver Name** screen
+2. Type the name you want to race under — anything from 2 to 100 characters
+3. Tap **LET'S RACE!!**
 
-Already have an account?
+That's it. You're on the Home screen with an empty session list, ready to go.
 
-1. Tap **Login**
-2. Enter your email and password
-3. Tap **Sign In**
+Your name is stored **on your phone only**. Nothing is uploaded, and nothing leaves the
+device when you set it.
 
-Forgot your password? Contact support for a reset link.
+### 2.5 Opening the App Again
+
+Trillian remembers you. Every launch after the first goes straight to the Home screen — you
+will not be asked for your name again.
+
+If you *are* asked for your name a second time, something cleared the app's data. See
+[Troubleshooting](#7-troubleshooting).
+
+**Want to change your name?** You can, at any time — see [6.2 Your Profile](#62-your-profile).
+
+**What about signing in?** Accounts, cloud backup, and signing in on a second phone are
+planned for a future version. This version is deliberately offline-first: everything lives
+on your phone.
 
 ---
 
@@ -387,31 +395,44 @@ If the original recording is no longer on your phone, you'll see
 *"Telemetry file not found"* and nothing is sent. Older sessions recorded before
 this feature existed may not have a file to share.
 
-### 6.2 Your Statistics
+### 6.2 Your Profile
 
 Tap your **Profile** (top right icon) to see:
 
+- Your driver name and initials
 - Total sessions recorded
 - Total laps driven
 - All-time best lap time
-- Display name and email
+
+**Changing your name:** tap your name, or the edit icon beside it, type a new one, and tap
+**Save**. The same 2–100 character rule applies. Renaming is purely cosmetic — none of your
+sessions, laps, or coaching notes are affected.
 
 ### 6.3 About Trillian
 
 Tap **About Trillian** at the bottom of the Profile screen. This screen is the permanent home
 for the brand and the engineering note that flashes past on the loading screen, plus the
-**app version** (for example `2.91 (291)`) and your **last GPS acquisition** timings — how
+**app version** (for example `2.92 (292)`) and your **last GPS acquisition** timings — how
 long the last fix took, and how long until it was accurate enough to use.
 
 If you're reporting a problem, this is the screen to quote the version from — and the GPS
 timings too, if the problem was a slow lock.
 
-### 6.4 Signing Out
+### 6.4 Clear User Data
+
+> ⚠️ **This permanently deletes everything and cannot be undone.** There is no account and
+> no cloud backup in this version, so there is nothing to restore from. Export or share
+> anything you want to keep *before* using this.
 
 1. Go to Profile
-2. Scroll down and tap **Sign Out**
-3. Your local data will be cleared
-4. You can log back in anytime — your sessions are saved on the server
+2. Scroll down and tap **Clear User Data**
+3. Read the confirmation and tap **Delete everything** if you're sure
+
+This removes your driver name, every recorded session, every lap, every coaching note, and
+the raw telemetry files behind them. The app returns to the very first screen, as if freshly
+installed.
+
+Use it when handing the phone to someone else, or to start completely fresh.
 
 ---
 
@@ -432,6 +453,23 @@ timings too, if the problem was a slow lock.
 7. Check **Profile → About**: it shows how long your last fix actually took. If that number
    is small but you waited a long time, mention it when you report the problem — it means
    something other than satellite reception was at fault
+
+### The App Asks for My Name Again
+
+**Symptoms:** you set your name once, but a later launch shows the Driver Name screen again —
+and your sessions are gone too.
+
+**This means the app's data was cleared,** not that it forgot you. Common causes:
+
+| Cause | What to do |
+|-------|------------|
+| **Clear User Data** was tapped | Nothing to recover — it's permanent by design |
+| Android "Clear storage" in system settings | Same; this wipes the app completely |
+| The app was uninstalled and reinstalled | Sessions live on the phone only, so they don't come back |
+| Device storage is full | Free up space; the app may be unable to save your name at all |
+
+If your **sessions are still there** but you're asked for a name anyway, that's a bug —
+please report it with your app version from *About Trillian*.
 
 ### Session Stuck on "Processing"
 
@@ -498,7 +536,13 @@ A: Typically within ±0.2 seconds using GPS-based start/finish line detection. P
 A: The app is designed for closed tracks only. Lap detection requires a defined start/finish line, which doesn't apply to normal driving.
 
 **Q: How long are sessions stored?**  
-A: Sessions are stored on our servers indefinitely. Your session history is available whenever you log in.
+A: On your phone, for as long as you keep them. This version stores everything locally — there is no account and no cloud backup — so uninstalling the app or using **Clear User Data** deletes your history permanently.
+
+**Q: Do I need to create an account?**  
+A: No. Trillian only asks for a name so it knows what to call you. Sign-in is planned for a future version.
+
+**Q: Will I lose my sessions if I change my name?**  
+A: No. Your name is purely a label; renaming never touches your recorded sessions.
 
 **Q: What happens if GPS signal is lost during recording?**  
 A: The app shows a warning, but recording continues. Gaps in GPS may affect lap detection accuracy. Try to maintain good sky visibility.
@@ -513,7 +557,7 @@ A: Yes, any Android device running 8.0+ with GPS hardware should work, though it
 A: We analyze your telemetry data — speed, acceleration, position — and compare your laps to identify areas for improvement. The AI looks for patterns like late braking, inconsistent corner entry, and speed scrubbing.
 
 **Q: Is my data private?**  
-A: Yes. Your session data is only visible to you when logged into your account. We don't share individual data with third parties.
+A: Yes. In this version your sessions never leave your phone unless you deliberately share or export them, and the name you enter is stored locally only. We don't share individual data with third parties.
 
 ---
 
@@ -533,7 +577,7 @@ If you're still having issues:
 ### Finding your app version
 
 Open **Profile → About Trillian**. The version is shown near the bottom of the screen, for
-example `2.91 (291)`. Please quote the whole thing, including the number in brackets — it tells
+example `2.92 (292)`. Please quote the whole thing, including the number in brackets — it tells
 us exactly which build you have.
 
 (You can also find it the long way round, via **Settings → Apps → Driving Coach**, but the

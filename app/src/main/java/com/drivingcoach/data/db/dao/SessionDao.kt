@@ -30,6 +30,16 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE uploadStatus = 'PENDING' OR uploadStatus = 'FAILED'")
     suspend fun getPendingUploadSessions(): List<SessionEntity>
+
+    /**
+     * Every recorded telemetry file path, for bulk cleanup (SRS DR-07).
+     *
+     * Deliberately returns the stored paths rather than listing the telemetry directory:
+     * clearing user data must delete only files this app recorded, never whatever else
+     * happens to be sitting in that folder.
+     */
+    @Query("SELECT rawFilePath FROM sessions WHERE rawFilePath != ''")
+    suspend fun getAllRawFilePaths(): List<String>
     
     @Query("SELECT * FROM sessions WHERE uploadStatus = 'PENDING' AND startedAt < :beforeTimestamp")
     suspend fun getStaleUploadSessions(beforeTimestamp: Long): List<SessionEntity>

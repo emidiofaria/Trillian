@@ -9,7 +9,11 @@ Runtime execution flows for RCA localization in Driving Coach Android app.
 ### Goal
 
 Show the branded loading screen, resolve startup state off the main thread, and hand the
-user to the correct destination (Onboarding vs Login vs Home).
+user to the correct destination (Onboarding vs Driver Name vs Home).
+
+> **Changed in v2.9** — the destination is no longer gated on a JWT. V1 issues no token,
+> so the old `hasToken` branch could never be true and every launch resolved to Login.
+> The gate is now the local driver profile (SRS DR-05).
 
 > **Changed in v2.8** — the former `runBlocking` DataStore read in
 > `MainActivity.setupNavigation()` has been removed. Startup state is now resolved
@@ -42,14 +46,16 @@ Application.onCreate()
       → withTimeoutOrNull(warmUpTimeoutMs = 2000)  [optional, non-fatal]
           { withContext(IO) { sessionDao.getPendingUploadSessions() } }  → 55%
       → evaluate pending uploads                          → 80%
+      → driverProfileStore.profileFrom(prefs)   [reuses the snapshot above,
+                                                 no second DataStore read]
       → resolve destination                               → 100%
     → awaitMinimumDisplay(displayBudgetMs)      [skippable by tap, never required]
     → emit UiState(destination = …)
 → SplashFragment observes destination
 → NavController.navigate(action, popUpTo splashFragment inclusive)
-  → onboarding incomplete       : OnboardingFragment
-  → onboarding complete + token : HomeFragment
-  → otherwise                   : LoginFragment
+  → onboarding incomplete          : OnboardingFragment
+  → driver profile incomplete      : DriverNameFragment
+  → otherwise                      : HomeFragment
 → observeAuthEvents() starts collecting AuthEventBus
 ```
 
@@ -211,8 +217,14 @@ OnboardingFragment.onViewCreated()
   → If denied: showDeniedState()
 → completeOnboarding()
   → DataStore.edit { KEY_ONBOARDING_COMPLETE = true }
-  → NavController.navigate(action_onboarding_to_home)
+  → guard: currentDestination == onboardingFragment   [onResume can re-fire this]
+  → NavController.navigate(action_onboarding_to_driver_name)
 ```
+
+> **Changed in v2.9** — onboarding previously jumped straight to Home
+> (`action_onboarding_to_home`), so the first run and every later run took different
+> paths and the driver was never asked for a name. It now hands off to the Driver Name
+> screen, matching SRS ON-04.
 
 ### Async Boundaries
 
@@ -262,6 +274,86 @@ OnboardingFragment.onViewCreated()
 | Permission grant/deny | System logs | Permission decision |
 | `onboarding_complete = true` | DataStore | Successful completion |
 | Navigation action | NavController logs | Screen transition |
+
+---
+
+## Flow: First-Run Driver Naming
+
+### Goal
+
+Capture the driver's display name exactly once, persist it, and let every later launch go
+straight to Home.
+
+### Trigger
+
+- Onboarding just completed (`action_onboarding_to_driver_name`)
+- Cold start where `onboarding_complete == true` but `driver_profile_complete != true`
+  (`action_splash_to_driver_name`)
+
+### Execution Path
+
+```
+DriverNameFragment.onViewCreated()
+→ driverNameInput.doAfterTextChanged
+  → DriverNameViewModel.onNameChanged(raw)
+    → DriverProfileStore.validate(raw)      [trims first]
+    → UiState(canSubmit = result is Valid, errorLabel = … )
+       └─ no error shown while the field is untouched or empty
+→ User taps "LET'S RACE!!"
+  → DriverNameViewModel.onSubmit(raw)
+    → ignored if isSaving                   [double-tap guard]
+    → re-validate                           [source of truth, not the button state]
+    → [IO] DriverProfileStore.saveName(name)
+        → dataStore.edit {                  [single atomic edit]
+             it[user_name] = trimmed
+             it[driver_profile_complete] = true
+          }
+    → success : Event.NavigateToHome
+    → failure : Event.ShowError — driver stays on this screen
+→ DriverNameFragment collects the event
+  → guard: currentDestination == driverNameFragment
+  → navigate(action_driver_name_to_home, popUpTo driverNameFragment inclusive)
+```
+
+### Async Boundaries
+
+| Boundary | Type | Location |
+|----------|------|----------|
+| Validation | Synchronous, main thread | `DriverProfileStore.validate()` — pure string work |
+| Save | `withContext(@IoDispatcher)` | `DriverProfileStore.saveName()` |
+| Event delivery | `Channel` → `Flow`, collected in `repeatOnLifecycle` | `DriverNameViewModel.events` |
+
+### Persistence Boundaries
+
+| Storage | Key | Purpose |
+|---------|-----|---------|
+| DataStore | `user_name` | Display name (trimmed) |
+| DataStore | `driver_profile_complete` | Gate for DR-05; written in the same edit |
+
+### Failure Points
+
+| Point | Failure | Impact |
+|-------|---------|--------|
+| `saveName()` | DataStore write throws | Error message; driver stays on the screen. **Never navigates to Home unpersisted** — that was the original defect. |
+| Navigation | Destination already changed | Guarded by a `currentDestination` check; the event is dropped |
+| Validation | Name 1 char or 101+ chars | Button stays disabled (SRS DR-02) |
+
+### User-Visible Symptoms
+
+| Symptom | Meaning |
+|---------|---------|
+| "LET'S RACE!!" greyed out | Name is shorter than 2 or longer than 100 characters |
+| Asked for a name on every launch | `driver_profile_complete` is not being written — check DataStore write failures in Logcat |
+| Name shown with odd spacing | Trimming regression (SRS DR-03) |
+
+### Related Flows
+
+- *Rename*: Profile → tap name or edit button → dialog → `ProfileViewModel.renameDriver()`
+  → same validation → `saveName()`. Never touches Room (asserted by `ProfileViewModelTest`).
+- *Clear User Data*: Profile → Clear User Data → destructive confirmation →
+  read `rawFilePath`s **before** `clearAllTables()` → delete those files → clear all
+  preferences → navigate to Onboarding. The read-before-clear order is a contract: after
+  `clearAllTables()` there is no record of which files belong to the app.
 
 ---
 

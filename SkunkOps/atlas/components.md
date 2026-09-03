@@ -318,6 +318,12 @@ Processes telemetry data into chart-ready speed vs distance data points for the 
 
 ## Component: Authentication Layer
 
+> **V1 status: DORMANT.** V1 ships with no backend and no accounts. `LoginFragment` and
+> `RegisterFragment` are unreachable placeholders (no nav action targets them), and no
+> code path writes `jwt_token`. `AuthRepository`/`AuthInterceptor` remain wired for V2
+> restoration. Local identity is owned by **Driver Profile Store** (below).
+> Anything in this section describes intended V2 behaviour, not current runtime behaviour.
+
 ### Purpose
 
 Handles user registration, login, token storage, and automatic token injection/expiration handling for all authenticated API calls.
@@ -378,6 +384,82 @@ Handles user registration, login, token storage, and automatic token injection/e
 ### Criticality
 
 **HIGH** — Blocked auth = blocked uploads/session fetch, but local recording still works
+
+---
+
+## Component: Driver Profile Store
+
+### Purpose
+
+Single owner of the app's V1 local identity. V1 has no accounts, so identity is reduced
+to one fact — what to call the driver — plus a flag saying that fact has been captured.
+Existed to fix the defect where "demo mode" entered Home while persisting nothing, so
+every relaunch bounced the driver back to a login screen they could not use.
+
+### Key Code Areas
+
+- `data/profile/DriverProfileStore.kt` — validation, persistence, initials derivation
+- `ui/driver/DriverNameViewModel.kt` — first-run naming state machine
+- `ui/driver/DriverNameFragment.kt` + `res/layout/fragment_driver_name.xml` — the "LET'S RACE!!" screen
+- `ui/profile/ProfileViewModel.kt` — rename and Clear User Data
+- `ui/splash/SplashViewModel.kt` — consumer; resolves the startup destination
+
+### Dependencies
+
+- `DataStore<Preferences>` — the only persistence used
+- `@IoDispatcher CoroutineDispatcher` — all reads/writes move off the main thread
+
+### Inputs
+
+- Raw display name typed by the driver (untrimmed, unvalidated)
+- `Preferences` snapshot supplied by `SplashViewModel` via `profileFrom(prefs)`
+
+### Outputs
+
+- `DriverProfile(displayName)` or `null` when no profile exists
+- `NameValidation` = `Valid(value)` | `TooShort` | `TooLong`
+- Preference keys `user_name` (String) and `driver_profile_complete` (Boolean), written
+  atomically in one `edit` block
+
+### Design Constraints
+
+| Constraint | Reason |
+|---|---|
+| Two keys, not one | An interrupted rename must never look like "first run". Inferring completion from `user_name != null` would drop an established driver into setup with history apparently gone. |
+| Name is cosmetic only | Sessions stay keyed to `demo_user` (SRS DP-01). Keying on an editable name would orphan history on a typo fix. |
+| `profileFrom(Preferences)` overload | Lets `SplashViewModel` reuse its single startup preferences snapshot instead of a second DataStore read on the cold-start critical path (SRS UI-04). |
+| Code-point-safe initials | Emoji and astral-plane names must not produce mojibake in the avatar. |
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| Preferences read throws | `readProfile()` returns `null`; driver is asked to name again | DataStore file corruption |
+| Save throws | Error text under the field; driver stays on the naming screen (never advances to Home unpersisted) | Disk full / IO error |
+| Name below 2 or above 100 chars | Primary action stays disabled | Validation (SRS DR-02) |
+
+### Observable Signals
+
+| Signal | Location |
+|--------|----------|
+| DataStore keys `user_name`, `driver_profile_complete` | `driving_coach_prefs.preferences_pb` |
+| `DriverProfileStore` tag | Logcat, on read/write failure |
+| Startup destination `DRIVER_NAME` | `SplashViewModel.UiState.destination` |
+
+### Automated Verification
+
+| Level | Test | Guards |
+|---|---|---|
+| L1 | `DriverProfileStoreTest` (22) | Bounds 1/2/100/101, trimming, round-trip, flag independence, degraded read, initials |
+| L1 | `DriverNameViewModelTest` (12) | Submit gating, double-tap, failed-save containment |
+| L1 | `ProfileViewModelTest` (11) | Rename never touches the database; `clearUserData` ordering |
+| L1 | `SplashViewModelTest` | Destination resolution across all profile states |
+| L2 | `DriverNameFlowTest` (6) | First-run naming, **relaunch remembers the driver**, trimming, demo-mode shortcut absent |
+
+### Criticality
+
+**HIGH** — Gates every launch. A failure here either blocks entry to the app entirely or
+silently resets a driver to first-run state.
 
 ---
 
@@ -1186,7 +1268,7 @@ Generates coaching insights locally (offline) from lap data stored in Room. Prov
 
 ### Purpose
 
-Owns cold-start initialisation. Resolves whether the user goes to Onboarding, Login or
+Owns cold-start initialisation. Resolves whether the user goes to Onboarding, Driver Name or
 Home while presenting the TRILLIAN brand moment with a progress bar tied to **real**
 startup work. Replaces the former main-thread `runBlocking` DataStore read in
 `MainActivity`.
@@ -1209,7 +1291,8 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 
 | Dependency | Type | Purpose |
 |------------|------|---------|
-| `DataStore<Preferences>` | Injected | Read `onboarding_complete`, `jwt_token` |
+| `DataStore<Preferences>` | Injected | Read `onboarding_complete`, `splash_launch_count` |
+| `DriverProfileStore` | Injected | Resolve `driver_profile_complete` from the same preferences snapshot |
 | `SessionDao` | Injected | Room warm-up + pending upload count |
 | `SplashTimings` | Injected | `minDisplayMs` / `introDisplayMs` / `timeoutMs` / `warmUpTimeoutMs` / `visibilityTimeoutMs` (0 in tests) |
 | `SplashVisibilitySignal` | Injected | Reports when the platform splash exits, which anchors the display budget |
@@ -1218,7 +1301,7 @@ startup work. Replaces the former main-thread `runBlocking` DataStore read in
 
 ### Inputs
 
-- DataStore preferences: `onboarding_complete` (Boolean), `jwt_token` (String), `splash_launch_count` (Int)
+- DataStore preferences: `onboarding_complete` (Boolean), `user_name` (String), `driver_profile_complete` (Boolean), `splash_launch_count` (Int)
 - Room: `sessionDao.getPendingUploadSessions()`
 - User tap on `splashRoot` (skip request)
 

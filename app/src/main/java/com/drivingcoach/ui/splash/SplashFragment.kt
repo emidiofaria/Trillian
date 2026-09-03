@@ -75,6 +75,7 @@ class SplashFragment : Fragment() {
 
         val action = when (destination) {
             SplashDestination.ONBOARDING -> R.id.action_splash_to_onboarding
+            SplashDestination.DRIVER_NAME -> R.id.action_splash_to_driver_name
             SplashDestination.LOGIN -> R.id.action_splash_to_login
             SplashDestination.HOME -> R.id.action_splash_to_home
         }

@@ -9,12 +9,25 @@ import androidx.fragment.app.viewModels
 import com.drivingcoach.databinding.FragmentRegisterBinding
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * TODO(V2): placeholder for Firebase Authentication — see SRS UM-01 … UM-06 (deferred).
+ *
+ * **Unreachable in V1.** Registration requires an identity provider, and V1 has none.
+ * A driver identifies themselves locally via
+ * [com.drivingcoach.ui.driver.DriverNameFragment] instead.
+ *
+ * Retained alongside [LoginFragment] so the V2 auth flow is restored rather than rebuilt.
+ * When restoring, implement the 8-character password minimum (UM-03), the 2–100 character
+ * display name bound (UM-04, already enforced by
+ * [com.drivingcoach.data.profile.DriverProfileStore]) and the failure Snackbar (UM-06).
+ */
 @AndroidEntryPoint
 class RegisterFragment : Fragment() {
 
     private var _binding: FragmentRegisterBinding? = null
     private val binding get() = _binding!!
 
+    @Suppress("unused")
     private val viewModel: RegisterViewModel by viewModels()
 
     override fun onCreateView(
@@ -24,20 +37,6 @@ class RegisterFragment : Fragment() {
     ): View {
         _binding = FragmentRegisterBinding.inflate(inflater, container, false)
         return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        setupUI()
-        observeViewModel()
-    }
-
-    private fun setupUI() {
-        // TODO: Setup registration form interactions
-    }
-
-    private fun observeViewModel() {
-        // TODO: Observe registration state
     }
 
     override fun onDestroyView() {

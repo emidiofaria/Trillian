@@ -28,6 +28,7 @@ import com.drivingcoach.data.db.entity.CoachingInsightEntity
 import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.ProcessingStatus
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.profile.DriverProfileStore
 import com.drivingcoach.ui.MainActivity
 import com.drivingcoach.ui.onboarding.OnboardingFragment
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -85,6 +86,10 @@ class EndToEndTest {
             dataStore.edit { prefs ->
                 prefs.clear()
                 prefs[OnboardingFragment.KEY_ONBOARDING_COMPLETE] = true
+                // V1 gates Home on a saved local driver profile, not on a token
+                // (SRS DR-01 … DR-04), so every E2E launch needs one seeded.
+                prefs[DriverProfileStore.KEY_DRIVER_NAME] = "E2E Driver"
+                prefs[DriverProfileStore.KEY_PROFILE_COMPLETE] = true
             }
         }
 
@@ -387,12 +392,12 @@ class EndToEndTest {
     }
 
     @Test
-    fun testSignOut() {
+    fun testClearUserData() {
         // Seed database with a session
         runBlocking {
             val session = SessionEntity(
                 userId = "demo_user",
-                trackName = "SignOut Test Track",
+                trackName = "Clear Data Test Track",
                 startedAt = System.currentTimeMillis() - 300000,
                 endedAt = System.currentTimeMillis() - 60000,
                 rawFilePath = "/test/path.jsonl",
@@ -403,15 +408,7 @@ class EndToEndTest {
             database.sessionDao().insertSession(session)
         }
 
-        // Set logged in state
-        runBlocking {
-            dataStore.edit { prefs ->
-                prefs[OnboardingFragment.KEY_ONBOARDING_COMPLETE] = true
-                prefs[AuthInterceptor.KEY_JWT] = "valid_jwt_token"
-            }
-        }
-
-        // Launch MainActivity
+        // Launch MainActivity (setup() already seeded onboarding + driver profile)
         scenario = ActivityScenario.launch(MainActivity::class.java)
         Thread.sleep(500)
 
@@ -422,18 +419,27 @@ class EndToEndTest {
         // Should be on ProfileFragment
         onView(withText("PROFILE")).check(matches(isDisplayed()))
 
-        // Tap SIGN OUT button
-        onView(withId(R.id.signOutButton)).perform(click())
+        // Tap CLEAR USER DATA and confirm the destructive dialog (SRS DR-07)
+        onView(withId(R.id.clearDataButton)).perform(click())
+        Thread.sleep(300)
+        onView(withText(R.string.clear_data_confirm)).perform(click())
         Thread.sleep(500)
 
-        // Assert navigation to LoginFragment
-        onView(withId(R.id.loginButton)).check(matches(isDisplayed()))
+        // Clearing data returns the driver to onboarding, not to a login screen
+        onView(withId(R.id.grantButton)).check(matches(isDisplayed()))
 
-        // Verify JWT is cleared from DataStore
+        // Verify local identity and session history are both gone
         runBlocking {
             val prefs = dataStore.data.first()
-            val token = prefs[AuthInterceptor.KEY_JWT]
-            assert(token == null) { "JWT should be cleared after sign out" }
+            assert(prefs[DriverProfileStore.KEY_DRIVER_NAME] == null) {
+                "Driver name should be cleared after clearing user data"
+            }
+            assert(prefs[DriverProfileStore.KEY_PROFILE_COMPLETE] == null) {
+                "Profile completion flag should be cleared after clearing user data"
+            }
+            assert(database.sessionDao().getAllRawFilePaths().isEmpty()) {
+                "Sessions should be deleted after clearing user data"
+            }
         }
     }
 }

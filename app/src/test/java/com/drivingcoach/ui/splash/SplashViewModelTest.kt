@@ -5,8 +5,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import com.drivingcoach.R
-import com.drivingcoach.data.api.AuthInterceptor
 import com.drivingcoach.data.db.dao.SessionDao
+import com.drivingcoach.data.profile.DriverProfileStore
 import com.drivingcoach.ui.onboarding.OnboardingFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -106,6 +106,7 @@ class SplashViewModelTest {
     ) = SplashViewModel(
         dataStore = dataStore,
         sessionDao = sessionDao,
+        driverProfileStore = DriverProfileStore(dataStore, testDispatcher),
         timings = timings,
         visibility = visibility,
         ioDispatcher = testDispatcher
@@ -131,7 +132,7 @@ class SplashViewModelTest {
     }
 
     @Test
-    fun `onboarded but signed out routes to login`() = runTest(testDispatcher) {
+    fun `onboarded without a driver profile routes to driver naming`() = runTest(testDispatcher) {
         whenever(sessionDao.getPendingUploadSessions()).thenReturn(emptyList())
         val prefs = mutablePreferencesOf(
             OnboardingFragment.KEY_ONBOARDING_COMPLETE to true
@@ -141,15 +142,21 @@ class SplashViewModelTest {
         vm.start()
         advanceUntilIdle()
 
-        assertEquals(SplashDestination.LOGIN, vm.uiState.value.destination)
+        assertEquals(SplashDestination.DRIVER_NAME, vm.uiState.value.destination)
     }
 
+    /**
+     * The regression guard for the defect this flow was built to fix: demo mode used to
+     * persist nothing, so every relaunch landed back on a Login screen that could not log
+     * anyone in. A completed driver profile must go straight to Home.
+     */
     @Test
-    fun `onboarded and signed in routes to home`() = runTest(testDispatcher) {
+    fun `onboarded with a driver profile routes to home`() = runTest(testDispatcher) {
         whenever(sessionDao.getPendingUploadSessions()).thenReturn(emptyList())
         val prefs = mutablePreferencesOf(
             OnboardingFragment.KEY_ONBOARDING_COMPLETE to true,
-            AuthInterceptor.KEY_JWT to "a-token"
+            DriverProfileStore.KEY_DRIVER_NAME to "Ayrton",
+            DriverProfileStore.KEY_PROFILE_COMPLETE to true
         )
 
         val vm = viewModel(preferences = prefs)
@@ -159,19 +166,59 @@ class SplashViewModelTest {
         assertEquals(SplashDestination.HOME, vm.uiState.value.destination)
     }
 
+    /**
+     * A completion flag without a name is an incoherent profile — a half-applied write, or
+     * a name cleared out from underneath the flag. Naming is idempotent, so re-running it
+     * costs the driver one screen; admitting them to Home nameless does not self-correct.
+     */
     @Test
-    fun `blank token is not treated as signed in`() = runTest(testDispatcher) {
+    fun `completion flag without a name routes to driver naming`() = runTest(testDispatcher) {
         whenever(sessionDao.getPendingUploadSessions()).thenReturn(emptyList())
         val prefs = mutablePreferencesOf(
             OnboardingFragment.KEY_ONBOARDING_COMPLETE to true,
-            AuthInterceptor.KEY_JWT to "   "
+            DriverProfileStore.KEY_PROFILE_COMPLETE to true
         )
 
         val vm = viewModel(preferences = prefs)
         vm.start()
         advanceUntilIdle()
 
-        assertEquals(SplashDestination.LOGIN, vm.uiState.value.destination)
+        assertEquals(SplashDestination.DRIVER_NAME, vm.uiState.value.destination)
+    }
+
+    /**
+     * A name left behind by an earlier build, or by a partially-completed rename, does not
+     * amount to a completed profile. The explicit flag is the authority.
+     */
+    @Test
+    fun `name without the completion flag routes to driver naming`() = runTest(testDispatcher) {
+        whenever(sessionDao.getPendingUploadSessions()).thenReturn(emptyList())
+        val prefs = mutablePreferencesOf(
+            OnboardingFragment.KEY_ONBOARDING_COMPLETE to true,
+            DriverProfileStore.KEY_DRIVER_NAME to "Ayrton"
+        )
+
+        val vm = viewModel(preferences = prefs)
+        vm.start()
+        advanceUntilIdle()
+
+        assertEquals(SplashDestination.DRIVER_NAME, vm.uiState.value.destination)
+    }
+
+    /** A stored profile never overrides onboarding: permissions come first (SRS ON-01). */
+    @Test
+    fun `driver profile does not skip onboarding`() = runTest(testDispatcher) {
+        whenever(sessionDao.getPendingUploadSessions()).thenReturn(emptyList())
+        val prefs = mutablePreferencesOf(
+            DriverProfileStore.KEY_DRIVER_NAME to "Ayrton",
+            DriverProfileStore.KEY_PROFILE_COMPLETE to true
+        )
+
+        val vm = viewModel(preferences = prefs)
+        vm.start()
+        advanceUntilIdle()
+
+        assertEquals(SplashDestination.ONBOARDING, vm.uiState.value.destination)
     }
 
     // --- Progress reporting (UI-01) -----------------------------------------------------
@@ -270,7 +317,8 @@ class SplashViewModelTest {
         }
         val prefs = mutablePreferencesOf(
             OnboardingFragment.KEY_ONBOARDING_COMPLETE to true,
-            AuthInterceptor.KEY_JWT to "a-token"
+            DriverProfileStore.KEY_DRIVER_NAME to "Ayrton",
+            DriverProfileStore.KEY_PROFILE_COMPLETE to true
         )
 
         val vm = viewModel(preferences = prefs)
@@ -448,8 +496,8 @@ class SplashViewModelTest {
     private fun slowStartupViewModel(
         readDelayMs: Long,
         visibility: SplashVisibilitySignal
-    ) = SplashViewModel(
-        dataStore = object : DataStore<Preferences> {
+    ): SplashViewModel {
+        val dataStore = object : DataStore<Preferences> {
             override val data: Flow<Preferences> = flow {
                 delay(readDelayMs)
                 emit(emptyPreferences())
@@ -458,12 +506,17 @@ class SplashViewModelTest {
             override suspend fun updateData(
                 transform: suspend (t: Preferences) -> Preferences
             ): Preferences = emptyPreferences()
-        },
-        sessionDao = sessionDao,
-        timings = introTimings(),
-        visibility = visibility,
-        ioDispatcher = testDispatcher
-    )
+        }
+
+        return SplashViewModel(
+            dataStore = dataStore,
+            sessionDao = sessionDao,
+            driverProfileStore = DriverProfileStore(dataStore, testDispatcher),
+            timings = introTimings(),
+            visibility = visibility,
+            ioDispatcher = testDispatcher
+        )
+    }
 
     @Test
     fun `hold is measured from the handoff, not from start`() = runTest(testDispatcher) {
