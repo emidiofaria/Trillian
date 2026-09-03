@@ -36,30 +36,29 @@
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         tools:text="MV" />
 
-    <!-- Display Name -->
+    <!-- Display Name — tappable, and paired with an explicit edit affordance (SRS DR-06) -->
     <TextView
         android:id="@+id/userName"
         style="@style/TextAppearance.DrivingCoach.H2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_md"
+        android:background="?attr/selectableItemBackground"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/avatarInitials"
         tools:text="Max Verstappen" />
 
-    <!-- Email -->
-    <TextView
-        android:id="@+id/userEmail"
-        style="@style/TextAppearance.DrivingCoach.Body"
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/editNameButton"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xs"
-        android:textColor="@color/colorOnSurfaceVariant"
+        android:text="@string/driver_name_edit_title"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/userName"
-        tools:text="max@redbull.com" />
+        app:layout_constraintTop_toBottomOf="@id/userName" />
 
     <!-- Stats Row -->
     <LinearLayout
@@ -71,7 +70,7 @@
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/userEmail">
+        app:layout_constraintTop_toBottomOf="@id/editNameButton">
 
         <!-- Total Sessions -->
         <com.google.android.material.card.MaterialCardView
@@ -183,19 +182,25 @@
         android:layout_marginHorizontal="@dimen/spacing_md"
         android:layout_marginBottom="@dimen/spacing_sm"
         android:text="@string/about_button"
-        app:layout_constraintBottom_toTopOf="@id/signOutButton"
+        app:layout_constraintBottom_toTopOf="@id/clearDataButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Sign Out Button -->
+    <!--
+        Clear User Data (SRS DR-07).
+
+        Named for what it does. It was previously "SIGN OUT", which implied a reversible
+        session change; with no backend there is no remote copy, so this has always been an
+        irreversible local wipe.
+    -->
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/signOutButton"
+        android:id="@+id/clearDataButton"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/spacing_md"
         android:layout_marginBottom="@dimen/spacing_lg"
-        android:text="SIGN OUT"
+        android:text="@string/clear_data_button"
         android:textColor="@color/colorError"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

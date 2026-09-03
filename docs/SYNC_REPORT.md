@@ -4,6 +4,90 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-03] Local Driver Profile Replaces Login
+
+**Codebase Version:** v2.92-driver-profile  
+**Trigger:** V1 ships without a backend. Login was removed and replaced with a persistent
+local driver name, fixing the defect where the app "forgot" the driver on every relaunch.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `SRS_v1.md` | ✅ Updated | +8 requirements (DR-01…DR-08), new §2a; §2 (UM-01…UM-17) marked deferred to V2; AD-04, UM-18, ON-04, ON-06, ON-07 amended |
+| `TRACEABILITY_MATRIX.md` | ✅ Updated | DR-01…DR-08 added at 100% coverage; UM rows re-classified as V2; ON-04/ON-07 now covered |
+| `components.md` | ✅ Updated | +1 component (*Driver Profile Store*); Authentication Layer marked DORMANT; Splash inputs corrected |
+| `flows.md` | ✅ Updated | +1 flow (*First-Run Driver Naming*); *App Startup* and *Onboarding* execution paths corrected |
+| `failure-patterns.md` | ✅ Updated | +1 pattern (FP-UNREACHABLE-GATE), marked FIXED |
+| `USER_MANUAL.md` | ✅ Updated | §2.4/§2.5 rewritten (account creation → driver name), §6.2 rename, §6.4 Clear User Data, +1 troubleshooting entry, 3 FAQ entries |
+
+### New Requirement IDs
+
+DR-01, DR-02, DR-03, DR-04, DR-05, DR-06, DR-07, DR-08 (new `DR-` prefix, §2a *Driver profile (V1 local)*)
+
+### Root Cause Documented
+
+Two defects that only manifested together: "Skip Login (Demo Mode)" navigated to Home while
+persisting nothing, and `SplashViewModel` gated Home on a JWT that V1 never issues. A third
+(`onboarding → home` directly) hid the inconsistency on first launch. Recorded as
+**FP-UNREACHABLE-GATE** — *a navigation gate must read state some code path in the same
+build actually writes*.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4 unit) | ✅ 203/203 passed |
+| L2 (SWE.5 integration) | ✅ 49/53 passed, 0 failed (4 pre-existing `@Ignore`d E2E tests) |
+
+New tests: `DriverProfileStoreTest` (22), `DriverNameViewModelTest` (12),
+`ProfileViewModelTest` (11), `DriverNameFlowTest` (6, L2). `SplashViewModelTest` extended
+from token-based to profile-based destination resolution.
+
+### Files Modified
+
+```
+A  app/src/main/java/com/drivingcoach/data/profile/DriverProfileStore.kt
+A  app/src/main/java/com/drivingcoach/ui/driver/DriverNameViewModel.kt
+A  app/src/main/java/com/drivingcoach/ui/driver/DriverNameFragment.kt
+A  app/src/main/res/layout/fragment_driver_name.xml
+A  app/src/test/.../DriverProfileStoreTest.kt
+A  app/src/test/.../DriverNameViewModelTest.kt
+A  app/src/test/.../ProfileViewModelTest.kt
+A  app/src/androidTest/.../DriverNameFlowTest.kt
+M  app/src/main/java/com/drivingcoach/ui/splash/SplashViewModel.kt       (+25, -12)
+M  app/src/main/java/com/drivingcoach/ui/profile/ProfileViewModel.kt     (+124, -47)
+M  app/src/main/java/com/drivingcoach/ui/profile/ProfileFragment.kt      (+97, -12)
+M  app/src/main/java/com/drivingcoach/ui/auth/LoginFragment.kt           (V2 placeholder)
+M  app/src/main/java/com/drivingcoach/ui/auth/RegisterFragment.kt        (V2 placeholder)
+M  app/src/main/java/com/drivingcoach/ui/onboarding/OnboardingFragment.kt
+M  app/src/main/java/com/drivingcoach/data/db/dao/SessionDao.kt          (+getAllRawFilePaths)
+M  app/src/main/res/navigation/nav_graph.xml                             (+35, -7)
+M  app/src/main/res/layout/fragment_login.xml                            (fields removed)
+M  app/src/main/res/layout/fragment_profile.xml
+M  app/src/main/res/values/strings.xml                                   (+23)
+M  01_requirements/DrivingCoach_SRS_v1.md                                (+45, -7)
+M  01_requirements/TRACEABILITY_MATRIX.md                                (+22, -6)
+M  SkunkOps/atlas/components.md                                          (+85, -4)
+M  SkunkOps/atlas/flows.md                                               (+98, -4)
+M  SkunkOps/atlas/failure-patterns.md                                    (+62)
+M  docs/USER_MANUAL.md                                                   (+70, -18)
+```
+
+### Release
+
+`releases/DrivingCoach-v2.92-driver-profile.apk` — debug-signed, `versionName` 2.92,
+`versionCode` 292. `appVersionName` bumped from 2.91, so the APK filename and the version
+shown on *About Trillian* cannot disagree.
+
+### Deferred to V2
+
+`LoginFragment`, `RegisterFragment`, `AuthRepository`, `AuthInterceptor` and `AuthEventBus`
+remain in the codebase, unreferenced by navigation and documented with `TODO(V2)` blocks, so
+authentication can be restored without re-plumbing the startup flow.
+
+---
+
 ## [2026-08-26] Session Telemetry Export (Developer Share)
 
 **Codebase Version:** v2.9 (branch `FT-Dev-telemtry-export`)  

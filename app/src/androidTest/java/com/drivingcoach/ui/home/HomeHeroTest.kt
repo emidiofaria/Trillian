@@ -63,7 +63,10 @@ class HomeHeroTest {
         fun provideDataStore(): DataStore<Preferences> = SeededPreferencesDataStore(
             mutablePreferencesOf(
                 booleanPreferencesKey("onboarding_complete") to true,
-                stringPreferencesKey("jwt_token") to "instrumented-test-token"
+                // V1 reaches Home via a saved local driver profile, not a token
+                // (SRS DR-01 … DR-04). A seeded JWT no longer resolves past naming.
+                stringPreferencesKey("user_name") to "Instrumented Driver",
+                booleanPreferencesKey("driver_profile_complete") to true
             )
         )
 

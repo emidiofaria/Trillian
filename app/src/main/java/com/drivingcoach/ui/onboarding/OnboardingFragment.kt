@@ -166,9 +166,15 @@ class OnboardingFragment : Fragment() {
             dataStore.edit { preferences ->
                 preferences[KEY_ONBOARDING_COMPLETE] = true
             }
-            
-            // Navigate to home
-            findNavController().navigate(R.id.action_onboarding_to_home)
+
+            // SRS ON-04, DR-02: permissions are granted, but the driver has no identity yet.
+            // Going straight to Home here was what made first launch and every later launch
+            // take different paths, so the app appeared to forget the driver on relaunch.
+            //
+            // Guarded because onResume() also calls this when the driver returns from system
+            // settings with permissions granted, which can land after we have already left.
+            if (findNavController().currentDestination?.id != R.id.onboardingFragment) return@launch
+            findNavController().navigate(R.id.action_onboarding_to_driver_name)
         }
     }
 
