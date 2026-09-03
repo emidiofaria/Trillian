@@ -54,6 +54,29 @@
     <string name="splash_hint_continue">Tap to continue</string>
     <string name="splash_progress_format">%1$d%%</string>
 
+    <!-- Driver profile (SRS DR-01 … DR-08) -->
+    <string name="driver_name_title">Who\'s driving?</string>
+    <string name="driver_name_subtitle">Your name appears on your profile and your share cards.</string>
+    <string name="driver_name_hint">Driver name</string>
+    <string name="driver_name_cta">LET\'S RACE!!</string>
+    <string name="driver_name_rename_hint">You can change this later in Profile.</string>
+    <string name="driver_name_sign_in_coming_soon">Accounts and cloud sync — coming in a future version</string>
+    <string name="driver_name_error_short">Enter at least 2 characters</string>
+    <string name="driver_name_error_long">Maximum 100 characters</string>
+    <string name="driver_name_error_save">Could not save your name. Please try again.</string>
+    <string name="driver_name_edit_title">Driver name</string>
+    <string name="driver_name_edit_save">Save</string>
+    <string name="driver_name_edit_cancel">Cancel</string>
+    <string name="driver_name_edit_success">Name updated</string>
+
+    <!-- Clear user data (SRS DR-07) -->
+    <string name="clear_data_button">Clear User Data</string>
+    <string name="clear_data_title">Clear all data?</string>
+    <string name="clear_data_message">This permanently deletes your driver name, every recorded session, all lap times and coaching notes, and the telemetry files on this device.\n\nThis cannot be undone, and nothing is backed up anywhere else.</string>
+    <string name="clear_data_confirm">Delete everything</string>
+    <string name="clear_data_cancel">Cancel</string>
+    <string name="clear_data_failed">Could not clear data: %1$s</string>
+
     <!-- About -->
     <string name="about_title">ABOUT</string>
     <string name="about_button">About Trillian</string>

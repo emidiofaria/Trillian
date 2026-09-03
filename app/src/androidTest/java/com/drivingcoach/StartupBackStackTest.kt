@@ -56,7 +56,10 @@ class StartupBackStackTest {
         fun provideDataStore(): DataStore<Preferences> = SeededPreferencesDataStore(
             mutablePreferencesOf(
                 booleanPreferencesKey("onboarding_complete") to true,
-                stringPreferencesKey("jwt_token") to "instrumented-test-token"
+                // V1 identity is a local driver profile, not a token. Seeding a JWT here
+                // would no longer reach Home — see SRS DR-01 … DR-04.
+                stringPreferencesKey("user_name") to "Instrumented Driver",
+                booleanPreferencesKey("driver_profile_complete") to true
             )
         )
 
@@ -91,7 +94,7 @@ class StartupBackStackTest {
     @Test
     fun seededSessionLandsOnHome() {
         assertEquals(
-            "An onboarded user holding a token should resolve straight to Home",
+            "An onboarded driver with a saved profile should resolve straight to Home",
             R.id.homeFragment,
             scenario.awaitStartupResolved()
         )

@@ -10,7 +10,8 @@
 ## Table of contents
 
 1. [Architecture decisions](#1-architecture-decisions)
-2. [User management](#2-user-management)
+2. [User management](#2-user-management) — *deferred to V2*
+2a. [Driver profile (V1 local)](#2a-driver-profile-v1-local)
 3. [Onboarding and permissions](#3-onboarding-and-permissions)
 4. [Application startup and branding](#3a-application-startup-and-branding)
 4. [Track setup — start/finish line](#4-track-setup--startfinish-line)
@@ -39,7 +40,7 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | AD-01 | Lap detection method | User draws start/finish line on a map before recording |
 | AD-02 | Backend hosting | Microsoft Azure — App Service + Blob Storage + PostgreSQL Flexible Server |
 | AD-03 | Telemetry file format | JSONL — one JSON object per line, UTF-8 encoded |
-| AD-04 | Authentication provider | Firebase Authentication — email/password for V1, extensible to Google/Apple in V2 |
+| AD-04 | Authentication provider | **V1: none.** The app runs single-user and offline-first with a local driver profile only (see §2a). Firebase Authentication — email/password, extensible to Google/Apple — is deferred to V2. |
 | AD-05 | Android language | Kotlin, min SDK 26 (Android 8.0), target SDK 35 |
 | AD-06 | Backend language | Node.js 20, TypeScript 5.x, Express |
 | AD-07 | Dependency injection | Hilt (Android) |
@@ -51,7 +52,14 @@ These decisions are locked. All requirements and implementation prompts reflect 
 
 ## 2. User management
 
-### 2.1 Registration
+> **Status: DEFERRED TO V2.** Requirements UM-01 … UM-17 describe the Firebase
+> account model and are **not implemented in V1**. V1 ships without a backend and
+> without accounts; local identity is specified in [§2a Driver profile](#2a-driver-profile-v1-local).
+> `LoginFragment` and `RegisterFragment` remain in the codebase as unreachable
+> placeholders so the V2 flow can be restored without re-plumbing navigation.
+> UM-18 and UM-19 (§2.5 User profile) **are** in force in V1, as amended below.
+
+### 2.1 Registration *(deferred to V2)*
 
 | ID | Requirement |
 |---|---|
@@ -62,7 +70,7 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | UM-05 | On successful registration, the user shall be automatically signed in and directed to the Home screen with the back stack cleared. |
 | UM-06 | On registration failure (e.g. email already in use), the app shall display the Firebase error message as a Snackbar. |
 
-### 2.2 Login
+### 2.2 Login *(deferred to V2)*
 
 | ID | Requirement |
 |---|---|
@@ -72,7 +80,7 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | UM-10 | While a login or registration request is in flight, the submit button shall be disabled and a circular progress indicator shall be visible. |
 | UM-11 | The email field shall use `inputType=textEmailAddress`. The password field shall use `inputType=textPassword` with a visibility toggle icon. |
 
-### 2.3 Session management
+### 2.3 Session management *(deferred to V2)*
 
 | ID | Requirement |
 |---|---|
@@ -81,7 +89,7 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | UM-14 | If the backend returns HTTP 401, the app shall emit a `sessionExpired` event, display a Snackbar 'Session expired — please sign in again', and navigate to the Login screen, clearing the back stack. |
 | UM-15 | The backend shall verify all incoming Firebase ID tokens using the Firebase Admin SDK (`admin.auth().verifyIdToken()`). Requests with a missing, invalid, or expired token shall receive HTTP 401. |
 
-### 2.4 Sign out
+### 2.4 Sign out *(deferred to V2 — superseded in V1 by DR-06/DR-07)*
 
 | ID | Requirement |
 |---|---|
@@ -92,8 +100,32 @@ These decisions are locked. All requirements and implementation prompts reflect 
 
 | ID | Requirement |
 |---|---|
-| UM-18 | The Profile screen shall display the user's display name, email address, total session count, total lap count, and overall best lap time. |
+| UM-18 | The Profile screen shall display the user's display name, total session count, total lap count, and overall best lap time. *(Amended for V1: the email address is not displayed, because V1 has no account and therefore no email. The V2 restoration of accounts shall re-introduce it.)* |
 | UM-19 | The user avatar shall be a circle displaying the first two letters of the display name on a BMW blue background. |
+
+---
+
+## 2a. Driver profile (V1 local)
+
+V1 has no backend and no authentication. Identity exists only to personalise the app:
+the driver tells Trillian what to call them, and Trillian remembers it. All telemetry is
+keyed to the fixed single-user identifier `demo_user` (DP-01) and is deliberately **not**
+keyed to the display name, so renaming never orphans session history.
+
+| ID | Requirement |
+|---|---|
+| DR-01 | After onboarding completes, and before the Home screen is reachable, the app shall present a Driver Name screen asking the driver for a display name. |
+| DR-02 | The display name shall be a minimum of 2 and a maximum of 100 characters after trimming, consistent with UM-04. The primary action shall remain disabled while the entered name is invalid. |
+| DR-03 | The entered name shall be trimmed of leading, trailing, and repeated internal whitespace before being persisted. |
+| DR-04 | The display name and a completion flag shall be persisted in `DataStore<Preferences>` under the keys `user_name` and `driver_profile_complete`, written atomically in a single edit. |
+| DR-05 | On every subsequent launch the app shall read the persisted profile and navigate directly to Home without asking for the name again. The startup destination shall be resolved as: onboarding incomplete → Onboarding; profile incomplete → Driver Name; otherwise → Home. |
+| DR-06 | The driver shall be able to change the display name at any time from the Profile screen. The same validation as DR-02 and DR-03 shall apply. Renaming shall not modify, delete, or re-key any recorded session, lap, or insight. |
+| DR-07 | The Profile screen shall offer a **Clear User Data** action, replacing the V1 sign-out. It shall require an explicit destructive confirmation, and on confirmation shall delete all Room records, delete every telemetry file referenced by a stored `rawFilePath`, clear all preferences, and return the driver to Onboarding. |
+| DR-08 | V1 shall not present any authentication or demo-mode affordance. The Driver Name screen's primary action shall read **LET'S RACE!!**, and shall state that signing in arrives in a future version. |
+
+**Traceability note (V2):** when Firebase authentication is restored, DR-01 … DR-05 are
+superseded by UM-01 … UM-13, and the local profile becomes the offline cache of the
+authenticated account rather than the sole source of identity.
 
 ---
 
@@ -104,10 +136,10 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | ON-01 | On first launch, the app shall display the branded loading screen, followed by the onboarding screen before any other functional screen. |
 | ON-02 | Onboarding shall consist of three information pages presented in a ViewPager2: Location tracking, Motion analysis, Data privacy. |
 | ON-03 | The onboarding screen shall have a single 'GRANT PERMISSIONS & START' button that requests the following permissions: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACTIVITY_RECOGNITION`. |
-| ON-04 | If all permissions are granted, the app shall mark onboarding as complete in DataStore and navigate to the Login screen. |
+| ON-04 | If all permissions are granted, the app shall mark onboarding as complete in DataStore and navigate to the Driver Name screen (DR-01). *(Amended in V1: previously the Login screen.)* |
 | ON-05 | If any permission is denied, the app shall display a dialog listing the denied permissions and offer an 'OPEN SETTINGS' button that deeplinks to the app's system settings. |
-| ON-06 | If the user taps 'SKIP' after a denial, the app shall still mark onboarding as complete and navigate to Login. The missing permission will be re-requested when recording starts. |
-| ON-07 | Onboarding shall only be shown once. On all subsequent launches, the app shall skip directly to Login (or Home if already signed in). |
+| ON-06 | If the user taps 'SKIP' after a denial, the app shall still mark onboarding as complete and navigate to the Driver Name screen. The missing permission will be re-requested when recording starts. |
+| ON-07 | Onboarding shall only be shown once. On all subsequent launches, the app shall skip directly to the Driver Name screen, or to Home once a driver profile exists (DR-05). |
 | ON-08 | Onboarding completion state shall be persisted in `DataStore<Preferences>` with key `onboarding_complete`. |
 
 ---

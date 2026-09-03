@@ -1406,3 +1406,65 @@ trying to recover it afterwards.
 ### Confidence
 
 **HIGH** — observed and fixed on 2026-08-26.
+
+---
+
+## Pattern: Navigation Gate Reads State No Code Path Ever Writes (FP-UNREACHABLE-GATE) — ✅ FIXED (v2.9)
+
+### Symptoms
+
+- The driver enters the app successfully, uses it, closes it — and the next launch puts
+  them back on a login screen they have no credentials for.
+- Reported by users as "the app forgot me". Nothing crashes; no error is logged.
+- Every launch after the first is affected, so it looks like a persistence bug in whatever
+  screen the user last touched.
+
+### Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `SplashViewModel.UiState.destination == LOGIN` on every launch | Logcat / L2 `currentDestinationId()` | The gate is never satisfied |
+| `jwt_token` absent from `driving_coach_prefs.preferences_pb` | DataStore dump | Nothing writes it |
+| Grep for the preference key yields only *readers*, no *writers* | Source | The tell |
+
+### Root Cause
+
+Two independent defects that only manifested together:
+
+1. `LoginFragment` "Skip Login (Demo Mode)" navigated to Home **while persisting nothing**.
+   The user reached the app, so the shortcut looked like it worked.
+2. `SplashViewModel` gated Home on `AuthInterceptor.KEY_JWT` — a token that V1, having no
+   backend, never issues. The branch was structurally unreachable.
+
+A third defect hid the inconsistency: `OnboardingFragment.completeOnboarding()` navigated
+straight to Home, so the *first* launch bypassed the gate entirely and only later launches
+exposed it.
+
+### Mitigation
+
+Gate on state the app actually writes. The startup decision now reads
+`driver_profile_complete`, written atomically alongside `user_name` by
+`DriverProfileStore.saveName()` — the same call that lets the driver into the app.
+Entry and persistence became one operation instead of two that could disagree.
+
+### Lesson
+
+**A navigation gate must read state that some code path in the same build actually
+writes.** When a feature is deferred (here: authentication), the gate keyed to it does not
+become permissive — it becomes permanently closed, and any "skip" affordance around it
+papers over the fault on first use while guaranteeing it on every subsequent launch.
+
+Two cheap checks catch this class of bug:
+
+- For every preference key a *decision* reads, grep for a writer. No writer = dead gate.
+- Never let a UI shortcut grant access without writing the state that access implies.
+
+### Automated Guard
+
+`DriverNameFlowTest.aSavedDriverGoesStraightToHomeOnRelaunch` (L2) relaunches the activity
+against a shared mutable DataStore and asserts Home. `theDemoModeShortcutIsGone` asserts
+the `skipLoginButton` id no longer resolves, so the shortcut cannot return unnoticed.
+
+### Confidence
+
+**HIGH** — reproduced, root-caused, and fixed on 2026-09-03.
