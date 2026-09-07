@@ -153,11 +153,13 @@ class TrackSetupResubscribeTest {
         val subscriptionsBefore = locationUpdates.subscribeCount
 
         // Screen-off / app switch while the user walks to the track edge.
+        //
+        // The subscription count is no longer expected to reach zero here: since Incident 12
+        // the warm-up keeps the receiver alive while the app is in the foreground, so the
+        // screen's own collector going away leaves the chip held on purpose. What this test
+        // is about — that the screen re-subscribes rather than sitting on a dead stream — is
+        // observable as a rise in subscribeCount, which is what is asserted below.
         scenario.moveToState(Lifecycle.State.CREATED)
-        awaitUntil("location updates to stop with the screen") {
-            locationUpdates.activeSubscriptions == 0
-        }
-
         scenario.moveToState(Lifecycle.State.RESUMED)
 
         awaitUntil("location updates to resume when the screen returns") {
@@ -190,15 +192,22 @@ class TrackSetupResubscribeTest {
             locationUpdates.activeSubscriptions >= 1
         }
 
+        val subscriptionsBefore = locationUpdates.subscribeCount
+
         scenario.moveToState(Lifecycle.State.CREATED)
-        awaitUntil("location updates to stop") { locationUpdates.activeSubscriptions == 0 }
         scenario.moveToState(Lifecycle.State.RESUMED)
-        awaitUntil("location updates to resume") { locationUpdates.activeSubscriptions >= 1 }
+        awaitUntil("the screen to resubscribe after the interruption") {
+            locationUpdates.subscribeCount > subscriptionsBefore &&
+                locationUpdates.activeSubscriptions >= 1
+        }
 
-        locationUpdates.emit(accuracyM = 4f)
-
-        // The screen must be fully functional after the interruption, not merely subscribed.
-        awaitUntil("capture to unlock after the interruption") { isCaptureEnabled() }
+        // A fresh fix is required, not merely any fix: the screen discards what it was holding
+        // when the collector restarts, because a position kept across a pocketed phone
+        // describes where the user was (Incident 12, F4).
+        awaitUntil("capture to unlock after the interruption") {
+            locationUpdates.emit(accuracyM = 4f)
+            isCaptureEnabled()
+        }
     }
 
     private fun navigateToTrackSetup() {

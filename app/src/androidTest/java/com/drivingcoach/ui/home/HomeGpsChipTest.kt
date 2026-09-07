@@ -1,5 +1,7 @@
 package com.drivingcoach.ui.home
 
+import android.content.Context
+import android.content.Intent
 import android.view.View
 import android.widget.TextView
 import androidx.datastore.core.DataStore
@@ -8,6 +10,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.lifecycle.Lifecycle
@@ -173,29 +176,88 @@ class HomeGpsChipTest {
         }
     }
 
+    /**
+     * Rewritten for Incident 12. This test used to assert that Home going away released the
+     * chip, which is precisely the defect: `moveToState(CREATED)` stops the Activity by
+     * putting another one in front of it, exactly as navigating to Track Setup does. The old
+     * assertion therefore certified the behaviour that threw the user's warm fix away at the
+     * track edge.
+     *
+     * The chip must stay held while the app is still in front of the user.
+     */
     @Test
-    fun backgroundingHomeReleasesTheChip() {
+    fun homeGoingAwayDoesNotReleaseTheChip() {
         awaitUntil("warm-up to start") { locationUpdates.activeSubscriptions == 1 }
 
         scenario.moveToState(Lifecycle.State.CREATED)
 
-        // High-accuracy GPS must never be left running behind a backgrounded app.
-        awaitUntil("GPS to be released when Home stops") {
+        val deadline = System.currentTimeMillis() + HELD_SETTLE_MS
+        while (System.currentTimeMillis() < deadline) {
+            assertEquals(
+                "The GNSS chip was released because Home stopped, while the app was still in " +
+                    "the foreground. That is Incident 12: the walk from the paddock to the " +
+                    "start line is the one journey the warm-up exists to serve.",
+                1,
+                locationUpdates.activeSubscriptions
+            )
+            Thread.sleep(50)
+        }
+    }
+
+    /**
+     * The bound that replaces the screen-scoped one: high-accuracy location must not be held
+     * while the user cannot see that it is held.
+     *
+     * The app is backgrounded by going to the launcher rather than by `moveToState(CREATED)`,
+     * because the latter leaves the app in the foreground and so cannot express this.
+     */
+    @Test
+    fun backgroundingTheAppReleasesTheChip() {
+        awaitUntil("warm-up to start") { locationUpdates.activeSubscriptions == 1 }
+
+        goToLauncher()
+
+        awaitUntil("GPS to be released once the app is no longer in the foreground") {
             locationUpdates.activeSubscriptions == 0
         }
     }
 
     @Test
-    fun returningToHomeWarmsUpAgain() {
+    fun returningToTheAppWarmsUpAgain() {
         awaitUntil("warm-up to start") { locationUpdates.activeSubscriptions == 1 }
-        scenario.moveToState(Lifecycle.State.CREATED)
+        goToLauncher()
         awaitUntil("GPS to be released") { locationUpdates.activeSubscriptions == 0 }
 
-        scenario.moveToState(Lifecycle.State.RESUMED)
+        returnToTheApp()
 
-        awaitUntil("warm-up to resume when Home comes back") {
+        awaitUntil("warm-up to resume when the user comes back") {
             locationUpdates.activeSubscriptions == 1
         }
+    }
+
+    /** Backgrounds the whole app the way the home button does. */
+    private fun goToLauncher() {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        context.startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_HOME)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
+
+    /**
+     * Brings the existing task back the way tapping the launcher icon does.
+     *
+     * `ActivityScenario.moveToState(RESUMED)` cannot be used here: once the app is genuinely
+     * in the background the scenario no longer drives it, and the call fails with the Activity
+     * stuck in STOPPED.
+     */
+    private fun returnToTheApp() {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val launch = context.packageManager
+            .getLaunchIntentForPackage(context.packageName)
+            ?.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+        context.startActivity(requireNotNull(launch) { "no launch intent for the app under test" })
     }
 
     private fun chipIsVisible(): Boolean {
@@ -212,5 +274,10 @@ class HomeGpsChipTest {
             text = activity.findViewById<TextView>(R.id.gpsReadinessChip)?.text?.toString() ?: ""
         }
         return text
+    }
+
+    private companion object {
+        /** Long enough that a late, wrongly-scoped release would be caught rather than missed. */
+        const val HELD_SETTLE_MS = 1_000L
     }
 }
