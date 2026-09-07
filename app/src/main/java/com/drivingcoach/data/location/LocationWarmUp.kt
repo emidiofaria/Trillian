@@ -30,9 +30,11 @@ import javax.inject.Singleton
  *
  * ### Cost control
  *
- * High-accuracy updates are not free, so the warm-up is bounded twice over: callers stop it
- * when their screen stops, and [WarmUpTimings.idleCeilingMs] stops it anyway if the user
- * never starts a session.
+ * High-accuracy updates are not free, so the warm-up is bounded by the user's *task* rather
+ * than by whichever screen started it: it is released when the app leaves the foreground,
+ * when recording takes the chip over, and by [WarmUpTimings.idleCeilingMs] as a backstop if
+ * the user never starts a session. Binding it to a screen instead made the Home → Track
+ * Setup navigation its own stop condition — see Incident 12.
  *
  * Process-scoped, holding no context, so warmth survives navigation between Home and Track
  * Setup instead of being torn down and re-acquired at the worst possible moment.

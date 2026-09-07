@@ -69,18 +69,17 @@ class HomeFragment : Fragment() {
     }
 
     /**
-     * Warm-up is tied to visibility, not to view creation, so it stops the moment the user
-     * leaves and restarts when they come back — GPS is never left running behind a
-     * backgrounded app (SRS TS-18).
+     * Warm-up starts with Home and is deliberately *not* stopped when Home stops.
+     *
+     * Binding it to this screen's visibility made the Home → Track Setup navigation its own
+     * stop condition, so the fix the user had just waited for was discarded at the moment it
+     * was needed (Incident 12). Releasing the chip is now owned by the task: the app leaving
+     * the foreground (`DrivingCoachApp`), recording starting
+     * (`TelemetryForegroundService`), or the idle ceiling (SRS TS-16, TS-18).
      */
     override fun onStart() {
         super.onStart()
         viewModel.startGpsWarmUp()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        viewModel.stopGpsWarmUp()
     }
 
     private fun setupUI() {
