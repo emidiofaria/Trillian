@@ -19,6 +19,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.drivingcoach.R
+import com.drivingcoach.data.location.FixFreshness
 import com.drivingcoach.data.location.LocationUpdates
 import com.drivingcoach.data.location.LocationWarmUp
 import com.drivingcoach.databinding.FragmentTrackSetupBinding
@@ -105,15 +106,11 @@ class TrackSetupFragment : Fragment() {
 
     private fun setupUI() {
         binding.capturePointAButton.setOnClickListener {
-            currentLocation?.let { location ->
-                viewModel.setPointA(location)
-            }
+            captureWithFreshFix { location -> viewModel.setPointA(location) }
         }
 
         binding.capturePointBButton.setOnClickListener {
-            currentLocation?.let { location ->
-                viewModel.setPointB(location)
-            }
+            captureWithFreshFix { location -> viewModel.setPointB(location) }
         }
 
         binding.clearButton.setOnClickListener {
@@ -197,11 +194,40 @@ class TrackSetupFragment : Fragment() {
             )
         } else {
             indicator?.setColor(ContextCompat.getColor(requireContext(), R.color.colorError))
-            binding.gpsStatusText.text = "Acquiring GPS..."
+            binding.gpsStatusText.text = if (state.isAwaitingFreshFix) {
+                // Distinct from "Acquiring": the receiver is working, the position it is
+                // holding simply is not current (Incident 12, F4).
+                "Getting a current GPS fix..."
+            } else {
+                "Acquiring GPS..."
+            }
             binding.gpsStatusText.setTextColor(
                 ContextCompat.getColor(requireContext(), R.color.colorError)
             )
         }
+    }
+
+    /**
+     * Last line of defence for the start line (Incident 12, F4).
+     *
+     * [onLocation] already rejects old fixes as they arrive, but updates can also simply
+     * *stop* — a lost signal leaves the last good fix in hand and the button enabled. Checking
+     * again at the moment of capture closes that window, and it is the only check the user's
+     * lap times ultimately depend on.
+     */
+    private fun captureWithFreshFix(capture: (Location) -> Unit) {
+        val location = currentLocation
+        if (location == null || !FixFreshness.isFresh(location)) {
+            currentLocation = null
+            viewModel.markAwaitingFreshFix()
+            Snackbar.make(
+                binding.root,
+                "Waiting for a current GPS fix — hold still a moment",
+                Snackbar.LENGTH_SHORT
+            ).show()
+            return
+        }
+        capture(location)
     }
 
     private fun formatCoords(latLng: LatLng): String {
@@ -238,12 +264,37 @@ class TrackSetupFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Whatever was on screen before the screen went away describes where the user
+                // was then, not now. Discarding it on every return is what stops a position
+                // held across a pocketed phone from being captured as a start line.
+                currentLocation = null
+                viewModel.markAwaitingFreshFix()
+
                 locationUpdates.positionUpdates(LOCATION_INTERVAL_MS).collect(::onLocation)
             }
         }
     }
 
+    /**
+     * Accepts a fix only if it describes where the user is *now* (Incident 12, F4).
+     *
+     * The fused client may answer a fresh subscription with a cached position, and the
+     * warm-up now legitimately holds the chip across the walk from the paddock, so an old
+     * fix reaching this screen is an ordinary event rather than an exotic one. Captured as
+     * Point A it would offset every lap time in the session by the same amount, and the
+     * times would still look like lap times — a wrong number that looks right.
+     *
+     * A rejected fix is dropped rather than displayed, and capture is withdrawn until a
+     * current one lands. See [TrackSetupViewModel.markAwaitingFreshFix] for why that is a
+     * wait and not a block.
+     */
     private fun onLocation(location: Location) {
+        if (!FixFreshness.isFresh(location)) {
+            currentLocation = null
+            viewModel.markAwaitingFreshFix()
+            return
+        }
+
         currentLocation = location
         viewModel.updateGpsStatus(
             accuracy = location.accuracy,

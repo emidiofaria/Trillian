@@ -22,7 +22,13 @@ data class TrackSetupState(
     val isValid: Boolean = false,
     val gpsAccuracy: Float = Float.MAX_VALUE,
     val satelliteCount: Int = 0,
-    val isGpsReady: Boolean = false
+    val isGpsReady: Boolean = false,
+    /**
+     * Set when the only fixes on hand are too old to say where the user is standing
+     * (Incident 12, F4). Distinct from "not ready yet" so the screen can tell the user the
+     * truth: the receiver is working, the position simply is not current.
+     */
+    val isAwaitingFreshFix: Boolean = false
 ) {
     companion object {
         const val MIN_LINE_DISTANCE_M = 3.0
@@ -56,8 +62,23 @@ class TrackSetupViewModel @Inject constructor() : ViewModel() {
             current.copy(
                 gpsAccuracy = accuracy,
                 satelliteCount = satelliteCount,
-                isGpsReady = accuracy <= TrackSetupState.MAX_GPS_ACCURACY_M && satelliteCount >= 4
+                isGpsReady = accuracy <= TrackSetupState.MAX_GPS_ACCURACY_M && satelliteCount >= 4,
+                isAwaitingFreshFix = false
             )
+        }
+    }
+
+    /**
+     * Withdraws capture while the held position is too old to be trusted (Incident 12, F4).
+     *
+     * This is a *wait*, not a block: [updateGpsStatus] clears it the moment a current fix
+     * arrives, with no action from the user. Latching it off would trade a silent data error
+     * for the frustration the incident was raised about.
+     */
+    fun markAwaitingFreshFix() {
+        _state.update { current ->
+            if (!current.isGpsReady && current.isAwaitingFreshFix) current
+            else current.copy(isGpsReady = false, isAwaitingFreshFix = true)
         }
     }
 
