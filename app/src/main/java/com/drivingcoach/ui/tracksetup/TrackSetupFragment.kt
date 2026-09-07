@@ -20,6 +20,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.drivingcoach.R
 import com.drivingcoach.data.location.LocationUpdates
+import com.drivingcoach.data.location.LocationWarmUp
 import com.drivingcoach.databinding.FragmentTrackSetupBinding
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -40,6 +41,9 @@ class TrackSetupFragment : Fragment() {
 
     @Inject
     lateinit var locationUpdates: LocationUpdates
+
+    @Inject
+    lateinit var locationWarmUp: LocationWarmUp
 
     private var currentLocation: Location? = null
 
@@ -84,6 +88,19 @@ class TrackSetupFragment : Fragment() {
         setupUI()
         observeViewModel()
         checkPermissionsAndStart()
+    }
+
+    /**
+     * Keeps the warm-up running while the user is at the line.
+     *
+     * Idempotent, so this costs nothing when the user arrived from Home with a fix already
+     * acquired — the common case. It matters when they did not: returning to Track Setup
+     * after process death, or arriving without passing through Home, would otherwise leave
+     * the chip cold with nothing extending the bound (Incident 12).
+     */
+    override fun onStart() {
+        super.onStart()
+        locationWarmUp.start()
     }
 
     private fun setupUI() {
