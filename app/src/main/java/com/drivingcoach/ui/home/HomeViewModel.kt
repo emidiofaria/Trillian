@@ -83,9 +83,6 @@ class HomeViewModel @Inject constructor(
     /** Called when Home becomes visible. Idempotent; also refreshes the idle ceiling. */
     fun startGpsWarmUp() = locationWarmUp.start()
 
-    /** Called when Home stops. Releases the chip so backgrounding never keeps GPS alive. */
-    fun stopGpsWarmUp() = locationWarmUp.stop()
-
     // Single-user MVP: no userId filtering needed
     
     companion object {
