@@ -1,0 +1,101 @@
+
+INCIDENT 13 — REPLAY ANALYSIS
+session 'teste. 3' (id 5), app v2.8 (208), ZTE ZTE Blade A53+
+laps recorded by the app: []
+
+==========================================================================
+1. SESSION CHARACTERISTICS
+==========================================================================
+  samples ................. 362  (MIN_SAMPLES = 50)
+  duration ................ 360.2 s
+  sample intervals seen ... [900, 954, 999, 1000] ms  -> 1.1 Hz
+  path length ............. 3328 m
+  bbox .................... 213 m x 291 m
+  speed ................... max 20.2 m/s, mean 8.86 m/s, 315 samples > 2 m/s
+  gps accuracy ............ min 1.4 m, mean 4.8 m, max 15.0 m
+  distance from line mid .. min 2.1 m, max 176.4 m
+
+==========================================================================
+2. START LINE AS CAPTURED BY THE USER
+==========================================================================
+  P1 ...................... (41.20052719116211, -8.610971450805664)
+  P2 ...................... (41.20054244995117, -8.611054420471191)
+  length .................. 7.15 m
+  bearing ................. 283.7 deg  (reciprocal 103.7 deg)
+  half-length ............. 3.57 m  <- a crossing only counts within this of the midpoint
+
+==========================================================================
+3. SHIPPED ALGORITHM — RESULT
+==========================================================================
+  crossings detected ...... 0
+  laps built .............. 0
+  user-visible outcome .... No laps detected. Complete at least 2 laps.
+
+==========================================================================
+4. THE FIVE PASSES — GEOMETRY OF THE FAILURE
+==========================================================================
+  closest approaches of the driven path to the start line:
+    sample  34  t= 33s    0.53 m
+    sample  33  t= 32s    0.87 m
+    sample 351  t=350s    1.70 m
+    sample 352  t=351s    1.71 m
+    sample 113  t=112s    1.84 m
+    sample 114  t=113s    1.84 m
+    sample  35  t= 34s    1.89 m
+    sample 268  t=267s    1.98 m
+    sample 190  t=189s    2.06 m
+    sample 191  t=190s    2.06 m
+
+  for each near pass: does the path cross the INFINITE extension of the line?
+  (if it does not, no line length whatsoever could have detected it)
+  start line bearing = 283.7 deg
+
+    sample  33  t= 32s  heading= 280.3  angle to line= 3.5 deg  speed= 7.0 m/s  does NOT cross
+    sample  34  t= 33s  heading= 282.2  angle to line= 1.5 deg  speed= 7.8 m/s  does NOT cross
+    sample 113  t=112s  heading= 284.3  angle to line= 0.6 deg  speed=14.9 m/s  does NOT cross
+    sample 114  t=113s  heading= 282.5  angle to line= 1.2 deg  speed=14.6 m/s  does NOT cross
+    sample 190  t=189s  heading= 284.2  angle to line= 0.4 deg  speed=19.7 m/s  does NOT cross
+    sample 191  t=190s  heading= 280.4  angle to line= 3.3 deg  speed=17.9 m/s  does NOT cross
+    sample 267  t=266s  heading= 282.9  angle to line= 0.8 deg  speed=15.5 m/s  does NOT cross
+    sample 268  t=267s  heading= 283.6  angle to line= 0.1 deg  speed=14.5 m/s  does NOT cross
+    sample 351  t=350s  heading= 286.1  angle to line= 2.4 deg  speed=10.0 m/s  does NOT cross
+    sample 352  t=351s  heading= 288.8  angle to line= 5.1 deg  speed= 7.1 m/s  does NOT cross
+
+==========================================================================
+5. COUNTER-HYPOTHESIS — 'THE LINE WAS SIMPLY TOO SHORT'
+==========================================================================
+  Extending the captured line symmetrically about its midpoint,
+  keeping its ORIENTATION unchanged:
+
+    line length   7.1 m  ->  crossings 0, laps 0
+    line length  10.0 m  ->  crossings 0, laps 0
+    line length  15.0 m  ->  crossings 0, laps 0
+    line length  20.0 m  ->  crossings 0, laps 0
+    line length  30.0 m  ->  crossings 0, laps 0
+    line length  40.0 m  ->  crossings 2, laps 1
+    line length  50.0 m  ->  crossings 2, laps 1
+
+  Conclusion: length is not the controlling variable. Orientation is.
+
+==========================================================================
+6. CORRECTED GEOMETRY — ORIENTATION TAKEN FROM DIRECTION OF TRAVEL
+==========================================================================
+  The user's two points are used only to ANCHOR the position (their
+  midpoint). The crossing line is built PERPENDICULAR to the direction
+  of travel. Crossing instants are linearly interpolated between samples.
+
+    half-width 10 m  ->  crossings 5, laps 4, lap times [79.83, 77.08, 77.26, 83.44]
+    half-width 15 m  ->  crossings 5, laps 4, lap times [79.83, 77.08, 77.26, 83.44]
+
+      detail at 15 m half-width:
+        crossing at t =  32.42 s, lateral offset 0.8 m
+        crossing at t = 112.26 s, lateral offset 1.9 m
+        crossing at t = 189.33 s, lateral offset 2.2 m
+        crossing at t = 266.59 s, lateral offset 2.3 m
+        crossing at t = 350.03 s, lateral offset 1.8 m
+
+    half-width 20 m  ->  crossings 5, laps 4, lap times [79.83, 77.08, 77.26, 83.44]
+    half-width 25 m  ->  crossings 5, laps 4, lap times [79.83, 77.08, 77.26, 83.44]
+==========================================================================
+END OF ANALYSIS
+==========================================================================
