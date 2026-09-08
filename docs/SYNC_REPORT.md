@@ -6,7 +6,7 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ## [2026-09-07] GPS Warm-Up Lifetime and Start-Line Fix Freshness (Incident 12)
 
-**Codebase Version:** v2.92
+**Codebase Version:** v2.93
 **Trigger:** Incident 12 — GPS acquisition slow / UX regression reported from human acceptance
 testing, and finding F4 of its RCA
 
