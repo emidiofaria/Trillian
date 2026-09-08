@@ -224,13 +224,31 @@ Detects laps locally (offline) from a JSONL telemetry file using start/finish li
 - List of `LapEntity` records saved to Room with `isLocalOnly=true`
 - Detection result (Success, InsufficientLaps, NoStartLine, Error)
 
-### Algorithm
+### Algorithm (since Incident 13)
 
-1. Read telemetry file (header + samples)
-2. For each consecutive GPS sample pair, check if segment crosses start line
-3. Apply guards: minimum 20s lap time, minimum 50m traveled from start
-4. Build laps from valid crossings
-5. Mark best lap, save to Room
+1. Read telemetry file (header + samples).
+2. Take the **midpoint** of the captured start/finish. The orientation of the captured line is
+   deliberately not used — see below.
+3. For each consecutive GPS sample pair, compute the car's heading and test whether the segment
+   crosses a plane through the start point **perpendicular to that heading**.
+4. Reject the candidate if the car passed more than `DETECTION_HALF_WIDTH_M` to the side, came
+   sooner than `MIN_LAP_TIME_MS`, never got `MIN_DISTANCE_FROM_START_M` away, or is heading more
+   than `MAX_HEADING_DIFFERENCE_DEG` from the session's first accepted crossing.
+5. **Interpolate** the crossing instant between the two samples either side of it.
+6. Build laps from accepted crossings, mark the best lap, save to Room.
+7. Write the reasoning to a diagnostics sidecar via `LapDiagnosticsWriter`.
+
+### Why the captured line's *direction* is ignored
+
+The user captures two points 5–10 m apart, and phone GPS error is of the same order (mean 4.8 m
+in the Incident 13 session). The midpoint of those points is a measurement; the bearing between
+them is noise. Incident 13 is the case where that noise pointed the line **along** the track,
+making detection geometrically impossible. Direction of travel, measured over hundreds of
+metres, replaces it. See `FP-DEGENERATE-BASELINE` in `failure-patterns.md`.
+
+**Consequence:** `LocalLapDetector` is now completely insensitive to how the start/finish was
+captured — a single point gives identical lap times to two (`OneTapStartFinishCaptureTest`), so
+PLAN-003 is a UI change with no algorithm work behind it.
 
 ### Configuration Constants
 
@@ -239,15 +257,28 @@ Detects laps locally (offline) from a JSONL telemetry file using start/finish li
 | `MIN_LAP_TIME_MS` | 20,000 | Prevents GPS jitter false positives |
 | `MIN_DISTANCE_FROM_START_M` | 50 | Ensures driver traveled around track (kart-track compatible) |
 | `MIN_SAMPLES` | 50 | Minimum telemetry samples for valid detection |
+| `DETECTION_HALF_WIDTH_M` | 15 | How far to the side of the start point a pass still counts. Results are identical across 10–25 m on the Incident 13 replay, so this is not a tuned value |
+| `MAX_HEADING_DIFFERENCE_DEG` | 60 | Rejects passes in a materially different direction. 60 rather than 90 because at a corner start/finish arriving and leaving differ by *exactly* 90°, which made a real case turn on floating-point rounding |
+| `MIN_SEGMENT_LENGTH_M` | 0.5 | Below this, the bearing between two samples is meaningless |
+
+### Behaviour that looks like a bug and is not
+
+`maxDistanceFromStart` is **not** reset when a candidate crossing is rejected. This looks wrong,
+and was "fixed" during the Incident 13 work before the new diagnostics showed it to be a
+regression: where the start/finish sits on a corner, one pass yields two candidates a second
+apart, and resetting on the rejected one made the *legitimate* crossing that followed look like
+it had travelled only 10 m — losing the lap. The window means "since the last **accepted**
+crossing". Guarded by `distanceTravelledSurvivesARejectedCandidate`.
 
 ### Failure Modes
 
 | Mode | Symptom | Cause |
 |------|---------|-------|
-| No crossings detected | "No laps detected" message | Start line doesn't intersect GPS path |
+| No crossings detected | "No laps detected" message | Car never passed within `DETECTION_HALF_WIDTH_M` of the captured start point |
+| Laps counted twice | Lap times ~half of reality | Track passes the same point twice per lap at an angle the heading guard admits — `FP-LAP-DOUBLE-COUNT` |
 | Insufficient laps | "Only 1 lap detected" | User didn't complete 2+ laps |
 | File not found | Error result | Telemetry file missing or wrong path |
-| Invalid start line | NoStartLine result | All coordinates are 0.0 |
+| Invalid start line | NoStartLine result | Either endpoint is at latitude 0 **and** longitude 0 |
 
 ### Observable Signals
 
@@ -255,12 +286,87 @@ Detects laps locally (offline) from a JSONL telemetry file using start/finish li
 |--------|----------|
 | `LocalLapDetector` tag | Logcat |
 | "=== LAP DETECTION START ===" | Logcat DEBUG |
-| "Detected X line crossings" | Logcat DEBUG |
+| "Detected X crossings, rejected Y candidates" | Logcat DEBUG |
 | "Built X laps from crossings" | Logcat DEBUG |
+| Per-candidate rejection reason and detail | Logcat DEBUG |
+| `angleBetweenLineAndTravelDeg` | Diagnostics sidecar — a value near 0 identifies `FP-DEGENERATE-BASELINE` on sight |
+
+### Replay Harness
+
+`LapReplayHarness` (test source) runs real recorded sessions from
+`app/src/test/resources/lapfixtures/` through the detector. Lap detection failed in the field
+four times (Incidents 02, 03, 09, 13) before this existed, and every previous fix was argued
+analytically because nothing could check the algorithm against a session someone had actually
+driven. Any change to the detection geometry should add a fixture.
 
 ### Criticality
 
-**HIGH** — Enables offline user experience; failure = no lap times shown locally
+**HIGH** — Enables offline user experience; failure = no lap times shown locally. Note that
+failure is not confined to timing: `generateOfflineCoaching()` only runs when laps exist, so a
+detection failure silently removes *all* coaching from the session as well.
+
+---
+
+## Component: LapDiagnosticsWriter
+
+### Purpose
+
+Records what lap detection observed and decided, in a JSON file written beside the session's
+telemetry.
+
+Incident 09 reported "no laps detected" and was closed at 55% confidence with the cause never
+established, because nothing survived the run except the message shown to the user. Incident 13
+had the same symptom two versions later and was only explicable because its raw telemetry
+happened to be retained by hand. This component removes the dependence on luck.
+
+### Key Code Areas
+
+- `LapDiagnosticsWriter.kt` — serialisation and file placement
+- `LocalLapDetector.detectLapsWithDiagnostics()` — produces `DetectionOutcome`
+- `RecordingViewModel.processLapsLocally()` — call site
+
+### Inputs
+
+- The telemetry `File` the detection ran over
+- `sessionId`
+- `LocalLapDetector.DetectionOutcome`
+
+### Outputs
+
+- `<telemetry file name>.lapdiag.json`, in the same folder as the telemetry
+- `null` if there was nothing to record, or if writing failed
+
+### Contents
+
+| Field | Why it is there |
+|-------|-----------------|
+| `angleBetweenLineAndTravelDeg` | Identifies `FP-DEGENERATE-BASELINE` from a single number. Incident 13 measured ~1.2° |
+| `acceptedCrossings` | Timestamp, lateral offset and heading of each — alternating headings identify `FP-LAP-DOUBLE-COUNT` |
+| `rejectedCrossings` | Reason and detail per candidate: `TOO_SOON`, `TOO_CLOSE_TO_START`, `HEADING_MISMATCH`, `TOO_FAR_TO_THE_SIDE` |
+| `observedSampleRateHz` | The device's real GNSS rate, which is not the 10 Hz the app requests |
+| `startLineLengthM`, `startLineBearingDeg` | What the user actually captured |
+
+### Design Notes
+
+A **sidecar file, never a Room column**. A schema migration on an app already in users' hands is
+real risk taken on for a purely diagnostic feature; a sidecar carries none. Writing **never
+throws** — a lost diagnostic must not turn a successfully processed session into an error the
+user sees.
+
+The angle is reported even when *no* crossing was accepted, derived from the car's heading at
+its closest approach to the start point. That is the case the field exists to explain, and an
+earlier version of this component returned `null` for precisely that case.
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| No file written | Nothing to diagnose from | Detection could not run at all (no start line, no telemetry file, too few samples) — the result is its own explanation |
+| Write fails | Warning in logcat only | Storage full or path unwritable. Session processing is unaffected by design |
+
+### Criticality
+
+**LOW** to the running app — nothing depends on it. **HIGH** to the next investigation.
 
 ---
 

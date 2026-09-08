@@ -718,13 +718,23 @@ RecordingViewModel.stopRecording()
   → LocalLapDetector.readTelemetryFile(filePath)
     → Read header line (if present) for start line coords
     → Parse JSONL samples into List<TelemetrySample>
-  → LocalLapDetector.detectLaps(samples, startLine)
+  → LocalLapDetector.detectLapsWithDiagnostics(file, startLine)
     → detectCrossings(samples, startLine)
-      → For each sample pair: check line segment intersection
-      → Apply guards: MIN_LAP_TIME_MS (20s), MIN_DISTANCE_FROM_START_M (50m)
-    → buildLapsFromCrossings(crossings)
+      → startPoint = startLine.midpoint()   // orientation of the captured line unused
+      → For each sample pair:
+          heading = bearing(previous, current)          // skip if segment < 0.5 m
+          cross a plane through startPoint PERPENDICULAR to heading
+          reject if |lateral offset| > DETECTION_HALF_WIDTH_M (15 m)
+          reject if since last accepted < MIN_LAP_TIME_MS (20 s)
+          reject if travelled since last accepted < MIN_DISTANCE_FROM_START_M (50 m)
+          reject if heading differs > MAX_HEADING_DIFFERENCE_DEG (60°) from first crossing
+          interpolate the crossing instant between the two samples
+      → record every rejection with its reason
+    → buildLaps(crossings)
     → Mark best lap (shortest duration)
-    → Return LocalLapResult.Success(laps)
+    → Return DetectionOutcome(result, diagnostics)
+  → LapDiagnosticsWriter.write(file, sessionId, outcome)   // whatever the result
+    → writes <telemetry>.lapdiag.json beside the telemetry; never throws
   → lapDao.insertAll(laps.map { it.toEntity(sessionId, isLocalOnly=true) })
   → Log "Inserted X local laps"
 → _events.emit(NavigateToSessionResult(sessionId))
@@ -756,6 +766,9 @@ None — fully offline operation.
 | `MIN_LAP_TIME_MS` | 20,000 | Primary guard against GPS jitter |
 | `MIN_DISTANCE_FROM_START_M` | 50.0 | Ensures driver traveled around track (kart-compatible) |
 | `MIN_SAMPLES` | 50 | Minimum telemetry samples required |
+| `DETECTION_HALF_WIDTH_M` | 15.0 | Lateral extent of the crossing plane |
+| `MAX_HEADING_DIFFERENCE_DEG` | 60.0 | Rejects passes in a materially different direction |
+| `MIN_SEGMENT_LENGTH_M` | 0.5 | Below this the bearing between two samples is meaningless |
 
 ### Failure Points
 
@@ -764,7 +777,9 @@ None — fully offline operation.
 | File read | File not found | `LocalLapResult.Error` | "No laps detected" message |
 | Parsing | Invalid JSON | Exception logged, sample skipped | Partial data |
 | No start line | All coords 0.0 | `LocalLapResult.NoStartLine` | Detection skipped |
-| No crossings | GPS path doesn't cross line | `LocalLapResult.InsufficientLaps` | "Complete 2+ laps" message |
+| No crossings | Car never passed within 15 m of the captured start point | `DetectionResult.InsufficientLaps` | "Complete 2+ laps" message, **and all coaching is lost** |
+| Double counting | Track passes the same point twice per lap at an admitted angle | `DetectionResult.Success` with twice the laps | Lap times ~half of reality, no error — `FP-LAP-DOUBLE-COUNT` |
+| Diagnostics write | Storage full / path unwritable | `write()` returns null | None. Logged only, by design |
 | Insufficient laps | Only 1 crossing | `LocalLapResult.InsufficientLaps` | "Complete 2+ laps" message |
 | Room insert | DB error | Exception logged | Laps not persisted |
 
@@ -772,7 +787,8 @@ None — fully offline operation.
 
 | Symptom | Cause |
 |---------|-------|
-| "No laps detected" | Start line doesn't intersect GPS trace |
+| "No laps detected" | Car never passed within 15 m of the captured start point. Before the Incident 13 fix this also occurred when the captured line pointed *along* the track — see `FP-DEGENERATE-BASELINE` |
+| Lap times look about half what was driven | `FP-LAP-DOUBLE-COUNT` — confirm from the `.lapdiag.json` sidecar |
 | "Complete at least 2 laps" | User only completed 1 lap |
 | Laps show immediately offline | Success! Local detection worked |
 | "📶 Offline" banner visible | `isLocalOnly=true` laps present |
@@ -783,16 +799,23 @@ None — fully offline operation.
 |--------|-----|---------|
 | "=== LAP DETECTION START ===" | `LocalLapDetector` DEBUG | Detection began |
 | "Start line valid" | `LocalLapDetector` DEBUG | Coordinates non-zero |
-| "Detected X line crossings" | `LocalLapDetector` DEBUG | Intersection found |
+| "Detected X crossings, rejected Y candidates" | `LocalLapDetector` DEBUG | Crossing search complete |
+| "rejected at {ts}: {reason} - {detail}" | `LocalLapDetector` DEBUG | Why each candidate was discarded |
+| "Start line: Nm long, bearing B, A degrees to the direction of travel" | `LocalLapDetector` DEBUG | **A near 0 identifies `FP-DEGENERATE-BASELINE`** |
 | "Built X laps from crossings" | `LocalLapDetector` DEBUG | Valid laps created |
+| "Wrote lap diagnostics to ..." | `LapDiagnosticsWriter` DEBUG | Sidecar persisted |
 | "Inserted X local laps" | `RecordingViewModel` INFO | Persistence complete |
 
 ### Relationship to Backend Detection
 
+**Delivery 1 is local-only.** There is no backend in the shipped product, and a session is
+processed end to end with the device offline. The notes below describe the design as it would
+work if a backend is added in a later delivery — they are not current behaviour.
+
 - Local detection runs immediately, provides instant feedback
-- Backend detection runs later via `TelemetryUploadWorker` 
-- Backend results overwrite local laps (more accurate with full session context)
-- Local laps have `isLocalOnly=true`; backend laps have `isLocalOnly=false`
+- Backend detection would run later via `TelemetryUploadWorker`
+- Backend results would overwrite local laps (more accurate with full session context)
+- Local laps have `isLocalOnly=true`; backend laps would have `isLocalOnly=false`
 
 ---
 

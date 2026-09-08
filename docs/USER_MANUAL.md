@@ -181,11 +181,17 @@ Before recording, you need to tell the app where your start/finish line is. This
 9. You'll see the distance between points — it should be roughly the track width (typically 10-15 meters)
 10. Tap **Start Recording** when ready
 
+> **Don't worry about which way round you capture the two points.** The app works out the
+> direction you're driving from the recording itself, so it only needs to know *where* the
+> start/finish is, not which way it faces. Capture them in either order.
+
 **Tips for best results:**
 - Walk to the actual track edge, not the pit lane
 - Wait for good GPS signal before capturing each point
 - The line should cross the entire track width
 - Pick a spot you'll definitely cross every lap (not a chicane)
+- Pick a spot you pass **once** per lap — if the circuit crosses over itself, don't put the
+  start/finish where the two paths meet
 - If your screen switches off or you jump to another app mid-setup, that's fine — GPS picks
   straight back up when you return to the screen
 
@@ -507,20 +513,39 @@ please report it with your app version from *About Trillian*.
 **Symptoms:** Session shows "No laps detected" or 0 laps
 
 **Possible causes:**
-1. Start/finish line wasn't crossed — check your track setup
+1. You drove more than about 15 metres to the side of where you captured the start/finish
 2. GPS signal was too poor during recording
 3. You didn't complete 2 full laps (minimum required)
-4. Start line position doesn't intersect your actual GPS trace
-5. Laps were too short (under 20 seconds — kart tracks are fine!)
+4. Laps were too short (under 20 seconds — kart tracks are fine!)
 
 **Solutions:**
-1. For next session, set up the start/finish line more carefully
+1. Capture the start/finish point close to the racing line, not at the far edge of the track
 2. Ensure good GPS lock before recording
-3. Make sure you drive at least 2 full laps crossing the line
-4. Check that your driving path actually crosses where you set up the line
-5. Walk the line setup points closer to where you'll actually drive
+3. Make sure you drive at least 2 full laps past that point
+4. Wait for GPS accuracy under 5 metres before capturing
 
-**Note for kart tracks:** The app uses a 50-meter minimum distance threshold, which works well for small kart tracks (300-500m lap length).
+**Note for kart tracks:** The app uses a 50-metre minimum distance threshold, which works well for small kart tracks (300–500 m lap length).
+
+**Fixed in version 2.94:** Earlier versions could report "No laps detected" after a perfectly
+good session, because of *which way round* you happened to capture the two start/finish points.
+The app no longer uses the direction of the line you capture — only where it is — so this can no
+longer happen. If you saw this on an older version, re-recording on 2.94 or later will work; the
+old session cannot be recovered.
+
+### My Lap Times Are About Half What I Drove
+
+**Symptoms:** Twice as many laps as you completed, each about half the time you expected. No
+error message — the numbers just look wrong.
+
+**Cause:** The app decides you've completed a lap when you drive past the start/finish point.
+If your circuit passes that same point twice per lap — a figure-of-eight, or a layout where the
+start/finish is on a bridge over another part of the track — it counts each pass.
+
+**Solution:** Set the start/finish at a point you pass **once** per lap. Any normal piece of
+straight will do.
+
+If your track really does cross over itself and there is nowhere that works, please send a
+diagnostic file (see 6.1.1) — we'd like to see a real recording of a layout like that.
 
 ### Upload Keeps Failing
 

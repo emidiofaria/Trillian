@@ -4,6 +4,153 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-08] Lap Detection Geometry Corrected (Incident 13)
+
+**Codebase Version:** v2.94 (branch `improve_lap_detection`)
+**Trigger:** Incident 13 — "No laps detected" reported after a session in which the driver
+completed five laps; the captured start/finish line lay parallel to the direction of travel
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `SRS_v1.md` §8 | ✅ Reworked | Local-first; LD-01–LD-13 rewritten, LD-14–LD-16 added, 4 Remarks |
+| `SRS_v1.md` §15 | ✅ Updated | NF-16 added with a Remark |
+| `components.md` | ✅ Updated | Lap detector section rewritten; `LapDiagnosticsWriter` added (+128) |
+| `flows.md` | ✅ Updated | Detection path, constants, signals, failure points; backend section marked future (+45) |
+| `failure-patterns.md` | ✅ Updated | `FP-DEGENERATE-BASELINE`, `FP-LAP-DOUBLE-COUNT` (+117) |
+| `USER_MANUAL.md` | ✅ Updated | 3.1 note on capture order; troubleshooting rewritten; halved-lap-times entry added |
+| `50_LAP_DETECTION_TESTS.md` | ✅ Updated | LD-CROSS-04 corrected; LD-CROSS-05/06/07 added |
+| Incident 13 report | ✅ Updated | Resolution section |
+| Incident 13 RCA | ✅ Updated | F2 correction |
+| `PLAN_003` | ✅ Created | Backlog: one-tap start/finish capture |
+
+### New Requirement IDs
+
+- **LD-14** — heading-consistency guard (reject candidates > 60° from the first crossing)
+- **LD-15** — crossing instants interpolated between GPS samples
+- **LD-16** — detection reasoning recorded beside the telemetry
+- **NF-16** — lap timing not quantised to the GPS sample interval
+
+### Amended Requirements
+
+| ID | Was | Now |
+|----|-----|-----|
+| LD-01 | "shall be performed server-side" | "shall be performed on the device… shall not require network connectivity" |
+| LD-02 | segment-intersection against the user-defined line | crossing at the **midpoint** of the captured line |
+| LD-03 | centroid fallback on the backend | no start line → no laps, reported to the user |
+| LD-04 | cross-product intersection with the line segment | plane **perpendicular to direction of travel**, 15 m lateral extent |
+| LD-06 | **200 m** | **50 m** (the value always shipped) |
+| LD-08/09 | `processingStatus=FAILED` on the backend | on-device reporting |
+
+### New Remarks (per the operator's convention — explanation, not requirement)
+
+- Under §8 — Delivery 1 is local-only; backend is a future option
+- Under LD-02/LD-04 — why the captured line's *direction* is discarded (it is noise, not a measurement)
+- Under LD-04 — figure-of-eight double-count limitation, referencing Incident 13
+- Under LD-06 — why 50 m and not more
+- Under LD-16 — why observability is a requirement (Incident 09 was closed without a cause)
+- Under NF-16 — why 1 Hz quantisation matters more than it looks
+
+### New Test IDs
+
+| ID | Test |
+|----|------|
+| LD-CROSS-05 | Capture order does not matter |
+| LD-CROSS-06 | Start/finish captured along the track (Incident 13 regression) |
+| LD-CROSS-07 | Lap boundary timing precision |
+
+**LD-CROSS-04 was corrected, not extended.** It previously required a pass 1–2 m to the side
+*not* to count as a lap. That expectation was itself part of the defect: real laps pass within
+0.5–2.1 m of the captured point every time.
+
+### Detailed Changes
+
+#### 📁 `01_requirements/DrivingCoach_SRS_v1.md`
+
+```diff
+- | LD-01 | Lap detection shall be performed server-side, asynchronously, after the JSONL file
+-          is successfully stored in Azure Blob Storage. |
++ | LD-01 | Lap detection shall be performed on the device, after recording stops, from the local
++          JSONL telemetry file. It shall not require network connectivity. |
+- | LD-06 | The driver must travel at least 200m from the start zone before a lap crossing is counted |
++ | LD-06 | The driver must travel at least 50 m from the start point before a lap crossing is counted |
++ | LD-14 | A candidate crossing whose direction of travel differs by more than 60° from the
++          direction of travel at the first accepted crossing of the session shall be rejected. |
+```
+
+#### 📁 `SkunkOps/atlas/failure-patterns.md`
+
+```diff
++ ## Pattern: A Direction Derived From Points Closer Than the Measurement Error
++     (FP-DEGENERATE-BASELINE) — ✅ FIXED (Incident 13)
++ ## Pattern: One Lap Counted Twice (FP-LAP-DOUBLE-COUNT) — ⚠️ ACCEPTED LIMITATION
+```
+
+The generalisation recorded, which outlives this incident:
+
+> **Never derive a direction from two points separated by less than the measurement error.**
+
+#### 📁 `docs/USER_MANUAL.md`
+
+```diff
++ > **Don't worry about which way round you capture the two points.** The app works out the
++ > direction you're driving from the recording itself…
++ ### My Lap Times Are About Half What I Drove
+```
+
+### Code Changes Behind This Sync
+
+| File | Change |
+|------|--------|
+| `LocalLapDetector.kt` | Crossing geometry rewritten; diagnostics types; `isValid()` fixed (+443, -107 overall) |
+| `GeoUtils.kt` | `toLocalMetres()`, `bearingDegrees()`, `angularDifferenceDegrees()` (+39) |
+| `LapDiagnosticsWriter.kt` | **New** — sidecar diagnostics, no Room migration |
+| `RecordingViewModel.kt` | Switched to `detectLapsWithDiagnostics()`, writes the sidecar |
+| `LapReplayHarness.kt` + `lapfixtures/teste3/` | **New** — replays real recorded sessions |
+| `LapDetectionRealSessionTest.kt` | **New** — the Incident 13 session as ground truth |
+| `LocalLapDetectorGuardsTest.kt` | **New** — guards, adversarial corner case, geometry self-check |
+| `LapDiagnosticsWriterTest.kt` | **New** |
+| `OneTapStartFinishCaptureTest.kt` | **New** — proves capture shape does not affect lap times |
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4) | **233 tests, 0 failures, 0 skipped** |
+| L2 (SWE.5) | **64 tests, 0 failures** (4 pre-existing skips) |
+
+### Files Modified
+
+```
+M  01_requirements/DrivingCoach_SRS_v1.md                      (+39, -14)
+M  SkunkOps/atlas/components.md                                (+128, -25)
+M  SkunkOps/atlas/failure-patterns.md                          (+117)
+M  SkunkOps/atlas/flows.md                                     (+45, -12)
+M  docs/USER_MANUAL.md                                         (+41, -16)
+M  05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md       (+67, -9)
+M  app/src/main/java/com/drivingcoach/lap/LocalLapDetector.kt  (+443, -107)
+M  app/src/main/java/com/drivingcoach/util/GeoUtils.kt         (+39)
+M  app/src/main/java/com/drivingcoach/ui/recording/RecordingViewModel.kt (+13, -3)
+A  app/src/main/java/com/drivingcoach/lap/LapDiagnosticsWriter.kt
+A  app/src/test/java/com/drivingcoach/lap/*.kt                 (5 files)
+A  app/src/test/resources/lapfixtures/teste3/
+A  docs/plans/PLAN_003_One_Tap_Start_Finish_Capture.md
+A  03_incidents/13_no_laps_detected_start_line_parallel_to_travel/
+```
+
+### Recommendations
+
+- [x] `versionName` bumped to **2.94** (`versionCode` 294, derived); debug APK at
+      `releases/DrivingCoach-v2.94-lap-detection-geometry.apk`
+- [ ] Run **LD-CROSS-06** at the track: it is the only direct field check of the Incident 13 fix
+- [ ] `DETECTION_HALF_WIDTH_M = 15` is reasoned from **one** session. Add a second replay fixture
+      from a different venue before treating it as settled
+- [ ] Consider retaining `.lapdiag.json` in the diagnostic file share (6.1.1) so a user reporting
+      a lap problem sends the reasoning with it
+
+---
+
 ## [2026-09-07] GPS Warm-Up Lifetime and Start-Line Fix Freshness (Incident 12)
 
 **Codebase Version:** v2.93
