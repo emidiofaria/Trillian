@@ -252,21 +252,38 @@ authenticated account rather than the sole source of identity.
 
 ## 8. Lap detection
 
+> **Remark:** Lap detection runs **entirely on the phone**. Delivery 1 of this app is local-only: there is no backend, and a session is fully processed with the device offline and in flight mode. A backend may be added in a later delivery, at which point these requirements will be revisited; until then, anything in this document describing server-side processing describes a future option, not shipped behaviour.
+
 | ID | Requirement |
 |---|---|
-| LD-01 | Lap detection shall be performed server-side, asynchronously, after the JSONL file is successfully stored in Azure Blob Storage. |
-| LD-02 | When a start/finish line is provided (startLineLat1/Lng1, startLineLat2/Lng2), lap boundaries shall be detected using a segment-intersection algorithm against the user-defined line. |
-| LD-03 | When no start/finish line is provided (legacy sessions), the backend shall fall back to centroid-based detection using the first 30 seconds of telemetry to compute a start zone. |
-| LD-04 | A lap boundary shall be recorded when consecutive GPS samples form a line segment that intersects the start/finish line segment, using the cross-product sign-of-area method. |
-| LD-05 | For line-based detection, a minimum lap time guard of 20,000 ms shall be enforced. For centroid fallback, 30,000 ms shall be used. |
-| LD-06 | The driver must travel at least 200m from the start zone before a lap crossing is counted (prevents false triggers near the line). |
+| LD-01 | Lap detection shall be performed on the device, after recording stops, from the local JSONL telemetry file. It shall not require network connectivity. |
+| LD-02 | When a start/finish line is provided (startLineLat1/Lng1, startLineLat2/Lng2), lap boundaries shall be detected by identifying the moments at which the car passes the **midpoint** of that line. |
+| LD-03 | When no start/finish line is provided, or either captured endpoint is at latitude 0 and longitude 0, the app shall report that no start line is defined and shall detect no laps. |
+| LD-04 | A lap boundary shall be recorded when consecutive GPS samples cross a plane through the start point that is **perpendicular to the car's direction of travel**, and the car passes no further than 15 m to the side of the start point. |
+| LD-05 | A minimum lap time guard of 20,000 ms shall be enforced between consecutive lap boundaries. |
+| LD-06 | The driver must travel at least 50 m from the start point before a lap crossing is counted (prevents false triggers while manoeuvring near the line). |
 | LD-07 | The last incomplete lap (started after the final boundary, session ends before re-crossing) shall be discarded. Only complete laps shall be stored. |
-| LD-08 | If fewer than 50 telemetry samples are present in the file, the backend shall set `processingStatus=FAILED` and log: 'Insufficient samples'. |
-| LD-09 | If fewer than 2 complete laps are detected, the backend shall set `processingStatus=FAILED`, store no laps, and log a warning. The user shall be notified in the app. |
+| LD-08 | If fewer than 50 telemetry samples are present in the file, the app shall report insufficient telemetry data and detect no laps. |
+| LD-09 | If fewer than 2 complete laps are detected, the app shall store no laps and shall tell the user how many laps were found. |
 | LD-10 | Each detected lap shall be divided into 3 equal-time sectors. `sector1Ms + sector2Ms + sector3Ms` shall equal `durationMs` exactly (sector 3 absorbs rounding). |
 | LD-11 | The lap with the minimum `durationMs` shall be flagged as `isBestLap=true`. Exactly one lap per session shall have this flag set. |
 | LD-12 | `SessionEntity.processingStatus` shall progress through: `PENDING → PROCESSING → LAPS_DONE → COMPLETE` on success, or `FAILED` on any error. |
-| LD-13 | The lat/lng approximation used for segment intersection (equirectangular Cartesian) is valid for tracks smaller than 5 km in extent. This is the supported use case. |
+| LD-13 | The lat/lng approximation used for crossing geometry (equirectangular Cartesian) is valid for tracks smaller than 5 km in extent. This is the supported use case. |
+| LD-14 | A candidate crossing whose direction of travel differs by more than 60° from the direction of travel at the first accepted crossing of the session shall be rejected. |
+| LD-15 | The instant of a lap boundary shall be interpolated between the two GPS samples either side of it, rather than taken from either sample. |
+| LD-16 | For each detection run the app shall record, alongside the session's telemetry file, what it observed and why each candidate crossing was accepted or rejected. Failure to record this shall not affect the outcome presented to the user. |
+
+**Remark on LD-02 and LD-04 — why the *orientation* of the captured line is ignored.**
+Track Setup asks the user to capture a point at each edge of the start/finish, typically 5–10 m apart. GPS accuracy on a phone is of the same order (4.8 m mean, 15.0 m worst, measured in incident 13). The *direction* of a line drawn between two points that close together is therefore dominated by measurement noise rather than by where the user stood, and can come out pointing along the track instead of across it. In incident 13 it did exactly that — within 0.1°–5.1° of the direction of travel — and no lap could be detected, because a car driving along a line never crosses it. The app therefore uses the captured points only for their midpoint, which is a *position* and is measurable, and derives the crossing direction from the car's own motion, which is measured over hundreds of metres. See `03_incidents/13_no_laps_detected_start_line_parallel_to_travel/`.
+
+**Remark on LD-04 — a limitation on track topology.**
+Because the crossing plane follows the car's direction of travel rather than a fixed line, a circuit that passes through the same point twice per lap in different directions — a figure-of-eight, or a layout where the start/finish is on a bridge over itself — may register two boundaries per lap and report lap times about half their true value. LD-14 rejects the most common form of this (a return pass in the opposite direction), but a crossing at, say, 70° would be accepted. No venue currently in use has this geometry. If lap times look roughly half what was driven, this is the reason.
+
+**Remark on LD-06 — why 50 m and not more.**
+The value must be smaller than the shortest lap the app is expected to support. Kart circuits used for testing are around 800 m, so 50 m is comfortably below a lap while still being far enough to clear the manoeuvring that happens around the start/finish before a session begins. An earlier value of 200 m was specified but never implemented; the shipped value has always been 50 m.
+
+**Remark on LD-16 — why this is a requirement at all.**
+Incident 09 reported "no laps detected" and was closed without a cause, at 55% confidence, because nothing survived the run except the message shown to the user. Incident 13 had the same symptom two versions later and was only explicable because its raw telemetry happened to be kept by hand. Recording the detector's reasoning makes the next occurrence answerable from the session itself.
 
 ---
 
@@ -465,6 +482,10 @@ authenticated account rather than the sole source of identity.
 | NF-13 | The backend Docker image shall build and start within 60 seconds. |
 | NF-14 | High-accuracy location shall not be held while the app is not in the foreground, outside an active recording, which runs under a visible foreground-service notification. This is a privacy bound before it is a battery one: the user shall always be able to see that the receiver is in use. |
 | NF-15 | Start-line capture shall be reachable within 1 second of arriving at the Track Setup screen when GPS readiness was already reported on Home, so that the warm-up the user waited for is not spent twice. |
+| NF-16 | Lap timing shall not be quantised to the GPS sample interval. On a device delivering fixes at 1 Hz, the error introduced by sampling shall not exceed 100 ms per lap boundary. |
+
+**Remark on NF-16 — why this matters more than it looks.**
+The app requests location updates at 10 Hz, but the rate actually delivered is set by the device's GNSS hardware, not by the app. The reference phone (ZTE Blade A53+) delivers roughly 1 Hz. At 15–20 m/s, taking the timestamp of the nearest sample instead of the true crossing instant costs up to 1 second, which on a 77 s kart lap is about 1.3% — larger than the differences between laps that the coaching is meant to explain. Interpolating between the two samples either side of the crossing removes almost all of this, and costs nothing.
 
 ---
 
