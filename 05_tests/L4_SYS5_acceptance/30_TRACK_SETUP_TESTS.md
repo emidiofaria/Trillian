@@ -48,11 +48,15 @@ Stand outdoors with clear sky view. Have a stopwatch ready.
 | 1 | On Home, wait for green chip | "GPS ready" | ☐ |
 | 2 | Press Home (background the app), wait 30 s | — | ☐ |
 | 3 | Reopen the app | Chip restarts at amber, or goes green quickly | ☐ |
-| 4 | Leave the app open on Home for 3+ minutes | Chip disappears (idle ceiling) | ☐ |
-| 5 | Navigate away and back to Home | Chip reappears and searching restarts | ☐ |
-| 6 | Deny/revoke location permission, relaunch | Chip stays hidden; no crash | ☐ |
+| 4 | Navigate Home → Track Setup → back to Home | Chip is still green; searching did **not** restart | ☐ |
+| 5 | Leave the app open for 30+ minutes | Chip disappears (idle ceiling backstop) | ☐ |
+| 6 | Navigate away and back | Chip reappears and searching restarts | ☐ |
+| 7 | Deny/revoke location permission, relaunch | Chip stays hidden; no crash | ☐ |
 
-**Requirement Coverage:** TS-18
+> Step 4 is the Incident 12 guard. Leaving Home must **not** end the warm-up; only leaving the
+> app, starting a recording, or the 30-minute backstop may.
+
+**Requirement Coverage:** TS-18, NF-14
 
 ---
 
@@ -70,6 +74,51 @@ screen switched off — the field symptom was "Acquiring GPS…" forever.
 | 5 | Capture Point A | Capture succeeds with a fresh, live position | ☐ |
 
 **Requirement Coverage:** TS-15
+
+---
+
+### TS-00d: The Warm-Up Survives the Walk to the Line (Incident 12)
+
+**Objective:** The journey the feature exists to serve. This is the acceptance test whose
+absence let the regression reach the track.
+
+**Do this outdoors, from a genuinely cold start** — force-stop the app first, or the receiver
+may still be warm from a previous run and the test proves nothing.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Force-stop the app, then open it in the paddock | Chip amber "Acquiring GPS…" | ☐ |
+| 2 | Wait for green, noting roughly how long it took | "GPS ready" | ☐ |
+| 3 | Tap **+** and walk to the start/finish line | — | ☐ |
+| 4 | On arrival, look at the GPS status | Satellites/accuracy shown immediately — **not** "Acquiring GPS…" | ☐ |
+| 5 | Check CAPTURE POINT A | Enabled within about a second of arriving | ☐ |
+| 6 | Rotate the phone, then re-check | Still ready; no re-acquisition | ☐ |
+| 7 | **Profile → About** after the session | One acquisition recorded, not two | ☐ |
+
+**Fail condition:** any second wait for a fix after the chip already went green. Record the
+observed wait in Notes — that number is the user-visible cost of this defect.
+
+**Requirement Coverage:** TS-16, TS-17, TS-18, NF-15
+
+---
+
+### TS-00e: Stale Positions Cannot Become a Start Line
+
+**Objective:** Verify the capture gate refuses a position that no longer says where the user
+is, and that it waits rather than blocks (Incident 12, finding F4).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | On Track Setup with good GPS, note CAPTURE is enabled | Enabled | ☐ |
+| 2 | Lock the phone, walk 50+ m, unlock and return to the screen | Briefly shows "Getting a current GPS fix…" and CAPTURE is disabled | ☐ |
+| 3 | Hold still with sky view | Status returns to normal and CAPTURE re-enables **on its own** within a few seconds | ☐ |
+| 4 | Capture Point A, then compare against a phone map app | Point matches where you are standing, not where you came from | ☐ |
+| 5 | Repeat step 2 but tap CAPTURE while it is disabled | Nothing is captured; no crash; no need to leave the screen | ☐ |
+
+**Fail condition:** capture succeeding while the status reads "Getting a current GPS fix…", or
+the state never clearing without leaving the screen.
+
+**Requirement Coverage:** TS-20, TS-21, TS-22, TS-23
 
 ---
 
@@ -314,6 +363,8 @@ screen switched off — the field symptom was "Acquiring GPS…" forever.
 | TS-03 | Capture Point A | ☐ Pass ☐ Fail |
 | TS-04 | Capture Point B and Line Width | ☐ Pass ☐ Fail |
 | TS-05 | Line Distance — Too Close | ☐ Pass ☐ Fail |
+| TS-00d | Warm-Up Survives the Walk (Incident 12) | ☐ Pass ☐ Fail |
+| TS-00e | Stale Positions Rejected at Capture | ☐ Pass ☐ Fail |
 | TS-06 | Clear Button | ☐ Pass ☐ Fail |
 | TS-07 | Valid Line Distance | ☐ Pass ☐ Fail |
 | TS-08 | Coordinates Storage | ☐ Pass ☐ Fail |
@@ -337,5 +388,7 @@ screen switched off — the field symptom was "Acquiring GPS…" forever.
 
 ---
 
-*Document ID: SAT-TS-001 | Version: 2.1 | Date: 2026-08-26*
-*Updated: Replaced Google Maps tap-based line drawing with two-point GPS capture workflow*
+*Document ID: SAT-TS-001 | Version: 2.2 | Date: 2026-09-07*
+*Updated: Added TS-00d (warm-up survives the Home → Track Setup walk) and TS-00e (stale fixes
+rejected at capture) after Incident 12; corrected TS-00b, which asserted the defective
+screen-scoped stop.*

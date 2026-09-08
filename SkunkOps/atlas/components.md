@@ -113,7 +113,14 @@ Starts GNSS acquisition as soon as the Home screen is visible so that the cold t
 of on the Track Setup screen where they are standing at the track edge with nothing to do.
 Publishes readiness for the Home hero chip and records TTFF metrics for diagnosis.
 
-Implements SRS TS-16 to TS-20.
+Implements SRS TS-16 to TS-23.
+
+> **Lifetime is scoped to the user's task, not to a screen (Incident 12).** Warm-up used to be
+> stopped by `HomeFragment.onStop()`, which made the single navigation it exists to serve —
+> Home → Track Setup — its own stop condition. Three stop conditions replace it: the app leaving
+> the foreground (`WarmUpForegroundBinder`), a recording starting
+> (`TelemetryForegroundService`), and the idle ceiling as a backstop. No screen may call
+> `stop()`.
 
 ### Key Code Areas
 
@@ -121,10 +128,14 @@ Implements SRS TS-16 to TS-20.
 - `data/location/LocationUpdates.kt` — abstraction seam; `positionUpdates()` (raw `Location`) and `updates()` (reduced `LocationFix`)
 - `data/location/FusedLocationUpdates.kt` — Play Services impl, `callbackFlow` + `PRIORITY_HIGH_ACCURACY`
 - `data/location/GpsReadiness.kt` — `Idle | Acquiring | Ready(accuracyM)`, `READY_ACCURACY_M = 10f`
-- `data/location/WarmUpTimings.kt` — `intervalMs = 1000`, `idleCeilingMs = 180_000`
+- `data/location/WarmUpTimings.kt` — `intervalMs = 1000`, `idleCeilingMs = 1_800_000`
+- `data/location/WarmUpForegroundBinder.kt` — `@Singleton`; counts started activities via `Application.registerActivityLifecycleCallbacks`, calls `stop()` at zero
+- `data/location/FixFreshness.kt` — `MAX_FIX_AGE_MS = 3_000`; monotonic age arithmetic, JVM-testable
 - `data/location/GpsAcquisitionMetricsStore.kt` — DataStore-backed TTFF metrics
 - `di/LocationModule.kt` — `@Binds LocationUpdates`, `@ApplicationScope CoroutineScope`, timings
-- `ui/home/HomeViewModel.kt` / `HomeFragment.kt` — lifecycle wiring and the readiness chip
+- `ui/home/HomeViewModel.kt` / `HomeFragment.kt` — `start()` on `onStart()`; **no stop path exists**
+- `ui/tracksetup/TrackSetupFragment.kt` — `start()` on `onStart()` so the receiver stays warm across the handover
+- `ui/MainActivity.kt` — binds `WarmUpForegroundBinder` (not the Application class: `@HiltAndroidTest` replaces it)
 - `ui/about/AboutFragment.kt` — renders the last acquisition metrics
 
 ### Dependencies
@@ -135,7 +146,7 @@ Implements SRS TS-16 to TS-20.
 
 ### Inputs
 
-- `HomeFragment.onStart()` / `onStop()`
+- `HomeFragment.onStart()`, `TrackSetupFragment.onStart()`, foreground transitions from `WarmUpForegroundBinder`
 - Location fixes (accuracy in metres, timestamp)
 
 ### Outputs
@@ -154,8 +165,10 @@ subscribes to live updates and applies its own ≤10 m gate (SRS TS-20).
 | Decision | Rationale |
 |----------|-----------|
 | Two-method `LocationUpdates` | `updates()` reduces to `LocationFix` so warm-up logic is JVM-testable; `android.location.Location` is a stub on the JVM and reports accuracy 0 |
-| Idempotent `start()` | Repeated Home visits refresh the idle ceiling instead of stacking subscriptions |
-| 3-minute idle ceiling | Bounds battery/receiver cost if the app is left open on Home |
+| Idempotent `start()` | Repeated Home visits refresh the idle ceiling instead of stacking subscriptions. This is also why a screen-scoped `stop()` was so damaging: `stop()` nulls the job, so the guard cannot protect a handover it has already torn down |
+| 30-minute idle ceiling | A backstop, not a UX bound. The previous 3 minutes was shorter than a real paddock-to-line walk, so it expired mid-journey and re-created the incident on a timer |
+| Activity counter over `ProcessLifecycleOwner` | `ProcessLifecycleOwner` does not dispatch `ON_STOP` under `ActivityScenario`, so the privacy guarantee could not be proven by a test. An unverifiable guarantee is how Incident 12 reached HAT |
+| `isChangingConfigurations` guard | Without it a rotation reads as a departure and releases the chip mid-walk — the same incident in a form that only appears if the user turns the phone |
 | Secondary `@Inject constructor` | Dagger cannot inject the `now: () -> Long` clock lambda used by tests |
 
 ### Failure Modes
@@ -164,7 +177,8 @@ subscribes to live updates and applies its own ≤10 m gate (SRS TS-20).
 |------|---------|-------|
 | Permission not granted | Chip stays hidden, no warm-up | `hasPermission()` false — Track Setup still prompts |
 | No fix indoors | Chip stuck amber "Acquiring GPS…" | No sky view; identical latency to pre-feature behaviour |
-| Idle ceiling reached | Chip disappears after 3 min | By design; re-entering Home restarts |
+| Idle ceiling reached | Chip disappears after 30 min | By design; re-entering the app restarts |
+| Stale fix held at the line | CAPTURE withdrawn, "Getting a current GPS fix…" | Fix older than `FixFreshness.MAX_FIX_AGE_MS`; clears on the next current fix (SRS TS-21 to TS-23) |
 | Metrics write fails | About shows no acquisition data | DataStore I/O — caught, non-fatal |
 
 ### Observable Signals

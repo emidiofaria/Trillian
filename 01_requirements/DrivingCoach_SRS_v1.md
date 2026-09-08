@@ -183,10 +183,13 @@ authenticated account rather than the sole source of identity.
 | TS-14 | The instruction text shall read: "Walk to each edge of the track at the start/finish line and capture two GPS points." |
 | TS-15 | The app shall request location updates through `FusedLocationProviderClient` at `PRIORITY_HIGH_ACCURACY` with a 1-second interval, behind the `LocationUpdates` abstraction. Track Setup shall subscribe whenever its view is at least STARTED and unsubscribe when it is not, so that location updates resume after a screen-off, app switch or any other stop/start cycle. |
 | TS-16 | The app shall begin acquiring a GPS fix as soon as the Home screen becomes visible, so that the time-to-first-fix elapses while the user is still preparing rather than while standing at the start/finish line. |
-| TS-17 | The Home screen shall display a GPS readiness chip reflecting acquisition state: hidden when idle, "Acquiring GPS…" (amber) while no fix of ≤10 m accuracy has been received, and "GPS ready" (green) once one has. |
-| TS-18 | GPS warm-up shall stop when the Home screen is no longer visible, and shall stop automatically after 3 minutes of continuous warm-up without a recording starting, so that the receiver is not held open indefinitely. |
+| TS-17 | The Home screen shall display a GPS readiness chip reflecting acquisition state: hidden when idle, "Acquiring GPS…" (amber) while no fix of ≤10 m accuracy has been received, and "GPS ready" (green) once one has. Readiness shall persist across the navigation from Home to Track Setup, so that the state the chip reported remains true on arrival at the start line. |
+| TS-18 | GPS warm-up shall be bounded by the user's task rather than by any one screen. It shall stop when the app leaves the foreground, when a recording starts, or after 30 minutes of continuous warm-up, so that the receiver is never held while the user cannot see that it is held, and never held indefinitely. It shall **not** stop merely because the Home screen is no longer visible. *(Amended after Incident 12: the previous wording made the Home screen the stop condition, which meant navigating Home → Track Setup — the single journey warm-up exists to serve — discarded the fix the user had just waited for.)* |
 | TS-19 | The app shall record the time-to-first-fix and the time-to-first-accurate-fix (≤10 m) of the most recent acquisition and display them on the About screen, so that GPS acquisition delays reported by users can be diagnosed with measured evidence. |
 | TS-20 | Warm-up shall expose readiness only and shall never supply a position to start/finish line capture; captured points shall always come from a live location update that independently satisfies the ≤10 m accuracy gate. |
+| TS-21 | Start/finish line capture shall reject any fix older than 3 seconds, measured on the monotonic clock (`elapsedRealtimeNanos`). Age shall be checked when a fix arrives, at the moment of capture, and bounded at the location request itself (`setMaxUpdateAgeMillis`). Where the age cannot be established — an unset or future timestamp — the fix shall be treated as current, since refusing capture outright is a worse failure than the one being prevented and the ≤10 m accuracy gate still applies. |
+| TS-22 | While only stale fixes are held, the Track Setup screen shall withdraw capture and display "Getting a current GPS fix…", distinct from "Acquiring GPS…". This state shall clear automatically on the next current fix and shall never require the user to leave and re-enter the screen. |
+| TS-23 | The Track Setup screen shall discard the position it is holding whenever its location collector restarts, because a fix retained across a screen-off or app switch describes where the user was rather than where they are. |
 
 ---
 
@@ -460,6 +463,8 @@ authenticated account rather than the sole source of identity.
 | NF-11 | Unit test line coverage shall be ≥ 70% across domain and data layers. |
 | NF-12 | `./gradlew assembleRelease` shall succeed with R8/ProGuard enabled. |
 | NF-13 | The backend Docker image shall build and start within 60 seconds. |
+| NF-14 | High-accuracy location shall not be held while the app is not in the foreground, outside an active recording, which runs under a visible foreground-service notification. This is a privacy bound before it is a battery one: the user shall always be able to see that the receiver is in use. |
+| NF-15 | Start-line capture shall be reachable within 1 second of arriving at the Track Setup screen when GPS readiness was already reported on Home, so that the warm-up the user waited for is not spent twice. |
 
 ---
 
