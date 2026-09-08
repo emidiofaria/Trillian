@@ -229,3 +229,61 @@ confirmed.
 `LocationWarmUp` is stopped by `HomeFragment.onStop()` (SRS TS-18) at exactly the
 Home → Track Setup navigation it exists to serve. Lap-detection algorithm and inputs
 confirmed unchanged; one **new** latent risk to start-line capture is raised (Finding F4).
+
+---
+
+## Resolution — 2026-09-07
+
+**Status: FIXED**, pending trackside confirmation of the user-visible magnitude.
+
+| Commit | Change |
+|--------|--------|
+| `51cb13a` | `fix(gps): keep the warm-up alive across the Home to Track Setup handover` |
+| `fb519e6` | `fix(tracksetup): reject stale fixes at start-line capture` (Finding F4) |
+| `4803fe5` | `test(gps): retarget the lifecycle tests at the app, not the screen` |
+
+### What changed
+
+Warm-up lifetime is now scoped to the user's **task** rather than to the Home screen. Three
+stop conditions replace the single screen-scoped one: the app leaving the foreground
+(`WarmUpForegroundBinder`), a recording starting (`TelemetryForegroundService`, which opens its
+own raw `GPS_PROVIDER` stream), and a 30-minute idle backstop, raised from 3 minutes because
+that was shorter than a real paddock-to-line walk and was expiring mid-journey.
+
+Finding F4 shipped alongside it, not after: keeping the receiver warm across the walk makes a
+position from where the user *was* far more likely to be in hand where they *are*, so the
+freshness guard is a precondition of the first fix rather than a follow-up to it.
+
+### Root cause confirmed empirically
+
+The regression tests were written before the fix and run against unmodified `main`: three of
+four failed exactly as the RCA predicted, and flipped green on the fix. `StartLineFreshnessTest`
+likewise fails on the pre-F4 code.
+
+### Requirement corrections
+
+SRS **TS-18 mandated the defect** — "GPS warm-up shall stop when the Home screen is no longer
+visible". The requirement was wrong, not merely the code, and has been rewritten. TS-17 now
+requires readiness to persist across the handover. TS-21 to TS-23 and NF-14/NF-15 are new.
+
+### Why it reached human acceptance testing
+
+Nothing tested the handover. `TrackSetupResubscribeTest` performed the exact failing navigation
+and then asserted `activeSubscriptions >= 1`, which holds whether or not the warm-up survived,
+because the arriving screen opens a subscription of its own. The test doubles had no notion of
+acquisition latency, so a receiver that died and instantly re-acquired was indistinguishable
+from one that never stopped. Both gaps are closed (`SubscriptionLog`, receiver-scoped
+`acquisitionLatencyMs`), and two L4 checklists were added (TS-00d, TS-00e).
+
+Generalised in the Atlas as **FP-LIFECYCLE-SCOPE** and **FP-STALE-FIX**.
+
+### Validation
+
+Clean build: **L1 209/209**, **L2 56/60** (4 pre-existing `@Ignore`).
+
+### Still open
+
+- The **magnitude** of the user-visible delta is unmeasured. Every latency figure is modelled
+  by a test double; `Profile → About` records the real number, so one track session settles it.
+- Open Question 1 from the report above — the direction of the version comparison — was never
+  resolved by the reporter and did not need to be: the defect is present in both builds.

@@ -4,6 +4,139 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-07] GPS Warm-Up Lifetime and Start-Line Fix Freshness (Incident 12)
+
+**Codebase Version:** v2.92
+**Trigger:** Incident 12 — GPS acquisition slow / UX regression reported from human acceptance
+testing, and finding F4 of its RCA
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `SkunkOps/atlas/components.md` | ✅ Updated | +28 / -12 (warm-up lifetime, two new classes, revised design notes and failure modes) |
+| `SkunkOps/atlas/flows.md` | ✅ Updated | +38 / -6 (new Home → Track Setup handover flow; stop conditions rewritten) |
+| `SkunkOps/atlas/failure-patterns.md` | ✅ Updated | +122 (2 new patterns) |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +9 / -3 (TS-17 and TS-18 amended, 5 new requirements) |
+| `docs/USER_MANUAL.md` | ✅ Updated | +31 / -8 (§3.0 corrected, new troubleshooting entry) |
+| `05_tests/L4_SYS5_acceptance/30_TRACK_SETUP_TESTS.md` | ✅ Updated | +65 / -6 (2 new checklists, TS-00b corrected) |
+| `SkunkOps/atlas/system.md` | ⏭️ No change | No dependency, service or manifest change — `lifecycle-process` was trialled and removed |
+
+### New Requirement IDs
+
+| ID | Requirement |
+|----|-------------|
+| TS-21 | Capture shall reject fixes older than 3 s, checked at the request, on arrival and at the click |
+| TS-22 | "Getting a current GPS fix…" shall be shown while only stale fixes are held, and shall clear automatically |
+| TS-23 | Track Setup shall discard its held position whenever the location collector restarts |
+| NF-14 | High-accuracy location shall not be held while the app is not in the foreground |
+| NF-15 | Capture shall be reachable within 1 s of arriving at Track Setup when GPS was already ready |
+
+### Amended Requirements
+
+| ID | Change |
+|----|--------|
+| TS-17 | Readiness must now persist across the Home → Track Setup navigation |
+| TS-18 | **Rewritten.** Previously *mandated* the defect: "GPS warm-up shall stop when the Home screen is no longer visible". Warm-up is now bounded by the app leaving the foreground, a recording starting, or a 30-minute backstop (was 3 minutes) |
+
+### New Acceptance Test IDs
+
+| ID | Test |
+|----|------|
+| TS-00d | The warm-up survives the walk from the paddock to the line — the journey whose absence from the checklist let this reach the track |
+| TS-00e | Stale positions cannot become a start line, and the gate waits rather than blocks |
+
+TS-00b was corrected: step 4 asserted that leaving Home ends the warm-up, which is the defect.
+
+### Detailed Changes
+
+#### 📁 01_requirements/DrivingCoach_SRS_v1.md
+
+```diff
+- | TS-18 | GPS warm-up shall stop when the Home screen is no longer visible, and shall stop
+-   automatically after 3 minutes ... |
++ | TS-18 | GPS warm-up shall be bounded by the user's task rather than by any one screen. It
++   shall stop when the app leaves the foreground, when a recording starts, or after 30 minutes
++   ... It shall **not** stop merely because the Home screen is no longer visible. |
+```
+
+#### 📁 SkunkOps/atlas/failure-patterns.md
+
+**Added: FP-LIFECYCLE-SCOPE — Resource Scoped to the Wrong Lifecycle**
+
+Generalises the root cause: when a long-lived resource serves a *task* that spans screens,
+binding it to a fragment or view lifecycle makes the handover between screens its destruction
+point — usually the moment it is most needed. Includes two reusable testing lessons:
+`ProcessLifecycleOwner` does not dispatch `ON_STOP` under `ActivityScenario`, and
+`ActivityScenario.moveToState(CREATED)` does not background an app (it launches an empty
+Activity on top, exactly as navigation does), so a test using it to prove "backgrounding
+releases the resource" is in fact asserting the bug.
+
+**Added: FP-STALE-FIX — Stale Fix Captured as Ground Truth**
+
+The silent counterpart: a cached or retained position becomes Point A, offsetting every lap in
+the session by the same amount while the times still look plausible.
+
+#### 📁 SkunkOps/atlas/flows.md
+
+**Added: "Flow: Home → Track Setup handover"** — this handover was documented nowhere before
+this incident, which is part of why the defect was invisible. Records the ordering that made it
+unrepairable from the receiving side: `HomeFragment.onStop()` runs *before*
+`TrackSetupFragment.onStart()`, and `stop()` nulls the job that `start()`'s idempotence guard
+checks.
+
+#### 📁 docs/USER_MANUAL.md
+
+```diff
+- - Searching stops when you leave the app, and after 3 minutes of sitting on Home ...
++ - Once it's green, it stays green while you walk. Moving from Home to Track Setup doesn't
++   restart the search, so you only ever wait once.
++ - Searching stops when you leave the app ... also stops on its own after half an hour ...
+```
+
+The old §3.0 promised "Track Setup will be ready the moment you arrive". That promise was false
+when written; it is true now, and the wording is sharpened to say so.
+
+### Validation
+
+Clean build, emulator `DrivingCoach_Test` (API 35):
+
+| Level | ASPICE | Result |
+|-------|--------|--------|
+| L1 | SWE.4 | ✅ 209/209 (was 203 — +6) |
+| L2 | SWE.5 | ✅ 56/60, 4 pre-existing `@Ignore` (was 26 tests — +6 new) |
+
+Report: `05_tests/reports/TEST_REPORT_2026-09-07_22-53-25.md`
+
+### Files Modified
+
+```
+M  SkunkOps/atlas/components.md                             (+28, -12)
+M  SkunkOps/atlas/flows.md                                  (+38, -6)
+M  SkunkOps/atlas/failure-patterns.md                       (+122, -0)
+M  01_requirements/DrivingCoach_SRS_v1.md                   (+9, -3)
+M  docs/USER_MANUAL.md                                      (+31, -8)
+M  05_tests/L4_SYS5_acceptance/30_TRACK_SETUP_TESTS.md      (+65, -6)
+A  03_incidents/12_gps_acquisition_slow_ux_regression/      (2 files)
+```
+
+### Recommendations
+
+- [ ] **Measure the real TTFF delta trackside.** Every latency figure here is modelled by a
+      test double. The user-visible magnitude is still unquantified — `Profile → About` now
+      records it, so a single track session settles it.
+- [ ] `FixFreshness.MAX_FIX_AGE_MS = 3 s` is reasoned, not measured. Watch for reports of the
+      capture gate feeling sticky on devices with slower fused delivery.
+- [ ] `setMaxUpdateAgeMillis` behaviour is provider-dependent; the two application-level checks
+      are deliberately not relying on it.
+- [ ] The 30-minute idle ceiling is a backstop, not a considered battery budget. If battery
+      complaints appear, that constant is the first thing to revisit — not the handover fix.
+- [ ] Consider whether other long-lived resources are scoped to a fragment lifecycle
+      (FP-LIFECYCLE-SCOPE): the recording service's sensor registration is the obvious next
+      candidate to audit.
+
+---
+
 ## [2026-09-03] Local Driver Profile Replaces Login
 
 **Codebase Version:** v2.92-driver-profile  
