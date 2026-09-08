@@ -363,11 +363,13 @@ DriverNameFragment.onViewCreated()
 
 Absorb the GNSS time-to-first-fix (TTFF) while the user is still on the Home screen, so that
 the 30–60 s cold-fix wait does not land on Track Setup where the user is standing at the
-track edge unable to do anything (SRS TS-16 to TS-20).
+track edge unable to do anything (SRS TS-16 to TS-23).
 
 ### Trigger
 
 - `HomeFragment.onStart()` — every time Home becomes visible
+- `TrackSetupFragment.onStart()` — idempotent; keeps the receiver warm if the user arrives
+  by any route other than Home
 
 ### Execution Path
 
@@ -384,16 +386,38 @@ HomeFragment.onStart()
         → first fix with accuracy ≤ 10 m  → record timeToAccurateFixMs
                                           → readiness = Ready(accuracyM)
         → GpsAcquisitionMetricsStore.record(...)   [DATASTORE WRITE, non-fatal]
-    → [PARALLEL] idle ceiling: delay(180_000) → stop()
+    → [PARALLEL] idle ceiling: delay(1_800_000) → stop()   (backstop only)
 → HomeViewModel.gpsReadiness (StateFlow) → HomeFragment.updateGpsChip()
     Idle      → chip gone
     Acquiring → amber "Acquiring GPS…"
     Ready     → green "GPS ready"
 
-HomeFragment.onStop()
-→ HomeViewModel.stopGpsWarmUp() → LocationWarmUp.stop()
+Stop conditions — none of them a screen (SRS TS-18, Incident 12)
+→ WarmUpForegroundBinder: last started Activity stops, not for a configuration change
+                          → LocationWarmUp.stop()
+→ TelemetryForegroundService.startRecording()  → LocationWarmUp.stop()
+                          (the service opens its own raw GPS_PROVIDER stream at 10 Hz;
+                           the two must never run together)
+→ idle ceiling expires after 30 min → LocationWarmUp.stop()
   → cancel collection job, cancel ceiling job, readiness = Idle
 ```
+
+### Flow: Home → Track Setup handover
+
+The journey the warm-up exists to serve, and the one that used to destroy it. Under
+Navigation's replace transaction the ordering is:
+
+```
+HomeFragment.onStop()          ← used to call stop() here: the defect (Incident 12)
+TrackSetupFragment.onStart()   → LocationWarmUp.start()   (idempotent, no-op when warm)
+TrackSetupFragment collector   → locationUpdates.positionUpdates(1000 ms)
+```
+
+Because `onStop()` runs **before** the next screen's `onStart()`, no amount of re-starting in
+Track Setup could have repaired it: `stop()` nulls `updatesJob`, so `start()`'s idempotence
+guard sees a cold receiver and re-acquires. The subscription must never be released in the
+gap. `WarmUpHandoverTest` asserts continuity across this boundary rather than sampling
+`activeSubscriptions`, which cannot distinguish "held" from "dropped and instantly reopened".
 
 ### Async Boundaries
 
@@ -401,7 +425,8 @@ HomeFragment.onStop()
 |----------|------|----------|
 | Location updates | `callbackFlow` | `FusedLocationUpdates.positionUpdates()` |
 | Warm-up collection | `@ApplicationScope CoroutineScope` job | `LocationWarmUp.start()` |
-| Idle ceiling | Separate coroutine `delay(180 s)` | `LocationWarmUp.restartIdleCeiling()` |
+| Idle ceiling | Separate coroutine `delay(1800 s)` | `LocationWarmUp.restartIdleCeiling()` |
+| Foreground transitions | `Application.ActivityLifecycleCallbacks` | `WarmUpForegroundBinder` |
 | Readiness observation | `StateFlow` + `repeatOnLifecycle(STARTED)` | `HomeFragment` |
 
 ### Persistence Boundaries
@@ -426,7 +451,8 @@ session. Capture reads live updates and applies its own ≤10 m accuracy gate (S
 |-------|---------|---------|-------------|
 | Permission not granted | `hasPermission()` false | Chip stays hidden | Warm-up no-ops; Track Setup still prompts |
 | Indoors / no sky view | No fix arrives | Chip stuck amber | Same latency as before the feature — no regression |
-| Idle ceiling fires | 3 min with Home visible | Chip returns to hidden | Re-entering Home restarts warm-up |
+| Idle ceiling fires | 30 min in the foreground | Chip returns to hidden | Re-entering restarts warm-up |
+| Stale fix on Track Setup | Fix older than 3 s | CAPTURE withdrawn, "Getting a current GPS fix…" | Clears on the next current fix; never latches (SRS TS-22) |
 | DataStore write fails | I/O error | Metrics missing on About | Caught, non-fatal; warm-up continues |
 
 ### Operational Signals
