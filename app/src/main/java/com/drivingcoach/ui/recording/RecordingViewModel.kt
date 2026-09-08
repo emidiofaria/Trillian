@@ -17,6 +17,7 @@ import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.SessionEntity
 import com.drivingcoach.data.repository.SessionRepository
 import com.drivingcoach.data.telemetry.TelemetryFileWriter
+import com.drivingcoach.lap.LapDiagnosticsWriter
 import com.drivingcoach.lap.LocalLapDetector
 import com.drivingcoach.service.RecordingState
 import com.drivingcoach.service.TelemetryForegroundService
@@ -65,7 +66,8 @@ class RecordingViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val lapDao: LapDao,
     private val coachingInsightDao: CoachingInsightDao,
-    private val localLapDetector: LocalLapDetector
+    private val localLapDetector: LocalLapDetector,
+    private val lapDiagnosticsWriter: LapDiagnosticsWriter
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -304,9 +306,14 @@ class RecordingViewModel @Inject constructor(
 
                 // Detect laps
                 val jsonlFile = File(session.rawFilePath)
-                val result = withContext(Dispatchers.IO) {
-                    localLapDetector.detectLaps(jsonlFile, startLine)
+                val outcome = withContext(Dispatchers.IO) {
+                    val detected = localLapDetector.detectLapsWithDiagnostics(jsonlFile, startLine)
+                    // Recorded whatever the result: a session that produced no laps is
+                    // the one whose reasoning is most worth keeping.
+                    lapDiagnosticsWriter.write(jsonlFile, sessionId, detected)
+                    detected
                 }
+                val result = outcome.result
 
                 when (result) {
                     is LocalLapDetector.DetectionResult.Success -> {

@@ -120,6 +120,45 @@ object GeoUtils {
     }
 
     /**
+     * Converts a GPS coordinate to local Cartesian metres relative to a reference
+     * point, using the equirectangular approximation.
+     *
+     * x is metres east of the reference, y is metres north. Valid for the track
+     * sizes this application supports (see SRS LD-13).
+     */
+    fun toLocalMetres(lat: Double, lng: Double, refLat: Double, refLng: Double): Pair<Double, Double> =
+        toLocal(lat, lng, refLat, refLng)
+
+    /**
+     * Initial bearing from one coordinate to another, in degrees clockwise from north.
+     *
+     * Used in preference to [android.location.Location.getBearing] when detecting
+     * laps: the recorded `headingDeg` is 0.0 whenever the provider had no bearing
+     * to report, which is indistinguishable from genuinely heading due north.
+     * A bearing computed from two consecutive positions is always available.
+     */
+    fun bearingDegrees(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+        val p1 = Math.toRadians(lat1)
+        val p2 = Math.toRadians(lat2)
+        val dLng = Math.toRadians(lng2 - lng1)
+
+        val y = sin(dLng) * cos(p2)
+        val x = cos(p1) * sin(p2) - sin(p1) * cos(p2) * cos(dLng)
+
+        return (Math.toDegrees(atan2(y, x)) + 360.0) % 360.0
+    }
+
+    /**
+     * Smallest absolute difference between two bearings, in degrees (0..180).
+     *
+     * Wraps correctly across north: 350° and 010° differ by 20°, not 340°.
+     */
+    fun angularDifferenceDegrees(bearingA: Double, bearingB: Double): Double {
+        val raw = kotlin.math.abs(bearingA - bearingB) % 360.0
+        return if (raw > 180.0) 360.0 - raw else raw
+    }
+
+    /**
      * 2D cross product of vectors (v1x, v1y) and (v2x, v2y).
      */
     private fun crossProduct(v1x: Double, v1y: Double, v2x: Double, v2y: Double): Double {
