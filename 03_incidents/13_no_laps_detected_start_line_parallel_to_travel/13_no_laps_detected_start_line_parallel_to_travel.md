@@ -189,7 +189,23 @@ See: `13_RCA_start_line_parallel_to_direction_of_travel.md`
 
 ## Status
 
-**Fixed** on branch `improve_lap_detection`, pending release as **v2.94**.
+**Closed — verified in the field on v2.94** (2026-09-09).
+
+Human acceptance testing on v2.94 confirmed:
+
+| Check | Result |
+|-------|--------|
+| **LD-CROSS-06** — start/finish captured deliberately *along* the track, the exact geometry that produced zero laps on v2.8 | **Laps detected correctly** |
+| Lap times and lap counts against the drivers' own count | **Matched** — no sign of `FP-LAP-DOUBLE-COUNT` |
+| Normal sessions | No regressions reported |
+
+LD-CROSS-06 is the check that closes this incident. Laps detecting correctly in
+*normal* use would not have been sufficient evidence: the defect only appears
+when the captured line happens to align with the direction of travel, which is
+why it survived to reach a user in the first place. Reproducing that geometry
+deliberately and getting correct laps is the direct disproof.
+
+Merged to `main` in PR #39.
 
 ---
 
