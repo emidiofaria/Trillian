@@ -50,6 +50,11 @@ class FusedLocationUpdates @Inject constructor(
             // Emit coarse early fixes instead of withholding them: the warm-up wants to show
             // "acquiring" progress, and accuracy is judged downstream against READY_ACCURACY_M.
             .setWaitForAccurateLocation(false)
+            // A new subscription may otherwise be answered instantly from cache. That fix
+            // describes where the phone was, and on the Track Setup screen it would be
+            // capturable as a start line (Incident 12, F4). Bounding the age at the source
+            // means every consumer gets the guarantee, not only the screen that asked for it.
+            .setMaxUpdateAgeMillis(FixFreshness.MAX_FIX_AGE_MS)
             .build()
 
         val callback = object : LocationCallback() {

@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.NavHostFragment
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -40,7 +39,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -49,34 +48,41 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * L2 (ASPICE SWE.5) regression guard for **SRS TS-15**.
+ * L2 (ASPICE SWE.5) guard for **finding F4 of Incident 12** and **SRS TS-21**.
  *
- * Track Setup used to subscribe to location exactly once, at view creation, while tearing
- * the subscription down in `onStop()`. Any screen-off, notification pull or app switch —
- * all of which are likely while walking to the track edge — therefore killed location
- * updates permanently, leaving "Acquiring GPS..." on screen forever rather than for the
- * duration of a cold fix.
+ * ### What this protects
  *
- * The assertion that matters is [locationUpdatesResumeAfterTheScreenStops]: without the
- * fix, `subscribeCount` stays at 1 and the screen never recovers.
+ * Fix A1 keeps the GNSS chip warm across the walk from the paddock to the start line. That is
+ * the right trade, but it makes a second, quieter defect reachable: a fix acquired where the
+ * user *was* is now much more likely to still be in hand where the user *is*. Nothing on the
+ * capture path checked a fix's age, the screen never invalidated the last fix it saw, and the
+ * ready flag never went back down once raised.
+ *
+ * The consequence is not a visible failure. Point A lands tens of metres from the actual
+ * line, every lap in the session is offset by the same amount, and the times look entirely
+ * plausible. That is worse than a crash: the user trusts the number.
+ *
+ * ### Wait, do not block
+ *
+ * The gate must express "not yet" and then clear itself the moment a fresh fix lands. Latching
+ * CAPTURE off, or requiring the user to leave and come back, would replace a silent data error
+ * with the exact frustration Incident 12 was raised about.
  */
 @LargeTest
 @UninstallModules(DataStoreModule::class, SplashModule::class, LocationModule::class)
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
-class TrackSetupResubscribeTest {
+class StartLineFreshnessTest {
 
     @Module
     @InstallIn(SingletonComponent::class)
-    object SignedInStartupModule {
+    object FreshnessStartupModule {
 
         @Provides
         @Singleton
         fun provideDataStore(): DataStore<Preferences> = SeededPreferencesDataStore(
             mutablePreferencesOf(
                 booleanPreferencesKey("onboarding_complete") to true,
-                // V1 reaches Home via a saved local driver profile, not a token
-                // (SRS DR-01 … DR-04). A seeded JWT no longer resolves past naming.
                 stringPreferencesKey("user_name") to "Instrumented Driver",
                 booleanPreferencesKey("driver_profile_complete") to true
             )
@@ -138,75 +144,44 @@ class TrackSetupResubscribeTest {
         if (::scenario.isInitialized) scenario.close()
     }
 
+    /**
+     * The dangerous case, in the exact shape the fused client produces it: a well-formed,
+     * accurate fix whose only fault is its age. Nothing about the coordinate looks wrong, so
+     * only an explicit age check can refuse it.
+     */
     @Test
-    fun trackSetupSubscribesOnArrival() {
-        awaitUntil("Track Setup to subscribe to location") {
-            locationUpdates.activeSubscriptions >= 1
-        }
+    fun aStaleFixDoesNotUnlockStartLineCapture() {
+        repeat(5) { locationUpdates.emitStale(accuracyM = 4f, ageMs = STALE_AGE_MS) }
+
+        assertNeverEnabledWithin(STALE_SETTLE_MS)
     }
 
+    /**
+     * The other half of the guarantee, and the more important one for the user: refusing a
+     * stale fix must delay capture, never withhold it. As soon as the receiver reports where
+     * the user is actually standing, the button unlocks with no further interaction.
+     */
     @Test
-    fun locationUpdatesResumeAfterTheScreenStops() {
-        awaitUntil("Track Setup to subscribe to location") {
-            locationUpdates.activeSubscriptions >= 1
-        }
-        val subscriptionsBefore = locationUpdates.subscribeCount
+    fun captureUnlocksAsSoonAsAFreshFixArrives() {
+        repeat(5) { locationUpdates.emitStale(accuracyM = 4f, ageMs = STALE_AGE_MS) }
+        assertNeverEnabledWithin(STALE_SETTLE_MS)
 
-        // Screen-off / app switch while the user walks to the track edge.
-        //
-        // The subscription count is no longer expected to reach zero here: since Incident 12
-        // the warm-up keeps the receiver alive while the app is in the foreground, so the
-        // screen's own collector going away leaves the chip held on purpose. What this test
-        // is about — that the screen re-subscribes rather than sitting on a dead stream — is
-        // observable as a rise in subscribeCount, which is what is asserted below.
-        scenario.moveToState(Lifecycle.State.CREATED)
-        scenario.moveToState(Lifecycle.State.RESUMED)
-
-        awaitUntil("location updates to resume when the screen returns") {
-            locationUpdates.subscribeCount > subscriptionsBefore &&
-                locationUpdates.activeSubscriptions >= 1
-        }
-    }
-
-    @Test
-    fun captureBecomesAvailableOnceTheFixIsAccurateEnough() {
-        awaitUntil("Track Setup to subscribe to location") {
-            locationUpdates.activeSubscriptions >= 1
-        }
-
-        locationUpdates.emit(accuracyM = 30f)
-        Thread.sleep(SETTLE_MS)
-        assertTrue(
-            "A 30 m fix must not unlock capture",
-            !isCaptureEnabled()
-        )
-
-        locationUpdates.emit(accuracyM = 4f)
-
-        awaitUntil("capture to unlock once the fix is accurate enough") { isCaptureEnabled() }
-    }
-
-    @Test
-    fun captureStillWorksAfterAStopStartCycle() {
-        awaitUntil("Track Setup to subscribe to location") {
-            locationUpdates.activeSubscriptions >= 1
-        }
-
-        val subscriptionsBefore = locationUpdates.subscribeCount
-
-        scenario.moveToState(Lifecycle.State.CREATED)
-        scenario.moveToState(Lifecycle.State.RESUMED)
-        awaitUntil("the screen to resubscribe after the interruption") {
-            locationUpdates.subscribeCount > subscriptionsBefore &&
-                locationUpdates.activeSubscriptions >= 1
-        }
-
-        // A fresh fix is required, not merely any fix: the screen discards what it was holding
-        // when the collector restarts, because a position kept across a pocketed phone
-        // describes where the user was (Incident 12, F4).
-        awaitUntil("capture to unlock after the interruption") {
+        awaitUntil("CAPTURE to unlock once a fresh fix lands", timeoutMs = 5_000L) {
             locationUpdates.emit(accuracyM = 4f)
             isCaptureEnabled()
+        }
+    }
+
+    private fun assertNeverEnabledWithin(durationMs: Long) {
+        val deadline = System.currentTimeMillis() + durationMs
+        while (System.currentTimeMillis() < deadline) {
+            assertFalse(
+                "A fix ${STALE_AGE_MS}ms old unlocked start-line capture. Point A would be " +
+                    "recorded where the user was, not where they are, and every lap time in " +
+                    "the session would carry the same silent offset (Incident 12, F4).",
+                isCaptureEnabled()
+            )
+            Thread.sleep(50)
         }
     }
 
@@ -222,6 +197,9 @@ class TrackSetupResubscribeTest {
         awaitUntil("Track Setup to become the current destination") {
             scenario.currentDestinationId() == R.id.trackSetupFragment
         }
+        awaitUntil("Track Setup to subscribe to location") {
+            locationUpdates.activeSubscriptions >= 1
+        }
     }
 
     private fun isCaptureEnabled(): Boolean {
@@ -234,7 +212,10 @@ class TrackSetupResubscribeTest {
     }
 
     private companion object {
-        /** Long enough for a fix to have been applied had it been going to unlock capture. */
-        const val SETTLE_MS = 500L
+        /** A plausible paddock-to-line walk. Far outside any defensible freshness window. */
+        const val STALE_AGE_MS = 90_000L
+
+        /** Long enough that a late unlock would be caught rather than missed. */
+        const val STALE_SETTLE_MS = 1_000L
     }
 }

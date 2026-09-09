@@ -147,16 +147,20 @@ Watch the small badge under the TRILLIAN tagline on Home:
 | 🟠 **Acquiring GPS…** | Searching for satellites | Wait — this is the slow part |
 | 🟢 **GPS ready** | Good fix, accurate to 10 m or better | Walk out and capture your line |
 
-**Wait for green before you walk to the start/finish line.** Do that and Track Setup will be
-ready the moment you arrive, instead of making you stand there watching a spinner.
+**Wait for green before you walk to the start/finish line.** Do that and Track Setup really is
+ready the moment you arrive — CAPTURE is live, with no second wait.
 
 A few practical notes:
 
 - Get out from under a roof, an awning or a garage — GPS needs a clear view of the sky.
-- Searching stops when you leave the app, and after 3 minutes of sitting on Home, so it
-  doesn't quietly drain your battery. Just reopen Home and it starts again.
+- Once it's green, it stays green while you walk. Moving from Home to Track Setup doesn't
+  restart the search, so you only ever wait once.
+- Searching stops when you leave the app — put your phone away and the receiver is released.
+  Reopen it and the search starts again. It also stops on its own after half an hour if you
+  simply leave the app sitting open.
 - The badge is only about *readiness*. Your actual start-line points are always taken fresh,
-  at the moment you tap CAPTURE, from a live reading.
+  at the moment you tap CAPTURE, from a live reading — and never from a reading older than a
+  few seconds, so a position from back in the paddock can't become your start line.
 - Curious how long it actually took? **Profile → About** shows the timings from your last
   acquisition. That's the number to quote if you ever report a slow lock.
 
@@ -453,6 +457,23 @@ Use it when handing the phone to someone else, or to start completely fresh.
 7. Check **Profile → About**: it shows how long your last fix actually took. If that number
    is small but you waited a long time, mention it when you report the problem — it means
    something other than satellite reception was at fault
+
+### "Getting a current GPS fix…" on Track Setup
+
+**Symptoms:** the CAPTURE buttons are greyed out and the status reads *Getting a current GPS
+fix…* rather than *Acquiring GPS…*
+
+This is not the app searching for satellites — it already has them. It's telling you the last
+reading it received is too old to say where you're standing *now*, so it won't let you capture
+a start line from it. That usually happens for a second or two after your phone has been in
+your pocket or the screen has been off.
+
+**What to do:** nothing. Hold the phone still with a view of the sky and it clears itself
+within a second or two. There's no need to leave the screen or restart anything.
+
+**Why it matters:** a position captured from where you *were* would put your start/finish line
+in the wrong place, and every lap time for the session would be wrong by the same amount — with
+nothing on screen to tell you. The short wait is the app refusing to guess.
 
 ### The App Asks for My Name Again
 
