@@ -237,16 +237,64 @@
 
 ---
 
-### LD-CROSS-04: Near-Miss Handling
+### LD-CROSS-04: Passing to the Side of the Captured Point
 
-**Objective:** Verify close passes without crossing don't count as laps.
+**Objective:** Verify that a lap still counts when the driver's line does not go exactly over
+the captured start/finish point.
+
+> **Changed in v2.94.** This test previously required a pass 1–2 m to the side *not* to count.
+> That is no longer correct, and was itself part of the Incident 13 defect: real laps pass 0.5–2 m
+> from the captured point every time, and demanding an exact crossing is what made detection
+> fail. The app now counts any pass within 15 m to the side.
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | Set start/finish line | Line defined | ☐ |
-| 2 | On one lap, pass very close but don't cross | Miss line by 1-2m | ☐ |
-| 3 | Cross normally on other laps | Valid crossings | ☐ |
-| 4 | Check lap count | Near-miss not counted | ☐ |
+| 1 | Set start/finish point | Point defined | ☐ |
+| 2 | Drive laps taking a normal racing line, 1–2 m to one side of the captured point | All laps counted | ☐ |
+| 3 | On one lap, deliberately run wide — about 10 m to the side | Lap still counted | ☐ |
+| 4 | On one lap, pass on the far side of the track, more than 15 m away | That lap **not** counted | ☐ |
+| 5 | Check lap count | Matches steps 2–4 | ☐ |
+
+---
+
+### LD-CROSS-05: Capture Order Does Not Matter
+
+**Objective:** Verify that lap detection is unaffected by which start/finish edge is captured
+first. This is the direct acceptance check for Incident 13.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Set up the start/finish capturing the **left** edge as Point A, right edge as Point B | Line defined | ☐ |
+| 2 | Drive 3 laps, note the lap times | 3 laps detected | ☐ |
+| 3 | Set up a new session at the *same place*, capturing the **right** edge as Point A | Line defined | ☐ |
+| 4 | Drive 3 laps at a similar pace | 3 laps detected | ☐ |
+| 5 | Compare | Both sessions detect laps; neither reports "No laps detected" | ☐ |
+
+---
+
+### LD-CROSS-06: Start/Finish Captured Along the Track (Incident 13 Regression)
+
+**Objective:** Verify that a start/finish captured *badly* — both points along the direction of
+travel rather than across the track — still produces laps. This is the exact geometry that
+produced zero laps in v2.8.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | On a straight, capture Point A, then walk **7–10 m up the track** (not across it) and capture Point B | Line defined; distance shown ~7–10 m | ☐ |
+| 2 | Drive 3 laps | **3 laps detected** — not "No laps detected" | ☐ |
+| 3 | Compare lap times against a stopwatch or the driver's own count | Times plausible and lap count correct | ☐ |
+
+---
+
+### LD-CROSS-07: Lap Boundary Timing Precision
+
+**Objective:** Verify lap times are not quantised to whole seconds (NF-16).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Complete a session of at least 4 laps | Laps detected | ☐ |
+| 2 | Read the lap times on the Laps tab | Milliseconds vary; times are **not** all ending in .000 or .500 | ☐ |
+| 3 | Retrieve the `.lapdiag.json` sidecar (see 6.1.1 diagnostic file) | `acceptedCrossings` timestamps fall between GPS sample times | ☐ |
 
 ---
 
@@ -267,7 +315,10 @@
 | LD-CROSS-01 | Perpendicular Crossing | ☐ Pass ☐ Fail |
 | LD-CROSS-02 | Angled Crossing | ☐ Pass ☐ Fail |
 | LD-CROSS-03 | Line at Turn Entry/Exit | ☐ Pass ☐ Fail |
-| LD-CROSS-04 | Near-Miss Handling | ☐ Pass ☐ Fail |
+| LD-CROSS-04 | Passing to the Side of the Captured Point | ☐ Pass ☐ Fail |
+| LD-CROSS-05 | Capture Order Does Not Matter | ☐ Pass ☐ Fail |
+| LD-CROSS-06 | Start/Finish Captured Along the Track (Incident 13 Regression) | ☐ Pass ☐ Fail |
+| LD-CROSS-07 | Lap Boundary Timing Precision | ☐ Pass ☐ Fail |
 
 ---
 
@@ -287,4 +338,4 @@
 
 ---
 
-*Document ID: SAT-LD-001 | Version: 1.0 | Date: 2026-05-06*
+*Document ID: SAT-LD-001 | Version: 1.1 | Date: 2026-09-08*
