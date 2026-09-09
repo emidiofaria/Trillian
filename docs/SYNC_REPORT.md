@@ -143,7 +143,8 @@ A  03_incidents/13_no_laps_detected_start_line_parallel_to_travel/
 
 - [x] `versionName` bumped to **2.94** (`versionCode` 294, derived); debug APK at
       `releases/DrivingCoach-v2.94-lap-detection-geometry.apk`
-- [ ] Run **LD-CROSS-06** at the track: it is the only direct field check of the Incident 13 fix
+- [x] **LD-CROSS-06 run at the track on 2026-09-09 and passed** — start/finish captured along
+      the track, laps detected correctly, lap times matched the drivers' own count
 - [ ] `DETECTION_HALF_WIDTH_M = 15` is reasoned from **one** session. Add a second replay fixture
       from a different venue before treating it as settled
 - [ ] Consider retaining `.lapdiag.json` in the diagnostic file share (6.1.1) so a user reporting

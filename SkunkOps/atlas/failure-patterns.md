@@ -1659,6 +1659,11 @@ that lever never worked, and believing it did is what produced this incident.
 **HIGH** — `LapDetectionRealSessionTest` replays the actual failing session. It fails on the code
 as shipped in v2.8 with the exact user-facing message, and passes after the fix.
 
+**Confirmed in the field on v2.94 (2026-09-09):** acceptance test LD-CROSS-06 reproduced the
+failing geometry deliberately — start/finish captured *along* the track rather than across it —
+and laps were detected correctly. This matters more than the replay test: it shows the fix holds
+against a live GNSS receiver rather than against one recorded session.
+
 ---
 
 ## Pattern: One Lap Counted Twice (FP-LAP-DOUBLE-COUNT) — ⚠️ ACCEPTED LIMITATION
@@ -1707,3 +1712,7 @@ about 180° apart, or a cluster of crossings a second or two apart, identify it 
 
 **MEDIUM** — the corner case is covered by a test on a synthetic circuit. The figure-of-eight
 case is reasoned, not measured, because no such recording exists.
+
+Field testing on v2.94 (2026-09-09) found lap times and counts matching the drivers' own count,
+so this pattern did **not** occur on the venues tested. That is absence of evidence on ordinary
+circuit layouts, not evidence of absence on a crossing one — the limitation stands as written.
