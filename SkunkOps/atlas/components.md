@@ -1759,6 +1759,145 @@ silent failure is disproportionately expensive.
 
 ---
 
+## Component: Session Analysis Engine (`SessionAnalysisProcessor`)
+
+### Purpose
+
+Turns a recorded telemetry file into the track-engineer report shown on the ANALYSIS
+tab: session statistics, corner detection, braking-zone detection, a drawable track
+outline and a session-wide speed trace. Everything is derived; nothing is stored.
+
+### Key Code Areas
+
+- `ui/session/tabs/analysis/SessionAnalysisProcessor.kt` — all maths, a pure `object`
+- `ui/session/tabs/analysis/SessionAnalysisModels.kt` — `SessionAnalysis`, `Corner`,
+  `BrakingZone`, `TrackPath`, `TrackPoint`, `TrackMarker`, `SpeedTimePoint`, `LapOption`
+- `ui/session/tabs/analysis/AnalysisViewModel.kt` — caching, reference-lap selection
+- `ui/session/tabs/analysis/AnalysisFragment.kt` — binding of all six sections
+
+### Dependencies
+
+- `TelemetryFileReader` — reads the whole JSONL file
+- `GeoUtils` — haversine distance and equirectangular local projection
+- `LapDao` (via `SessionResultViewModel`) — lap windows produced by `LocalLapDetector`
+
+### Inputs
+
+- Telemetry file path (`SessionEntity.rawFilePath`)
+- Laps with `startTs`/`endTs` — **never** re-derived here
+- Optional reference lap id (defaults to the best lap)
+- Optional start/finish line midpoint, for the S/F marker
+
+### Outputs
+
+- `SessionAnalysis` — stats, corners, braking zones, `TrackPath`, speed trace, lap options
+
+### Algorithm
+
+1. `prepare()` — drop the header line (it deserialises to an all-zero sample) and any
+   null-island fix, then sort by timestamp
+2. Statistics over the whole session: haversine distance, wall-clock duration, max and
+   mean speed, best lap from the lap table
+3. Corner detection over the reference window: bearing sampled across a 1 s window (only
+   when the car actually travelled ≥ 2 m), unwrapped, smoothed over 3 s, then segmented
+   where |yaw rate| > 6 °/s for ≥ 1.5 s; segments whose max speed is < 10 km/h are dropped
+4. Braking detection: speed smoothed over 0.6 s, longitudinal acceleration over a 0.6 s
+   window, segments where a < −0.8 m/s² merged across 1 s gaps, kept when they last
+   ≥ 0.5 s and shed ≥ 4 km/h; peak g = |a|/9.81; each zone is associated with the next
+   corner within tolerance
+5. Track path: equirectangular projection to metres, normalised 0..1 by the larger extent,
+   y flipped for screen coordinates, decimated to a point budget
+
+### Configuration Constants
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `BEARING_WINDOW_S` | 1.0 | Window the heading change is measured over |
+| `MIN_BEARING_TRAVEL_M` | 2.0 | Below this the bearing is GPS scatter, not a turn |
+| `YAW_SMOOTHING_S` | 3.0 | Yaw-rate smoothing width |
+| `YAW_RATE_THRESHOLD_DPS` | 6.0 | Cornering threshold |
+| `MIN_CORNER_DURATION_S` | 1.5 | Rejects transient wobble |
+| `MIN_CORNERING_SPEED_KMH` | 10.0 | Rejects corners "driven" while parked |
+| `DECEL_THRESHOLD_MS2` | −0.8 | Braking threshold |
+| `MIN_BRAKING_DURATION_S` | 0.5 | Rejects single-sample dropouts |
+| `MIN_SPEED_DROP_KMH` | 4.0 | Rejects lift-off as braking |
+| `TRACK_PATH_POINT_BUDGET` | 600 | Points drawn on the map |
+| `SPEED_TRACE_POINT_BUDGET` | 500 | Points in the speed chart |
+
+**All thresholds are expressed per second, not per sample.** The recorder runs at 10 Hz
+but archived sessions exist at 1 Hz, and per-sample thresholds would silently change
+meaning between them.
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| Empty analysis | "…telemetry file … no longer on this device" | File deleted or unreadable |
+| Too-short analysis | "too little telemetry to analyse" | Fewer than 2 usable samples |
+| Whole-session fallback | "Reference: whole session" | No laps, or lap window outside the file |
+| No corners / no braking | Placeholder row in the table | Thresholds not met on that lap |
+
+### Observable Signals
+
+| Signal | Location |
+|--------|----------|
+| Loading spinner on the ANALYSIS tab | UI while computation runs |
+| Reference label above the map | Which window the tables describe |
+| Corner/braking placeholder text | Detector found nothing |
+
+### Criticality
+
+**LOW** — read-only post-session analysis. Failure costs insight, never data: it cannot
+affect recording, lap times, upload or coaching.
+
+---
+
+## Component: TrackMapView
+
+### Purpose
+
+Draws the recorded track outline offline, with no map SDK and no tiles. The app is
+expected to work in flight mode at a circuit, so the "map" is the driver's own GPS trace
+rather than anything fetched.
+
+### Key Code Areas
+
+- `ui/session/tabs/analysis/TrackMapView.kt` — custom `View`
+
+### Dependencies
+
+- `TrackPath` from `SessionAnalysisProcessor` (already normalised to 0..1)
+
+### Inputs
+
+- `TrackPath` (points with normalised x/y and speed, plus corner and start/finish markers)
+- `emptyText` for the no-data state
+
+### Outputs
+
+- Rendered canvas: speed-gradient polyline, red braking segments, numbered corner dots,
+  gold S/F marker
+
+### Algorithm
+
+1. Map normalised coordinates into the padded view rectangle
+2. Colour each segment by blending blue → amber → green across the session speed range
+3. Overdraw braking segments in red so they dominate the gradient
+4. Draw corner dots with `T1..Tn` labels and the start/finish marker last
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| Empty outline | Centred "No track outline" text | Path has fewer than 2 points |
+| Flat-looking trace | All one colour | Session had almost no speed variation |
+
+### Criticality
+
+**LOW** — presentation only.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -1779,3 +1918,5 @@ silent failure is disproportionately expensive.
 | Home Brand Hero | LOW | Degraded presentation only |
 | Brand Asset Pipeline | LOW | Deformed or missing emblem on all branded surfaces |
 | About Screen | LOW | Version and manifesto unreachable in-app; bug reports lose build identity |
+| Session Analysis Engine | LOW | ANALYSIS tab shows an empty state; no effect on recorded data |
+| TrackMapView | LOW | Track outline missing from the ANALYSIS tab |

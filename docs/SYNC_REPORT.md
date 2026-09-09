@@ -4,6 +4,169 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-09] Session Analysis Tab (ANALYSIS)
+
+**Codebase Version:** v2.95
+**Trigger:** New fourth tab on the Session Result screen — a derived, fully offline
+track-engineer report (statistics, drawn track map, corners, braking zones, speed trace)
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `system.md` | ✅ Updated | +4 lines (UI key classes), version table corrected 2.8 → 2.95 |
+| `components.md` | ✅ Updated | +141 lines (2 new components, criticality matrix rows) |
+| `flows.md` | ✅ Updated | +98 lines (1 new flow) |
+| `failure-patterns.md` | ✅ Updated | +113 lines (2 new patterns) |
+| `DrivingCoach_SRS_v1.md` | ✅ Updated | +29 lines (new §9a, 17 requirements) |
+| `TRACEABILITY_MATRIX.md` | ✅ Updated | +19 rows, coverage summary and total revised |
+| `USER_MANUAL.md` | ✅ Updated | New §5.4, §5.4 → §5.5, 4 new FAQ entries |
+| `60_SESSION_RESULTS_TESTS.md` | ✅ Updated | +89 lines (ANA-01..ANA-06), RES-01 now expects 4 tabs |
+
+### New Requirement IDs
+
+`AS-01` … `AS-17` — Session analysis (SRS §9a).
+
+### New Failure Patterns
+
+| ID | Pattern |
+|----|---------|
+| `FP-LABEL-VS-DATA` | A flag that describes the request instead of the result |
+| `FP-STATIONARY-GEOMETRY` | Geometry derived while the car is parked (recurrence of `FP-DEGENERATE-BASELINE` in a second consumer) |
+
+### New Acceptance Test IDs
+
+`ANA-01` … `ANA-06`.
+
+---
+
+## Detailed Changes
+
+### 📁 SkunkOps/atlas/system.md
+
+**Modified:**
+```diff
+- | Version Code | 208 (derived: `major*100 + minor`) |
+- | Version Name | 2.8 (single source of truth in `app/build.gradle.kts`) |
++ | Version Code | 295 (derived: `major*100 + minor`) |
++ | Version Name | 2.95 (single source of truth in `app/build.gradle.kts`) |
+```
+
+**Added:**
+```diff
++ - `AnalysisFragment` / `AnalysisViewModel` — ANALYSIS tab: derived session report, offline
++ - `TrackMapView` — custom `View` drawing the track outline from GPS, no map SDK
+```
+
+### 📁 SkunkOps/atlas/components.md
+
+**Added Sections:** *Session Analysis Engine (`SessionAnalysisProcessor`)*, *TrackMapView* —
+including the full threshold table and the note that every threshold is expressed per second
+rather than per sample. Two rows appended to the criticality matrix (both LOW).
+
+### 📁 SkunkOps/atlas/flows.md
+
+**Added Section:** *Flow: Session Analysis (ANALYSIS Tab)* — execution path, async boundaries
+(IO probe → IO read → Default maths → main thread bind), failure points, and the explicit
+statement that the flow has no external dependencies and writes nothing.
+
+### 📁 SkunkOps/atlas/failure-patterns.md
+
+Both patterns were **found by the tests written for this feature**, not by inspection:
+
+| ID | Found by | Fix |
+|----|----------|-----|
+| `FP-LABEL-VS-DATA` | `SessionAnalysisGuardsTest`, `AnalysisTabTest` | Derive labels from the outcome (`lapRange`, `File.canRead()`), never from the request |
+| `FP-STATIONARY-GEOMETRY` | scratch probe over the `teste3` fixture | `MIN_BEARING_TRAVEL_M = 2.0`, `MIN_CORNERING_SPEED_KMH = 10.0` |
+
+### 📁 01_requirements/DrivingCoach_SRS_v1.md
+
+**Added Section 9a — Session analysis (ANALYSIS tab)**
+
+| ID | Requirement |
+|----|-------------|
+| AS-01 | Fourth tab labelled 'ANALYSIS', after 'CHART' |
+| AS-02 → AS-03 | Session statistics and their exact definitions |
+| AS-04 → AS-05 | Offline track map: no SDK, no tiles; speed gradient, red braking, `T1..Tn`, S/F marker |
+| AS-06 → AS-07 | Lap chips from §8 laps; reference defaults to best lap and is selectable |
+| AS-08 → AS-09 | Yaw-rate corner detection and the order-of-passage numbering caveat |
+| AS-10 → AS-12 | GPS-only braking detection, g provenance caveat, corner association |
+| AS-13 | Whole-session speed graph |
+| AS-14 → AS-15 | Rate invariance; minimum baseline and minimum cornering speed |
+| AS-16 → AS-17 | Honest degraded states: missing file vs. short session; labelled whole-session fallback |
+
+### 📁 docs/USER_MANUAL.md
+
+**Added Section 5.4 — The Analysis Tab** (previous §5.4 *Managing Sessions* renumbered to §5.5),
+covering the stats table, how to read the coloured map, lap selection, apex speeds, braking
+figures, the speed graph and every empty state.
+
+**Added FAQ Entries:**
+```markdown
+**Q: The corner numbers in the Analysis tab don't match the circuit's map. Why?**
+**Q: Does the Analysis tab use my phone's motion sensors?**
+**Q: Why is my average speed so low?**
+**Q: Does the Analysis tab need internet?**
+```
+
+### 📁 05_tests/L4_SYS5_acceptance/60_SESSION_RESULTS_TESTS.md
+
+**Added Test Cases:**
+
+| ID | Test | Expected Result |
+|----|------|-----------------|
+| ANA-01 | Analysis tab layout | 4th tab opens, all five statistics populated and consistent with the LAPS tab |
+| ANA-02 | Track map fidelity | Outline recognisable, colours match speed, red where braked, draws in flight mode |
+| ANA-03 | Corner detection plausibility | Corner count, directions and apex speeds match the real circuit |
+| ANA-04 | Braking zones | One per heavy braking point, 0.1–1.0 g, correct corner association |
+| ANA-05 | Reference lap selection | Best lap preselected, selection redraws everything and relabels |
+| ANA-06 | Degraded sessions | Missing file, short session, no laps and stationary recording all handled honestly |
+
+**Modified:** RES-01 now expects **4** tabs and the label list `"LAPS", "COACH", "CHART", "ANALYSIS"`.
+
+---
+
+## Validation
+
+| Level | ASPICE | Result |
+|-------|--------|--------|
+| L1 unit | SWE.4 | **262/262 passed** (29 new across 4 analysis test classes) |
+| L2 integration | SWE.5 | **64/64 executed passed**, 4 pre-existing `@Ignore` skips (4 new in `AnalysisTabTest`) |
+| L3 qualification | SWE.6 | Not implemented |
+| L4 acceptance | SYS.5 | Checklist extended (ANA-01…ANA-06), awaiting a track day |
+
+Report: `05_tests/reports/TEST_REPORT_2026-09-09_22-22-34.md`
+
+---
+
+## Files Modified
+
+```
+M  SkunkOps/atlas/system.md                                   (+4, -2)
+M  SkunkOps/atlas/components.md                               (+141)
+M  SkunkOps/atlas/flows.md                                    (+98)
+M  SkunkOps/atlas/failure-patterns.md                         (+113)
+M  01_requirements/DrivingCoach_SRS_v1.md                     (+29)
+M  01_requirements/TRACEABILITY_MATRIX.md                     (+22, -3)
+M  docs/USER_MANUAL.md                                        (+79, -1)
+M  05_tests/L4_SYS5_acceptance/60_SESSION_RESULTS_TESTS.md    (+89, -2)
+M  app/build.gradle.kts                                       (+1, -1)
+```
+
+---
+
+## Recommendations
+
+- [ ] ANA-02 and ANA-03 need a real track day: corner counts have only been checked against one
+      recorded fixture (`teste3`) and the user's own Python analysis of it.
+- [ ] Rate invariance is proven by interpolating the 1 Hz fixture to 10 Hz. A genuine 10 Hz
+      recording should be added as a fixture at the next opportunity.
+- [ ] `MIN_BEARING_TRAVEL_M` now exists in two places conceptually — the lap detector and the
+      analysis engine. Consider a shared primitive so the next consumer inherits the guard
+      instead of rediscovering `FP-DEGENERATE-BASELINE`.
+
+---
+
 ## [2026-09-08] Lap Detection Geometry Corrected (Incident 13)
 
 **Codebase Version:** v2.94 (branch `improve_lap_detection`)

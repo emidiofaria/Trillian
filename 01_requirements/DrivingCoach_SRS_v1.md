@@ -20,6 +20,7 @@
 7. [Telemetry storage and upload](#7-telemetry-storage-and-upload)
 8. [Lap detection](#8-lap-detection)
 9. [Lap comparison](#9-lap-comparison)
+9a. [Session analysis (ANALYSIS tab)](#9a-session-analysis-analysis-tab)
 10. [AI coaching feedback](#10-ai-coaching-feedback)
 11. [Driver progression tracking](#11-driver-progression-tracking)
 12. [Share accomplishments](#12-share-accomplishments)
@@ -306,6 +307,34 @@ Incident 09 reported "no laps detected" and was closed without a cause, at 55% c
 | LC-13 | For sessions with more than 10 laps, the app shall display a warning: "Offline processing is limited and may take some time." |
 | LC-14 | For sessions with large telemetry data, the app shall prompt the user to choose between "Fast" (downsampled to ~100 points per lap) or "Detailed" (all samples) processing modes. |
 | LC-15 | In Fast mode, samples shall be uniformly downsampled to approximately 100 points per lap to optimize rendering performance. |
+
+---
+
+## 9a. Session analysis (ANALYSIS tab)
+
+All analysis is derived from data the app already holds: the session's telemetry file and the
+laps produced by lap detection (§8). The tab is read-only, writes nothing, and shall work with
+no network connection of any kind.
+
+| ID | Requirement |
+|---|---|
+| AS-01 | The Session Result screen shall display a fourth tab labelled 'ANALYSIS', positioned after 'CHART'. |
+| AS-02 | The ANALYSIS tab shall display session statistics: total distance (km), session duration (M:SS), maximum speed (km/h), average speed (km/h) and best lap time. |
+| AS-03 | Total distance shall be the cumulative haversine distance between consecutive GPS samples over the whole session. Average speed shall be the mean speed over the whole recording, standing time included, and the tab shall state this. |
+| AS-04 | The ANALYSIS tab shall display a track map drawn from the recorded GPS trace. The map shall not use any map SDK, map tiles or network service. |
+| AS-05 | The track map shall colour the trace by speed on a continuous gradient from `#1C69D4` (slowest) through `#F39C12` to `#2ECC71` (fastest), overdraw detected braking zones in red (`#E74C3C`), mark each detected corner with a numbered `T1..Tn` label, and mark the start/finish line when the session has one. |
+| AS-06 | The ANALYSIS tab shall list the session's laps as selectable chips showing lap number and lap time, taken from the laps produced by §8. Laps shall never be re-derived by the analysis. |
+| AS-07 | The reference lap shall default to the best lap, and the user shall be able to select any other lap. Selecting a lap shall recompute the track map, the corner table and the braking table for that lap, and the tab shall state which lap the tables describe. |
+| AS-08 | Corners shall be detected from the rate of change of GPS heading: a corner is a stretch where the smoothed yaw rate exceeds 6 °/s for at least 1.5 s. For each corner the app shall display its number, turn direction, total heading change and apex (minimum) speed. |
+| AS-09 | Corner numbering shall follow the order in which corners are passed and the tab shall state that this numbering does not necessarily match the circuit's official numbering. |
+| AS-10 | Braking zones shall be detected from GPS speed only: a zone is a stretch where longitudinal deceleration exceeds 0.8 m/s² for at least 0.5 s and speed falls by at least 4 km/h. For each zone the app shall display entry and exit speed, speed lost, peak deceleration expressed in g (a/9.81) and duration. |
+| AS-11 | The tab shall state that braking figures come from GPS speed and that the phone accelerometer is deliberately not used, because its axes depend on how the phone is mounted and do not reliably track longitudinal acceleration. |
+| AS-12 | Each braking zone shall be associated with the corner it leads into, where one exists. |
+| AS-13 | The ANALYSIS tab shall display a speed-versus-time graph covering the whole session, not only the reference lap. |
+| AS-14 | Corner and braking detection thresholds shall be expressed per unit of time, so that the same recording analysed at 1 Hz or 10 Hz yields the same corners and braking zones. |
+| AS-15 | A heading shall not be derived from GPS positions less than 2 m apart, and a detected corner whose maximum speed is below 10 km/h shall be discarded, so that GPS scatter recorded while the vehicle is stationary cannot be reported as cornering. |
+| AS-16 | When the session's telemetry file is missing or unreadable, the tab shall say so explicitly and shall not attribute the failure to the driving. When fewer than two usable samples exist, the tab shall say the session is too short to analyse. |
+| AS-17 | When no lap is usable as a reference — no laps detected, or the lap's time window does not overlap the telemetry — the analysis shall fall back to the whole session and shall label itself as such, rather than presenting whole-session figures under a lap's name. |
 
 ---
 

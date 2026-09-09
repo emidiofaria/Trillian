@@ -1,6 +1,6 @@
 # Session Results Tests
 
-> **Purpose:** Validate the Session Result screen including all three tabs (Laps, Coach, Chart), lap comparison, and data presentation.
+> **Purpose:** Validate the Session Result screen including all four tabs (Laps, Coach, Chart, Analysis), lap comparison, and data presentation.
 
 ---
 
@@ -26,8 +26,8 @@
 | 2 | Observe toolbar | Back button, share icon | ☐ |
 | 3 | Observe header | Track name visible | ☐ |
 | 4 | Observe best lap time | Large format in header | ☐ |
-| 5 | Observe TabLayout | 3 tabs visible | ☐ |
-| 6 | Tab labels | "LAPS", "COACH", "CHART" | ☐ |
+| 5 | Observe TabLayout | 4 tabs visible | ☐ |
+| 6 | Tab labels | "LAPS", "COACH", "CHART", "ANALYSIS" | ☐ |
 | 7 | Default tab | LAPS selected | ☐ |
 | 8 | ViewPager2 area | Content visible below tabs | ☐ |
 
@@ -309,6 +309,83 @@
 
 ---
 
+## Test Suite: ANA — Analysis Tab
+
+> **Requirements:** AS-01 to AS-17. The maths is covered by L1 and the wiring by L2; these
+> checks exist for the things only a human at a circuit can judge — whether the drawn track
+> actually looks like the track, and whether the corners the app found are the corners the
+> driver drove.
+
+### ANA-01: Analysis Tab Layout
+
+**Objective:** Verify the ANALYSIS tab is reachable and complete (AS-01, AS-02).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Open a completed session | Session Result screen | ☐ |
+| 2 | Swipe/tap to the 4th tab | Tab labelled "ANALYSIS" opens | ☐ |
+| 3 | Observe top card | Distance, duration, max speed, avg speed, best lap all populated | ☐ |
+| 4 | Compare distance to the circuit length × laps | Within ~5% | ☐ |
+| 5 | Compare best lap to the LAPS tab | Identical value | ☐ |
+
+### ANA-02: Track Map Fidelity
+
+**Objective:** Verify the drawn map matches the real circuit (AS-04, AS-05).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Observe the track outline | Recognisably the circuit you drove | ☐ |
+| 2 | Observe the line colour | Blue in the slow corners, green down the straights | ☐ |
+| 3 | Observe red sections | Located where you actually braked | ☐ |
+| 4 | Observe the gold marker | On the start/finish line | ☐ |
+| 5 | Put the phone in flight mode and reopen the tab | Map still draws, identically | ☐ |
+
+### ANA-03: Corner Detection Plausibility
+
+**Objective:** Verify detected corners correspond to real corners (AS-08, AS-09).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Count the T-markers on the map | Comparable to the circuit's corner count | ☐ |
+| 2 | Check each corner's direction | Matches the real turn direction | ☐ |
+| 3 | Check apex speeds | Plausible for the corner (slowest hairpin = lowest number) | ☐ |
+| 4 | Record any corner the app missed or invented | Note in the box below | ☐ |
+
+### ANA-04: Braking Zones
+
+**Objective:** Verify braking figures are plausible (AS-10, AS-12).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Observe the braking list | One entry per heavy braking point you remember | ☐ |
+| 2 | Check peak g values | Typically 0.1–1.0 g for a road car on a circuit | ☐ |
+| 3 | Check the corner association | Each zone names the corner it leads into | ☐ |
+
+### ANA-05: Reference Lap Selection
+
+**Objective:** Verify lap selection changes the analysis (AS-06, AS-07).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Open the tab | Best lap chip is already selected | ☐ |
+| 2 | Read the line above the map | Names the selected lap | ☐ |
+| 3 | Tap a different lap chip | Map, corners and braking all redraw | ☐ |
+| 4 | Read the line above the map again | Names the newly selected lap | ☐ |
+| 5 | Compare a slow lap to the best lap | Apex speeds differ in the expected direction | ☐ |
+
+### ANA-06: Degraded Sessions
+
+**Objective:** Verify honest behaviour with missing or unusable data (AS-16, AS-17).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Open a session whose telemetry file was deleted | "…no longer on this device" message, no crash | ☐ |
+| 2 | Open a very short recording (< 2 samples) | "too little telemetry to analyse" | ☐ |
+| 3 | Open a session with no detected laps | Analysis shown, labelled "whole session" | ☐ |
+| 4 | Open a stationary recording (phone left on a bench) | No corners invented | ☐ |
+
+---
+
 ## Session Results Tests Summary
 
 | Test ID | Test Name | Status |
@@ -330,6 +407,12 @@
 | CHART-02 | Lap Line Colors | ☐ Pass ☐ Fail |
 | CHART-03 | Speed Unit Conversion | ☐ Pass ☐ Fail |
 | CHART-04 | Chart Interactions | ☐ Pass ☐ Fail |
+| ANA-01 | Analysis Tab Layout | ☐ Pass ☐ Fail |
+| ANA-02 | Track Map Fidelity | ☐ Pass ☐ Fail |
+| ANA-03 | Corner Detection Plausibility | ☐ Pass ☐ Fail |
+| ANA-04 | Braking Zones | ☐ Pass ☐ Fail |
+| ANA-05 | Reference Lap Selection | ☐ Pass ☐ Fail |
+| ANA-06 | Degraded Sessions | ☐ Pass ☐ Fail |
 
 ---
 

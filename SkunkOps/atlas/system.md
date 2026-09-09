@@ -98,6 +98,8 @@ docs/brand/helmet_source.png  # Source illustration.
 - `HomeFragment` / `HomeViewModel` — Session list, new session creation
 - `RecordingFragment` / `RecordingViewModel` — Active recording UI, service binding
 - `SessionResultFragment` / `SessionResultViewModel` — Post-session analysis
+- `AnalysisFragment` / `AnalysisViewModel` — ANALYSIS tab: derived session report, offline
+- `TrackMapView` — custom `View` drawing the track outline from GPS, no map SDK
 - `LoginFragment` / `RegisterFragment` — Authentication (minimal implementation)
 
 ### ViewModel Layer
@@ -436,8 +438,8 @@ while (processingStatus in [PENDING, UPLOADING, DETECTING_LAPS, GENERATING_COACH
 | ProGuard/R8 | Disabled (`isMinifyEnabled = false`) |
 | Compile SDK | 35 |
 | Target SDK | 35 |
-| Version Code | 208 (derived: `major*100 + minor`) |
-| Version Name | 2.8 (single source of truth in `app/build.gradle.kts`) |
+| Version Code | 295 (derived: `major*100 + minor`) |
+| Version Name | 2.95 (single source of truth in `app/build.gradle.kts`) |
 
 ### Versioning Scheme
 

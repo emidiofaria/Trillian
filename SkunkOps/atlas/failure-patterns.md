@@ -1716,3 +1716,116 @@ case is reasoned, not measured, because no such recording exists.
 Field testing on v2.94 (2026-09-09) found lap times and counts matching the drivers' own count,
 so this pattern did **not** occur on the venues tested. That is absence of evidence on ordinary
 circuit layouts, not evidence of absence on a crossing one — the limitation stands as written.
+
+---
+
+## Pattern: A Flag That Describes the Request Instead of the Result (FP-LABEL-VS-DATA) — ✅ FIXED (v2.95)
+
+### Symptoms
+
+- The screen shows a value that is correct for something the code *asked for*, next to a value
+  computed from something else it actually *got*.
+- Two instances were found in the ANALYSIS tab within an hour of each other, both by tests:
+  - A lap whose recorded window did not overlap the telemetry was analysed over the **whole
+    session**, while the caption above the map still read *"Reference: Lap 2"*. The numbers on
+    screen were real, but they described a different stretch of driving than the label claimed.
+  - A session whose telemetry file had been deleted still had a non-blank `rawFilePath`, so
+    "do we have telemetry?" answered **yes** and the driver was told their lap was *"too short
+    to analyse"* — a statement about their driving — when the truth was that the recording was
+    gone.
+
+### Signals
+
+| Signal | Meaning |
+|--------|---------|
+| A boolean derived from a *request* parameter (`lapId != null`, `path != null`) | The flag cannot see failure |
+| The same concept computed twice, in two places, from two sources | The two will diverge |
+| A caption that is built before the data it captions | Ordering bug waiting to happen |
+
+### Root Cause
+
+The flag was computed from the **input** (`lapWindows[id] == null`, `filePath.isNullOrBlank()`)
+rather than from the **outcome** (`lapRange == null`, `File(path).canRead()`). Inputs describe an
+intention; only the outcome knows whether that intention survived contact with the device. When
+the two disagree — a lap outside the file, a path to a file that was cleaned up — the UI reports
+the intention and the numbers report the outcome.
+
+### Fix
+
+Compute the outcome first and derive every label from it:
+
+- `analyzeSamples()` resolves `lapRange` *before* anything else and sets
+  `isWholeSession = lapRange == null`; the lap caption is suppressed when the fallback fired.
+- `AnalysisViewModel` probes `File(path).canRead()` on `Dispatchers.IO` and uses *that* as
+  `hasTelemetryFile`, so a missing recording is reported as a missing recording.
+
+### Detection
+
+Both instances were invisible to the compiler and to a casual read; both were caught the first
+time a test asserted on the *caption* rather than on the numbers. Any state where a message and a
+measurement come from different sources deserves a test that reads the message.
+
+### Generalisation
+
+Whenever a UI string names the data it is describing — a lap, a file, a driver, a track — assert
+that the name and the data have a single common origin. If a fallback can change which data is
+used, the fallback must also change the name.
+
+### Confidence
+
+**HIGH** — both instances are reproduced by tests
+(`SessionAnalysisGuardsTest.aLapWindowThatDoesNotOverlapTheTelemetryFallsBackToTheWholeSession`,
+`AnalysisTabTest.missingTelemetryShowsTheEmptyStateInsteadOfCrashing`) that fail against the old
+behaviour.
+
+---
+
+## Pattern: Geometry Derived While the Car Is Parked (FP-STATIONARY-GEOMETRY) — ✅ FIXED (v2.95)
+
+### Symptoms
+
+- Corners appear in the analysis that the driver never drove: a "turn" of **310°** with an apex
+  speed of **0 km/h**, at the moment the phone was sitting in the paddock before the out-lap.
+- The rest of the report is credible, which makes the phantom entries more damaging than an
+  obvious failure: they are indistinguishable from real corners in the table.
+
+### Signals
+
+| Signal | Value observed |
+|--------|----------------|
+| Apex speed of the detected corner | 0.0 km/h |
+| Total heading change | 310° |
+| Distance travelled across the bearing window | < 1 m |
+
+### Root Cause
+
+This is [FP-DEGENERATE-BASELINE](#pattern-a-direction-derived-from-points-closer-than-the-measurement-error-fp-degenerate-baseline--fixed-incident-13)
+reappearing in a second consumer. A stationary phone still reports a moving position — GPS scatter
+of a few metres — and a bearing computed between two scattered fixes is *pure noise with a
+plausible magnitude*. Integrated over thirty stationary seconds it looks exactly like sustained
+cornering.
+
+### Fix
+
+Two guards in `SessionAnalysisProcessor`, both expressed in physical units rather than samples:
+
+| Guard | Value | Rejects |
+|-------|-------|---------|
+| `MIN_BEARING_TRAVEL_M` | 2.0 m | A bearing measured over a distance smaller than the fix error |
+| `MIN_CORNERING_SPEED_KMH` | 10.0 km/h | A "corner" whose fastest moment is a walking pace |
+
+### Detection
+
+Any derived heading must be accompanied by the distance it was measured over. If that distance is
+not recorded, the value cannot be distinguished from noise after the fact.
+
+### Generalisation
+
+The lap detector learned this lesson in Incident 13; the analysis engine had to learn it again
+because the guard lived in the lap detector rather than in a shared primitive. **Every** new
+consumer of GPS-derived direction needs the same minimum-baseline check.
+
+### Confidence
+
+**HIGH** — covered by `SessionAnalysisGuardsTest`, which replays stationary scatter and asserts
+that no corner is produced.
