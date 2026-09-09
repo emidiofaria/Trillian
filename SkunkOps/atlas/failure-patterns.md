@@ -1590,3 +1590,120 @@ network mid-session, the monotonic clock cannot.
 ### Confidence
 
 **HIGH** — `StartLineFreshnessTest` fails on the code before the fix and passes after it.
+
+---
+
+## Pattern: A Direction Derived From Points Closer Than the Measurement Error (FP-DEGENERATE-BASELINE) — ✅ FIXED (Incident 13)
+
+### Symptoms
+
+- The app reports **"No laps detected. Complete at least 2 laps."** after a session in which
+  the driver completed several laps.
+- All coaching silently disappears with it: `generateOfflineCoaching()` never runs when there
+  are no laps, so the user loses the entire value of the session, not just the timing.
+- The telemetry is *good*. The path is complete, the track shape is obvious when plotted, and
+  the car passes within a couple of metres of the start/finish on every lap.
+
+### Signals
+
+| Signal | Value in Incident 13 |
+|--------|----------------------|
+| Angle between captured start line and direction of travel | **0.1°–5.1°** |
+| Closest approach to the start point, per pass | 0.5–2.1 m |
+| Captured line length | 7.15 m |
+| GPS accuracy in the same session | 1.4–15.0 m, mean **4.8 m** |
+| Crossings found by the shipped algorithm | **0**, including against the *infinite* extension of the line |
+
+### Root Cause
+
+Track Setup asks the user to capture a point at each edge of the start/finish. Those points are
+typically 5–10 m apart — the same order as the phone's own position error. The *position* of
+their midpoint is a real measurement; the *direction* of the line between them is not. It is
+noise.
+
+The detector then used that direction as the thing a car must cross. When the noise happened to
+point the line along the track instead of across it, no crossing was geometrically possible,
+and no threshold value would have rescued it: extending the line to 10, 15, 20 or 30 m still
+yields zero, because a car driving *along* a line does not cross it however long the line is.
+
+### The generalisation worth keeping
+
+> **Never derive a direction from two points separated by less than the measurement error.**
+
+The distance between two GPS points is a measurement. The *bearing* between two GPS points a
+few metres apart is not — the same instrument error that moves each point by ±5 m can swing the
+bearing between them through any angle at all. This is a property of the arithmetic, not of the
+particular phone, and it applies anywhere a heading, gradient, or alignment is computed from
+closely spaced samples.
+
+### Mitigation
+
+| Layer | Guard | Location |
+|-------|-------|----------|
+| Geometry | Cross a plane **perpendicular to the car's direction of travel**, through the start point | `LocalLapDetector.detectCrossings()` |
+| Extent | Accept only passes within `DETECTION_HALF_WIDTH_M` (15 m) laterally | same |
+| Direction | Reject candidates more than `MAX_HEADING_DIFFERENCE_DEG` (60°) from the session's first accepted crossing | same |
+| Precision | Interpolate the crossing instant between the two samples either side | same |
+| Evidence | Write the detector's reasoning beside the telemetry | `LapDiagnosticsWriter` |
+
+The direction of travel is measured over the whole lap — hundreds of metres — so it is a real
+measurement, unlike the 7 m baseline it replaces. Replaying the incident session gives **4 laps
+(79.83 / 77.08 / 77.26 / 83.44 s)**, and the answer is **identical for half-widths of 10 through
+25 m**. That insensitivity is the point: the fix is a corrected model, not a tuned threshold.
+
+Note what this removes: the user could previously *aim* the start line. They no longer can — but
+that lever never worked, and believing it did is what produced this incident.
+
+### Confidence
+
+**HIGH** — `LapDetectionRealSessionTest` replays the actual failing session. It fails on the code
+as shipped in v2.8 with the exact user-facing message, and passes after the fix.
+
+---
+
+## Pattern: One Lap Counted Twice (FP-LAP-DOUBLE-COUNT) — ⚠️ ACCEPTED LIMITATION
+
+### Symptoms
+
+- Lap times are roughly **half** what the driver knows they drove.
+- Twice as many laps as were actually completed.
+- Nothing errors. The numbers look internally consistent, so this is again *a wrong number that
+  looks right* — the same class as FP-STALE-FIX, and harder to notice than "no laps detected".
+
+### Root Cause
+
+This is the cost of the FP-DEGENERATE-BASELINE fix, stated openly. Because the crossing plane
+now follows the car rather than a fixed line, a circuit that passes through the same point twice
+per lap in different directions — a figure-of-eight, or a start/finish under its own bridge —
+presents two valid crossings per lap.
+
+There is a second, narrower case: where the start/finish sits **on a corner**, one pass can
+produce two candidates about a second apart (car arriving, car leaving) because the plane
+rotates with the car through the turn.
+
+### Mitigation
+
+`MAX_HEADING_DIFFERENCE_DEG = 60.0` rejects a candidate whose heading differs too far from the
+session's first accepted crossing. This covers the corner case and the common figure-of-eight
+(a return pass at ~180°). It does **not** cover a second pass at, say, 70°.
+
+The threshold is 60° rather than the more obvious 90° for a concrete reason: at a corner
+start/finish, arriving and leaving differ by *exactly* 90°, so a 90° threshold decided a real
+case on floating-point rounding (observed: 90.00004 > 90). Real passes across the incident 13
+fixture vary by only ~9°, so 60° is generous while being unambiguous.
+
+### Why it is accepted rather than fixed
+
+No venue currently in use has this geometry, and the alternative — reinstating a user-aimed line
+— is what caused Incident 13. A layout-aware fix should wait until a track that needs it exists.
+
+### Detection
+
+`LapDiagnosticsWriter` records every accepted crossing with its heading. A session where lap
+times look halved can be confirmed in seconds by reading the sidecar file: alternating headings
+about 180° apart, or a cluster of crossings a second or two apart, identify it immediately.
+
+### Confidence
+
+**MEDIUM** — the corner case is covered by a test on a synthetic circuit. The figure-of-eight
+case is reasoned, not measured, because no such recording exists.
