@@ -1468,3 +1468,125 @@ the `skipLoginButton` id no longer resolves, so the shortcut cannot return unnot
 ### Confidence
 
 **HIGH** — reproduced, root-caused, and fixed on 2026-09-03.
+
+---
+
+## Pattern: Resource Scoped to the Wrong Lifecycle (FP-LIFECYCLE-SCOPE) — ✅ FIXED (Incident 12)
+
+### Symptoms
+
+- A feature that exists to make one journey faster is *slowest* on exactly that journey.
+- The user waits for a "ready" indicator, acts on it, and arrives to find the state gone.
+- Nothing crashes and nothing is logged as an error. The screen simply says "acquiring" again.
+- Users report it as "it got slower", often while rating an older build as better, because
+  the regression is in perceived waiting rather than in any measurable failure.
+
+### Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `D/LocationWarmUp: warm-up started` twice with a `warm-up stopped` between | Logcat | The receiver was released and re-acquired during a navigation |
+| `first fix after Nms` reported twice in one sitting | Logcat / About screen | The user paid the acquisition cost more than once |
+| Test asserts `activeSubscriptions >= 1` after a navigation | Test source | The assertion cannot see the defect — it holds either way |
+
+### Root Cause
+
+A long-lived resource — the GNSS subscription — had its lifetime bound to the visibility of a
+single screen (`HomeFragment.onStop()` → `LocationWarmUp.stop()`). The screen was the wrong
+unit: the resource serves a *task* that spans two screens, so the handover between them became
+the stop condition.
+
+The component's own KDoc already claimed warmth survived Home → Track Setup. The design was
+right; one caller violated it. Nothing in the type system or the test suite expressed the
+claim, so the violation was invisible.
+
+Ordering made it unrepairable from the receiving side: under Navigation's replace transaction
+`onStop()` of the outgoing fragment runs *before* `onStart()` of the incoming one, and `stop()`
+nulls the job that `start()`'s idempotence guard checks. Starting again in the new screen
+therefore re-acquires from cold rather than inheriting a warm receiver.
+
+### Why the suite did not catch it
+
+`TrackSetupResubscribeTest` performed the exact failing navigation, then asserted
+`activeSubscriptions >= 1`. That predicate is true whether or not the subscription survived,
+because the arriving screen opens one of its own. **The interesting event happened between two
+observations.** A sampled count cannot express continuity; only a timeline can.
+
+The test doubles were equally blind: with no acquisition latency modelled, a receiver that
+died and instantly re-acquired was indistinguishable from one that never stopped.
+
+### Mitigation
+
+| Action | Status | Evidence |
+|--------|--------|----------|
+| Scope the resource to the task, not the screen | ✅ Done | `WarmUpForegroundBinder`, `TelemetryForegroundService`, idle ceiling |
+| Remove the screen's ability to release it at all | ✅ Done | `HomeViewModel` has no stop method; asserted by reflection in `HomeViewModelTest` |
+| Give test doubles a subscription timeline | ✅ Done | `SubscriptionLog.everReachedZero` |
+| Model acquisition latency on the receiver | ✅ Done | `ScriptedLocationUpdates.acquisitionLatencyMs`, scoped to the receiver rather than a subscription |
+| Raise the idle ceiling above a real paddock walk | ✅ Done | 180 s → 1800 s |
+
+### Generalisation
+
+Ask of any long-lived resource: **whose lifetime is this, really?** If the answer is a task
+that spans screens — a warm receiver, an open socket, a decoded model, a prepared camera — then
+binding it to a `Fragment`, `Activity` or view lifecycle will make the handover between screens
+its destruction point. That is usually the exact moment it is most needed.
+
+Two corollaries, both learned here:
+
+- **A guarantee that cannot be expressed as a test is not a guarantee.** `ProcessLifecycleOwner`
+  was the idiomatic answer to "is the app in the foreground", but it does not dispatch `ON_STOP`
+  under `ActivityScenario`, so the privacy bound could not be proven. A hand-written activity
+  counter — equivalent in production, observable under test — was preferred for that reason
+  alone.
+- **`ActivityScenario.moveToState(CREATED)` does not background an app.** It stops the Activity
+  by launching an empty one on top, which is exactly what navigating to another screen does. A
+  test that used it to assert "backgrounding releases the resource" was in fact asserting the
+  bug. Real backgrounding needs a launcher intent.
+
+### Confidence
+
+**HIGH** — root cause reproduced by test on the unfixed code (3 of 4 assertions failed as
+predicted), then observed to flip green on the fix.
+
+---
+
+## Pattern: Stale Fix Captured as Ground Truth (FP-STALE-FIX) — ✅ FIXED (Incident 12, F4)
+
+### Symptoms
+
+- Lap times are plausible but consistently wrong for a whole session.
+- The start/finish line sits tens of metres from where the user stood when capturing it.
+- Nothing is reported by the user, because nothing looks broken. This is the failure mode's
+  defining property: **a wrong number that looks right.**
+
+### Root Cause
+
+Nothing on the capture path checked a fix's *age*. The fused client may answer a new
+subscription from cache; the screen retained the last fix it ever saw across screen-off and
+app-switch cycles; and the readiness flag never fell once raised. Keeping the receiver warm
+across the paddock walk (FP-LIFECYCLE-SCOPE, above) is correct, and it makes an old fix
+reaching the capture screen an ordinary event rather than an exotic one — the two fixes had to
+ship together.
+
+### Mitigation
+
+| Layer | Guard | Location |
+|-------|-------|----------|
+| Request | `setMaxUpdateAgeMillis(3 s)` | `FusedLocationUpdates` — every consumer inherits it |
+| Arrival | Reject fixes not current on delivery | `TrackSetupFragment.onLocation()` |
+| Restart | Discard the held fix when the collector restarts | `TrackSetupFragment.collectLocationUpdates()` |
+| Click | Re-check at the moment of capture | `TrackSetupFragment.captureWithFreshFix()` |
+
+The gate **waits, it never blocks**: the state clears on the next current fix with no user
+action, and the screen says "Getting a current GPS fix…" rather than the misleading "Acquiring
+GPS…". Where age cannot be established — an unset or future monotonic timestamp — the fix is
+treated as current, because stranding the user at the track edge is the worse failure and the
+≤10 m accuracy gate still applies.
+
+`elapsedRealtimeNanos` is used rather than `getTime()`: the wall clock can be adjusted by the
+network mid-session, the monotonic clock cannot.
+
+### Confidence
+
+**HIGH** — `StartLineFreshnessTest` fails on the code before the fix and passes after it.

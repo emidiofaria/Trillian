@@ -26,6 +26,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.drivingcoach.R
 import com.drivingcoach.data.db.dao.SessionDao
+import com.drivingcoach.data.location.LocationWarmUp
 import com.drivingcoach.data.telemetry.TelemetryFileWriter
 import com.drivingcoach.data.telemetry.TelemetrySample
 import com.drivingcoach.ui.MainActivity
@@ -80,6 +81,9 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
 
     @Inject
     lateinit var sessionDao: SessionDao
+
+    @Inject
+    lateinit var locationWarmUp: LocationWarmUp
     
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
@@ -249,6 +253,13 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         
         // Register location listener
         try {
+            // Recording owns the GNSS chip from here. The warm-up subscribes through fused
+            // location while this service uses the raw GPS provider, so leaving it running
+            // would mean two independent consumers of the same receiver for the whole
+            // session (Incident 12). Released *before* the request, never after, so the two
+            // never overlap.
+            locationWarmUp.stop()
+
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
                 GPS_MIN_TIME_MS,

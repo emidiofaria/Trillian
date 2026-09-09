@@ -14,6 +14,7 @@ import androidx.navigation.fragment.NavHostFragment
 import com.drivingcoach.R
 import com.drivingcoach.data.api.AuthEvent
 import com.drivingcoach.data.api.AuthEventBus
+import com.drivingcoach.data.location.WarmUpForegroundBinder
 import com.drivingcoach.databinding.ActivityMainBinding
 import com.drivingcoach.ui.splash.SplashVisibilitySignal
 import com.google.android.material.snackbar.Snackbar
@@ -29,6 +30,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var splashVisibility: SplashVisibilitySignal
+
+    @Inject
+    lateinit var warmUpForegroundBinder: WarmUpForegroundBinder
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
@@ -57,6 +61,11 @@ class MainActivity : AppCompatActivity() {
         setupEdgeToEdge()
         setupNavigation()
         observeAuthEvents()
+
+        // Ties the GPS warm-up's release to the app leaving the foreground rather than to any
+        // one screen stopping (Incident 12). Bound here, before this Activity is started, so
+        // the very first onActivityStarted is counted. Idempotent across recreation.
+        warmUpForegroundBinder.bind(application)
     }
 
     private fun setupEdgeToEdge() {

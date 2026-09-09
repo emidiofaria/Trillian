@@ -207,8 +207,20 @@ class HomeViewModelTest {
         assertEquals(1, locationUpdates.activeSubscriptions)
     }
 
+    /**
+     * Replaces `stopGpsWarmUp releases the chip`, which encoded the defect behind Incident 12.
+     *
+     * Home used to stop the warm-up when it went away, which made the single navigation the
+     * feature exists to serve — Home → Track Setup — its own stop condition. The release is
+     * now owned by `WarmUpForegroundBinder` (the app leaving the foreground), by the recording
+     * service, and by the idle ceiling. Home's ViewModel must have no way to end it, so the
+     * regression cannot be reintroduced by adding a call back in.
+     *
+     * The replacement guarantees live in `WarmUpHandoverTest` (L2), where the handover and the
+     * foreground release can actually be exercised.
+     */
     @Test
-    fun `stopGpsWarmUp releases the chip`() = runTest {
+    fun `the ViewModel cannot end the warm-up on Home's behalf`() = runTest {
         whenever(sessionDao.getAllSessions()).thenReturn(flowOf(emptyList()))
         whenever(sessionDao.getStaleUploadSessions(any())).thenReturn(emptyList())
 
@@ -217,12 +229,18 @@ class HomeViewModelTest {
 
         viewModel.startGpsWarmUp()
         runCurrent()
-        viewModel.stopGpsWarmUp()
-        runCurrent()
 
-        // Backgrounding Home must never leave high-accuracy GPS running.
-        assertEquals(GpsReadiness.Idle, viewModel.gpsReadiness.value)
-        assertEquals(0, locationUpdates.activeSubscriptions)
+        val stopLike = HomeViewModel::class.java.methods.map { it.name }
+            .filter { it.contains("stop", ignoreCase = true) && it.contains("warm", ignoreCase = true) }
+
+        assertEquals(
+            "HomeViewModel exposes $stopLike. Screen-scoped release is what threw away the " +
+                "warm fix at the track edge (Incident 12); the bound belongs to the app " +
+                "leaving the foreground, not to Home going away.",
+            emptyList<String>(),
+            stopLike
+        )
+        assertEquals(1, locationUpdates.activeSubscriptions)
     }
 
     @Test
