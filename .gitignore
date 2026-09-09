@@ -76,3 +76,7 @@ Thumbs.db
 /releases/
 # Generated test run reports (regenerated on every run)
 05_tests/reports/TEST_REPORT_*.md
+
+# Python bytecode from the test report tooling
+__pycache__/
+*.pyc

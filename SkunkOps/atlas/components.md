@@ -1898,6 +1898,82 @@ rather than anything fetched.
 
 ---
 
+## Component: Test Evidence Pipeline (`generate-html-report.py`)
+
+### Purpose
+
+Turns a test run into an artefact a stranger can trust: one self-contained HTML
+page stating what ran, what is declared but switched off, which requirements are
+claimed by which test, and which are not covered at all. Shipped inside the
+release directory next to the APK, so a build and the evidence for it cannot be
+separated.
+
+Build-time only. Nothing here runs on a phone and no product code depends on it.
+
+### Key Code Areas
+
+| Path | Role |
+|------|------|
+| `05_tests/infra/scripts/generate-html-report.py` | The generator |
+| `05_tests/infra/scripts/test_generate_html_report.py` | Its own unit tests (26) |
+| `05_tests/infra/scripts/package-release.sh` | Groups APK + report + notes under `releases/v<ver>-<slug>/` |
+| `05_tests/infra/scripts/run-all-tests.sh` | Writes `05_tests/reports/RUN_<ts>/`, then offers a release |
+| `05_tests/coverage-map.tsv` | The claim ledger: `requirement<TAB>test<TAB>note` |
+
+### Dependencies
+
+Python 3 standard library only. No pip install, no network, no JavaScript in the
+output — the report must open from a USB stick in a paddock with no signal.
+
+### Inputs
+
+| Input | Supplies |
+|-------|----------|
+| `app/build/test-results/testDebugUnitTest/*.xml` | L1 outcomes |
+| `app/build/outputs/androidTest-results/connected/debug/*.xml` | L2 outcomes |
+| `app/src/{test,androidTest}/**/*.kt` | Declared `@Test` counts and class-level `@Ignore` |
+| `05_tests/coverage-map.tsv` | Requirement-to-test claims |
+| `01_requirements/DrivingCoach_SRS_v1.md` | The requirement denominator |
+| `05_tests/L4_SYS5_acceptance/*.md` | Manual checks, listed last |
+
+### Algorithm
+
+1. Parse both JUnit result sets. A `<testcase name="null">` is the placeholder
+   Gradle emits for an `@Ignore`d class and is recorded as skipped, never as a test.
+2. Walk the Kotlin sources with a brace-depth stack to count `@Test` per class.
+   The stack matters: a private fake collaborator declared inside a test class
+   would otherwise absorb every test below it and the totals would quietly stop
+   matching the run.
+3. Resolve each claim against the results to `PASS` / `FAILED` / `SKIPPED` /
+   `MISSING` / `MANUAL`; a requirement inherits the worst mark of its claims.
+4. Render sorted, so two runs of the same inputs are byte-identical.
+
+### Failure Modes
+
+| Mode | Cause | Effect | Detection |
+|------|-------|--------|-----------|
+| Overstated coverage | A cited test is `@Ignore`d or renamed | The claim would look green | Resolved to `SKIPPED`/`MISSING` and listed in section 4 |
+| Hidden tests | Class-level `@Ignore` | 29 L2 tests do not run | Declared count from source ≠ executed count from XML |
+| Rotted claim | Test class deleted or renamed | Traceability silently breaks | `MISSING`, plus a `[WARN]` on stdout |
+| Unknown requirement ID | Typo in the TSV | Claim would vanish | Reported as an error in the report, never dropped |
+| Stale results | Report generated without re-running tests | Report describes an older build | Header carries commit, branch and device |
+
+### Observable Signals
+
+```
+[INFO] 322/351 tests executed, 322 passed, 0 failed, 29 never ran
+[WARN] 8 coverage claim(s) not backed by a passing test
+[WARN] N problem(s) in coverage-map.tsv
+```
+
+### Criticality
+
+**LOW** at runtime, **HIGH** for judgement. It cannot break the app, but if it
+lied about coverage every decision taken on top of it would be wrong. That is
+why it parses only structured inputs and never prose.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -1920,3 +1996,4 @@ rather than anything fetched.
 | About Screen | LOW | Version and manifesto unreachable in-app; bug reports lose build identity |
 | Session Analysis Engine | LOW | ANALYSIS tab shows an empty state; no effect on recorded data |
 | TrackMapView | LOW | Track outline missing from the ANALYSIS tab |
+| Test Evidence Pipeline | LOW (build-time) | No report ships with a release; coverage claims stop being verified |

@@ -2,6 +2,14 @@
 
 Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test cases.
 
+> **This document is now the human narrative; the machine truth is
+> [`05_tests/coverage-map.tsv`](../05_tests/coverage-map.tsv).** Every claim in that file is
+> resolved against the actual test results each time the HTML report is generated, so a claim
+> naming a test that did not run, or no longer exists, is reported rather than counted. If the
+> two disagree, the report is right and this table is stale — see section 3 and 4 of any
+> `TEST_REPORT.html`. The percentages below are hand-maintained and should be read as
+> intent, not evidence.
+
 **Last Updated:** 2026-09-09 (updated by trillian-docs-sync — session analysis AS-01 to AS-17 added; AS-05 partially covered, rendering verified visually at L4)
 
 ---

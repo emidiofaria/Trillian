@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Driving Coach v2.95 — Test Report</title>
+<style>
+:root{--bmw:#1C69D4;--gold:#C9A227;--ink:#1a1d21;--muted:#5b6570;--line:#dfe3e8;
+--pass:#2e7d32;--fail:#c62828;--warn:#e07b00;--manual:#5a6acf;--bg:#f6f7f9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 72px}
+header{background:linear-gradient(135deg,#0f2a52,var(--bmw));color:#fff;padding:36px 0 30px;margin-bottom:28px}
+header .wrap{padding-bottom:0}
+h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
+.sub{opacity:.85;font-size:14px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:18px;font-size:13px;opacity:.92}
+.meta b{font-weight:600;opacity:.7;font-weight:400}
+h2{font-size:19px;margin:38px 0 12px;padding-bottom:7px;border-bottom:2px solid var(--line)}
+h3{font-size:15px;margin:22px 0 8px}
+p{margin:9px 0}
+.note{color:var(--muted);font-size:13.5px}
+table{border-collapse:collapse;width:100%;background:#fff;
+box-shadow:0 1px 2px rgba(0,0,0,.06);border-radius:6px;overflow:hidden}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:top}
+th{background:#eef1f5;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.verdict{border-radius:8px;padding:16px 20px;margin:4px 0 8px;font-size:15px;background:#fff;
+border-left:5px solid var(--pass);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.verdict.bad{border-left-color:var(--fail)}
+.verdict.warn{border-left-color:var(--warn)}
+.verdict b{font-size:17px}
+.tag{display:inline-block;padding:1px 8px;border-radius:11px;font-size:11.5px;font-weight:600;
+letter-spacing:.3px;white-space:nowrap}
+.PASS{background:#e6f4ea;color:var(--pass)}
+.FAILED{background:#fdecea;color:var(--fail)}
+.SKIPPED{background:#fff4e0;color:var(--warn)}
+.MISSING{background:#fdecea;color:var(--fail)}
+.MANUAL{background:#eceefc;color:var(--manual)}
+.UNCOVERED{background:#eceff1;color:var(--muted)}
+details{background:#fff;border:1px solid var(--line);border-radius:6px;margin:8px 0}
+details[open]{box-shadow:0 1px 3px rgba(0,0,0,.07)}
+summary{cursor:pointer;padding:10px 14px;font-size:13.5px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:before{content:"\25B8";display:inline-block;margin-right:9px;color:var(--muted);transition:none}
+details[open] summary:before{content:"\25BE"}
+details .body{padding:0 14px 12px}
+details table{box-shadow:none;border:1px solid var(--line)}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+.kpi{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 4px}
+.kpi div{flex:1 1 150px;background:#fff;border-radius:6px;padding:13px 16px;
+box-shadow:0 1px 2px rgba(0,0,0,.06);border-top:3px solid var(--bmw)}
+.kpi .n{font-size:25px;font-weight:600;line-height:1.15}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.kpi div.alert{border-top-color:var(--warn)}
+.kpi div.bad{border-top-color:var(--fail)}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);
+color:var(--muted);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+<h1>Driving Coach v2.95 — Test Report</h1>
+<div class="sub">Automated evidence, generated from test results — not written by hand.</div>
+<div class="meta">
+<span><b>Version:</b> v2.95</span>
+<span><b>Commit:</b> 7d307dc</span>
+<span><b>Branch:</b> FT_Add_Advanced_racing_coach_step_1</span>
+<span><b>L2 device:</b> DrivingCoach_Test(AVD) - 11</span>
+<span><b>Generated:</b> 2026-09-10 00:55:40 BST</span>
+</div></div></header>
+<div class="wrap">
+<div class="verdict warn"><b>All executed tests passed, with caveats below</b><br>
+322 of 351 declared automated tests ran; 322 passed, 0 failed, 4 skipped.
+<br><strong>29 declared test(s) never ran</strong> because their class is annotated <code>@Ignore</code>. Gradle reports such a class as a single skipped entry, so this number is invisible in a normal build log.
+</div>
+<div class="kpi">
+<div><div class="n">322</div><div class="l">Tests executed</div></div>
+<div><div class="n">322</div><div class="l">Passed</div></div>
+<div class=""><div class="n">0</div><div class="l">Failed</div></div>
+<div class="alert"><div class="n">29</div><div class="l">Never ran</div></div>
+<div><div class="n">68/245</div><div class="l">Requirements claimed</div></div>
+</div>
+<h2>1. Results by test level</h2>
+<p class="note">Levels follow Automotive SPICE. "Declared" counts <code>@Test</code> annotations in the source; "executed" counts what the run actually reported. A gap between the two is the number of tests that exist but are switched off.</p>
+<table><tr><th>Level</th><th>ASPICE</th><th>Scope</th><th class="num">Declared</th><th class="num">Executed</th><th class="num">Passed</th><th class="num">Failed</th><th class="num">Never ran</th><th>Status</th></tr>
+<tr><td><b>L1</b></td><td>SWE.4</td><td>Unit tests<br><span class="note">JVM, no device</span></td><td class="num">262</td><td class="num">262</td><td class="num">262</td><td class="num">0</td><td class="num">0</td><td>Passed</td></tr>
+<tr><td><b>L2</b></td><td>SWE.5</td><td>Integration tests<br><span class="note">On a device or emulator</span></td><td class="num">89</td><td class="num">60</td><td class="num">60</td><td class="num">0</td><td class="num">29</td><td>Passed, with gaps</td></tr>
+<tr><td><b>L3</b></td><td>SWE.6</td><td>Qualification tests<br><span class="note">Not implemented</span></td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>Not implemented</td></tr>
+<tr><td><b>L4</b></td><td>SYS.5</td><td>Acceptance tests<br><span class="note">Human, at a circuit</span></td><td class="num">133</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>Manual — see section 7</td></tr>
+</table>
+<h2>2. How we test</h2>
+<p class="note">What each level can prove, and what it cannot. A test at the wrong level is a test that will pass while the product is broken.</p>
+<h3>L1 — Unit tests <span class='note'>(SWE.4)</span></h3>
+<p>Runs on a plain JVM in seconds, so it is where all the arithmetic lives: lap geometry, corner and braking detection, coaching thresholds, file formats. It can prove a calculation is right for inputs we thought of. It cannot prove the result ever reaches the screen.</p>
+<h3>L2 — Integration tests <span class='note'>(SWE.5)</span></h3>
+<p>Drives the real app on a real Android runtime: fragments, view models, Room, the foreground service. It proves that wiring exists and survives a lifecycle. It is slow and needs an emulator, so it is spent on the things a compiler cannot check.</p>
+<h3>L3 — Qualification tests <span class='note'>(SWE.6)</span></h3>
+<p>Reserved for end-to-end qualification against simulated GPS. Not implemented; reported here so its absence is visible rather than assumed.</p>
+<h3>L4 — Acceptance tests <span class='note'>(SYS.5)</span></h3>
+<p>A human with a car on a circuit. It is the only level that can judge whether the drawn track looks like the track, whether the corners found are the corners driven, and whether a lap time matches the driver&#x27;s own stopwatch.</p>
+<h2>3. Requirements coverage</h2>
+<p class="note">Every requirement in the SRS, and the tests that claim it. Claims come from <code>05_tests/coverage-map.tsv</code> and are checked against the run: a claim naming a test that did not run, or no longer exists, is reported rather than counted. Expand a row to see the individual tests.</p>
+<p class="note"><b>68 of 245 requirements (28%) have at least one automated claim.</b> The denominator is every requirement row in the SRS, excluding the architecture-decision and out-of-scope sections, which record intent rather than behaviour. No requirement is removed from the count for being inconvenient.</p>
+<table><tr><th>Status</th><th>Meaning</th></tr>
+<tr><td><span class="tag PASS">PASS</span></td><td>The cited test ran and passed</td></tr>
+<tr><td><span class="tag FAILED">FAILED</span></td><td>The cited test ran and failed</td></tr>
+<tr><td><span class="tag SKIPPED">SKIPPED</span></td><td>The test exists but did not run — the claim is not backed by evidence</td></tr>
+<tr><td><span class="tag MISSING">MISSING</span></td><td>The cited test was not found — the claim has rotted</td></tr>
+<tr><td><span class="tag MANUAL">MANUAL</span></td><td>An L4 claim; only a human at a circuit can discharge it</td></tr>
+<tr><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>No test claims this requirement</td></tr>
+</table>
+<h3>User management <span class='note'>— 0/19 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>UM-01</b></td><td>The app shall allow a new user to register with an email address, password, and display name.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-02</b></td><td>Registration shall be handled entirely by Firebase Authentication SDK on the Android client; the backend shall not expose a `/register` endpoint.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-03</b></td><td>Password minimum length shall be 8 characters, enforced client-side before submitting to Firebase.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-04</b></td><td>The display name shall be a minimum of 2 characters and a maximum of 100 characters.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-05</b></td><td>On successful registration, the user shall be automatically signed in and directed to the Home screen with the back stack cleared.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-06</b></td><td>On registration failure (e.g. email already in use), the app shall display the Firebase error message as a Snackbar.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-07</b></td><td>The app shall allow an existing user to sign in with email and password via Firebase Authentication.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-08</b></td><td>On successful login, the user shall be directed to the Home screen with the back stack cleared.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-09</b></td><td>On login failure, the app shall display a Snackbar with a clear error message; the password field shall not be cleared.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-10</b></td><td>While a login or registration request is in flight, the submit button shall be disabled and a circular progress indicator shall be visible.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-11</b></td><td>The email field shall use `inputType=textEmailAddress`. The password field shall use `inputType=textPassword` with a visibility toggle icon.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-12</b></td><td>Firebase ID tokens shall be attached automatically to every backend API request via an OkHttp interceptor (`FirebaseAuthInterceptor`).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-13</b></td><td>The Firebase SDK shall handle token refresh transparently; the app shall not implement custom token refresh logic.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-14</b></td><td>If the backend returns HTTP 401, the app shall emit a `sessionExpired` event, display a Snackbar &#x27;Session expired — please sign in again&#x27;, and navigate to the Login screen, clearing the back stack.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-15</b></td><td>The backend shall verify all incoming Firebase ID tokens using the Firebase Admin SDK (`admin.auth().verifyIdToken()`). Requests with a missing, invalid, or expired token shall receive HTTP 401.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-16</b></td><td>The app shall allow the user to sign out from the Profile screen.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-17</b></td><td>On sign out, the app shall call `FirebaseAuth.signOut()`, delete all local Room DB records belonging to the current Firebase UID, and navigate to the Login screen.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-18</b></td><td>The Profile screen shall display the user&#x27;s display name, total session count, total lap count, and overall best lap time. *(Amended for V1: the email address is not displayed, because V1 has no account and therefore no email. The V2 restoration of accounts shall re-introduce it.)*</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UM-19</b></td><td>The user avatar shall be a circle displaying the first two letters of the display name on a BMW blue background.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Driver profile (V1 local) <span class='note'>— 8/8 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>DR-01</b></td><td>After onboarding completes, and before the Home screen is reachable, the app shall present a Driver Name screen asking the driver for a display name.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">DriverNameFlowTest</td><td><span class="tag PASS">PASS</span></td><td>7 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">SplashViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>26 test(s) passed</td><td class="note">Driver Name screen after onboarding</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>DR-02</b></td><td>The display name shall be a minimum of 2 and a maximum of 100 characters after trimming, consistent with UM-04. The primary action shall remain disabled while the entered name is invalid.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>3 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">DriverNameFlowTest</td><td><span class="tag PASS">PASS</span></td><td>7 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">DriverNameViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>12 test(s) passed</td><td class="note">Action disabled while invalid</td></tr>
+<tr><td class="mono">DriverProfileStoreTest</td><td><span class="tag PASS">PASS</span></td><td>22 test(s) passed</td><td class="note">Bounds 1 / 2 / 100 / 101</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>DR-03</b></td><td>The entered name shall be trimmed of leading, trailing, and repeated internal whitespace before being persisted.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">DriverNameFlowTest.surroundingWhitespaceIsTrimmedFromTheSavedName</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">DriverProfileStoreTest</td><td><span class="tag PASS">PASS</span></td><td>22 test(s) passed</td><td class="note">Name trimmed before persistence</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>DR-04</b></td><td>The display name and a completion flag shall be persisted in `DataStore&lt;Preferences&gt;` under the keys `user_name` and `driver_profile_complete`, written atomically in a single edit.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">DriverProfileStoreTest</td><td><span class="tag PASS">PASS</span></td><td>22 test(s) passed</td><td class="note">Round-trip and flag independence</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>DR-05</b></td><td>On every subsequent launch the app shall read the persisted profile and navigate directly to Home without asking for the name again. The startup destination shall be resolved as: onboarding incomplete → Onboarding; profile incomplete → Driver Name; otherwise → Home.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>3 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">DriverNameFlowTest.aSavedDriverGoesStraightToHomeOnRelaunch</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">SplashViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>26 test(s) passed</td><td class="note">Destination resolution order</td></tr>
+<tr><td class="mono">StartupBackStackTest</td><td><span class="tag PASS">PASS</span></td><td>2 test(s) passed</td><td class="note"></td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>DR-06</b></td><td>The driver shall be able to change the display name at any time from the Profile screen. The same validation as DR-02 and DR-03 shall apply. Renaming shall not modify, delete, or re-key any recorded session, lap, or insight.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">DriverNameFlowTest.theSavedNameIsShownOnTheProfileScreen</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">ProfileViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>11 test(s) passed</td><td class="note">Asserts the database is untouched by a rename</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>DR-07</b></td><td>The Profile screen shall offer a **Clear User Data** action, replacing the V1 sign-out. It shall require an explicit destructive confirmation, and on confirmation shall delete all Room records, delete every telemetry file referenced by a stored `rawFilePath`, clear all preferences, and return the driver to Onboarding.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">ProfileViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>11 test(s) passed</td><td class="note">inOrder: paths read before clearAllTables()</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>DR-08</b></td><td>V1 shall not present any authentication or demo-mode affordance. The Driver Name screen&#x27;s primary action shall read **LET&#x27;S RACE!!**, and shall state that signing in arrives in a future version.</td><td>L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">DriverNameFlowTest.theDemoModeShortcutIsGone</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+</table></div></details>
+</td></tr>
+</table>
+<h3>Onboarding and permissions <span class='note'>— 0/8 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>ON-01</b></td><td>On first launch, the app shall display the branded loading screen, followed by the onboarding screen before any other functional screen.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>ON-02</b></td><td>Onboarding shall consist of three information pages presented in a ViewPager2: Location tracking, Motion analysis, Data privacy.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>ON-03</b></td><td>The onboarding screen shall have a single &#x27;GRANT PERMISSIONS &amp; START&#x27; button that requests the following permissions: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACTIVITY_RECOGNITION`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>ON-04</b></td><td>If all permissions are granted, the app shall mark onboarding as complete in DataStore and navigate to the Driver Name screen (DR-01). *(Amended in V1: previously the Login screen.)*</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>ON-05</b></td><td>If any permission is denied, the app shall display a dialog listing the denied permissions and offer an &#x27;OPEN SETTINGS&#x27; button that deeplinks to the app&#x27;s system settings.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>ON-06</b></td><td>If the user taps &#x27;SKIP&#x27; after a denial, the app shall still mark onboarding as complete and navigate to the Driver Name screen. The missing permission will be re-requested when recording starts.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>ON-07</b></td><td>Onboarding shall only be shown once. On all subsequent launches, the app shall skip directly to the Driver Name screen, or to Home once a driver profile exists (DR-05).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>ON-08</b></td><td>Onboarding completion state shall be persisted in `DataStore&lt;Preferences&gt;` with key `onboarding_complete`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Application startup and branding <span class='note'>— 9/12 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>UI-01</b></td><td>On cold start the app shall display a branded loading screen showing the Trillian emblem, wordmark, kicker, tagline, engineering manifesto, and a determinate progress indicator reflecting actual initialisation progress.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SplashScreenTest</td><td><span class="tag PASS">PASS</span></td><td>7 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">SplashViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>26 test(s) passed</td><td class="note">Progress reflects real startup work</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-02</b></td><td>The loading screen shall be displayed for a minimum of 1200 ms and shall be dismissible early by tapping anywhere on it. On the first 3 launches of an installation the minimum display time shall instead be 4000 ms, so the engineering manifesto can be read at least once. The minimum display time shall be measured from the moment the loading screen becomes visible to the user — that is, from the removal of the platform splash window — and not from the start of initialisation. The screen shall always dismiss itself automatically; a tap shall never be required to proceed.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SplashScreenTest</td><td><span class="tag PASS">PASS</span></td><td>7 test(s) passed</td><td class="note">Tap to skip</td></tr>
+<tr><td class="mono">SplashViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>26 test(s) passed</td><td class="note">Minimum display time</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-03</b></td><td>If essential startup state (preferences) cannot be read within 8000 ms, the app shall proceed to Onboarding rather than blocking. Onboarding is the safe default because it is idempotent and still grants required permissions, whereas skipping it can leave the app unable to record.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SplashFallbackTest</td><td><span class="tag PASS">PASS</span></td><td>3 test(s) passed</td><td class="note">Falls back to Onboarding</td></tr>
+<tr><td class="mono">SplashViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>26 test(s) passed</td><td class="note">8 s essential timeout</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-07</b></td><td>Non-essential startup warm-up (database open, pending-upload lookup) shall be bounded independently at 2000 ms and shall not influence the startup destination.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SplashViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>26 test(s) passed</td><td class="note">Warm-up bounded, does not affect destination</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-04</b></td><td>Startup state resolution (onboarding flag, authentication token, pending uploads) shall be performed off the main thread. The app shall not block the main thread during startup.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SplashMainThreadTest</td><td><span class="tag PASS">PASS</span></td><td>3 test(s) passed</td><td class="note">Main-thread latency probe</td></tr>
+<tr><td class="mono">SplashViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>26 test(s) passed</td><td class="note">State resolved off the main thread</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-05</b></td><td>The loading screen shall not remain on the navigation back stack; pressing back from the first functional screen shall exit the app.</td><td>L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">StartupBackStackTest</td><td><span class="tag PASS">PASS</span></td><td>2 test(s) passed</td><td class="note">Loading screen popped from the back stack</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-06</b></td><td>The Home screen shall display a collapsing brand hero (emblem, wordmark, kicker) that collapses to a pinned bar on scroll, with the Start Session control remaining visible at all times.</td><td>L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">HomeHeroTest</td><td><span class="tag PASS">PASS</span></td><td>4 test(s) passed</td><td class="note">Brand hero collapses on scroll</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-08</b></td><td>The helmet emblem shall be supplied as a single `@drawable/ic_helmet_emblem` resource across all density buckets, and shall render undistorted and uncropped at every size it is displayed (132dp splash, 88dp Home hero, 36dp collapsed brand bar).</td><td>L1 + L4</td><td><span class="tag MANUAL">MANUAL</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">BrandAssetGeometryTest</td><td><span class="tag PASS">PASS</span></td><td>4 test(s) passed</td><td class="note">Emblem undistorted at all densities</td></tr>
+<tr><td class="mono">L4:BRD-01</td><td><span class="tag MANUAL">MANUAL</span></td><td>Awaiting a human run</td><td class="note">Human visual check</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-09</b></td><td>Brand artwork shall be verified by measurement of the asset itself — square canvas, content aspect ratio 1.00 ± 0.05, content centred within 3 % of each axis, and a fully transparent border — rather than by presence-only assertions.</td><td>L1 + L4</td><td><span class="tag MANUAL">MANUAL</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">BrandAssetGeometryTest</td><td><span class="tag PASS">PASS</span></td><td>4 test(s) passed</td><td class="note">Includes falsification against the legacy asset</td></tr>
+<tr><td class="mono">L4:BRD-01</td><td><span class="tag MANUAL">MANUAL</span></td><td>Awaiting a human run</td><td class="note">Human visual check</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>UI-10</b></td><td>The loading screen shall display a visible hint indicating that it can be tapped. The hint shall read &quot;Tap to continue&quot; while the introduction window is active and &quot;Tap to skip&quot; thereafter. An accessibility label alone shall not satisfy this requirement.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UI-11</b></td><td>The engineering manifesto and brand identity shall have a permanent home in an About screen reachable from Profile, so that they remain readable independently of the transient loading screen.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>UI-12</b></td><td>The About screen shall display the build identity (version name and version code) read from `BuildConfig`, so that a user-reported version is derived from the same source of truth that names the APK.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Track setup — start/finish line <span class='note'>— 12/23 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>TS-01</b></td><td>Before starting a recording, the user shall define a start/finish line by capturing two GPS points at the track edges.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-02</b></td><td>The Track Setup screen shall display instructions, GPS status, Point A/B capture cards, line width display, and action buttons.</td><td>L2</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td><td class="note">UI elements displayed</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-03</b></td><td>The GPS status indicator shall display satellite count and accuracy (e.g., &quot;GPS: 8 satellites, ±3m&quot;).</td><td>L2</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td><td class="note">GPS status indicator</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-04</b></td><td>A GPS indicator dot shall be green when accuracy ≤10m (ready) or amber when &gt;10m (acquiring).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-05</b></td><td>Point A shall be captured by tapping the &#x27;CAPTURE&#x27; button on the Point A card while standing at the left edge of the track.</td><td>L2</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td><td class="note">Point A capture</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-06</b></td><td>After Point A is captured, its coordinates shall be displayed (e.g., &quot;48.12345, 11.56789&quot;) and the Point B capture button shall be enabled.</td><td>L2</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td><td class="note">Point B disabled initially</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-07</b></td><td>Point B shall be captured by tapping the &#x27;CAPTURE&#x27; button on the Point B card while standing at the right edge of the track.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-08</b></td><td>After both points are captured, the LINE WIDTH shall be displayed in metres using haversine distance calculation.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">GeoUtilsTest</td><td><span class="tag PASS">PASS</span></td><td>13 test(s) passed</td><td class="note">Haversine distance</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-09</b></td><td>The line shall be validated: the distance between Point A and Point B shall be at least 3 metres.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-10</b></td><td>If the distance is less than 3 metres, a hint shall display &quot;Minimum 3m required&quot; and the START RECORDING button shall remain disabled.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-11</b></td><td>A &#x27;CLEAR&#x27; button shall appear after any point is captured and shall reset both points to allow re-capture.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-12</b></td><td>The &#x27;START RECORDING&#x27; button shall remain disabled until both points are captured and the line passes validation (≥3m).</td><td>L2</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td><td class="note">Start Recording disabled until valid</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-13</b></td><td>On &#x27;START RECORDING&#x27;, the two lat/lng pairs (startLineLat1, startLineLng1, startLineLat2, startLineLng2) shall be stored in the `SessionEntity` in Room.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-14</b></td><td>The instruction text shall read: &quot;Walk to each edge of the track at the start/finish line and capture two GPS points.&quot;</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-15</b></td><td>The app shall request location updates through `FusedLocationProviderClient` at `PRIORITY_HIGH_ACCURACY` with a 1-second interval, behind the `LocationUpdates` abstraction. Track Setup shall subscribe whenever its view is at least STARTED and unsubscribe when it is not, so that location updates resume after a screen-off, app switch or any other stop/start cycle.</td><td>L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TrackSetupResubscribeTest</td><td><span class="tag PASS">PASS</span></td><td>4 test(s) passed</td><td class="note">Resubscribe after stop/start</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-16</b></td><td>The app shall begin acquiring a GPS fix as soon as the Home screen becomes visible, so that the time-to-first-fix elapses while the user is still preparing rather than while standing at the start/finish line.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>3 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">HomeGpsChipTest</td><td><span class="tag PASS">PASS</span></td><td>7 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">HomeViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">LocationWarmUpTest</td><td><span class="tag PASS">PASS</span></td><td>18 test(s) passed</td><td class="note">Warm-up starts when Home becomes visible</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-17</b></td><td>The Home screen shall display a GPS readiness chip reflecting acquisition state: hidden when idle, &quot;Acquiring GPS…&quot; (amber) while no fix of ≤10 m accuracy has been received, and &quot;GPS ready&quot; (green) once one has. Readiness shall persist across the navigation from Home to Track Setup, so that the state the chip reported remains true on arrival at the start line.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">HomeGpsChipTest</td><td><span class="tag PASS">PASS</span></td><td>7 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">LocationWarmUpTest</td><td><span class="tag PASS">PASS</span></td><td>18 test(s) passed</td><td class="note">Readiness chip states</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-18</b></td><td>GPS warm-up shall be bounded by the user&#x27;s task rather than by any one screen. It shall stop when the app leaves the foreground, when a recording starts, or after 30 minutes of continuous warm-up, so that the receiver is never held while the user cannot see that it is held, and never held indefinitely. It shall **not** stop merely because the Home screen is no longer visible. *(Amended after Incident 12: the previous wording made the Home screen the stop condition, which meant navigating Home → Track Setup — the single journey warm-up exists to serve — discarded the fix the user had just waited for.)*</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>3 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">HomeGpsChipTest</td><td><span class="tag PASS">PASS</span></td><td>7 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">HomeViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">LocationWarmUpTest</td><td><span class="tag PASS">PASS</span></td><td>18 test(s) passed</td><td class="note">Stops on background / 3 min idle ceiling</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-19</b></td><td>The app shall record the time-to-first-fix and the time-to-first-accurate-fix (≤10 m) of the most recent acquisition and display them on the About screen, so that GPS acquisition delays reported by users can be diagnosed with measured evidence.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">LocationWarmUpTest</td><td><span class="tag PASS">PASS</span></td><td>18 test(s) passed</td><td class="note">Time-to-first-fix metrics recorded</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-20</b></td><td>Warm-up shall expose readiness only and shall never supply a position to start/finish line capture; captured points shall always come from a live location update that independently satisfies the ≤10 m accuracy gate.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">LocationWarmUpTest</td><td><span class="tag PASS">PASS</span></td><td>18 test(s) passed</td><td class="note">Exposes readiness only, never a position</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TS-21</b></td><td>Start/finish line capture shall reject any fix older than 3 seconds, measured on the monotonic clock (`elapsedRealtimeNanos`). Age shall be checked when a fix arrives, at the moment of capture, and bounded at the location request itself (`setMaxUpdateAgeMillis`). Where the age cannot be established — an unset or future timestamp — the fix shall be treated as current, since refusing capture outright is a worse failure than the one being prevented and the ≤10 m accuracy gate still applies.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-22</b></td><td>While only stale fixes are held, the Track Setup screen shall withdraw capture and display &quot;Getting a current GPS fix…&quot;, distinct from &quot;Acquiring GPS…&quot;. This state shall clear automatically on the next current fix and shall never require the user to leave and re-enter the screen.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TS-23</b></td><td>The Track Setup screen shall discard the position it is holding whenever its location collector restarts, because a fix retained across a screen-off or app switch describes where the user was rather than where they are.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Session recording <span class='note'>— 3/11 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>SR-01</b></td><td>The app shall provide a &#x27;START RECORDING&#x27; button on the Track Setup screen that begins a telemetry capture session.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SR-02</b></td><td>The app shall provide a &#x27;STOP RECORDING&#x27; button on the Recording screen that ends the session and triggers upload.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SR-03</b></td><td>On &#x27;STOP RECORDING&#x27;, the app shall set `SessionEntity.endedAt` to the current epoch ms and enqueue the upload worker.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SR-04</b></td><td>The Recording screen shall display the elapsed session time in `MM:SS.mmm` format, updating every second.</td><td>L2</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryForegroundServiceTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 6 declared test(s) never ran</td><td class="note">Elapsed time MM:SS.mmm</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>SR-05</b></td><td>The Recording screen shall display a GPS status indicator: a green dot labelled &#x27;GPS LOCKED&#x27; when a fix is acquired, or a red dot labelled &#x27;ACQUIRING GPS...&#x27; while awaiting a fix.</td><td>L2</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryForegroundServiceTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 6 declared test(s) never ran</td><td class="note">GPS status indicator</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>SR-06</b></td><td>The Recording screen shall display a blinking &#x27;REC&#x27; badge (red pill) using an `ObjectAnimator` alpha animation (1 → 0 → 1, 1 s repeat).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SR-07</b></td><td>The device screen shall remain on during an active recording session using `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON`. The flag shall be cleared when the screen is paused.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SR-08</b></td><td>If `ACCESS_FINE_LOCATION` permission is not granted when recording attempts to start, the service shall stop itself and the app shall show: &#x27;Location permission is required to record&#x27;.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SR-09</b></td><td>Recording shall continue when the app is sent to the background via a foreground service with `foregroundServiceType=location`.</td><td>L2</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryForegroundServiceTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 6 declared test(s) never ran</td><td class="note">Foreground service lifecycle</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>SR-10</b></td><td>The foreground service notification shall display: title &#x27;BMW Driving Coach&#x27;, content text &#x27;Recording — MM:SS&#x27;, updating every second.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SR-11</b></td><td>If GPS hardware is not available on the device, the foreground service shall stop itself and post a state indicating GPS is unavailable.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Telemetry capture <span class='note'>— 2/12 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>TC-01</b></td><td>GPS samples shall be collected using `LocationManager` with provider `GPS_PROVIDER`, `minTimeMs=100` (targeting 10 Hz), `minDistanceM=0`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-02</b></td><td>Each GPS sample shall include: `timestampMs` (epoch ms), `latitude` (Double), `longitude` (Double), `speedMs` (m/s, Float), `headingDeg` (0–360°, Float), `gpsAccuracyM` (horizontal accuracy in metres, Float).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-03</b></td><td>IMU samples shall be collected by registering a `SensorEventListener` for `TYPE_ACCELEROMETER` and `TYPE_GYROSCOPE` at `SENSOR_DELAY_FASTEST`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-04</b></td><td>Each IMU sample shall include: `accelX`, `accelY`, `accelZ` (m/s², Float) and `gyroX`, `gyroY`, `gyroZ` (rad/s, Float).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-05</b></td><td>IMU values shall not be written to file on every sensor event. The latest accelerometer and gyroscope values shall be stored in `AtomicReference&lt;FloatArray&gt;` and merged into the next GPS sample at write time.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-06</b></td><td>All telemetry samples shall be written to a local JSONL file — one JSON object per line — at `context.filesDir/telemetry/session_{id}.jsonl`.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryFileWriterTest</td><td><span class="tag PASS">PASS</span></td><td>6 test(s) passed</td><td class="note">JSONL format</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TC-07</b></td><td>File writes shall be protected by a `kotlinx.coroutines.sync.Mutex` to prevent concurrent write corruption.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryFileWriterTest</td><td><span class="tag PASS">PASS</span></td><td>6 test(s) passed</td><td class="note">Mutex protection</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TC-08</b></td><td>File writes shall run on `Dispatchers.IO`. The capture service shall not block its main thread on I/O.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-09</b></td><td>If a GPS fix is not received for 10 continuous seconds during recording, the foreground notification shall update to: &#x27;GPS signal lost — move to open sky&#x27;.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-10</b></td><td>When GPS signal is restored after a loss, the notification shall revert to normal recording text and `gpsLocked` shall be set to `true`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-11</b></td><td>The app shall warn the user on the Recording screen (via GPS status indicator) if GPS accuracy drops below 10 m.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TC-12</b></td><td>Exceptions thrown in `SensorEventListener.onSensorChanged` or `LocationListener.onLocationChanged` shall be caught and logged; they shall never propagate and crash the service.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Telemetry storage and upload <span class='note'>— 4/13 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>TU-01</b></td><td>Telemetry data shall be written to a local JSONL file during capture; the app shall not depend on a live network connection during recording.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TU-02</b></td><td>On session stop, the app shall enqueue a `TelemetryUploadWorker` (WorkManager `OneTimeWorkRequest`) with constraint `NetworkType.CONNECTED`.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryUploadWorkerTest</td><td><span class="tag PASS">PASS</span></td><td>8 test(s) passed</td><td class="note">WorkManager enqueue</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TU-03</b></td><td>The upload worker shall use exponential backoff, with `initialDelay=10s` and a maximum of 5 attempts.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TU-04</b></td><td>The upload worker shall POST the JSONL file to the backend as a `multipart/form-data` request, including: `trackName`, `startedAt`, `endedAt`, `startLineLat1`, `startLineLng1`, `startLineLat2`, `startLineLng2`, and the JSONL `file`.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryUploadWorkerMockWebServerTest</td><td><span class="tag PASS">PASS</span></td><td>8 test(s) passed</td><td class="note">Multipart upload</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TU-05</b></td><td>`SessionEntity.uploadStatus` shall be set to `UPLOADING` before the upload attempt begins.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TU-06</b></td><td>On HTTP 200–201, `uploadStatus` shall be set to `DONE` and `remoteSessionId` stored. The worker shall return `Result.success()`.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryUploadWorkerTest</td><td><span class="tag PASS">PASS</span></td><td>8 test(s) passed</td><td class="note">HTTP 200 to DONE</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TU-07</b></td><td>On HTTP 5xx, `uploadStatus` shall be set to `FAILED` and the worker shall return `Result.retry()`.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryUploadWorkerTest</td><td><span class="tag PASS">PASS</span></td><td>8 test(s) passed</td><td class="note">HTTP 5xx retry</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>TU-08</b></td><td>On HTTP 4xx, `uploadStatus` shall be set to `FAILED` and the worker shall return `Result.failure()` (no retry).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TU-09</b></td><td>If the local JSONL file does not exist when the worker runs, the worker shall return `Result.failure()`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TU-10</b></td><td>The backend shall store the JSONL file in Azure Blob Storage under the path `{firebase_uid}/{sessionId}.jsonl` in the `telemetry` container.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TU-11</b></td><td>The backend shall accept JSONL files up to 50 MB.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TU-12</b></td><td>If a session has `uploadStatus=PENDING` for more than 5 minutes, the Home screen shall show a dismissible banner: &#x27;Session upload pending — connect to Wi-Fi&#x27;.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>TU-13</b></td><td>If `uploadStatus=FAILED`, the Session Result screen shall offer a &#x27;RETRY ANALYSIS&#x27; button that re-enqueues the upload worker.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Lap detection <span class='note'>— 1/16 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>LD-01</b></td><td>Lap detection shall be performed on the device, after recording stops, from the local JSONL telemetry file. It shall not require network connectivity.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-02</b></td><td>When a start/finish line is provided (startLineLat1/Lng1, startLineLat2/Lng2), lap boundaries shall be detected by identifying the moments at which the car passes the **midpoint** of that line.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-03</b></td><td>When no start/finish line is provided, or either captured endpoint is at latitude 0 and longitude 0, the app shall report that no start line is defined and shall detect no laps.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-04</b></td><td>A lap boundary shall be recorded when consecutive GPS samples cross a plane through the start point that is **perpendicular to the car&#x27;s direction of travel**, and the car passes no further than 15 m to the side of the start point.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">GeoUtilsTest</td><td><span class="tag PASS">PASS</span></td><td>13 test(s) passed</td><td class="note">Line intersection</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>LD-05</b></td><td>A minimum lap time guard of 20,000 ms shall be enforced between consecutive lap boundaries.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-06</b></td><td>The driver must travel at least 50 m from the start point before a lap crossing is counted (prevents false triggers while manoeuvring near the line).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-07</b></td><td>The last incomplete lap (started after the final boundary, session ends before re-crossing) shall be discarded. Only complete laps shall be stored.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-08</b></td><td>If fewer than 50 telemetry samples are present in the file, the app shall report insufficient telemetry data and detect no laps.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-09</b></td><td>If fewer than 2 complete laps are detected, the app shall store no laps and shall tell the user how many laps were found.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-10</b></td><td>Each detected lap shall be divided into 3 equal-time sectors. `sector1Ms + sector2Ms + sector3Ms` shall equal `durationMs` exactly (sector 3 absorbs rounding).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-11</b></td><td>The lap with the minimum `durationMs` shall be flagged as `isBestLap=true`. Exactly one lap per session shall have this flag set.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-12</b></td><td>`SessionEntity.processingStatus` shall progress through: `PENDING → PROCESSING → LAPS_DONE → COMPLETE` on success, or `FAILED` on any error.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-13</b></td><td>The lat/lng approximation used for crossing geometry (equirectangular Cartesian) is valid for tracks smaller than 5 km in extent. This is the supported use case.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-14</b></td><td>A candidate crossing whose direction of travel differs by more than 60° from the direction of travel at the first accepted crossing of the session shall be rejected.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-15</b></td><td>The instant of a lap boundary shall be interpolated between the two GPS samples either side of it, rather than taken from either sample.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LD-16</b></td><td>For each detection run the app shall record, alongside the session&#x27;s telemetry file, what it observed and why each candidate crossing was accepted or rejected. Failure to record this shall not affect the outcome presented to the user.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Lap comparison <span class='note'>— 0/15 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>LC-01</b></td><td>The Session Result screen shall display a &#x27;LAPS&#x27; tab listing all laps for the session, sorted by lap time ascending.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-02</b></td><td>Each lap card shall show: lap number, lap time formatted as `M:SS.mmm`, sector 1 / sector 2 / sector 3 times, and a delta badge vs the best lap.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-03</b></td><td>The best lap card shall have a gold (#C9A227) left-border accent (3 dp) and a &#x27;BEST&#x27; chip.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-04</b></td><td>The delta badge shall be colour-coded: green (`#2ECC71`) if the lap is faster than the best lap (delta &lt; 0), red (`#E74C3C`) if slower (delta &gt; 0). The best lap row shall not show a delta badge.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-05</b></td><td>Delta shall be formatted as `+0.456s` or `-0.123s`, always 3 decimal places.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-06</b></td><td>Tapping a lap card shall navigate to the Lap Detail screen for that lap.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-07</b></td><td>The Lap Detail screen shall display the selected lap and the best lap side by side: lap times in large `LapTime` style, total delta (coloured), and per-sector breakdown.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-08</b></td><td>Each sector comparison on the Lap Detail screen shall show: sector label, selected time (monospace), delta badge (coloured pill), best time (monospace), and a horizontal relative-performance bar.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-09</b></td><td>The Session Result screen shall display a &#x27;CHART&#x27; tab with a speed trace (km/h vs distance in meters) for all laps. All laps shall be plotted in grey (#B0B0B0 at 50% opacity), the best lap in brand primary colour with 3dp line width.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-10</b></td><td>Speed values in the chart shall be converted from m/s to km/h using the factor 3.6.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-11</b></td><td>The chart X-axis shall display distance in meters from lap start (e.g., &quot;450m&quot;), computed using cumulative haversine distance between GPS samples.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-12</b></td><td>The chart shall read real telemetry data from the session&#x27;s JSONL file, filtered by lap start/end timestamps.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-13</b></td><td>For sessions with more than 10 laps, the app shall display a warning: &quot;Offline processing is limited and may take some time.&quot;</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-14</b></td><td>For sessions with large telemetry data, the app shall prompt the user to choose between &quot;Fast&quot; (downsampled to ~100 points per lap) or &quot;Detailed&quot; (all samples) processing modes.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>LC-15</b></td><td>In Fast mode, samples shall be uniformly downsampled to approximately 100 points per lap to optimize rendering performance.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Session analysis (ANALYSIS tab) <span class='note'>— 17/17 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>AS-01</b></td><td>The Session Result screen shall display a fourth tab labelled &#x27;ANALYSIS&#x27;, positioned after &#x27;CHART&#x27;.</td><td>L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">AnalysisTabTest.analysisTabIsPresentOnTheSessionResultScreen</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-02</b></td><td>The ANALYSIS tab shall display session statistics: total distance (km), session duration (M:SS), maximum speed (km/h), average speed (km/h) and best lap time.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">AnalysisTabTest.analysisTabRendersStatsMapAndDerivedTables</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">SessionAnalysisProcessorTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Statistics computed from telemetry</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-03</b></td><td>Total distance shall be the cumulative haversine distance between consecutive GPS samples over the whole session. Average speed shall be the mean speed over the whole recording, standing time included, and the tab shall state this.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SessionAnalysisProcessorTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Cumulative haversine; average includes standing time</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-04</b></td><td>The ANALYSIS tab shall display a track map drawn from the recorded GPS trace. The map shall not use any map SDK, map tiles or network service.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">AnalysisTabTest</td><td><span class="tag PASS">PASS</span></td><td>4 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">TrackPathProjectionTest</td><td><span class="tag PASS">PASS</span></td><td>6 test(s) passed</td><td class="note">Path projected from GPS, no SDK</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-05</b></td><td>The track map shall colour the trace by speed on a continuous gradient from `#1C69D4` (slowest) through `#F39C12` to `#2ECC71` (fastest), overdraw detected braking zones in red (`#E74C3C`), mark each detected corner with a numbered `T1..Tn` label, and mark the start/finish line when the session has one.</td><td>L1 + L4</td><td><span class="tag MANUAL">MANUAL</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">L4:ANA-02</td><td><span class="tag MANUAL">MANUAL</span></td><td>Awaiting a human run</td><td class="note">Track map fidelity, human visual</td></tr>
+<tr><td class="mono">TrackPathProjectionTest</td><td><span class="tag PASS">PASS</span></td><td>6 test(s) passed</td><td class="note">Path and markers only; rendering itself is L4 visual</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-06</b></td><td>The ANALYSIS tab shall list the session&#x27;s laps as selectable chips showing lap number and lap time, taken from the laps produced by §8. Laps shall never be re-derived by the analysis.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">AnalysisTabTest</td><td><span class="tag PASS">PASS</span></td><td>4 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">SessionAnalysisProcessorTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Lap windows supplied, never computed here</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-07</b></td><td>The reference lap shall default to the best lap, and the user shall be able to select any other lap. Selecting a lap shall recompute the track map, the corner table and the braking table for that lap, and the tab shall state which lap the tables describe.</td><td>L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">AnalysisTabTest.pickingADifferentLapRebuildsTheReferenceView</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-08</b></td><td>Corners shall be detected from the rate of change of GPS heading: a corner is a stretch where the smoothed yaw rate exceeds 6 °/s for at least 1.5 s. For each corner the app shall display its number, turn direction, total heading change and apex (minimum) speed.</td><td>L1 + L4</td><td><span class="tag MANUAL">MANUAL</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">L4:ANA-03</td><td><span class="tag MANUAL">MANUAL</span></td><td>Awaiting a human run</td><td class="note">Corner plausibility against a real circuit</td></tr>
+<tr><td class="mono">SessionAnalysisProcessorTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Yaw-rate corner detection with apex speed</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-09</b></td><td>Corner numbering shall follow the order in which corners are passed and the tab shall state that this numbering does not necessarily match the circuit&#x27;s official numbering.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SessionAnalysisProcessorTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Numbering by order of passage</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-10</b></td><td>Braking zones shall be detected from GPS speed only: a zone is a stretch where longitudinal deceleration exceeds 0.8 m/s² for at least 0.5 s and speed falls by at least 4 km/h. For each zone the app shall display entry and exit speed, speed lost, peak deceleration expressed in g (a/9.81) and duration.</td><td>L1 + L4</td><td><span class="tag MANUAL">MANUAL</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">L4:ANA-04</td><td><span class="tag MANUAL">MANUAL</span></td><td>Awaiting a human run</td><td class="note">Braking plausibility against a real circuit</td></tr>
+<tr><td class="mono">SessionAnalysisProcessorTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">GPS deceleration, peak g, duration</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-11</b></td><td>The tab shall state that braking figures come from GPS speed and that the phone accelerometer is deliberately not used, because its axes depend on how the phone is mounted and do not reliably track longitudinal acceleration.</td><td>L4</td><td><span class="tag MANUAL">MANUAL</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">L4:ANA-04</td><td><span class="tag MANUAL">MANUAL</span></td><td>Awaiting a human run</td><td class="note">Provenance caveat is a static string; no IMU field is read</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-12</b></td><td>Each braking zone shall be associated with the corner it leads into, where one exists.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SessionAnalysisProcessorTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Braking zone associated with the next corner</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-13</b></td><td>The ANALYSIS tab shall display a speed-versus-time graph covering the whole session, not only the reference lap.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">AnalysisTabTest</td><td><span class="tag PASS">PASS</span></td><td>4 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">SessionAnalysisProcessorTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Speed trace spans the whole session</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-14</b></td><td>Corner and braking detection thresholds shall be expressed per unit of time, so that the same recording analysed at 1 Hz or 10 Hz yields the same corners and braking zones.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SessionAnalysisRateInvarianceTest</td><td><span class="tag PASS">PASS</span></td><td>4 test(s) passed</td><td class="note">Same result at 1 Hz and 10 Hz</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-15</b></td><td>A heading shall not be derived from GPS positions less than 2 m apart, and a detected corner whose maximum speed is below 10 km/h shall be discarded, so that GPS scatter recorded while the vehicle is stationary cannot be reported as cornering.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SessionAnalysisGuardsTest</td><td><span class="tag PASS">PASS</span></td><td>9 test(s) passed</td><td class="note">No heading below 2 m; no corner below 10 km/h</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-16</b></td><td>When the session&#x27;s telemetry file is missing or unreadable, the tab shall say so explicitly and shall not attribute the failure to the driving. When fewer than two usable samples exist, the tab shall say the session is too short to analyse.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>2 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">AnalysisTabTest.missingTelemetryShowsTheEmptyStateInsteadOfCrashing</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+<tr><td class="mono">SessionAnalysisGuardsTest</td><td><span class="tag PASS">PASS</span></td><td>9 test(s) passed</td><td class="note">Too-short session</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>AS-17</b></td><td>When no lap is usable as a reference — no laps detected, or the lap&#x27;s time window does not overlap the telemetry — the analysis shall fall back to the whole session and shall label itself as such, rather than presenting whole-session figures under a lap&#x27;s name.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">SessionAnalysisGuardsTest.aLapWindowThatDoesNotOverlapTheTelemetryFallsBackToTheWholeSession</td><td><span class="tag PASS">PASS</span></td><td>1 test(s) passed</td><td class="note"></td></tr>
+</table></div></details>
+</td></tr>
+</table>
+<h3>AI coaching feedback <span class='note'>— 8/24 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>AI-01</b></td><td>After lap processing completes (`processingStatus=LAPS_DONE`), the backend shall trigger an asynchronous AI coaching job.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-02</b></td><td>The coaching job shall call the Anthropic API using the model `claude-sonnet-4-20250514` with `max_tokens=700`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-03</b></td><td>The coaching prompt shall include: track name, total lap count, best lap time, average lap time, consistency score, and a sector-by-sector delta table comparing all laps to the best lap.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-04</b></td><td>The system prompt shall instruct the model to act as a professional motorsport driving coach and to always reference specific lap numbers, sector numbers, and time values.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-05</b></td><td>The model shall be instructed to respond with **exactly 4 coaching tips** in a valid JSON array and no other text: `[{&quot;headline&quot;:&quot;...&quot;,&quot;detail&quot;:&quot;...&quot;}]`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-06</b></td><td>Each coaching tip headline shall be a maximum of 8 words. Each detail shall be a maximum of 35 words.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-07</b></td><td>The backend shall strip markdown code fences from the response before JSON parsing.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-08</b></td><td>The backend shall validate the parsed response: must be an array of 3–5 items, each with `headline` (string, ≤ 100 chars) and `detail` (string, ≤ 300 chars).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-09</b></td><td>Validated coaching tips shall be inserted into the `coaching_insights` table linked to the session.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-10</b></td><td>If the Anthropic API call fails, or the response cannot be parsed or validated, the error shall be logged and coaching insights shall not be stored. The failure shall NOT set `processingStatus=FAILED`; the session shall still complete.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-11</b></td><td>The `COACH` tab on the Session Result screen shall display a consistency score summary card and one card per coaching insight (headline in H3 style, detail in Body style).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-12</b></td><td>While `processingStatus` is not `COMPLETE`, the `COACH` tab shall show a progress card with three labelled steps: &#x27;Uploading&#x27;, &#x27;Detecting laps&#x27;, &#x27;Generating coaching&#x27;.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-13</b></td><td>The consistency score formula is: `(1 − σ / μ) × 100`, where `σ` is the standard deviation of lap times and `μ` is the mean lap time. The result is clamped to [0, 100] and expressed as a percentage to 1 decimal place.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>AI-14</b></td><td>If `processingStatus=FAILED`, the `COACH` tab shall display a &#x27;RETRY ANALYSIS&#x27; button.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>OC-01</b></td><td>When offline or backend unavailable, the app shall generate local coaching insights immediately after local lap detection completes.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">OfflineCoachingEngineTest</td><td><span class="tag PASS">PASS</span></td><td>30 test(s) passed</td><td class="note">Local insights generated</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>OC-02</b></td><td>Offline coaching shall produce exactly 3-4 insights: Best Lap, Top Speed (if telemetry available), Consistency, and Sector Focus (upsell).</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">OfflineCoachingEngineTest</td><td><span class="tag PASS">PASS</span></td><td>30 test(s) passed</td><td class="note">3-4 insights</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>OC-03</b></td><td>The Best Lap insight shall show &quot;Lap N Was Your Fastest&quot; with time delta vs average. Sector detail shall only be shown if all laps have non-zero sector times.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">OfflineCoachingEngineTest</td><td><span class="tag PASS">PASS</span></td><td>30 test(s) passed</td><td class="note">Best Lap insight</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>OC-04</b></td><td>If sector times are unavailable (sector*Ms = 0), the Best Lap insight shall NOT reference specific sectors. Instead, it shall show &quot;X.Xs ahead of average&quot;.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">OfflineCoachingEngineTest</td><td><span class="tag PASS">PASS</span></td><td>30 test(s) passed</td><td class="note">Zero sectors handled</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>OC-05</b></td><td>The Top Speed insight shall read telemetry JSONL, extract maximum speed, and display &quot;🚀 Top Speed: X km/h — Hit on Lap N&quot;.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">OfflineCoachingEngineTest</td><td><span class="tag PASS">PASS</span></td><td>30 test(s) passed</td><td class="note">Top Speed insight</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>OC-06</b></td><td>GPS noise shall be filtered: speeds &gt; 350 km/h (97.2 m/s) shall be rejected as implausible.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">OfflineCoachingEngineTest</td><td><span class="tag PASS">PASS</span></td><td>30 test(s) passed</td><td class="note">GPS noise filter</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>OC-07</b></td><td>The Consistency insight shall show &quot;Laps within X.Xs of each other&quot; (using stdDev), not &quot;vary by&quot;.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">OfflineCoachingEngineTest</td><td><span class="tag PASS">PASS</span></td><td>30 test(s) passed</td><td class="note">Consistency wording</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>OC-08</b></td><td>When sectors are unavailable, the Sector Focus insight shall show &quot;Coming Soon&quot; upsell message instead of false sector recommendations.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">OfflineCoachingEngineTest</td><td><span class="tag PASS">PASS</span></td><td>30 test(s) passed</td><td class="note">Sector Focus upsell</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>OC-09</b></td><td>Offline insights shall be stored with `source=&quot;LOCAL&quot;` flag in `coaching_insights` table.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>OC-10</b></td><td>When backend coaching arrives, local insights shall be replaced by backend insights.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Driver progression tracking <span class='note'>— 3/16 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>DP-01</b></td><td>The Home screen shall display a history list of all sessions, ordered by `startedAt` descending. (Single-user MVP: no userId filtering)</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>DP-02</b></td><td>Each session history card shall show: track name, date formatted as `dd MMM yyyy HH:mm`, best lap time for that session, lap count, consistency score, and an upload status chip (`UPLOADED` / `PENDING` / `FAILED`).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>DP-03</b></td><td>The Home screen shall display a hero card showing the user&#x27;s overall best lap time across all sessions, the track it was set on, and the date.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>DP-04</b></td><td>If the user has no sessions, the hero card shall display: &#x27;Record your first session to see your best lap&#x27;.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>DP-05</b></td><td>The Session Result screen shall display the consistency score as a large percentage in the `COACH` tab summary card, with the subtitle &#x27;across {N} laps&#x27;.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>DP-06</b></td><td>Sessions shall be fetched from the local Room database as the single source of truth. Remote data from the API shall be written back to Room and consumed from there.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SM-01</b></td><td>The app shall allow the user to delete a session via long-press context menu on the Home screen session list.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">HomeViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Delete session</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>SM-02</b></td><td>Session deletion shall remove the session record, all associated laps, and all associated coaching insights from the local Room database.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SM-03</b></td><td>Session deletion shall delete the telemetry JSONL file from local storage if it exists.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SM-04</b></td><td>Before deletion, the app shall display a confirmation dialog showing the track name and date.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SM-05</b></td><td>The app shall allow the user to rename a session&#x27;s track name via long-press context menu on the Home screen session list.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">HomeViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Rename session</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>SM-06</b></td><td>The rename dialog shall pre-fill the current track name and allow editing.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SM-07</b></td><td>Track name validation: minimum 1 character, maximum 100 characters. Empty names shall be rejected.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">HomeViewModelTest</td><td><span class="tag PASS">PASS</span></td><td>10 test(s) passed</td><td class="note">Track name validation</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>SM-08</b></td><td>Delete and rename operations shall be local-only; they shall not require network connectivity or synchronize with the backend.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SM-09</b></td><td>After successful deletion, the app shall display a Snackbar confirming the deletion.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SM-10</b></td><td>After successful rename, the app shall display a Snackbar confirming the rename.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Share accomplishments <span class='note'>— 0/11 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>SH-01</b></td><td>The Session Result screen shall include a share icon in the toolbar.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-02</b></td><td>Tapping the share icon shall generate a 1080×1080 px share card as an Android `Bitmap`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-03</b></td><td>The share card shall contain: &#x27;BMW DRIVING COACH&#x27; branding text, best lap time (large, BMW blue, monospace), &#x27;BEST LAP&#x27; label, track name, session date, consistency score, and a BMW blue bottom border line.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-04</b></td><td>The bitmap shall be saved to the app&#x27;s FileProvider cache directory and shared via `Intent.ACTION_SEND` with MIME type `image/png` through the Android Share Sheet.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-05</b></td><td>The FileProvider authority shall be `${applicationId}.fileprovider`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-06</b></td><td>Share is a V1 placeholder for future social features. No social backend infrastructure is required in V1.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-07</b></td><td>The Session Result screen shall expose a hidden developer telemetry export via a **long-press** on the share icon. The gesture shall consume the long-press event so that no tooltip is shown.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-08</b></td><td>The telemetry export shall produce a ZIP bundle containing exactly two entries: `telemetry.jsonl` (a byte-for-byte copy of the recorded telemetry file) and `session.json` (session metadata, start line, lap records, app version/build and device model/SDK level).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-09</b></td><td>The ZIP bundle shall be shared via `Intent.ACTION_SEND` with MIME type `application/zip` through the Android Share Sheet, using the same FileProvider authority as SH-05.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-10</b></td><td>Share failures shall be reported to the user via a Snackbar. The app shall never fail a share silently. A missing telemetry file shall be reported as a distinct, non-fatal error rather than raising an exception.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SH-11</b></td><td>Sharing shall be strictly **read-only** with respect to recorded data. Neither share path shall create, modify, rename or delete any session record, lap record or telemetry file. All share artifacts shall be written only inside the app&#x27;s share cache directory (`cacheDir/shared/`), and shall be pruned after 24 hours. Pruning shall only remove artifacts the app itself created and shall not recurse into subdirectories.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Backend API <span class='note'>— 0/15 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>BE-01</b></td><td>All backend routes except health check shall require a valid Firebase ID token in the `Authorization: Bearer &lt;token&gt;` header.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-02</b></td><td>On valid token, the middleware shall attach `req.user = { uid, email }` and call `next()`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-03</b></td><td>On missing, expired, or invalid token, the middleware shall return HTTP 401 `{ error: &#x27;Unauthorized&#x27; }`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-04</b></td><td>`POST /telemetry/upload` shall accept `multipart/form-data` with fields: `trackName`, `startedAt`, `endedAt`, `startLineLat1`, `startLineLng1`, `startLineLat2`, `startLineLng2`, and `file` (JSONL).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-05</b></td><td>All fields shall be validated with Zod. Missing or unparseable fields shall return HTTP 400 with a structured error body.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-06</b></td><td>The JSONL file shall be uploaded to Azure Blob Storage at path `{firebase_uid}/{sessionId}.jsonl` before the database record is created.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-07</b></td><td>A session row shall be inserted into PostgreSQL with `processing_status=&#x27;PENDING&#x27;`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-08</b></td><td>Lap processing shall be triggered as a fire-and-forget async function — the HTTP response shall be returned immediately.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-09</b></td><td>`POST /telemetry/upload` shall return HTTP 201 `{ sessionId, status: &#x27;PROCESSING&#x27; }`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-10</b></td><td>`GET /sessions` shall return all sessions for `req.user.uid`, ordered by `started_at DESC`. Each record shall include `bestLapMs` and `lapCount`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-11</b></td><td>`GET /sessions/:sessionId` shall return the session, its laps array, and its coaching insights array.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-12</b></td><td>`GET /sessions/:sessionId` shall return HTTP 403 if `session.firebase_uid` does not match `req.user.uid`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-13</b></td><td>The processing pipeline shall run in this order: parse JSONL → detect laps → compute sectors → insert laps → generate coaching insights → set `processingStatus=COMPLETE`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-14</b></td><td>Any unhandled exception in the pipeline shall set `processingStatus=FAILED` and log the error with the `sessionId`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>BE-15</b></td><td>The backend shall support concurrent session processing without one session&#x27;s failure affecting another.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Non-functional requirements <span class='note'>— 1/16 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>NF-01</b></td><td>The app shall target Android API 26 (Android 8.0) as minimum and API 35 as target.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-02</b></td><td>Minimum supported screen size: 5-inch display, 1080×1920 px.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-03</b></td><td>The app shall not crash during recording if the network is unavailable.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-04</b></td><td>Telemetry JSONL upload for a 30-minute session shall complete within 30 seconds on a 4G connection.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-05</b></td><td>Lap detection and AI coaching generation shall complete within 60 seconds of upload for sessions with 20 laps or fewer.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-06</b></td><td>Battery consumption during a 30-minute recording session shall not exceed 15% on a mid-range device (Pixel 5 equivalent).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-07</b></td><td>The JSONL file writer shall handle 18,000 samples (simulated 30-minute session at 10 Hz) without data loss or file corruption.</td><td>L1</td><td><span class="tag PASS">PASS</span></td><td>
+<details><summary>1 claim(s)</summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th>Detail</th><th>Note</th></tr>
+<tr><td class="mono">TelemetryFileWriterTest</td><td><span class="tag PASS">PASS</span></td><td>6 test(s) passed</td><td class="note">18K samples benchmark</td></tr>
+</table></div></details>
+</td></tr>
+<tr><td class="mono"><b>NF-08</b></td><td>Room database queries shall respond within 100 ms for session lists of up to 100 sessions.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-09</b></td><td>The app shall display a loading state for any operation expected to take longer than 300 ms.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-10</b></td><td>The backend shall process requests from multiple concurrent users without session data cross-contamination.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-11</b></td><td>Unit test line coverage shall be ≥ 70% across domain and data layers.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-12</b></td><td>`./gradlew assembleRelease` shall succeed with R8/ProGuard enabled.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-13</b></td><td>The backend Docker image shall build and start within 60 seconds.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-14</b></td><td>High-accuracy location shall not be held while the app is not in the foreground, outside an active recording, which runs under a visible foreground-service notification. This is a privacy bound before it is a battery one: the user shall always be able to see that the receiver is in use.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-15</b></td><td>Start-line capture shall be reachable within 1 second of arriving at the Track Setup screen when GPS readiness was already reported on Home, so that the warm-up the user waited for is not spent twice.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>NF-16</b></td><td>Lap timing shall not be quantised to the GPS sample interval. On a device delivering fixes at 1 Hz, the error introduced by sampling shall not exceed 100 ms per lap boundary.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h3>Security requirements <span class='note'>— 0/9 claimed</span></h3>
+<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
+<tr><td class="mono"><b>SEC-01</b></td><td>All network traffic shall use HTTPS / TLS 1.2 or higher.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SEC-02</b></td><td>Firebase ID tokens shall be verified server-side on every request; they shall never be trusted client-side only.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SEC-03</b></td><td>The `ANTHROPIC_API_KEY` shall only be stored in Azure App Service Application Settings and shall never be committed to source control.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SEC-04</b></td><td>The Firebase service account JSON shall be base64-encoded and stored in Azure App Settings; it shall never be committed to source control.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SEC-05</b></td><td>`google-services.json` shall never be committed to source control; this shall be documented in `README.md`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SEC-06</b></td><td>The Azure Blob Storage container `telemetry` shall have private access level; blobs shall not be publicly accessible.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SEC-07</b></td><td>The backend shall enforce that a user can only read their own sessions; `GET /sessions/:id` shall return HTTP 403 if the session belongs to a different `firebase_uid`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SEC-08</b></td><td>The API base URL shall be configured via `BuildConfig.API_BASE_URL` per build flavour; it shall not be hardcoded.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+<tr><td class="mono"><b>SEC-09</b></td><td>ProGuard/R8 rules shall be added for Retrofit, Room, Gson, and Firebase to prevent stripping of required classes in the release build.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
+<span class="note">No claim recorded</span>
+</td></tr>
+</table>
+<h2>4. Gaps and caveats</h2>
+<h3>Test classes that are switched off</h3>
+<p class="note">These classes are annotated <code>@Ignore</code>. They compile, they appear in the codebase, and they prove nothing.</p>
+<table><tr><th>Class</th><th>Level</th><th class="num">Tests never run</th></tr>
+<tr><td class="mono">EndToEndTest</td><td>L2</td><td class="num">5</td></tr>
+<tr><td class="mono">RecordingFragmentTest</td><td>L2</td><td class="num">7</td></tr>
+<tr><td class="mono">TelemetryForegroundServiceTest</td><td>L2</td><td class="num">6</td></tr>
+<tr><td class="mono">TrackSetupFragmentTest</td><td>L2</td><td class="num">11</td></tr>
+</table>
+<h3>Coverage claims not backed by a passing test</h3>
+<table><tr><th>Requirement</th><th>Claim</th><th>Status</th><th>Detail</th></tr>
+<tr><td class="mono">SR-04</td><td class="mono">TelemetryForegroundServiceTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 6 declared test(s) never ran</td></tr>
+<tr><td class="mono">SR-05</td><td class="mono">TelemetryForegroundServiceTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 6 declared test(s) never ran</td></tr>
+<tr><td class="mono">SR-09</td><td class="mono">TelemetryForegroundServiceTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 6 declared test(s) never ran</td></tr>
+<tr><td class="mono">TS-02</td><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td></tr>
+<tr><td class="mono">TS-03</td><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td></tr>
+<tr><td class="mono">TS-05</td><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td></tr>
+<tr><td class="mono">TS-06</td><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td></tr>
+<tr><td class="mono">TS-12</td><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td></tr>
+</table>
+<h3>Requirements with no automated claim</h3>
+<p class="note">177 of 245 requirements carry no automated test. Some are deferred features, some are genuinely untested; every one is listed and marked <span class="tag UNCOVERED">UNCOVERED</span> in section 3, so none of them can hide. The count by area:</p>
+<table><tr><th>Area</th><th class="num">Uncovered</th><th>Requirements</th></tr>
+<tr><td>User management</td><td class="num">19</td><td class="mono">UM-01, UM-02, UM-03, UM-04, UM-05, UM-06, UM-07, UM-08, UM-09, UM-10, UM-11, UM-12, UM-13, UM-14, UM-15, UM-16, UM-17, UM-18, UM-19</td></tr>
+<tr><td>Onboarding and permissions</td><td class="num">8</td><td class="mono">ON-01, ON-02, ON-03, ON-04, ON-05, ON-06, ON-07, ON-08</td></tr>
+<tr><td>Application startup and branding</td><td class="num">3</td><td class="mono">UI-10, UI-11, UI-12</td></tr>
+<tr><td>Track setup — start/finish line</td><td class="num">11</td><td class="mono">TS-01, TS-04, TS-07, TS-09, TS-10, TS-11, TS-13, TS-14, TS-21, TS-22, TS-23</td></tr>
+<tr><td>Session recording</td><td class="num">8</td><td class="mono">SR-01, SR-02, SR-03, SR-06, SR-07, SR-08, SR-10, SR-11</td></tr>
+<tr><td>Telemetry capture</td><td class="num">10</td><td class="mono">TC-01, TC-02, TC-03, TC-04, TC-05, TC-08, TC-09, TC-10, TC-11, TC-12</td></tr>
+<tr><td>Telemetry storage and upload</td><td class="num">9</td><td class="mono">TU-01, TU-03, TU-05, TU-08, TU-09, TU-10, TU-11, TU-12, TU-13</td></tr>
+<tr><td>Lap detection</td><td class="num">15</td><td class="mono">LD-01, LD-02, LD-03, LD-05, LD-06, LD-07, LD-08, LD-09, LD-10, LD-11, LD-12, LD-13, LD-14, LD-15, LD-16</td></tr>
+<tr><td>Lap comparison</td><td class="num">15</td><td class="mono">LC-01, LC-02, LC-03, LC-04, LC-05, LC-06, LC-07, LC-08, LC-09, LC-10, LC-11, LC-12, LC-13, LC-14, LC-15</td></tr>
+<tr><td>AI coaching feedback</td><td class="num">16</td><td class="mono">AI-01, AI-02, AI-03, AI-04, AI-05, AI-06, AI-07, AI-08, AI-09, AI-10, AI-11, AI-12, AI-13, AI-14, OC-09, OC-10</td></tr>
+<tr><td>Driver progression tracking</td><td class="num">13</td><td class="mono">DP-01, DP-02, DP-03, DP-04, DP-05, DP-06, SM-02, SM-03, SM-04, SM-06, SM-08, SM-09, SM-10</td></tr>
+<tr><td>Share accomplishments</td><td class="num">11</td><td class="mono">SH-01, SH-02, SH-03, SH-04, SH-05, SH-06, SH-07, SH-08, SH-09, SH-10, SH-11</td></tr>
+<tr><td>Backend API</td><td class="num">15</td><td class="mono">BE-01, BE-02, BE-03, BE-04, BE-05, BE-06, BE-07, BE-08, BE-09, BE-10, BE-11, BE-12, BE-13, BE-14, BE-15</td></tr>
+<tr><td>Non-functional requirements</td><td class="num">15</td><td class="mono">NF-01, NF-02, NF-03, NF-04, NF-05, NF-06, NF-08, NF-09, NF-10, NF-11, NF-12, NF-13, NF-14, NF-15, NF-16</td></tr>
+<tr><td>Security requirements</td><td class="num">9</td><td class="mono">SEC-01, SEC-02, SEC-03, SEC-04, SEC-05, SEC-06, SEC-07, SEC-08, SEC-09</td></tr>
+</table>
+<h2>5. Failures</h2>
+<p>No test failed in this run.</p>
+<h2>6. Every automated test in this run</h2>
+<p class="note">The complete inventory, so that nothing above is taken on trust.</p>
+<h3>L1 — 25 classes</h3>
+<details><summary>ApiClientTest <span class='note'>— 5 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">401 on any request emits session expired via AuthEventBus</td><td><span class="tag PASS">PASS</span></td><td class="num">0.932</td></tr>
+<tr><td class="mono">login failure returns error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.017</td></tr>
+<tr><td class="mono">login success stores token in DataStore</td><td><span class="tag PASS">PASS</span></td><td class="num">0.076</td></tr>
+<tr><td class="mono">register success stores token</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
+<tr><td class="mono">uploadTelemetry sends correct multipart fields</td><td><span class="tag PASS">PASS</span></td><td class="num">0.054</td></tr>
+</table></div></details>
+<details><summary>BrandAssetGeometryTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">emblemDensityBucketsAreCompleteAndCorrectlySized</td><td><span class="tag PASS">PASS</span></td><td class="num">0.038</td></tr>
+<tr><td class="mono">emblemMasterSatisfiesBrandGeometry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.028</td></tr>
+<tr><td class="mono">gateRejectsTheLegacyDeformedEmblem</td><td><span class="tag PASS">PASS</span></td><td class="num">0.083</td></tr>
+<tr><td class="mono">noConflictingVectorEmblemRemains</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+</table></div></details>
+<details><summary>DriverNameViewModelTest <span class='note'>— 12 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a failed save reports an error and stays put</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
+<tr><td class="mono">a one character name keeps the call to action disabled</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a second submit while saving is ignored</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">a valid name enables the call to action</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">an empty field shows no error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">an existing name is overwritten rather than duplicated</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">an over long name reports the length error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">correcting an invalid name clears the error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">submitting a valid name persists it and navigates home</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">submitting an invalid name neither persists nor navigates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">submitting trims the stored name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">the call to action starts disabled</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>DriverProfileStoreTest <span class='note'>— 22 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a blank stored name is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">a completion flag without a name is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">a fresh install has no profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">a name without the completion flag is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">a single name yields its first two characters</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">an astral plane character is not split</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">an empty name yields a placeholder</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">an invalid name is not persisted</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">an unreadable store reports no profile instead of throwing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">blank input is short rather than long</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">one hundred and one characters are rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">one hundred characters are accepted at the upper bound</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">padding does not let an over-long name through</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">repeated spaces do not produce blank initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">saved name survives a read back</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">saving marks the profile complete</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">saving stores the trimmed form</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">single character is rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">surrounding whitespace is trimmed before storing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">three names skip the middle</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">two characters are accepted at the lower bound</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">two names yield first and last initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>FixFreshnessTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a fix from the paddock walk is rejected at the line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a fix just inside the age limit is still fresh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a fix past the age limit is rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a fix stamped in the future is not rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a fix taken now is fresh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">an unknown timestamp is treated as fresh rather than blocking capture</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>GeoUtilsTest <span class='note'>— 13 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">haversine - SF to LA is approximately 559 km</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">haversine - handles negative coordinates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">haversine - same point returns zero</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">haversine - short distance is accurate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">haversine - symmetric</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - crossing in reverse direction</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - diagonal crossing works</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - parallel path does not cross</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - path crosses finish line returns true</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">lineIntersection - path ends before reaching line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - path misses line to the side</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - stationary point on line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - very short segment crossing line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+</table></div></details>
+<details><summary>HomeViewModelTest <span class='note'>— 10 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">deleteSession calls DAO deleteById</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+<tr><td class="mono">deleteSession handles missing session gracefully</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
+<tr><td class="mono">gpsReadiness reports accuracy once a usable fix arrives</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">renameSession accepts name with exactly 100 chars</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">renameSession calls DAO updateTrackName with trimmed name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">renameSession rejects empty name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.425</td></tr>
+<tr><td class="mono">renameSession rejects name longer than 100 chars</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">startGpsWarmUp begins acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">the ViewModel cannot end the warm-up on Home&#x27;s behalf</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">warm-up is skipped without location permission</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+</table></div></details>
+<details><summary>LapDetectionRealSessionTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">theBestLapIsTheFastestOfTheFour</td><td><span class="tag PASS">PASS</span></td><td class="num">0.078</td></tr>
+<tr><td class="mono">theDetectedLapTimesMatchTheLapsThatWereActuallyDriven</td><td><span class="tag PASS">PASS</span></td><td class="num">0.145</td></tr>
+<tr><td class="mono">theDriverFiveStartLineCrossingsAreDetectedAsFourLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
+<tr><td class="mono">theFixtureIsTheSessionFromIncident13</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+</table></div></details>
+<details><summary>LapDiagnosticsWriterTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">an unwritable location does not fail the session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.080</td></tr>
+<tr><td class="mono">is written beside the telemetry, not over it</td><td><span class="tag PASS">PASS</span></td><td class="num">0.055</td></tr>
+<tr><td class="mono">nothing is written when detection never ran</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">reports how nearly parallel the captured line was to the direction of travel</td><td><span class="tag PASS">PASS</span></td><td class="num">0.022</td></tr>
+<tr><td class="mono">reports the angle even when nothing crossed at all</td><td><span class="tag PASS">PASS</span></td><td class="num">0.020</td></tr>
+<tr><td class="mono">the written file names the session and the outcome</td><td><span class="tag PASS">PASS</span></td><td class="num">0.041</td></tr>
+</table></div></details>
+<details><summary>LocalLapDetectorGuardsTest <span class='note'>— 12 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aCompletelyEmptyLineIsRejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">aLineCapturedAcrossTheTrackDetectsTheSameLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.022</td></tr>
+<tr><td class="mono">aLineCapturedAlongTheDirectionOfTravelStillDetectsLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">aLineOnTheGreenwichMeridianIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">aLineWithAnEndpointAtNullIslandIsRejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">aLineWithBothEndpointsSetIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">aStartFinishOnACornerCountsOnePassPerLapRatherThanTwo</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
+<tr><td class="mono">crossingTimesAreInterpolatedRatherThanSnappedToASample</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
+<tr><td class="mono">distanceTravelledSurvivesARejectedCandidate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
+<tr><td class="mono">everyCrossingRecordsHowFarToTheSideTheCarPassed</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
+<tr><td class="mono">theDiagnosticsNameTheIncident13FailureDirectly</td><td><span class="tag PASS">PASS</span></td><td class="num">0.016</td></tr>
+<tr><td class="mono">theSyntheticCircuitIsTheShapeTheseTestsAssume</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>LocationWarmUpTest <span class='note'>— 18 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a new warm-up measures from its own subscribe</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">coarse fix stays acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">first fix and accurate fix are recorded separately</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">first fix time is recorded</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">fix at the threshold is ready</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">idle ceiling releases the chip</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">milestones are recorded once, not on every fix</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">no metrics are recorded before any fix arrives</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
+<tr><td class="mono">readiness degrades again if accuracy worsens</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">readiness is observable as a stream</td><td><span class="tag PASS">PASS</span></td><td class="num">0.087</td></tr>
+<tr><td class="mono">repeated start does not resubscribe</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">start refreshes the ceiling</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">start subscribes and reports acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">start without permission does nothing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">stop before start is harmless</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">stop releases the chip</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">warm-up can be restarted after the ceiling fires</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">warm-up survives right up to the ceiling</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+</table></div></details>
+<details><summary>OfflineCoachingEngineTest <span class='note'>— 30 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">at least 1 insight is positive even in poor session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">at least 2 of 3 insights have positive tone - good session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">best lap insight contains Fastest keyword</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">best lap insight identifies correct lap number</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">best lap insight identifies strongest sector</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">best lap insight shows time gained in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">consistency insight includes variation in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">consistency insight shows Excellent for high consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">consistency insight shows Solid for moderate consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
+<tr><td class="mono">consistency insight shows constructive for poor consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">consistency insight uses within not vary by</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">findTopSpeed can read temp file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">findTopSpeed returns null for missing file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">generateInsights returns 3 insights without telemetry file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">generateInsights returns 4 insights with telemetry file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.088</td></tr>
+<tr><td class="mono">generateInsights returns empty list when no laps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">generateInsights returns empty list when only 1 lap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">insights are returned in correct order</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">sector focus correctly identifies S1 as weakest</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">sector focus correctly identifies S3 as weakest</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">sector focus identifies weakest sector</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">sector focus shows All Sectors Strong when balanced</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">sector focus shows time lost in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">top speed filters out GPS noise above 350 kmh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">top speed has rocket emoji in headline</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">top speed insight identifies correct lap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">top speed insight shows correct speed in kmh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">zero sectors - best lap shows lap-level insight without sector mention</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">zero sectors - no 0ms quicker text appears</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">zero sectors - sector focus shows Coming Soon upsell</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>OneTapStartFinishCaptureTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a single captured point yields the same laps as the two-point line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.024</td></tr>
+<tr><td class="mono">swapping the two captured points changes nothing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.026</td></tr>
+</table></div></details>
+<details><summary>ProfileViewModelTest <span class='note'>— 11 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a missing telemetry file does not abort the clear</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">an invalid rename is rejected and leaves the stored name intact</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">an unreadable profile falls back to a neutral label</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">clearing user data clears every stored preference</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">clearing user data deletes the recorded telemetry files</td><td><span class="tag PASS">PASS</span></td><td class="num">0.178</td></tr>
+<tr><td class="mono">clearing user data returns the driver to onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">file paths are read before the tables are cleared</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
+<tr><td class="mono">renaming never touches sessions or the database</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">renaming persists the new name and refreshes the initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">renaming reports success to the driver</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">the stored driver name is displayed with its initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+</table></div></details>
+<details><summary>SessionAnalysisGuardsTest <span class='note'>— 9 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aDeletedTelemetryFileProducesAnEmptyAnalysisRatherThanThrowing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+<tr><td class="mono">aLapWindowThatDoesNotOverlapTheTelemetryFallsBackToTheWholeSession</td><td><span class="tag PASS">PASS</span></td><td class="num">0.091</td></tr>
+<tr><td class="mono">aMissingTelemetryFileYieldsNoSamples</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">aSessionThatNeverMovedHasNoCornersAndNoBraking</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">aSessionWithASingleSampleIsEmpty</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">aSessionWithNoSamplesIsEmptyRatherThanAnError</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">samplesOutOfOrderAreSortedBeforeAnalysis</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">samplesWithoutPositionOrTimeAreDiscarded</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">theMedianSampleIntervalIgnoresGapsInTheRecording</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+</table></div></details>
+<details><summary>SessionAnalysisProcessorTest <span class='note'>— 10 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aChosenLapOverridesTheBestLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.047</td></tr>
+<tr><td class="mono">aParkedCarIsNotReportedAsCornering</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
+<tr><td class="mono">brakingZonesShedSpeedAndReportPlausibleG</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
+<tr><td class="mono">eachBrakingZoneIsAttributedToTheCornerItLeadsInto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.056</td></tr>
+<tr><td class="mono">sessionStatisticsMatchTheRecordedDrive</td><td><span class="tag PASS">PASS</span></td><td class="num">0.042</td></tr>
+<tr><td class="mono">theApexIsTheSlowestPointOfEachCorner</td><td><span class="tag PASS">PASS</span></td><td class="num">0.049</td></tr>
+<tr><td class="mono">theBestLapIsUsedAsTheReferenceWhenNoneIsChosen</td><td><span class="tag PASS">PASS</span></td><td class="num">0.059</td></tr>
+<tr><td class="mono">theHeaderLineIsNotMistakenForATelemetrySample</td><td><span class="tag PASS">PASS</span></td><td class="num">0.030</td></tr>
+<tr><td class="mono">theKartTrackCornersAreDetectedAndNumberedInPassingOrder</td><td><span class="tag PASS">PASS</span></td><td class="num">0.050</td></tr>
+<tr><td class="mono">theSessionSpeedTraceCoversTheWholeSessionRegardlessOfReferenceLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.049</td></tr>
+</table></div></details>
+<details><summary>SessionAnalysisRateInvarianceTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">sessionStatisticsAgreeAtBothRates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.067</td></tr>
+<tr><td class="mono">theRenderedTrackStaysWithinItsBudgetAsTheSampleRateRises</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
+<tr><td class="mono">theSameBrakingZonesAreFoundAtOneHertzAndAtTenHertz</td><td><span class="tag PASS">PASS</span></td><td class="num">0.053</td></tr>
+<tr><td class="mono">theSameCornersAreFoundAtOneHertzAndAtTenHertz</td><td><span class="tag PASS">PASS</span></td><td class="num">0.034</td></tr>
+</table></div></details>
+<details><summary>SessionShareBuilderTest <span class='note'>— 14 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aDirectoryMasqueradingAsTheTelemetryFileIsReportedNotThrown</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">buildingABundlePrunesStaleArtifactsFirst</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+<tr><td class="mono">bundleContainsTelemetryAndMetadataEntries</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">bundleIsWrittenIntoTheShareCacheEvenWhenItDoesNotExistYet</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">bundleNameIsFilesystemSafeEvenForAwkwardTrackNames</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">exportDoesNotModifyTheSourceTelemetryFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">exportSucceedsFromAReadOnlySourceFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">exportWritesNothingOutsideTheShareCache</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">metadataCarriesTheDiagnosticContextNeededToInterpretTheTelemetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">missingTelemetryFileIsReportedRatherThanThrown</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">pruneDeletesStaleArtifactsAndKeepsFreshOnes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">pruneDoesNotReachOutsideTheShareCacheDirectory</td><td><span class="tag PASS">PASS</span></td><td class="num">0.039</td></tr>
+<tr><td class="mono">pruneIgnoresFilesItDidNotCreate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">telemetryEntryIsAByteForByteCopyOfTheSource</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+</table></div></details>
+<details><summary>SplashViewModelTest <span class='note'>— 26 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a failed launch count write does not block startup</td><td><span class="tag PASS">PASS</span></td><td class="num">0.012</td></tr>
+<tr><td class="mono">completion flag without a name routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">destination is withheld until the minimum display time has elapsed</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">driver profile does not skip onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">first launch is held long enough to read the manifesto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">fresh install routes to onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.062</td></tr>
+<tr><td class="mono">hint invites continuation during the introduction and skipping afterwards</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">hold falls back to the start clock when the handoff is never reported</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
+<tr><td class="mono">hold is measured from the handoff, not from start</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">initialisation timeout falls back to onboarding without blocking</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">introduction is spent after the configured number of launches</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+<tr><td class="mono">launch count is recorded during the introduction</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">launch count stops being written once the introduction is spent</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">name without the completion flag routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">onboarded with a driver profile routes to home</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">onboarded without a driver profile routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">only the first reported handoff anchors the hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">pending upload count is captured during warm up</td><td><span class="tag PASS">PASS</span></td><td class="num">0.116</td></tr>
+<tr><td class="mono">progress never regresses across the startup sequence</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">progress reaches one hundred when initialisation completes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">returning user is not charged the introduction hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
+<tr><td class="mono">skip shortens the minimum display hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">slow database warm up does not change the destination</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">start is idempotent across configuration changes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">successful initialisation does not report a fallback</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">tap cuts the introduction short</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+</table></div></details>
+<details><summary>TelemetryFileWriterIntegrationTest <span class='note'>— 5 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">gpsCoordinatesProgressRealisticallDuringDrive</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">highFrequencyWritesMaintainValidJsonlFormat</td><td><span class="tag PASS">PASS</span></td><td class="num">0.172</td></tr>
+<tr><td class="mono">oneMinuteRecordingProducesValidJsonlFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.050</td></tr>
+<tr><td class="mono">periodicFlushPersistsDataBeforeClose</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
+<tr><td class="mono">unflushedDataMayBeLostOnCrash</td><td><span class="tag PASS">PASS</span></td><td class="num">0.016</td></tr>
+</table></div></details>
+<details><summary>TelemetryFileWriterTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">benchmark 18000 samples writes in under 100ms</td><td><span class="tag PASS">PASS</span></td><td class="num">0.538</td></tr>
+<tr><td class="mono">empty file returns empty list</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">malformed line does not crash readAll</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">non-existent file returns empty list</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">sample values are preserved through serialization</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">write and read round-trip with 100 samples</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+</table></div></details>
+<details><summary>TelemetryUploadWorkerMockWebServerTest <span class='note'>— 8 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">clientError400ReturnsFailureNoRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
+<tr><td class="mono">clientError401ReturnsFailureNoRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.033</td></tr>
+<tr><td class="mono">connectionTimeoutTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">1.039</td></tr>
+<tr><td class="mono">multipleRetryAttemptsWithEventualSuccess</td><td><span class="tag PASS">PASS</span></td><td class="num">0.079</td></tr>
+<tr><td class="mono">requestContainsCorrectMultipartData</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
+<tr><td class="mono">serverError500TriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.028</td></tr>
+<tr><td class="mono">serverError503TriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">1.953</td></tr>
+<tr><td class="mono">successfulUploadReturnsSuccess</td><td><span class="tag PASS">PASS</span></td><td class="num">0.036</td></tr>
+</table></div></details>
+<details><summary>TelemetryUploadWorkerTest <span class='note'>— 8 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">alreadyUploadedSessionReturnsSuccessWithoutApiCall</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">clientErrorReturnsFailureWithoutRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.219</td></tr>
+<tr><td class="mono">invalidSessionIdReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">missingTelemetryFileReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">networkExceptionTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
+<tr><td class="mono">serverErrorTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">sessionNotFoundReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.041</td></tr>
+<tr><td class="mono">successfulUploadTransitionsStatusToDone</td><td><span class="tag PASS">PASS</span></td><td class="num">0.012</td></tr>
+</table></div></details>
+<details><summary>TrackPathProjectionTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">brakingPointsFallInsideBrakingZones</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
+<tr><td class="mono">everyCornerHasAMarkerOnTheOutline</td><td><span class="tag PASS">PASS</span></td><td class="num">0.023</td></tr>
+<tr><td class="mono">everyDrawnPointIsInsideTheUnitSquare</td><td><span class="tag PASS">PASS</span></td><td class="num">0.030</td></tr>
+<tr><td class="mono">theShapeOfTheTrackIsNotStretched</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
+<tr><td class="mono">theStartFinishLineIsMarkedWhereItWasCaptured</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
+<tr><td class="mono">thinningKeepsBothEndsOfTheLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
+</table></div></details>
+<details><summary>TrackSetupViewModelTest <span class='note'>— 11 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">clear resets all state</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">getStartLineCoords returns coords when valid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">getStartLineCoords returns null when invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">initial state has no points and is invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">re-capturing pointA clears pointB</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">setPointA captures location</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">setPointB calculates distance and validates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">setPointB with too short distance is invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.120</td></tr>
+<tr><td class="mono">updateGpsStatus marks GPS not ready with few satellites</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">updateGpsStatus marks GPS not ready with poor accuracy</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">updateGpsStatus marks GPS ready when accuracy and satellites are good</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<h3>L2 — 19 classes</h3>
+<details><summary>AboutScreenTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aboutIsReachableFromTheProfileScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">1.532</td></tr>
+<tr><td class="mono">aboutScreenReportsTheBuildIdentityFromBuildConfig</td><td><span class="tag PASS">PASS</span></td><td class="num">0.861</td></tr>
+<tr><td class="mono">aboutScreenShowsTheBrandIdentityAndManifesto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.831</td></tr>
+<tr><td class="mono">reportedVersionMatchesTheInstalledPackage</td><td><span class="tag PASS">PASS</span></td><td class="num">0.055</td></tr>
+</table></div></details>
+<details><summary>AnalysisTabTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">analysisTabIsPresentOnTheSessionResultScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">1.008</td></tr>
+<tr><td class="mono">analysisTabRendersStatsMapAndDerivedTables</td><td><span class="tag PASS">PASS</span></td><td class="num">2.530</td></tr>
+<tr><td class="mono">missingTelemetryShowsTheEmptyStateInsteadOfCrashing</td><td><span class="tag PASS">PASS</span></td><td class="num">2.288</td></tr>
+<tr><td class="mono">pickingADifferentLapRebuildsTheReferenceView</td><td><span class="tag PASS">PASS</span></td><td class="num">3.707</td></tr>
+</table></div></details>
+<details><summary>DriverNameFlowTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aSavedDriverGoesStraightToHomeOnRelaunch</td><td><span class="tag PASS">PASS</span></td><td class="num">5.587</td></tr>
+<tr><td class="mono">anOnboardedDriverWithoutAProfileIsAskedToName</td><td><span class="tag PASS">PASS</span></td><td class="num">1.912</td></tr>
+<tr><td class="mono">namingTheDriverOpensTheApp</td><td><span class="tag PASS">PASS</span></td><td class="num">2.734</td></tr>
+<tr><td class="mono">surroundingWhitespaceIsTrimmedFromTheSavedName</td><td><span class="tag PASS">PASS</span></td><td class="num">3.192</td></tr>
+<tr><td class="mono">theCallToActionIsDisabledUntilTheNameIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">2.170</td></tr>
+<tr><td class="mono">theDemoModeShortcutIsGone</td><td><span class="tag PASS">PASS</span></td><td class="num">2.619</td></tr>
+<tr><td class="mono">theSavedNameIsShownOnTheProfileScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">4.184</td></tr>
+</table></div></details>
+<details><summary>EndToEndTest <span class='note'>— @Ignore — 5 test(s) never ran</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.087</td></tr>
+</table></div></details>
+<details><summary>HomeGpsChipTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">backgroundingTheAppReleasesTheChip</td><td><span class="tag PASS">PASS</span></td><td class="num">3.724</td></tr>
+<tr><td class="mono">chipReportsAcquiringUntilAFixIsAccurateEnough</td><td><span class="tag PASS">PASS</span></td><td class="num">3.133</td></tr>
+<tr><td class="mono">chipReportsReadyOnceTheFixIsUsable</td><td><span class="tag PASS">PASS</span></td><td class="num">2.084</td></tr>
+<tr><td class="mono">homeGoingAwayDoesNotReleaseTheChip</td><td><span class="tag PASS">PASS</span></td><td class="num">5.681</td></tr>
+<tr><td class="mono">homeSubscribesToLocationWithoutBeingAsked</td><td><span class="tag PASS">PASS</span></td><td class="num">2.225</td></tr>
+<tr><td class="mono">readinessDegradesIfAccuracyWorsens</td><td><span class="tag PASS">PASS</span></td><td class="num">2.240</td></tr>
+<tr><td class="mono">returningToTheAppWarmsUpAgain</td><td><span class="tag PASS">PASS</span></td><td class="num">2.960</td></tr>
+</table></div></details>
+<details><summary>HomeHeroTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">collapsingTheHeroRevealsThePinnedBrandBar</td><td><span class="tag PASS">PASS</span></td><td class="num">2.135</td></tr>
+<tr><td class="mono">expandedHeroShowsTheBrandAndHidesThePinnedBar</td><td><span class="tag PASS">PASS</span></td><td class="num">1.863</td></tr>
+<tr><td class="mono">heroIsConfiguredToCollapseOnScroll</td><td><span class="tag PASS">PASS</span></td><td class="num">2.067</td></tr>
+<tr><td class="mono">startSessionRemainsVisibleAcrossTheWholeCollapse</td><td><span class="tag PASS">PASS</span></td><td class="num">2.214</td></tr>
+</table></div></details>
+<details><summary>RecordingFragmentTest <span class='note'>— @Ignore — 7 test(s) never ran</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.012</td></tr>
+</table></div></details>
+<details><summary>SessionShareTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">exportingLeavesTheRecordedSessionUntouched</td><td><span class="tag PASS">PASS</span></td><td class="num">1.348</td></tr>
+<tr><td class="mono">longPressIsConsumedSoNoTooltipIsShown</td><td><span class="tag PASS">PASS</span></td><td class="num">1.303</td></tr>
+<tr><td class="mono">longPressingShareExportsTheTelemetryBundle</td><td><span class="tag PASS">PASS</span></td><td class="num">1.227</td></tr>
+<tr><td class="mono">missingTelemetryFileSurfacesAnErrorInsteadOfFailingSilently</td><td><span class="tag PASS">PASS</span></td><td class="num">1.265</td></tr>
+<tr><td class="mono">shareActionIsPresentOnTheSessionResultToolbar</td><td><span class="tag PASS">PASS</span></td><td class="num">1.954</td></tr>
+<tr><td class="mono">tappingShareSendsTheSessionCardImage</td><td><span class="tag PASS">PASS</span></td><td class="num">1.479</td></tr>
+</table></div></details>
+<details><summary>SplashFallbackTest <span class='note'>— 3 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">startupNeverStrandsTheUserOnTheLoadingScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">3.913</td></tr>
+<tr><td class="mono">unreadableStartupStateFallsBackToOnboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">3.747</td></tr>
+<tr><td class="mono">unreadableStartupStateNeverFallsBackToLogin</td><td><span class="tag PASS">PASS</span></td><td class="num">3.853</td></tr>
+</table></div></details>
+<details><summary>SplashIntroductionTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">firstLaunchHoldsTheManifestoOnScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">4.725</td></tr>
+<tr><td class="mono">firstLaunchInvitesTheUserToContinueRatherThanToSkip</td><td><span class="tag PASS">PASS</span></td><td class="num">2.647</td></tr>
+</table></div></details>
+<details><summary>SplashMainThreadTest <span class='note'>— 3 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">loadingScreenRendersWhileStartupStateIsUnavailable</td><td><span class="tag PASS">PASS</span></td><td class="num">1.472</td></tr>
+<tr><td class="mono">mainThreadStaysResponsiveWhileStartupStateIsUnavailable</td><td><span class="tag PASS">PASS</span></td><td class="num">4.398</td></tr>
+<tr><td class="mono">stalledStartupHoldsTheLoadingScreenRatherThanNavigatingBlindly</td><td><span class="tag PASS">PASS</span></td><td class="num">4.831</td></tr>
+</table></div></details>
+<details><summary>SplashReturningUserTest <span class='note'>— 1 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">returningUserIsNotHeldByTheIntroductionWindow</td><td><span class="tag PASS">PASS</span></td><td class="num">1.703</td></tr>
+</table></div></details>
+<details><summary>SplashScreenTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">footerMetricsAreNotClippedByTheSystemBars</td><td><span class="tag PASS">PASS</span></td><td class="num">1.323</td></tr>
+<tr><td class="mono">loadingScreenDisplaysEveryBrandElement</td><td><span class="tag PASS">PASS</span></td><td class="num">1.828</td></tr>
+<tr><td class="mono">loadingScreenRemainsWhileTheBrandHoldIsPending</td><td><span class="tag PASS">PASS</span></td><td class="num">4.841</td></tr>
+<tr><td class="mono">progressIndicatorIsDeterminateAndAdvances</td><td><span class="tag PASS">PASS</span></td><td class="num">1.435</td></tr>
+<tr><td class="mono">progressLabelMatchesTheIndicatorValue</td><td><span class="tag PASS">PASS</span></td><td class="num">2.405</td></tr>
+<tr><td class="mono">tapAffordanceIsVisibleNotJustAnAccessibilityLabel</td><td><span class="tag PASS">PASS</span></td><td class="num">1.294</td></tr>
+<tr><td class="mono">tappingTheLoadingScreenSkipsTheBrandHold</td><td><span class="tag PASS">PASS</span></td><td class="num">1.866</td></tr>
+</table></div></details>
+<details><summary>StartLineFreshnessTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aStaleFixDoesNotUnlockStartLineCapture</td><td><span class="tag PASS">PASS</span></td><td class="num">3.630</td></tr>
+<tr><td class="mono">captureUnlocksAsSoonAsAFreshFixArrives</td><td><span class="tag PASS">PASS</span></td><td class="num">3.156</td></tr>
+</table></div></details>
+<details><summary>StartupBackStackTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">loadingScreenIsPoppedOffTheBackStack</td><td><span class="tag PASS">PASS</span></td><td class="num">4.279</td></tr>
+<tr><td class="mono">seededSessionLandsOnHome</td><td><span class="tag PASS">PASS</span></td><td class="num">1.654</td></tr>
+</table></div></details>
+<details><summary>TelemetryForegroundServiceTest <span class='note'>— @Ignore — 6 test(s) never ran</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.009</td></tr>
+</table></div></details>
+<details><summary>TrackSetupFragmentTest <span class='note'>— @Ignore — 11 test(s) never ran</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.002</td></tr>
+</table></div></details>
+<details><summary>TrackSetupResubscribeTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">captureBecomesAvailableOnceTheFixIsAccurateEnough</td><td><span class="tag PASS">PASS</span></td><td class="num">2.718</td></tr>
+<tr><td class="mono">captureStillWorksAfterAStopStartCycle</td><td><span class="tag PASS">PASS</span></td><td class="num">4.188</td></tr>
+<tr><td class="mono">locationUpdatesResumeAfterTheScreenStops</td><td><span class="tag PASS">PASS</span></td><td class="num">3.345</td></tr>
+<tr><td class="mono">trackSetupSubscribesOnArrival</td><td><span class="tag PASS">PASS</span></td><td class="num">2.130</td></tr>
+</table></div></details>
+<details><summary>WarmUpHandoverTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">captureIsAvailableOnArrivalWhenGpsWasAlreadyReady</td><td><span class="tag PASS">PASS</span></td><td class="num">6.167</td></tr>
+<tr><td class="mono">gpsSubscriptionSurvivesTheHandoverFromHomeToTrackSetup</td><td><span class="tag PASS">PASS</span></td><td class="num">5.375</td></tr>
+<tr><td class="mono">warmUpStopsWhenTheAppLeavesTheForeground</td><td><span class="tag PASS">PASS</span></td><td class="num">5.776</td></tr>
+<tr><td class="mono">warmUpSurvivesAConfigurationChange</td><td><span class="tag PASS">PASS</span></td><td class="num">7.565</td></tr>
+</table></div></details>
+<h2>7. Manual acceptance tests (L4)</h2>
+<div class="verdict warn"><b>These tests are not automated and were not run.</b><br>A human must execute them with a car on a circuit and record the result. Nothing in sections 1 to 6 covers what they check: whether the app tells the truth about a real drive.</div>
+<p class="note">133 checks across 9 checklists in <code>05_tests/L4_SYS5_acceptance/</code>.</p>
+<details><summary>10_PRE_TRACK_DAY_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">PRE-01</td><td>Backend Health Check</td></tr>
+<tr><td class="mono">PRE-02</td><td>Firebase Authentication Test</td></tr>
+<tr><td class="mono">PRE-03</td><td>Permission Flow Test</td></tr>
+<tr><td class="mono">PRE-04</td><td>Home Screen Load Test</td></tr>
+<tr><td class="mono">PRE-05</td><td>Start Session Flow Test (Indoor/Simulated)</td></tr>
+<tr><td class="mono">PRE-06</td><td>Session Upload Test</td></tr>
+<tr><td class="mono">PRE-07</td><td>Session Result Tabs Test</td></tr>
+<tr><td class="mono">PRE-08</td><td>Share Functionality Test</td></tr>
+<tr><td class="mono">PRE-09</td><td>Profile and Sign Out Test</td></tr>
+<tr><td class="mono">PRE-10</td><td>Error Handling Test</td></tr>
+</table></div></details>
+<details><summary>20_ONBOARDING_TESTS.md <span class='note'>— 17 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">BRD-01</td><td>Helmet Emblem Renders Correctly at All Sizes</td></tr>
+<tr><td class="mono">BRD-02</td><td>Engineering Manifesto Is Actually Readable</td></tr>
+<tr><td class="mono">BRD-03</td><td>About Screen Reports the Build</td></tr>
+<tr><td class="mono">ONB-01</td><td>First Launch Shows Onboarding</td></tr>
+<tr><td class="mono">ONB-02</td><td>Onboarding Page Content</td></tr>
+<tr><td class="mono">ONB-03</td><td>Permission Grant — All Accepted</td></tr>
+<tr><td class="mono">ONB-04</td><td>Permission Grant — Location Denied</td></tr>
+<tr><td class="mono">ONB-05</td><td>Permission Grant — Skip After Denial</td></tr>
+<tr><td class="mono">ONB-06</td><td>Onboarding Persistence</td></tr>
+<tr><td class="mono">REG-01</td><td>Registration Form Validation</td></tr>
+<tr><td class="mono">REG-02</td><td>Successful Registration</td></tr>
+<tr><td class="mono">REG-03</td><td>Duplicate Email Registration</td></tr>
+<tr><td class="mono">LOG-01</td><td>Login Form Validation</td></tr>
+<tr><td class="mono">LOG-02</td><td>Successful Login</td></tr>
+<tr><td class="mono">LOG-03</td><td>Failed Login — Wrong Password</td></tr>
+<tr><td class="mono">LOG-04</td><td>Failed Login — Non-existent User</td></tr>
+<tr><td class="mono">LOG-05</td><td>Session Persistence</td></tr>
+</table></div></details>
+<details><summary>30_TRACK_SETUP_TESTS.md <span class='note'>— 9 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">TS-00</td><td>GPS Warm-Up on Home</td></tr>
+<tr><td class="mono">TS-01</td><td>Access Track Setup Screen</td></tr>
+<tr><td class="mono">TS-02</td><td>GPS Status Display</td></tr>
+<tr><td class="mono">TS-03</td><td>Capture Point A</td></tr>
+<tr><td class="mono">TS-04</td><td>Capture Point B and Line Width</td></tr>
+<tr><td class="mono">TS-05</td><td>Line Distance Validation — Too Close</td></tr>
+<tr><td class="mono">TS-06</td><td>Clear Button</td></tr>
+<tr><td class="mono">TS-07</td><td>Valid Line Distance and Start Recording</td></tr>
+<tr><td class="mono">TS-08</td><td>Start/Finish Coordinates Storage</td></tr>
+</table></div></details>
+<details><summary>40_SESSION_RECORDING_TESTS.md <span class='note'>— 16 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">REC-01</td><td>Start Recording Screen</td></tr>
+<tr><td class="mono">REC-02</td><td>Elapsed Time Counter</td></tr>
+<tr><td class="mono">REC-03</td><td>GPS Status Indicator</td></tr>
+<tr><td class="mono">REC-04</td><td>REC Badge Animation</td></tr>
+<tr><td class="mono">REC-05</td><td>Screen Stays On</td></tr>
+<tr><td class="mono">REC-06</td><td>Stop Recording</td></tr>
+<tr><td class="mono">REC-07</td><td>Permission Denied Handling</td></tr>
+<tr><td class="mono">SVC-01</td><td>Foreground Service Notification</td></tr>
+<tr><td class="mono">SVC-02</td><td>GPS Signal Lost Notification</td></tr>
+<tr><td class="mono">SVC-03</td><td>Background Recording</td></tr>
+<tr><td class="mono">SVC-04</td><td>Recording Survives Process Kill</td></tr>
+<tr><td class="mono">TEL-01</td><td>GPS Data Quality at Track</td></tr>
+<tr><td class="mono">TEL-02</td><td>10 Hz GPS Sample Rate</td></tr>
+<tr><td class="mono">TEL-03</td><td>IMU Data Capture</td></tr>
+<tr><td class="mono">TEL-04</td><td>GPS Accuracy Warning</td></tr>
+<tr><td class="mono">TEL-05</td><td>Long Session Stability (30 minutes)</td></tr>
+</table></div></details>
+<details><summary>50_LAP_DETECTION_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">LD-01</td><td>Basic Lap Detection</td></tr>
+<tr><td class="mono">LD-02</td><td>Out-Lap Ignored (10-Second Skip)</td></tr>
+<tr><td class="mono">LD-03</td><td>Minimum Lap Time Guard (20 seconds)</td></tr>
+<tr><td class="mono">LD-04</td><td>Last Incomplete Lap Discarded</td></tr>
+<tr><td class="mono">LD-05</td><td>Insufficient Samples Handling</td></tr>
+<tr><td class="mono">LD-06</td><td>Fewer Than 2 Laps Handling</td></tr>
+<tr><td class="mono">LD-07</td><td>Sector Computation</td></tr>
+<tr><td class="mono">LD-08</td><td>Best Lap Identification</td></tr>
+<tr><td class="mono">LD-09</td><td>Processing Status Progression</td></tr>
+<tr><td class="mono">LD-10</td><td>Processing Time Performance</td></tr>
+</table></div></details>
+<details><summary>60_SESSION_RESULTS_TESTS.md <span class='note'>— 23 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">RES-01</td><td>Session Result Screen Layout</td></tr>
+<tr><td class="mono">RES-02</td><td>Tab Navigation</td></tr>
+<tr><td class="mono">LAP-01</td><td>Lap List Display</td></tr>
+<tr><td class="mono">LAP-02</td><td>Best Lap Styling</td></tr>
+<tr><td class="mono">LAP-03</td><td>Delta Badge Colors</td></tr>
+<tr><td class="mono">LAP-04</td><td>Lap Card Tap Navigation</td></tr>
+<tr><td class="mono">DET-01</td><td>Lap Detail Layout</td></tr>
+<tr><td class="mono">DET-02</td><td>Sector Comparison</td></tr>
+<tr><td class="mono">DET-03</td><td>Monospace Formatting</td></tr>
+<tr><td class="mono">COACH-01</td><td>Consistency Score Display</td></tr>
+<tr><td class="mono">COACH-02</td><td>Coaching Insight Cards</td></tr>
+<tr><td class="mono">COACH-03</td><td>Processing In Progress UI</td></tr>
+<tr><td class="mono">COACH-04</td><td>Failed Processing UI</td></tr>
+<tr><td class="mono">CHART-01</td><td>Speed Chart Display</td></tr>
+<tr><td class="mono">CHART-02</td><td>Lap Line Colors</td></tr>
+<tr><td class="mono">CHART-03</td><td>Speed Unit Conversion</td></tr>
+<tr><td class="mono">CHART-04</td><td>Chart Interactions</td></tr>
+<tr><td class="mono">ANA-01</td><td>Analysis Tab Layout</td></tr>
+<tr><td class="mono">ANA-02</td><td>Track Map Fidelity</td></tr>
+<tr><td class="mono">ANA-03</td><td>Corner Detection Plausibility</td></tr>
+<tr><td class="mono">ANA-04</td><td>Braking Zones</td></tr>
+<tr><td class="mono">ANA-05</td><td>Reference Lap Selection</td></tr>
+<tr><td class="mono">ANA-06</td><td>Degraded Sessions</td></tr>
+</table></div></details>
+<details><summary>70_AI_COACHING_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">AI-01</td><td>Coaching Trigger After Lap Detection</td></tr>
+<tr><td class="mono">AI-02</td><td>Coaching Insight Count</td></tr>
+<tr><td class="mono">AI-03</td><td>Insight Headline Quality</td></tr>
+<tr><td class="mono">AI-04</td><td>Insight Detail Quality</td></tr>
+<tr><td class="mono">AI-05</td><td>Insights Reference Session Data</td></tr>
+<tr><td class="mono">AI-06</td><td>Consistency Score Accuracy</td></tr>
+<tr><td class="mono">AI-07</td><td>Coaching Without Enough Laps</td></tr>
+<tr><td class="mono">AI-08</td><td>Coaching API Failure Handling</td></tr>
+<tr><td class="mono">AI-09</td><td>Coaching Insights Persistence</td></tr>
+<tr><td class="mono">AI-10</td><td>Multiple Sessions Different Insights</td></tr>
+</table></div></details>
+<details><summary>80_SHARE_AND_PROFILE_TESTS.md <span class='note'>— 20 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">SHARE-01</td><td>Share Icon Visibility</td></tr>
+<tr><td class="mono">SHARE-02</td><td>Share Card Generation</td></tr>
+<tr><td class="mono">SHARE-03</td><td>Share Card Content</td></tr>
+<tr><td class="mono">SHARE-04</td><td>Share Card Typography</td></tr>
+<tr><td class="mono">SHARE-05</td><td>Share to Different Targets</td></tr>
+<tr><td class="mono">SHARE-06</td><td>FileProvider Configuration</td></tr>
+<tr><td class="mono">SHARE-07</td><td>Telemetry Export Gesture</td></tr>
+<tr><td class="mono">SHARE-08</td><td>Telemetry Bundle Contents</td></tr>
+<tr><td class="mono">SHARE-09</td><td>Export Failure Is Visible</td></tr>
+<tr><td class="mono">SHARE-10</td><td>Sharing Does Not Alter Recorded Data</td></tr>
+<tr><td class="mono">PROF-01</td><td>Profile Screen Access</td></tr>
+<tr><td class="mono">PROF-02</td><td>Avatar Display</td></tr>
+<tr><td class="mono">PROF-03</td><td>User Information Display</td></tr>
+<tr><td class="mono">PROF-04</td><td>Statistics Row</td></tr>
+<tr><td class="mono">PROF-05</td><td>Statistics Accuracy</td></tr>
+<tr><td class="mono">SIGN-01</td><td>Sign Out Button Visibility</td></tr>
+<tr><td class="mono">SIGN-02</td><td>Sign Out Execution</td></tr>
+<tr><td class="mono">SIGN-03</td><td>Local Data Cleared on Sign Out</td></tr>
+<tr><td class="mono">SIGN-04</td><td>Sign Out and Re-login</td></tr>
+<tr><td class="mono">SIGN-05</td><td>Sign Out During Recording</td></tr>
+</table></div></details>
+<details><summary>90_ERROR_HANDLING_TESTS.md <span class='note'>— 18 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">NET-01</td><td>No Network on Login</td></tr>
+<tr><td class="mono">NET-02</td><td>No Network on Registration</td></tr>
+<tr><td class="mono">NET-03</td><td>Network Loss During Session Upload</td></tr>
+<tr><td class="mono">NET-04</td><td>Backend Unavailable</td></tr>
+<tr><td class="mono">NET-05</td><td>Slow Network Handling</td></tr>
+<tr><td class="mono">AUTH-01</td><td>Session Expired Handling</td></tr>
+<tr><td class="mono">AUTH-02</td><td>Token Refresh Transparency</td></tr>
+<tr><td class="mono">GPS-01</td><td>GPS Not Available</td></tr>
+<tr><td class="mono">GPS-02</td><td>GPS Signal Lost During Recording</td></tr>
+<tr><td class="mono">GPS-03</td><td>Poor GPS Accuracy</td></tr>
+<tr><td class="mono">DATA-01</td><td>Empty Session History</td></tr>
+<tr><td class="mono">DATA-02</td><td>Processing Failed Session</td></tr>
+<tr><td class="mono">DATA-03</td><td>Telemetry File Missing</td></tr>
+<tr><td class="mono">DATA-04</td><td>Stale Upload Banner</td></tr>
+<tr><td class="mono">EDGE-01</td><td>Screen Rotation</td></tr>
+<tr><td class="mono">EDGE-02</td><td>Process Death Recovery</td></tr>
+<tr><td class="mono">EDGE-03</td><td>Low Storage</td></tr>
+<tr><td class="mono">EDGE-04</td><td>Battery Saver Mode</td></tr>
+</table></div></details>
+<footer>
+Generated by <code>generate-html-report.py</code> at 2026-09-10 00:55:40 BST. 
+Every figure is derived from JUnit XML, Kotlin source and <code>05_tests/coverage-map.tsv</code>; none of it is written by hand.
+</footer></div></body></html>

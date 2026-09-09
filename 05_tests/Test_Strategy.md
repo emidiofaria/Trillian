@@ -277,7 +277,10 @@ Configuration in `05_tests/infra/config/`:
 | `stop-emulator.sh` | Graceful emulator shutdown |
 | `run-instrumented.sh` | Run L2 integration tests |
 | `run-all-tests.sh` | Master orchestrator (L1 + L2 + report) |
-| `generate-report.sh` | Generate consolidated test report |
+| `generate-report.sh` | Generate the Markdown test report |
+| `generate-html-report.py` | Generate the HTML test report (evidence + coverage) |
+| `test_generate_html_report.py` | Unit tests for the HTML generator |
+| `package-release.sh` | Package an APK with its test report and release notes |
 
 See `05_tests/infra/README.md` for detailed setup and usage instructions.
 
@@ -285,35 +288,115 @@ See `05_tests/infra/README.md` for detailed setup and usage instructions.
 
 ## 7. Test Reports
 
-Test execution reports are stored in `05_tests/reports/`.
-
-### Report Format
-
-A single consolidated report is generated per test execution:
+Every run writes its own directory under `05_tests/reports/`, so a report is
+always tied to the run that produced it and nothing is overwritten:
 
 ```
 reports/
-├── TEST_REPORT_2026-07-22_18-30-00.md
-├── TEST_REPORT_2026-07-21_14-15-00.md
-└── ...
+└── RUN_20260910_005338/
+    ├── TEST_REPORT.md      Markdown, for reading in the terminal or a diff
+    └── TEST_REPORT.html    Self-contained HTML, for handing to someone else
 ```
 
-Each report contains:
-- Summary table with all ASPICE test levels
-- Pass/fail counts per level
-- Failed test details
-- "NOT EXECUTED" for levels not run
-- Environment information
+### The HTML report
 
-### Generating Reports
+`generate-html-report.py` produces one self-contained page — no JavaScript, no
+external stylesheets, nothing fetched from a network — that answers a single
+question for a reader who has never seen this project: *how is this software
+tested, and how much of it is actually covered?*
+
+Sections, in order:
+
+| # | Section | What it shows |
+|---|---------|---------------|
+| 1 | Results by test level | Declared vs executed per ASPICE level |
+| 2 | How we test | What each level can and cannot prove |
+| 3 | Requirements coverage | Every SRS requirement, expandable to the tests that claim it |
+| 4 | Gaps and caveats | Switched-off classes, unbacked claims, uncovered requirements |
+| 5 | Failures | Every failure in full |
+| 6 | Every automated test | The complete inventory, so nothing above is taken on trust |
+| 7 | Manual acceptance tests | L4, last, with a note that a human must run them |
+
+Everything in it comes from machine-readable evidence. No prose is parsed
+anywhere, because a report that guesses at a document's meaning can overstate
+coverage without anyone noticing:
+
+| Input | Supplies |
+|-------|----------|
+| JUnit XML | What ran, what passed, how long it took |
+| Kotlin source (`@Test` counts) | How many tests are *declared* |
+| `05_tests/coverage-map.tsv` | Which test claims which requirement |
+| `01_requirements/DrivingCoach_SRS_v1.md` | The full requirement list — the denominator |
+| `05_tests/L4_SYS5_acceptance/*.md` | The manual checks only a human can discharge |
+
+**Why declared counts come from the source, not the XML.** Gradle reports a
+class annotated `@Ignore` as a *single* skipped entry, whatever the number of
+tests inside it. Counting the XML alone therefore hides them. Reading the source
+is what makes the difference visible: at the time of writing, 29 L2 tests are
+declared and never run.
+
+### The coverage map
+
+`05_tests/coverage-map.tsv` is the machine-readable claim ledger:
+
+```
+requirement<TAB>test<TAB>note
+UI-01	SplashScreenTest	Brand introduction shows on cold start
+SR-04	TelemetryForegroundServiceTest	Foreground notification
+LD-04	GeoUtilsTest	Line intersection
+AS-03	L4:ANA-02	Track map matches the real circuit
+```
+
+The level is deliberately *not* stored: the report derives it from which results
+file the class appears in, so the file cannot claim the wrong level. Each claim
+is resolved against the actual run:
+
+| Mark | Meaning |
+|------|---------|
+| `PASS` | The cited test ran and passed |
+| `FAILED` | The cited test ran and failed |
+| `SKIPPED` | The test exists but did not run — the claim is not backed by evidence |
+| `MISSING` | The cited test was not found — the claim has rotted |
+| `MANUAL` | An L4 claim; only a human at a circuit can discharge it |
+
+`TRACEABILITY_MATRIX.md` remains the human narrative. The TSV is what the report
+believes; drift between the two is detected loudly rather than prevented.
+
+### Generating reports
 
 ```bash
-# Run tests and generate report automatically
+# Run tests; both reports are written into a fresh RUN_ directory
 ./05_tests/infra/scripts/run-all-tests.sh
 
-# Or generate report manually after tests
-./05_tests/infra/scripts/generate-report.sh
+# Regenerate the HTML from results already on disk
+python3 05_tests/infra/scripts/generate-html-report.py --output /tmp/report.html
+
+# Two runs of the generator produce byte-identical output
+python3 05_tests/infra/scripts/generate-html-report.py --source-date "2026-01-01"
 ```
+
+### Releases
+
+After a clean run, the orchestrator offers to package a local release
+(suppress with `--no-prompt`). The result groups the build with the evidence
+for it, so the two cannot be separated:
+
+```
+releases/v2.95-session-analysis/
+├── DrivingCoach-v2.95-session-analysis.apk
+├── TEST_REPORT.html      the tests that were run against this APK
+├── TEST_REPORT.md
+└── RELEASE_NOTES.md      the commits since the previous release
+```
+
+```bash
+./05_tests/infra/scripts/package-release.sh --slug session-analysis
+```
+
+If no test report can be found, the release still gets made but a
+`TEST_REPORT_MISSING.txt` is written into the directory saying so. An APK with
+no evidence beside it is an APK nobody has checked, and that fact is recorded
+rather than left to be assumed.
 
 ---
 

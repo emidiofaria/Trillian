@@ -59,12 +59,54 @@ cd /home/ctw00173_ubuntu/05_AI_DIY/Trillian
 
 ### 1.4 Report Generation
 
-```bash
-# Generate report from existing test results
-./05_tests/infra/scripts/generate-report.sh
+Each run of `run-all-tests.sh` writes both reports into its own directory:
+
+```
+05_tests/reports/RUN_<timestamp>/
+├── TEST_REPORT.md      Markdown summary
+└── TEST_REPORT.html    Full evidence and requirements coverage
 ```
 
-**Report output:** `05_tests/reports/TEST_REPORT_YYYY-MM-DD_HH-MM-SS.md`
+To regenerate from results already on disk, without re-running the tests:
+
+```bash
+# Markdown
+./05_tests/infra/scripts/generate-report.sh --output 05_tests/reports/
+
+# HTML (deterministic; --source-date pins the timestamp for diffing)
+python3 05_tests/infra/scripts/generate-html-report.py --output /tmp/report.html
+```
+
+The HTML report is the one to hand to somebody else: it states what ran, what
+is declared but switched off, which requirements are claimed by which test, and
+which are not covered at all. Read it before claiming a feature is tested.
+
+**Non-interactive runs:** pass `--no-prompt` so the release question is never
+asked.
+
+```bash
+./05_tests/infra/scripts/run-all-tests.sh --level L1 --no-prompt
+```
+
+### 1.5 Packaging a Release
+
+After a clean run the orchestrator offers to package a release. The same thing
+can be done by hand:
+
+```bash
+./05_tests/infra/scripts/package-release.sh --slug session-analysis
+```
+
+This produces `releases/v<version>-<slug>/` containing the APK, the HTML test
+report from the run, and `RELEASE_NOTES.md` generated from `git log`.
+
+### 1.6 Self-tests for the report generator
+
+The generator has its own tests. Run them after changing it:
+
+```bash
+python3 -m unittest discover -s 05_tests/infra/scripts -p 'test_*.py'
+```
 
 ---
 

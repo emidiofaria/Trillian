@@ -4,6 +4,68 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-10] Test Evidence Pipeline — HTML report and release packaging
+
+**Codebase Version:** v2.95
+**Trigger:** Test reports now ship with the APK. A run produces a self-contained HTML
+report generated from machine-readable evidence, and a release groups the build with
+the report and notes that belong to it.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `components.md` | ✅ Updated | +1 component (Test Evidence Pipeline), criticality matrix row |
+| `Test_Strategy.md` | ✅ Updated | §7 rewritten: run directories, HTML report, coverage map, releases; 4 script rows added |
+| `test_strategy_execution_instructions.md` | ✅ Updated | §1.4 rewritten, new §1.5 (packaging) and §1.6 (generator self-tests) |
+| `TRACEABILITY_MATRIX.md` | ✅ Updated | Header note: the TSV is now the machine truth, this table is the narrative |
+| `system.md` | — | No change (build-time tooling, no runtime component) |
+| `flows.md` | — | No change (no new runtime flow) |
+| `failure-patterns.md` | — | No change (no new product failure mode) |
+| `DrivingCoach_SRS_v1.md` | — | No change (no product behaviour changed) |
+| `USER_MANUAL.md` | — | No change (nothing user-facing in the app changed) |
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `05_tests/infra/scripts/generate-html-report.py` | The report generator |
+| `05_tests/infra/scripts/test_generate_html_report.py` | 26 unit tests for it |
+| `05_tests/infra/scripts/package-release.sh` | APK + report + release notes under `releases/v<ver>-<slug>/` |
+| `05_tests/coverage-map.tsv` | 94 requirement-to-test claims, machine-checked every run |
+
+### What the first report found
+
+Numbers that were previously invisible, now stated on the front page:
+
+| Measure | Value |
+|---------|-------|
+| L1 declared / executed | 262 / 262 |
+| L2 declared / executed | 89 / 60 |
+| Tests that exist but never run | **29**, behind 4 class-level `@Ignore`s |
+| Requirements with an automated claim | 68 / 245 (28%) |
+| Claims not backed by a passing test | 8 |
+| Claims citing a test that no longer exists | 0 |
+
+The 29 hidden tests are the reason declared counts are read from the Kotlin source
+rather than the JUnit XML: Gradle reports an `@Ignore`d class as one skipped entry
+regardless of how many tests it contains, so the XML alone cannot see them.
+
+### Design decisions
+
+- **No prose is parsed.** Inputs are JUnit XML, a TSV, and rigid SRS table rows. A
+  report that guesses at a document's meaning can overstate coverage without anyone
+  noticing, which is exactly the failure it exists to prevent.
+- **Level is not stored in the TSV.** It is derived from which results file the class
+  appears in, so a claim cannot assert the wrong level.
+- **Failures are annotated, never hidden.** Skipped, missing and failed claims all get
+  their own section.
+- **Manual L4 tests come last**, with an explicit note that a human must run them.
+- **Deterministic output.** Sorted iteration and `--source-date` mean two runs of the
+  same inputs are byte-identical, so reports can be diffed and therefore reviewed.
+
+---
+
 ## [2026-09-09] Session Analysis Tab (ANALYSIS)
 
 **Codebase Version:** v2.95
