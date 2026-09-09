@@ -237,6 +237,7 @@ class SessionResultFragment : Fragment() {
                 0 -> "LAPS"
                 1 -> "COACH"
                 2 -> "CHART"
+                3 -> "ANALYSIS"
                 else -> ""
             }
         }.attach()

@@ -41,6 +41,12 @@
     <color name="colorOnSurfaceVariant">#B0B0B0</color>
     <color name="colorOutline">#404040</color>
 
+    <!-- Track map speed gradient (ANALYSIS tab). Braking uses colorError so it
+         must stay visually distinct from every stop below. -->
+    <color name="speedGradientSlow">#1C69D4</color>
+    <color name="speedGradientMid">#F39C12</color>
+    <color name="speedGradientFast">#2ECC71</color>
+
     <!-- Brand Hero / Splash -->
     <color name="hero_ring_stroke">#8FA9D8</color>
     <color name="hero_emblem_bg">#173B6E</color>
