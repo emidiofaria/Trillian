@@ -311,11 +311,18 @@ Sections, in order:
 |---|---------|---------------|
 | 1 | Results by test level | Declared vs executed per ASPICE level |
 | 2 | How we test | What each level can and cannot prove |
-| 3 | Requirements coverage | Every SRS requirement, expandable to the tests that claim it |
-| 4 | Gaps and caveats | Switched-off classes, unbacked claims, uncovered requirements |
-| 5 | Failures | Every failure in full |
-| 6 | Every automated test | The complete inventory, so nothing above is taken on trust |
-| 7 | Manual acceptance tests | L4, last, with a note that a human must run them |
+| 3 | Failures | Every failure in full |
+| 4 | Every automated test | The complete inventory |
+| 5 | Manual acceptance tests | L4, with a note that a human must run them |
+| 6 | Requirements coverage | Every SRS requirement, expandable to the tests that claim it |
+| 7 | Gaps and caveats | Switched-off classes, unbacked claims, uncovered requirements |
+
+The order is evidence before interpretation. Failures come third because on a red
+run nothing else matters and they must not sit below 245 requirement rows. The
+test inventory and the manual checks come before coverage so that a claim is read
+against tests the reader has already seen, rather than taken on trust. The
+document ends on the gaps, and then on a reminder that a human still has to run
+the L4 checks before the build is trusted on track.
 
 Everything in it comes from machine-readable evidence. No prose is parsed
 anywhere, because a report that guesses at a document's meaning can overstate

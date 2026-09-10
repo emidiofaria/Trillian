@@ -63,10 +63,10 @@ color:var(--muted);font-size:12.5px}
 <div class="sub">Automated evidence, generated from test results — not written by hand.</div>
 <div class="meta">
 <span><b>Version:</b> v2.95</span>
-<span><b>Commit:</b> 364a8d3</span>
+<span><b>Commit:</b> 73b9062</span>
 <span><b>Branch:</b> FT_Add_Advanced_racing_coach_step_1</span>
 <span><b>L2 device:</b> DrivingCoach_Test(AVD) - 11</span>
-<span><b>Generated:</b> 2026-09-10 01:24:21 BST</span>
+<span><b>Generated:</b> 2026-09-10 01:38:09 BST</span>
 </div></div></header>
 <div class="wrap">
 <div class="verdict warn"><b>All executed tests passed, with caveats below</b><br>
@@ -87,7 +87,7 @@ color:var(--muted);font-size:12.5px}
 <tr><td><b>L1</b></td><td>SWE.4</td><td>Unit tests<br><span class="note">JVM, no device</span></td><td class="num">262</td><td class="num">262</td><td class="num">262</td><td class="num">0</td><td class="num">0</td><td>Passed</td></tr>
 <tr><td><b>L2</b></td><td>SWE.5</td><td>Integration tests<br><span class="note">On a device or emulator</span></td><td class="num">89</td><td class="num">60</td><td class="num">60</td><td class="num">0</td><td class="num">29</td><td>Passed, with gaps</td></tr>
 <tr><td><b>L3</b></td><td>SWE.6</td><td>Qualification tests<br><span class="note">Not implemented</span></td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>Not implemented</td></tr>
-<tr><td><b>L4</b></td><td>SYS.5</td><td>Acceptance tests<br><span class="note">Human, at a circuit</span></td><td class="num">133</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>Manual — see section 7</td></tr>
+<tr><td><b>L4</b></td><td>SYS.5</td><td>Acceptance tests<br><span class="note">Human, at a circuit</span></td><td class="num">133</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>Manual — see section 5</td></tr>
 </table>
 <h2>2. How we test</h2>
 <p class="note">What each level can prove, and what it cannot. A test at the wrong level is a test that will pass while the product is broken.</p>
@@ -101,9 +101,636 @@ color:var(--muted);font-size:12.5px}
 <p>A human with a car on a circuit. It is the only level that can judge whether the drawn track looks like the track, whether the corners found are the corners driven, and whether a lap time matches the driver&#x27;s own stopwatch.</p>
 <h3>What V1 does not build</h3>
 <p>V1 is deliberately offline-first: it records, detects laps, analyses and coaches entirely on the phone. 55 requirements in the SRS describe a server, Firebase authentication or a hosted model, none of which V1 deploys. They are marked <span class="tag V2-BACKEND">V2-BACKEND</span> throughout this report and counted separately, never removed. A requirement marked deferred that turns out to have a passing test is reported as an error, so this cannot be used to quietly retire anything that was actually built.</p>
-<h2>3. Requirements coverage</h2>
+<h2>3. Failures</h2>
+<p>No test failed in this run.</p>
+<h2>4. Every automated test in this run</h2>
+<p class="note">The complete inventory, listed before any claim is made about it, so that the coverage in section 6 is read against tests you have already seen rather than taken on trust.</p>
+<h3>L1 — 25 classes</h3>
+<details><summary>ApiClientTest <span class='note'>— 5 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">401 on any request emits session expired via AuthEventBus</td><td><span class="tag PASS">PASS</span></td><td class="num">0.932</td></tr>
+<tr><td class="mono">login failure returns error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.017</td></tr>
+<tr><td class="mono">login success stores token in DataStore</td><td><span class="tag PASS">PASS</span></td><td class="num">0.076</td></tr>
+<tr><td class="mono">register success stores token</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
+<tr><td class="mono">uploadTelemetry sends correct multipart fields</td><td><span class="tag PASS">PASS</span></td><td class="num">0.054</td></tr>
+</table></div></details>
+<details><summary>BrandAssetGeometryTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">emblemDensityBucketsAreCompleteAndCorrectlySized</td><td><span class="tag PASS">PASS</span></td><td class="num">0.038</td></tr>
+<tr><td class="mono">emblemMasterSatisfiesBrandGeometry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.028</td></tr>
+<tr><td class="mono">gateRejectsTheLegacyDeformedEmblem</td><td><span class="tag PASS">PASS</span></td><td class="num">0.083</td></tr>
+<tr><td class="mono">noConflictingVectorEmblemRemains</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+</table></div></details>
+<details><summary>DriverNameViewModelTest <span class='note'>— 12 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a failed save reports an error and stays put</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
+<tr><td class="mono">a one character name keeps the call to action disabled</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a second submit while saving is ignored</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">a valid name enables the call to action</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">an empty field shows no error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">an existing name is overwritten rather than duplicated</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">an over long name reports the length error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">correcting an invalid name clears the error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">submitting a valid name persists it and navigates home</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">submitting an invalid name neither persists nor navigates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">submitting trims the stored name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">the call to action starts disabled</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>DriverProfileStoreTest <span class='note'>— 22 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a blank stored name is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">a completion flag without a name is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">a fresh install has no profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">a name without the completion flag is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">a single name yields its first two characters</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">an astral plane character is not split</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">an empty name yields a placeholder</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">an invalid name is not persisted</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">an unreadable store reports no profile instead of throwing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">blank input is short rather than long</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">one hundred and one characters are rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">one hundred characters are accepted at the upper bound</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">padding does not let an over-long name through</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">repeated spaces do not produce blank initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">saved name survives a read back</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">saving marks the profile complete</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">saving stores the trimmed form</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">single character is rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">surrounding whitespace is trimmed before storing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">three names skip the middle</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">two characters are accepted at the lower bound</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">two names yield first and last initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>FixFreshnessTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a fix from the paddock walk is rejected at the line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a fix just inside the age limit is still fresh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a fix past the age limit is rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a fix stamped in the future is not rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">a fix taken now is fresh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">an unknown timestamp is treated as fresh rather than blocking capture</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>GeoUtilsTest <span class='note'>— 13 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">haversine - SF to LA is approximately 559 km</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">haversine - handles negative coordinates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">haversine - same point returns zero</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">haversine - short distance is accurate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">haversine - symmetric</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - crossing in reverse direction</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - diagonal crossing works</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - parallel path does not cross</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - path crosses finish line returns true</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">lineIntersection - path ends before reaching line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - path misses line to the side</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - stationary point on line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">lineIntersection - very short segment crossing line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+</table></div></details>
+<details><summary>HomeViewModelTest <span class='note'>— 10 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">deleteSession calls DAO deleteById</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+<tr><td class="mono">deleteSession handles missing session gracefully</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
+<tr><td class="mono">gpsReadiness reports accuracy once a usable fix arrives</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">renameSession accepts name with exactly 100 chars</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">renameSession calls DAO updateTrackName with trimmed name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">renameSession rejects empty name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.425</td></tr>
+<tr><td class="mono">renameSession rejects name longer than 100 chars</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">startGpsWarmUp begins acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">the ViewModel cannot end the warm-up on Home&#x27;s behalf</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">warm-up is skipped without location permission</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+</table></div></details>
+<details><summary>LapDetectionRealSessionTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">theBestLapIsTheFastestOfTheFour</td><td><span class="tag PASS">PASS</span></td><td class="num">0.078</td></tr>
+<tr><td class="mono">theDetectedLapTimesMatchTheLapsThatWereActuallyDriven</td><td><span class="tag PASS">PASS</span></td><td class="num">0.145</td></tr>
+<tr><td class="mono">theDriverFiveStartLineCrossingsAreDetectedAsFourLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
+<tr><td class="mono">theFixtureIsTheSessionFromIncident13</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+</table></div></details>
+<details><summary>LapDiagnosticsWriterTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">an unwritable location does not fail the session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.080</td></tr>
+<tr><td class="mono">is written beside the telemetry, not over it</td><td><span class="tag PASS">PASS</span></td><td class="num">0.055</td></tr>
+<tr><td class="mono">nothing is written when detection never ran</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">reports how nearly parallel the captured line was to the direction of travel</td><td><span class="tag PASS">PASS</span></td><td class="num">0.022</td></tr>
+<tr><td class="mono">reports the angle even when nothing crossed at all</td><td><span class="tag PASS">PASS</span></td><td class="num">0.020</td></tr>
+<tr><td class="mono">the written file names the session and the outcome</td><td><span class="tag PASS">PASS</span></td><td class="num">0.041</td></tr>
+</table></div></details>
+<details><summary>LocalLapDetectorGuardsTest <span class='note'>— 12 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aCompletelyEmptyLineIsRejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">aLineCapturedAcrossTheTrackDetectsTheSameLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.022</td></tr>
+<tr><td class="mono">aLineCapturedAlongTheDirectionOfTravelStillDetectsLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">aLineOnTheGreenwichMeridianIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">aLineWithAnEndpointAtNullIslandIsRejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">aLineWithBothEndpointsSetIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">aStartFinishOnACornerCountsOnePassPerLapRatherThanTwo</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
+<tr><td class="mono">crossingTimesAreInterpolatedRatherThanSnappedToASample</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
+<tr><td class="mono">distanceTravelledSurvivesARejectedCandidate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
+<tr><td class="mono">everyCrossingRecordsHowFarToTheSideTheCarPassed</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
+<tr><td class="mono">theDiagnosticsNameTheIncident13FailureDirectly</td><td><span class="tag PASS">PASS</span></td><td class="num">0.016</td></tr>
+<tr><td class="mono">theSyntheticCircuitIsTheShapeTheseTestsAssume</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>LocationWarmUpTest <span class='note'>— 18 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a new warm-up measures from its own subscribe</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">coarse fix stays acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">first fix and accurate fix are recorded separately</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">first fix time is recorded</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">fix at the threshold is ready</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">idle ceiling releases the chip</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">milestones are recorded once, not on every fix</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">no metrics are recorded before any fix arrives</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
+<tr><td class="mono">readiness degrades again if accuracy worsens</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">readiness is observable as a stream</td><td><span class="tag PASS">PASS</span></td><td class="num">0.087</td></tr>
+<tr><td class="mono">repeated start does not resubscribe</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">start refreshes the ceiling</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">start subscribes and reports acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">start without permission does nothing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">stop before start is harmless</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">stop releases the chip</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">warm-up can be restarted after the ceiling fires</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">warm-up survives right up to the ceiling</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+</table></div></details>
+<details><summary>OfflineCoachingEngineTest <span class='note'>— 30 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">at least 1 insight is positive even in poor session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">at least 2 of 3 insights have positive tone - good session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">best lap insight contains Fastest keyword</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">best lap insight identifies correct lap number</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">best lap insight identifies strongest sector</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">best lap insight shows time gained in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">consistency insight includes variation in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">consistency insight shows Excellent for high consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">consistency insight shows Solid for moderate consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
+<tr><td class="mono">consistency insight shows constructive for poor consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">consistency insight uses within not vary by</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">findTopSpeed can read temp file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">findTopSpeed returns null for missing file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">generateInsights returns 3 insights without telemetry file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">generateInsights returns 4 insights with telemetry file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.088</td></tr>
+<tr><td class="mono">generateInsights returns empty list when no laps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">generateInsights returns empty list when only 1 lap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">insights are returned in correct order</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">sector focus correctly identifies S1 as weakest</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">sector focus correctly identifies S3 as weakest</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">sector focus identifies weakest sector</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">sector focus shows All Sectors Strong when balanced</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">sector focus shows time lost in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">top speed filters out GPS noise above 350 kmh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">top speed has rocket emoji in headline</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">top speed insight identifies correct lap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">top speed insight shows correct speed in kmh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">zero sectors - best lap shows lap-level insight without sector mention</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">zero sectors - no 0ms quicker text appears</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">zero sectors - sector focus shows Coming Soon upsell</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<details><summary>OneTapStartFinishCaptureTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a single captured point yields the same laps as the two-point line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.024</td></tr>
+<tr><td class="mono">swapping the two captured points changes nothing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.026</td></tr>
+</table></div></details>
+<details><summary>ProfileViewModelTest <span class='note'>— 11 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a missing telemetry file does not abort the clear</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">an invalid rename is rejected and leaves the stored name intact</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">an unreadable profile falls back to a neutral label</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">clearing user data clears every stored preference</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">clearing user data deletes the recorded telemetry files</td><td><span class="tag PASS">PASS</span></td><td class="num">0.178</td></tr>
+<tr><td class="mono">clearing user data returns the driver to onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">file paths are read before the tables are cleared</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
+<tr><td class="mono">renaming never touches sessions or the database</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">renaming persists the new name and refreshes the initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">renaming reports success to the driver</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">the stored driver name is displayed with its initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+</table></div></details>
+<details><summary>SessionAnalysisGuardsTest <span class='note'>— 9 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aDeletedTelemetryFileProducesAnEmptyAnalysisRatherThanThrowing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+<tr><td class="mono">aLapWindowThatDoesNotOverlapTheTelemetryFallsBackToTheWholeSession</td><td><span class="tag PASS">PASS</span></td><td class="num">0.091</td></tr>
+<tr><td class="mono">aMissingTelemetryFileYieldsNoSamples</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">aSessionThatNeverMovedHasNoCornersAndNoBraking</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">aSessionWithASingleSampleIsEmpty</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">aSessionWithNoSamplesIsEmptyRatherThanAnError</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">samplesOutOfOrderAreSortedBeforeAnalysis</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">samplesWithoutPositionOrTimeAreDiscarded</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">theMedianSampleIntervalIgnoresGapsInTheRecording</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+</table></div></details>
+<details><summary>SessionAnalysisProcessorTest <span class='note'>— 10 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aChosenLapOverridesTheBestLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.047</td></tr>
+<tr><td class="mono">aParkedCarIsNotReportedAsCornering</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
+<tr><td class="mono">brakingZonesShedSpeedAndReportPlausibleG</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
+<tr><td class="mono">eachBrakingZoneIsAttributedToTheCornerItLeadsInto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.056</td></tr>
+<tr><td class="mono">sessionStatisticsMatchTheRecordedDrive</td><td><span class="tag PASS">PASS</span></td><td class="num">0.042</td></tr>
+<tr><td class="mono">theApexIsTheSlowestPointOfEachCorner</td><td><span class="tag PASS">PASS</span></td><td class="num">0.049</td></tr>
+<tr><td class="mono">theBestLapIsUsedAsTheReferenceWhenNoneIsChosen</td><td><span class="tag PASS">PASS</span></td><td class="num">0.059</td></tr>
+<tr><td class="mono">theHeaderLineIsNotMistakenForATelemetrySample</td><td><span class="tag PASS">PASS</span></td><td class="num">0.030</td></tr>
+<tr><td class="mono">theKartTrackCornersAreDetectedAndNumberedInPassingOrder</td><td><span class="tag PASS">PASS</span></td><td class="num">0.050</td></tr>
+<tr><td class="mono">theSessionSpeedTraceCoversTheWholeSessionRegardlessOfReferenceLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.049</td></tr>
+</table></div></details>
+<details><summary>SessionAnalysisRateInvarianceTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">sessionStatisticsAgreeAtBothRates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.067</td></tr>
+<tr><td class="mono">theRenderedTrackStaysWithinItsBudgetAsTheSampleRateRises</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
+<tr><td class="mono">theSameBrakingZonesAreFoundAtOneHertzAndAtTenHertz</td><td><span class="tag PASS">PASS</span></td><td class="num">0.053</td></tr>
+<tr><td class="mono">theSameCornersAreFoundAtOneHertzAndAtTenHertz</td><td><span class="tag PASS">PASS</span></td><td class="num">0.034</td></tr>
+</table></div></details>
+<details><summary>SessionShareBuilderTest <span class='note'>— 14 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aDirectoryMasqueradingAsTheTelemetryFileIsReportedNotThrown</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">buildingABundlePrunesStaleArtifactsFirst</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+<tr><td class="mono">bundleContainsTelemetryAndMetadataEntries</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">bundleIsWrittenIntoTheShareCacheEvenWhenItDoesNotExistYet</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">bundleNameIsFilesystemSafeEvenForAwkwardTrackNames</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">exportDoesNotModifyTheSourceTelemetryFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">exportSucceedsFromAReadOnlySourceFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">exportWritesNothingOutsideTheShareCache</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">metadataCarriesTheDiagnosticContextNeededToInterpretTheTelemetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">missingTelemetryFileIsReportedRatherThanThrown</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">pruneDeletesStaleArtifactsAndKeepsFreshOnes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">pruneDoesNotReachOutsideTheShareCacheDirectory</td><td><span class="tag PASS">PASS</span></td><td class="num">0.039</td></tr>
+<tr><td class="mono">pruneIgnoresFilesItDidNotCreate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">telemetryEntryIsAByteForByteCopyOfTheSource</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+</table></div></details>
+<details><summary>SplashViewModelTest <span class='note'>— 26 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">a failed launch count write does not block startup</td><td><span class="tag PASS">PASS</span></td><td class="num">0.012</td></tr>
+<tr><td class="mono">completion flag without a name routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">destination is withheld until the minimum display time has elapsed</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">driver profile does not skip onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">first launch is held long enough to read the manifesto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">fresh install routes to onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.062</td></tr>
+<tr><td class="mono">hint invites continuation during the introduction and skipping afterwards</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">hold falls back to the start clock when the handoff is never reported</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
+<tr><td class="mono">hold is measured from the handoff, not from start</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">initialisation timeout falls back to onboarding without blocking</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">introduction is spent after the configured number of launches</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+<tr><td class="mono">launch count is recorded during the introduction</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">launch count stops being written once the introduction is spent</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">name without the completion flag routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">onboarded with a driver profile routes to home</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">onboarded without a driver profile routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">only the first reported handoff anchors the hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">pending upload count is captured during warm up</td><td><span class="tag PASS">PASS</span></td><td class="num">0.116</td></tr>
+<tr><td class="mono">progress never regresses across the startup sequence</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">progress reaches one hundred when initialisation completes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">returning user is not charged the introduction hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
+<tr><td class="mono">skip shortens the minimum display hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">slow database warm up does not change the destination</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">start is idempotent across configuration changes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">successful initialisation does not report a fallback</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
+<tr><td class="mono">tap cuts the introduction short</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+</table></div></details>
+<details><summary>TelemetryFileWriterIntegrationTest <span class='note'>— 5 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">gpsCoordinatesProgressRealisticallDuringDrive</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">highFrequencyWritesMaintainValidJsonlFormat</td><td><span class="tag PASS">PASS</span></td><td class="num">0.172</td></tr>
+<tr><td class="mono">oneMinuteRecordingProducesValidJsonlFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.050</td></tr>
+<tr><td class="mono">periodicFlushPersistsDataBeforeClose</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
+<tr><td class="mono">unflushedDataMayBeLostOnCrash</td><td><span class="tag PASS">PASS</span></td><td class="num">0.016</td></tr>
+</table></div></details>
+<details><summary>TelemetryFileWriterTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">benchmark 18000 samples writes in under 100ms</td><td><span class="tag PASS">PASS</span></td><td class="num">0.538</td></tr>
+<tr><td class="mono">empty file returns empty list</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
+<tr><td class="mono">malformed line does not crash readAll</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
+<tr><td class="mono">non-existent file returns empty list</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">sample values are preserved through serialization</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">write and read round-trip with 100 samples</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
+</table></div></details>
+<details><summary>TelemetryUploadWorkerMockWebServerTest <span class='note'>— 8 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">clientError400ReturnsFailureNoRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
+<tr><td class="mono">clientError401ReturnsFailureNoRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.033</td></tr>
+<tr><td class="mono">connectionTimeoutTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">1.039</td></tr>
+<tr><td class="mono">multipleRetryAttemptsWithEventualSuccess</td><td><span class="tag PASS">PASS</span></td><td class="num">0.079</td></tr>
+<tr><td class="mono">requestContainsCorrectMultipartData</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
+<tr><td class="mono">serverError500TriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.028</td></tr>
+<tr><td class="mono">serverError503TriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">1.953</td></tr>
+<tr><td class="mono">successfulUploadReturnsSuccess</td><td><span class="tag PASS">PASS</span></td><td class="num">0.036</td></tr>
+</table></div></details>
+<details><summary>TelemetryUploadWorkerTest <span class='note'>— 8 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">alreadyUploadedSessionReturnsSuccessWithoutApiCall</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
+<tr><td class="mono">clientErrorReturnsFailureWithoutRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.219</td></tr>
+<tr><td class="mono">invalidSessionIdReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">missingTelemetryFileReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">networkExceptionTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
+<tr><td class="mono">serverErrorTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
+<tr><td class="mono">sessionNotFoundReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.041</td></tr>
+<tr><td class="mono">successfulUploadTransitionsStatusToDone</td><td><span class="tag PASS">PASS</span></td><td class="num">0.012</td></tr>
+</table></div></details>
+<details><summary>TrackPathProjectionTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">brakingPointsFallInsideBrakingZones</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
+<tr><td class="mono">everyCornerHasAMarkerOnTheOutline</td><td><span class="tag PASS">PASS</span></td><td class="num">0.023</td></tr>
+<tr><td class="mono">everyDrawnPointIsInsideTheUnitSquare</td><td><span class="tag PASS">PASS</span></td><td class="num">0.030</td></tr>
+<tr><td class="mono">theShapeOfTheTrackIsNotStretched</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
+<tr><td class="mono">theStartFinishLineIsMarkedWhereItWasCaptured</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
+<tr><td class="mono">thinningKeepsBothEndsOfTheLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
+</table></div></details>
+<details><summary>TrackSetupViewModelTest <span class='note'>— 11 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">clear resets all state</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
+<tr><td class="mono">getStartLineCoords returns coords when valid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
+<tr><td class="mono">getStartLineCoords returns null when invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
+<tr><td class="mono">initial state has no points and is invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">re-capturing pointA clears pointB</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">setPointA captures location</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
+<tr><td class="mono">setPointB calculates distance and validates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
+<tr><td class="mono">setPointB with too short distance is invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.120</td></tr>
+<tr><td class="mono">updateGpsStatus marks GPS not ready with few satellites</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+<tr><td class="mono">updateGpsStatus marks GPS not ready with poor accuracy</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
+<tr><td class="mono">updateGpsStatus marks GPS ready when accuracy and satellites are good</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
+</table></div></details>
+<h3>L2 — 19 classes</h3>
+<details><summary>AboutScreenTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aboutIsReachableFromTheProfileScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">1.532</td></tr>
+<tr><td class="mono">aboutScreenReportsTheBuildIdentityFromBuildConfig</td><td><span class="tag PASS">PASS</span></td><td class="num">0.861</td></tr>
+<tr><td class="mono">aboutScreenShowsTheBrandIdentityAndManifesto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.831</td></tr>
+<tr><td class="mono">reportedVersionMatchesTheInstalledPackage</td><td><span class="tag PASS">PASS</span></td><td class="num">0.055</td></tr>
+</table></div></details>
+<details><summary>AnalysisTabTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">analysisTabIsPresentOnTheSessionResultScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">1.008</td></tr>
+<tr><td class="mono">analysisTabRendersStatsMapAndDerivedTables</td><td><span class="tag PASS">PASS</span></td><td class="num">2.530</td></tr>
+<tr><td class="mono">missingTelemetryShowsTheEmptyStateInsteadOfCrashing</td><td><span class="tag PASS">PASS</span></td><td class="num">2.288</td></tr>
+<tr><td class="mono">pickingADifferentLapRebuildsTheReferenceView</td><td><span class="tag PASS">PASS</span></td><td class="num">3.707</td></tr>
+</table></div></details>
+<details><summary>DriverNameFlowTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aSavedDriverGoesStraightToHomeOnRelaunch</td><td><span class="tag PASS">PASS</span></td><td class="num">5.587</td></tr>
+<tr><td class="mono">anOnboardedDriverWithoutAProfileIsAskedToName</td><td><span class="tag PASS">PASS</span></td><td class="num">1.912</td></tr>
+<tr><td class="mono">namingTheDriverOpensTheApp</td><td><span class="tag PASS">PASS</span></td><td class="num">2.734</td></tr>
+<tr><td class="mono">surroundingWhitespaceIsTrimmedFromTheSavedName</td><td><span class="tag PASS">PASS</span></td><td class="num">3.192</td></tr>
+<tr><td class="mono">theCallToActionIsDisabledUntilTheNameIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">2.170</td></tr>
+<tr><td class="mono">theDemoModeShortcutIsGone</td><td><span class="tag PASS">PASS</span></td><td class="num">2.619</td></tr>
+<tr><td class="mono">theSavedNameIsShownOnTheProfileScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">4.184</td></tr>
+</table></div></details>
+<details><summary>EndToEndTest <span class='note'>— @Ignore — 5 test(s) never ran</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.087</td></tr>
+</table></div></details>
+<details><summary>HomeGpsChipTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">backgroundingTheAppReleasesTheChip</td><td><span class="tag PASS">PASS</span></td><td class="num">3.724</td></tr>
+<tr><td class="mono">chipReportsAcquiringUntilAFixIsAccurateEnough</td><td><span class="tag PASS">PASS</span></td><td class="num">3.133</td></tr>
+<tr><td class="mono">chipReportsReadyOnceTheFixIsUsable</td><td><span class="tag PASS">PASS</span></td><td class="num">2.084</td></tr>
+<tr><td class="mono">homeGoingAwayDoesNotReleaseTheChip</td><td><span class="tag PASS">PASS</span></td><td class="num">5.681</td></tr>
+<tr><td class="mono">homeSubscribesToLocationWithoutBeingAsked</td><td><span class="tag PASS">PASS</span></td><td class="num">2.225</td></tr>
+<tr><td class="mono">readinessDegradesIfAccuracyWorsens</td><td><span class="tag PASS">PASS</span></td><td class="num">2.240</td></tr>
+<tr><td class="mono">returningToTheAppWarmsUpAgain</td><td><span class="tag PASS">PASS</span></td><td class="num">2.960</td></tr>
+</table></div></details>
+<details><summary>HomeHeroTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">collapsingTheHeroRevealsThePinnedBrandBar</td><td><span class="tag PASS">PASS</span></td><td class="num">2.135</td></tr>
+<tr><td class="mono">expandedHeroShowsTheBrandAndHidesThePinnedBar</td><td><span class="tag PASS">PASS</span></td><td class="num">1.863</td></tr>
+<tr><td class="mono">heroIsConfiguredToCollapseOnScroll</td><td><span class="tag PASS">PASS</span></td><td class="num">2.067</td></tr>
+<tr><td class="mono">startSessionRemainsVisibleAcrossTheWholeCollapse</td><td><span class="tag PASS">PASS</span></td><td class="num">2.214</td></tr>
+</table></div></details>
+<details><summary>RecordingFragmentTest <span class='note'>— @Ignore — 7 test(s) never ran</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.012</td></tr>
+</table></div></details>
+<details><summary>SessionShareTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">exportingLeavesTheRecordedSessionUntouched</td><td><span class="tag PASS">PASS</span></td><td class="num">1.348</td></tr>
+<tr><td class="mono">longPressIsConsumedSoNoTooltipIsShown</td><td><span class="tag PASS">PASS</span></td><td class="num">1.303</td></tr>
+<tr><td class="mono">longPressingShareExportsTheTelemetryBundle</td><td><span class="tag PASS">PASS</span></td><td class="num">1.227</td></tr>
+<tr><td class="mono">missingTelemetryFileSurfacesAnErrorInsteadOfFailingSilently</td><td><span class="tag PASS">PASS</span></td><td class="num">1.265</td></tr>
+<tr><td class="mono">shareActionIsPresentOnTheSessionResultToolbar</td><td><span class="tag PASS">PASS</span></td><td class="num">1.954</td></tr>
+<tr><td class="mono">tappingShareSendsTheSessionCardImage</td><td><span class="tag PASS">PASS</span></td><td class="num">1.479</td></tr>
+</table></div></details>
+<details><summary>SplashFallbackTest <span class='note'>— 3 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">startupNeverStrandsTheUserOnTheLoadingScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">3.913</td></tr>
+<tr><td class="mono">unreadableStartupStateFallsBackToOnboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">3.747</td></tr>
+<tr><td class="mono">unreadableStartupStateNeverFallsBackToLogin</td><td><span class="tag PASS">PASS</span></td><td class="num">3.853</td></tr>
+</table></div></details>
+<details><summary>SplashIntroductionTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">firstLaunchHoldsTheManifestoOnScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">4.725</td></tr>
+<tr><td class="mono">firstLaunchInvitesTheUserToContinueRatherThanToSkip</td><td><span class="tag PASS">PASS</span></td><td class="num">2.647</td></tr>
+</table></div></details>
+<details><summary>SplashMainThreadTest <span class='note'>— 3 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">loadingScreenRendersWhileStartupStateIsUnavailable</td><td><span class="tag PASS">PASS</span></td><td class="num">1.472</td></tr>
+<tr><td class="mono">mainThreadStaysResponsiveWhileStartupStateIsUnavailable</td><td><span class="tag PASS">PASS</span></td><td class="num">4.398</td></tr>
+<tr><td class="mono">stalledStartupHoldsTheLoadingScreenRatherThanNavigatingBlindly</td><td><span class="tag PASS">PASS</span></td><td class="num">4.831</td></tr>
+</table></div></details>
+<details><summary>SplashReturningUserTest <span class='note'>— 1 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">returningUserIsNotHeldByTheIntroductionWindow</td><td><span class="tag PASS">PASS</span></td><td class="num">1.703</td></tr>
+</table></div></details>
+<details><summary>SplashScreenTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">footerMetricsAreNotClippedByTheSystemBars</td><td><span class="tag PASS">PASS</span></td><td class="num">1.323</td></tr>
+<tr><td class="mono">loadingScreenDisplaysEveryBrandElement</td><td><span class="tag PASS">PASS</span></td><td class="num">1.828</td></tr>
+<tr><td class="mono">loadingScreenRemainsWhileTheBrandHoldIsPending</td><td><span class="tag PASS">PASS</span></td><td class="num">4.841</td></tr>
+<tr><td class="mono">progressIndicatorIsDeterminateAndAdvances</td><td><span class="tag PASS">PASS</span></td><td class="num">1.435</td></tr>
+<tr><td class="mono">progressLabelMatchesTheIndicatorValue</td><td><span class="tag PASS">PASS</span></td><td class="num">2.405</td></tr>
+<tr><td class="mono">tapAffordanceIsVisibleNotJustAnAccessibilityLabel</td><td><span class="tag PASS">PASS</span></td><td class="num">1.294</td></tr>
+<tr><td class="mono">tappingTheLoadingScreenSkipsTheBrandHold</td><td><span class="tag PASS">PASS</span></td><td class="num">1.866</td></tr>
+</table></div></details>
+<details><summary>StartLineFreshnessTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">aStaleFixDoesNotUnlockStartLineCapture</td><td><span class="tag PASS">PASS</span></td><td class="num">3.630</td></tr>
+<tr><td class="mono">captureUnlocksAsSoonAsAFreshFixArrives</td><td><span class="tag PASS">PASS</span></td><td class="num">3.156</td></tr>
+</table></div></details>
+<details><summary>StartupBackStackTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">loadingScreenIsPoppedOffTheBackStack</td><td><span class="tag PASS">PASS</span></td><td class="num">4.279</td></tr>
+<tr><td class="mono">seededSessionLandsOnHome</td><td><span class="tag PASS">PASS</span></td><td class="num">1.654</td></tr>
+</table></div></details>
+<details><summary>TelemetryForegroundServiceTest <span class='note'>— @Ignore — 6 test(s) never ran</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.009</td></tr>
+</table></div></details>
+<details><summary>TrackSetupFragmentTest <span class='note'>— @Ignore — 11 test(s) never ran</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.002</td></tr>
+</table></div></details>
+<details><summary>TrackSetupResubscribeTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">captureBecomesAvailableOnceTheFixIsAccurateEnough</td><td><span class="tag PASS">PASS</span></td><td class="num">2.718</td></tr>
+<tr><td class="mono">captureStillWorksAfterAStopStartCycle</td><td><span class="tag PASS">PASS</span></td><td class="num">4.188</td></tr>
+<tr><td class="mono">locationUpdatesResumeAfterTheScreenStops</td><td><span class="tag PASS">PASS</span></td><td class="num">3.345</td></tr>
+<tr><td class="mono">trackSetupSubscribesOnArrival</td><td><span class="tag PASS">PASS</span></td><td class="num">2.130</td></tr>
+</table></div></details>
+<details><summary>WarmUpHandoverTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
+<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
+<tr><td class="mono">captureIsAvailableOnArrivalWhenGpsWasAlreadyReady</td><td><span class="tag PASS">PASS</span></td><td class="num">6.167</td></tr>
+<tr><td class="mono">gpsSubscriptionSurvivesTheHandoverFromHomeToTrackSetup</td><td><span class="tag PASS">PASS</span></td><td class="num">5.375</td></tr>
+<tr><td class="mono">warmUpStopsWhenTheAppLeavesTheForeground</td><td><span class="tag PASS">PASS</span></td><td class="num">5.776</td></tr>
+<tr><td class="mono">warmUpSurvivesAConfigurationChange</td><td><span class="tag PASS">PASS</span></td><td class="num">7.565</td></tr>
+</table></div></details>
+<h2>5. Manual acceptance tests (L4)</h2>
+<div class="verdict warn"><b>These tests are not automated and were not run.</b><br>A human must execute them with a car on a circuit and record the result. Nothing in else in this report covers what they check: whether the app tells the truth about a real drive.</div>
+<p class="note">133 checks across 9 checklists in <code>05_tests/L4_SYS5_acceptance/</code>.</p>
+<details><summary>10_PRE_TRACK_DAY_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">PRE-01</td><td>Backend Health Check</td></tr>
+<tr><td class="mono">PRE-02</td><td>Firebase Authentication Test</td></tr>
+<tr><td class="mono">PRE-03</td><td>Permission Flow Test</td></tr>
+<tr><td class="mono">PRE-04</td><td>Home Screen Load Test</td></tr>
+<tr><td class="mono">PRE-05</td><td>Start Session Flow Test (Indoor/Simulated)</td></tr>
+<tr><td class="mono">PRE-06</td><td>Session Upload Test</td></tr>
+<tr><td class="mono">PRE-07</td><td>Session Result Tabs Test</td></tr>
+<tr><td class="mono">PRE-08</td><td>Share Functionality Test</td></tr>
+<tr><td class="mono">PRE-09</td><td>Profile and Sign Out Test</td></tr>
+<tr><td class="mono">PRE-10</td><td>Error Handling Test</td></tr>
+</table></div></details>
+<details><summary>20_ONBOARDING_TESTS.md <span class='note'>— 17 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">BRD-01</td><td>Helmet Emblem Renders Correctly at All Sizes</td></tr>
+<tr><td class="mono">BRD-02</td><td>Engineering Manifesto Is Actually Readable</td></tr>
+<tr><td class="mono">BRD-03</td><td>About Screen Reports the Build</td></tr>
+<tr><td class="mono">ONB-01</td><td>First Launch Shows Onboarding</td></tr>
+<tr><td class="mono">ONB-02</td><td>Onboarding Page Content</td></tr>
+<tr><td class="mono">ONB-03</td><td>Permission Grant — All Accepted</td></tr>
+<tr><td class="mono">ONB-04</td><td>Permission Grant — Location Denied</td></tr>
+<tr><td class="mono">ONB-05</td><td>Permission Grant — Skip After Denial</td></tr>
+<tr><td class="mono">ONB-06</td><td>Onboarding Persistence</td></tr>
+<tr><td class="mono">REG-01</td><td>Registration Form Validation</td></tr>
+<tr><td class="mono">REG-02</td><td>Successful Registration</td></tr>
+<tr><td class="mono">REG-03</td><td>Duplicate Email Registration</td></tr>
+<tr><td class="mono">LOG-01</td><td>Login Form Validation</td></tr>
+<tr><td class="mono">LOG-02</td><td>Successful Login</td></tr>
+<tr><td class="mono">LOG-03</td><td>Failed Login — Wrong Password</td></tr>
+<tr><td class="mono">LOG-04</td><td>Failed Login — Non-existent User</td></tr>
+<tr><td class="mono">LOG-05</td><td>Session Persistence</td></tr>
+</table></div></details>
+<details><summary>30_TRACK_SETUP_TESTS.md <span class='note'>— 9 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">TS-00</td><td>GPS Warm-Up on Home</td></tr>
+<tr><td class="mono">TS-01</td><td>Access Track Setup Screen</td></tr>
+<tr><td class="mono">TS-02</td><td>GPS Status Display</td></tr>
+<tr><td class="mono">TS-03</td><td>Capture Point A</td></tr>
+<tr><td class="mono">TS-04</td><td>Capture Point B and Line Width</td></tr>
+<tr><td class="mono">TS-05</td><td>Line Distance Validation — Too Close</td></tr>
+<tr><td class="mono">TS-06</td><td>Clear Button</td></tr>
+<tr><td class="mono">TS-07</td><td>Valid Line Distance and Start Recording</td></tr>
+<tr><td class="mono">TS-08</td><td>Start/Finish Coordinates Storage</td></tr>
+</table></div></details>
+<details><summary>40_SESSION_RECORDING_TESTS.md <span class='note'>— 16 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">REC-01</td><td>Start Recording Screen</td></tr>
+<tr><td class="mono">REC-02</td><td>Elapsed Time Counter</td></tr>
+<tr><td class="mono">REC-03</td><td>GPS Status Indicator</td></tr>
+<tr><td class="mono">REC-04</td><td>REC Badge Animation</td></tr>
+<tr><td class="mono">REC-05</td><td>Screen Stays On</td></tr>
+<tr><td class="mono">REC-06</td><td>Stop Recording</td></tr>
+<tr><td class="mono">REC-07</td><td>Permission Denied Handling</td></tr>
+<tr><td class="mono">SVC-01</td><td>Foreground Service Notification</td></tr>
+<tr><td class="mono">SVC-02</td><td>GPS Signal Lost Notification</td></tr>
+<tr><td class="mono">SVC-03</td><td>Background Recording</td></tr>
+<tr><td class="mono">SVC-04</td><td>Recording Survives Process Kill</td></tr>
+<tr><td class="mono">TEL-01</td><td>GPS Data Quality at Track</td></tr>
+<tr><td class="mono">TEL-02</td><td>10 Hz GPS Sample Rate</td></tr>
+<tr><td class="mono">TEL-03</td><td>IMU Data Capture</td></tr>
+<tr><td class="mono">TEL-04</td><td>GPS Accuracy Warning</td></tr>
+<tr><td class="mono">TEL-05</td><td>Long Session Stability (30 minutes)</td></tr>
+</table></div></details>
+<details><summary>50_LAP_DETECTION_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">LD-01</td><td>Basic Lap Detection</td></tr>
+<tr><td class="mono">LD-02</td><td>Out-Lap Ignored (10-Second Skip)</td></tr>
+<tr><td class="mono">LD-03</td><td>Minimum Lap Time Guard (20 seconds)</td></tr>
+<tr><td class="mono">LD-04</td><td>Last Incomplete Lap Discarded</td></tr>
+<tr><td class="mono">LD-05</td><td>Insufficient Samples Handling</td></tr>
+<tr><td class="mono">LD-06</td><td>Fewer Than 2 Laps Handling</td></tr>
+<tr><td class="mono">LD-07</td><td>Sector Computation</td></tr>
+<tr><td class="mono">LD-08</td><td>Best Lap Identification</td></tr>
+<tr><td class="mono">LD-09</td><td>Processing Status Progression</td></tr>
+<tr><td class="mono">LD-10</td><td>Processing Time Performance</td></tr>
+</table></div></details>
+<details><summary>60_SESSION_RESULTS_TESTS.md <span class='note'>— 23 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">RES-01</td><td>Session Result Screen Layout</td></tr>
+<tr><td class="mono">RES-02</td><td>Tab Navigation</td></tr>
+<tr><td class="mono">LAP-01</td><td>Lap List Display</td></tr>
+<tr><td class="mono">LAP-02</td><td>Best Lap Styling</td></tr>
+<tr><td class="mono">LAP-03</td><td>Delta Badge Colors</td></tr>
+<tr><td class="mono">LAP-04</td><td>Lap Card Tap Navigation</td></tr>
+<tr><td class="mono">DET-01</td><td>Lap Detail Layout</td></tr>
+<tr><td class="mono">DET-02</td><td>Sector Comparison</td></tr>
+<tr><td class="mono">DET-03</td><td>Monospace Formatting</td></tr>
+<tr><td class="mono">COACH-01</td><td>Consistency Score Display</td></tr>
+<tr><td class="mono">COACH-02</td><td>Coaching Insight Cards</td></tr>
+<tr><td class="mono">COACH-03</td><td>Processing In Progress UI</td></tr>
+<tr><td class="mono">COACH-04</td><td>Failed Processing UI</td></tr>
+<tr><td class="mono">CHART-01</td><td>Speed Chart Display</td></tr>
+<tr><td class="mono">CHART-02</td><td>Lap Line Colors</td></tr>
+<tr><td class="mono">CHART-03</td><td>Speed Unit Conversion</td></tr>
+<tr><td class="mono">CHART-04</td><td>Chart Interactions</td></tr>
+<tr><td class="mono">ANA-01</td><td>Analysis Tab Layout</td></tr>
+<tr><td class="mono">ANA-02</td><td>Track Map Fidelity</td></tr>
+<tr><td class="mono">ANA-03</td><td>Corner Detection Plausibility</td></tr>
+<tr><td class="mono">ANA-04</td><td>Braking Zones</td></tr>
+<tr><td class="mono">ANA-05</td><td>Reference Lap Selection</td></tr>
+<tr><td class="mono">ANA-06</td><td>Degraded Sessions</td></tr>
+</table></div></details>
+<details><summary>70_AI_COACHING_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">AI-01</td><td>Coaching Trigger After Lap Detection</td></tr>
+<tr><td class="mono">AI-02</td><td>Coaching Insight Count</td></tr>
+<tr><td class="mono">AI-03</td><td>Insight Headline Quality</td></tr>
+<tr><td class="mono">AI-04</td><td>Insight Detail Quality</td></tr>
+<tr><td class="mono">AI-05</td><td>Insights Reference Session Data</td></tr>
+<tr><td class="mono">AI-06</td><td>Consistency Score Accuracy</td></tr>
+<tr><td class="mono">AI-07</td><td>Coaching Without Enough Laps</td></tr>
+<tr><td class="mono">AI-08</td><td>Coaching API Failure Handling</td></tr>
+<tr><td class="mono">AI-09</td><td>Coaching Insights Persistence</td></tr>
+<tr><td class="mono">AI-10</td><td>Multiple Sessions Different Insights</td></tr>
+</table></div></details>
+<details><summary>80_SHARE_AND_PROFILE_TESTS.md <span class='note'>— 20 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">SHARE-01</td><td>Share Icon Visibility</td></tr>
+<tr><td class="mono">SHARE-02</td><td>Share Card Generation</td></tr>
+<tr><td class="mono">SHARE-03</td><td>Share Card Content</td></tr>
+<tr><td class="mono">SHARE-04</td><td>Share Card Typography</td></tr>
+<tr><td class="mono">SHARE-05</td><td>Share to Different Targets</td></tr>
+<tr><td class="mono">SHARE-06</td><td>FileProvider Configuration</td></tr>
+<tr><td class="mono">SHARE-07</td><td>Telemetry Export Gesture</td></tr>
+<tr><td class="mono">SHARE-08</td><td>Telemetry Bundle Contents</td></tr>
+<tr><td class="mono">SHARE-09</td><td>Export Failure Is Visible</td></tr>
+<tr><td class="mono">SHARE-10</td><td>Sharing Does Not Alter Recorded Data</td></tr>
+<tr><td class="mono">PROF-01</td><td>Profile Screen Access</td></tr>
+<tr><td class="mono">PROF-02</td><td>Avatar Display</td></tr>
+<tr><td class="mono">PROF-03</td><td>User Information Display</td></tr>
+<tr><td class="mono">PROF-04</td><td>Statistics Row</td></tr>
+<tr><td class="mono">PROF-05</td><td>Statistics Accuracy</td></tr>
+<tr><td class="mono">SIGN-01</td><td>Sign Out Button Visibility</td></tr>
+<tr><td class="mono">SIGN-02</td><td>Sign Out Execution</td></tr>
+<tr><td class="mono">SIGN-03</td><td>Local Data Cleared on Sign Out</td></tr>
+<tr><td class="mono">SIGN-04</td><td>Sign Out and Re-login</td></tr>
+<tr><td class="mono">SIGN-05</td><td>Sign Out During Recording</td></tr>
+</table></div></details>
+<details><summary>90_ERROR_HANDLING_TESTS.md <span class='note'>— 18 checks</span></summary><div class='body'><table>
+<tr><th>ID</th><th>Check</th></tr>
+<tr><td class="mono">NET-01</td><td>No Network on Login</td></tr>
+<tr><td class="mono">NET-02</td><td>No Network on Registration</td></tr>
+<tr><td class="mono">NET-03</td><td>Network Loss During Session Upload</td></tr>
+<tr><td class="mono">NET-04</td><td>Backend Unavailable</td></tr>
+<tr><td class="mono">NET-05</td><td>Slow Network Handling</td></tr>
+<tr><td class="mono">AUTH-01</td><td>Session Expired Handling</td></tr>
+<tr><td class="mono">AUTH-02</td><td>Token Refresh Transparency</td></tr>
+<tr><td class="mono">GPS-01</td><td>GPS Not Available</td></tr>
+<tr><td class="mono">GPS-02</td><td>GPS Signal Lost During Recording</td></tr>
+<tr><td class="mono">GPS-03</td><td>Poor GPS Accuracy</td></tr>
+<tr><td class="mono">DATA-01</td><td>Empty Session History</td></tr>
+<tr><td class="mono">DATA-02</td><td>Processing Failed Session</td></tr>
+<tr><td class="mono">DATA-03</td><td>Telemetry File Missing</td></tr>
+<tr><td class="mono">DATA-04</td><td>Stale Upload Banner</td></tr>
+<tr><td class="mono">EDGE-01</td><td>Screen Rotation</td></tr>
+<tr><td class="mono">EDGE-02</td><td>Process Death Recovery</td></tr>
+<tr><td class="mono">EDGE-03</td><td>Low Storage</td></tr>
+<tr><td class="mono">EDGE-04</td><td>Battery Saver Mode</td></tr>
+</table></div></details>
+<h2>6. Requirements coverage</h2>
 <p class="note">Every requirement in the SRS, and the tests that claim it. Claims come from <code>05_tests/coverage-map.tsv</code> and are checked against the run: a claim naming a test that did not run, or no longer exists, is reported rather than counted. Expand a row to see the individual tests.</p>
-<p class="note"><b>68 of 190 V1 requirements (36%) have at least one automated claim</b>, and 68 of 245 (28%) counting the 55 deferred to V2. Both numbers are printed because either one alone misleads: the first flatters V1 by ignoring what was never built, the second punishes it for a scope decision that was made on purpose. Deferred requirements keep their row, their reason and their count — see section 4.</p>
+<p class="note"><b>68 of 190 V1 requirements (36%) have at least one automated claim</b>, and 68 of 245 (28%) counting the 55 deferred to V2. Both numbers are printed because either one alone misleads: the first flatters V1 by ignoring what was never built, the second punishes it for a scope decision that was made on purpose. Deferred requirements keep their row, their reason and their count — see section 7.</p>
 <p class="note">The denominator is every requirement row in the SRS, excluding the architecture-decision and out-of-scope sections, which record intent rather than behaviour. No requirement is removed for being inconvenient.</p>
 <table><tr><th>Status</th><th>Meaning</th></tr>
 <tr><td><span class="tag PASS">PASS</span></td><td>The cited test ran and passed</td></tr>
@@ -1130,7 +1757,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h2>4. Gaps and caveats</h2>
+<h2>7. Gaps and caveats</h2>
 <h3>Test classes that are switched off</h3>
 <p class="note">These classes are annotated <code>@Ignore</code>. They compile, they appear in the codebase, and they prove nothing.</p>
 <table><tr><th>Class</th><th>Level</th><th class="num">Tests never run</th></tr>
@@ -1210,7 +1837,7 @@ color:var(--muted);font-size:12.5px}
 <tr><td class="mono">SEC-07</td><td>Security requirements</td><td>The backend shall enforce that a user can only read their own sessions; `GET /sessions/:id` shall return HTTP 403 if the session belongs to a different `firebase_uid`.</td><td class="note">Server-side authorisation between users</td></tr>
 </table>
 <h3>Requirements with no automated claim</h3>
-<p class="note">122 of 190 V1 requirements carry no automated test. These are not deferred: they describe software that ships today and is not covered. Every one is listed and marked <span class="tag UNCOVERED">UNCOVERED</span> in section 3, so none of them can hide. The count by area:</p>
+<p class="note">122 of 190 V1 requirements carry no automated test. These are not deferred: they describe software that ships today and is not covered. Every one is listed and marked <span class="tag UNCOVERED">UNCOVERED</span> in section 6, so none of them can hide. The count by area:</p>
 <table><tr><th>Area</th><th class="num">Uncovered</th><th>Requirements</th></tr>
 <tr><td>User management</td><td class="num">2</td><td class="mono">UM-18, UM-19</td></tr>
 <tr><td>Onboarding and permissions</td><td class="num">8</td><td class="mono">ON-01, ON-02, ON-03, ON-04, ON-05, ON-06, ON-07, ON-08</td></tr>
@@ -1227,634 +1854,8 @@ color:var(--muted);font-size:12.5px}
 <tr><td>Non-functional requirements</td><td class="num">11</td><td class="mono">NF-01, NF-02, NF-03, NF-06, NF-08, NF-09, NF-11, NF-12, NF-14, NF-15, NF-16</td></tr>
 <tr><td>Security requirements</td><td class="num">3</td><td class="mono">SEC-05, SEC-08, SEC-09</td></tr>
 </table>
-<h2>5. Failures</h2>
-<p>No test failed in this run.</p>
-<h2>6. Every automated test in this run</h2>
-<p class="note">The complete inventory, so that nothing above is taken on trust.</p>
-<h3>L1 — 25 classes</h3>
-<details><summary>ApiClientTest <span class='note'>— 5 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">401 on any request emits session expired via AuthEventBus</td><td><span class="tag PASS">PASS</span></td><td class="num">0.932</td></tr>
-<tr><td class="mono">login failure returns error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.017</td></tr>
-<tr><td class="mono">login success stores token in DataStore</td><td><span class="tag PASS">PASS</span></td><td class="num">0.076</td></tr>
-<tr><td class="mono">register success stores token</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
-<tr><td class="mono">uploadTelemetry sends correct multipart fields</td><td><span class="tag PASS">PASS</span></td><td class="num">0.054</td></tr>
-</table></div></details>
-<details><summary>BrandAssetGeometryTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">emblemDensityBucketsAreCompleteAndCorrectlySized</td><td><span class="tag PASS">PASS</span></td><td class="num">0.038</td></tr>
-<tr><td class="mono">emblemMasterSatisfiesBrandGeometry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.028</td></tr>
-<tr><td class="mono">gateRejectsTheLegacyDeformedEmblem</td><td><span class="tag PASS">PASS</span></td><td class="num">0.083</td></tr>
-<tr><td class="mono">noConflictingVectorEmblemRemains</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-</table></div></details>
-<details><summary>DriverNameViewModelTest <span class='note'>— 12 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">a failed save reports an error and stays put</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
-<tr><td class="mono">a one character name keeps the call to action disabled</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">a second submit while saving is ignored</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">a valid name enables the call to action</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">an empty field shows no error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">an existing name is overwritten rather than duplicated</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">an over long name reports the length error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">correcting an invalid name clears the error</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">submitting a valid name persists it and navigates home</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
-<tr><td class="mono">submitting an invalid name neither persists nor navigates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">submitting trims the stored name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">the call to action starts disabled</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-</table></div></details>
-<details><summary>DriverProfileStoreTest <span class='note'>— 22 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">a blank stored name is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">a completion flag without a name is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">a fresh install has no profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">a name without the completion flag is not a profile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">a single name yields its first two characters</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">an astral plane character is not split</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">an empty name yields a placeholder</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">an invalid name is not persisted</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">an unreadable store reports no profile instead of throwing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">blank input is short rather than long</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">one hundred and one characters are rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">one hundred characters are accepted at the upper bound</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">padding does not let an over-long name through</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">repeated spaces do not produce blank initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">saved name survives a read back</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">saving marks the profile complete</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">saving stores the trimmed form</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">single character is rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">surrounding whitespace is trimmed before storing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">three names skip the middle</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">two characters are accepted at the lower bound</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">two names yield first and last initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-</table></div></details>
-<details><summary>FixFreshnessTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">a fix from the paddock walk is rejected at the line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">a fix just inside the age limit is still fresh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">a fix past the age limit is rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">a fix stamped in the future is not rejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">a fix taken now is fresh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">an unknown timestamp is treated as fresh rather than blocking capture</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-</table></div></details>
-<details><summary>GeoUtilsTest <span class='note'>— 13 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">haversine - SF to LA is approximately 559 km</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">haversine - handles negative coordinates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">haversine - same point returns zero</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">haversine - short distance is accurate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">haversine - symmetric</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">lineIntersection - crossing in reverse direction</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">lineIntersection - diagonal crossing works</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">lineIntersection - parallel path does not cross</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">lineIntersection - path crosses finish line returns true</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">lineIntersection - path ends before reaching line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">lineIntersection - path misses line to the side</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">lineIntersection - stationary point on line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">lineIntersection - very short segment crossing line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-</table></div></details>
-<details><summary>HomeViewModelTest <span class='note'>— 10 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">deleteSession calls DAO deleteById</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
-<tr><td class="mono">deleteSession handles missing session gracefully</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
-<tr><td class="mono">gpsReadiness reports accuracy once a usable fix arrives</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">renameSession accepts name with exactly 100 chars</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
-<tr><td class="mono">renameSession calls DAO updateTrackName with trimmed name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
-<tr><td class="mono">renameSession rejects empty name</td><td><span class="tag PASS">PASS</span></td><td class="num">0.425</td></tr>
-<tr><td class="mono">renameSession rejects name longer than 100 chars</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">startGpsWarmUp begins acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">the ViewModel cannot end the warm-up on Home&#x27;s behalf</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">warm-up is skipped without location permission</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-</table></div></details>
-<details><summary>LapDetectionRealSessionTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">theBestLapIsTheFastestOfTheFour</td><td><span class="tag PASS">PASS</span></td><td class="num">0.078</td></tr>
-<tr><td class="mono">theDetectedLapTimesMatchTheLapsThatWereActuallyDriven</td><td><span class="tag PASS">PASS</span></td><td class="num">0.145</td></tr>
-<tr><td class="mono">theDriverFiveStartLineCrossingsAreDetectedAsFourLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
-<tr><td class="mono">theFixtureIsTheSessionFromIncident13</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-</table></div></details>
-<details><summary>LapDiagnosticsWriterTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">an unwritable location does not fail the session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.080</td></tr>
-<tr><td class="mono">is written beside the telemetry, not over it</td><td><span class="tag PASS">PASS</span></td><td class="num">0.055</td></tr>
-<tr><td class="mono">nothing is written when detection never ran</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">reports how nearly parallel the captured line was to the direction of travel</td><td><span class="tag PASS">PASS</span></td><td class="num">0.022</td></tr>
-<tr><td class="mono">reports the angle even when nothing crossed at all</td><td><span class="tag PASS">PASS</span></td><td class="num">0.020</td></tr>
-<tr><td class="mono">the written file names the session and the outcome</td><td><span class="tag PASS">PASS</span></td><td class="num">0.041</td></tr>
-</table></div></details>
-<details><summary>LocalLapDetectorGuardsTest <span class='note'>— 12 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">aCompletelyEmptyLineIsRejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">aLineCapturedAcrossTheTrackDetectsTheSameLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.022</td></tr>
-<tr><td class="mono">aLineCapturedAlongTheDirectionOfTravelStillDetectsLaps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">aLineOnTheGreenwichMeridianIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">aLineWithAnEndpointAtNullIslandIsRejected</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">aLineWithBothEndpointsSetIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">aStartFinishOnACornerCountsOnePassPerLapRatherThanTwo</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
-<tr><td class="mono">crossingTimesAreInterpolatedRatherThanSnappedToASample</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
-<tr><td class="mono">distanceTravelledSurvivesARejectedCandidate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
-<tr><td class="mono">everyCrossingRecordsHowFarToTheSideTheCarPassed</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
-<tr><td class="mono">theDiagnosticsNameTheIncident13FailureDirectly</td><td><span class="tag PASS">PASS</span></td><td class="num">0.016</td></tr>
-<tr><td class="mono">theSyntheticCircuitIsTheShapeTheseTestsAssume</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-</table></div></details>
-<details><summary>LocationWarmUpTest <span class='note'>— 18 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">a new warm-up measures from its own subscribe</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
-<tr><td class="mono">coarse fix stays acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">first fix and accurate fix are recorded separately</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">first fix time is recorded</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">fix at the threshold is ready</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">idle ceiling releases the chip</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">milestones are recorded once, not on every fix</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
-<tr><td class="mono">no metrics are recorded before any fix arrives</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
-<tr><td class="mono">readiness degrades again if accuracy worsens</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">readiness is observable as a stream</td><td><span class="tag PASS">PASS</span></td><td class="num">0.087</td></tr>
-<tr><td class="mono">repeated start does not resubscribe</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">start refreshes the ceiling</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">start subscribes and reports acquiring</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
-<tr><td class="mono">start without permission does nothing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">stop before start is harmless</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">stop releases the chip</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">warm-up can be restarted after the ceiling fires</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">warm-up survives right up to the ceiling</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-</table></div></details>
-<details><summary>OfflineCoachingEngineTest <span class='note'>— 30 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">at least 1 insight is positive even in poor session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">at least 2 of 3 insights have positive tone - good session</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">best lap insight contains Fastest keyword</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">best lap insight identifies correct lap number</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">best lap insight identifies strongest sector</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">best lap insight shows time gained in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">consistency insight includes variation in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">consistency insight shows Excellent for high consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">consistency insight shows Solid for moderate consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
-<tr><td class="mono">consistency insight shows constructive for poor consistency</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">consistency insight uses within not vary by</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">findTopSpeed can read temp file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">findTopSpeed returns null for missing file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">generateInsights returns 3 insights without telemetry file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">generateInsights returns 4 insights with telemetry file</td><td><span class="tag PASS">PASS</span></td><td class="num">0.088</td></tr>
-<tr><td class="mono">generateInsights returns empty list when no laps</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">generateInsights returns empty list when only 1 lap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">insights are returned in correct order</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">sector focus correctly identifies S1 as weakest</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">sector focus correctly identifies S3 as weakest</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">sector focus identifies weakest sector</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">sector focus shows All Sectors Strong when balanced</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">sector focus shows time lost in detail</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">top speed filters out GPS noise above 350 kmh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">top speed has rocket emoji in headline</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">top speed insight identifies correct lap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">top speed insight shows correct speed in kmh</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">zero sectors - best lap shows lap-level insight without sector mention</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">zero sectors - no 0ms quicker text appears</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">zero sectors - sector focus shows Coming Soon upsell</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-</table></div></details>
-<details><summary>OneTapStartFinishCaptureTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">a single captured point yields the same laps as the two-point line</td><td><span class="tag PASS">PASS</span></td><td class="num">0.024</td></tr>
-<tr><td class="mono">swapping the two captured points changes nothing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.026</td></tr>
-</table></div></details>
-<details><summary>ProfileViewModelTest <span class='note'>— 11 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">a missing telemetry file does not abort the clear</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">an invalid rename is rejected and leaves the stored name intact</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
-<tr><td class="mono">an unreadable profile falls back to a neutral label</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">clearing user data clears every stored preference</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">clearing user data deletes the recorded telemetry files</td><td><span class="tag PASS">PASS</span></td><td class="num">0.178</td></tr>
-<tr><td class="mono">clearing user data returns the driver to onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">file paths are read before the tables are cleared</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
-<tr><td class="mono">renaming never touches sessions or the database</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">renaming persists the new name and refreshes the initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">renaming reports success to the driver</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
-<tr><td class="mono">the stored driver name is displayed with its initials</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-</table></div></details>
-<details><summary>SessionAnalysisGuardsTest <span class='note'>— 9 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">aDeletedTelemetryFileProducesAnEmptyAnalysisRatherThanThrowing</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
-<tr><td class="mono">aLapWindowThatDoesNotOverlapTheTelemetryFallsBackToTheWholeSession</td><td><span class="tag PASS">PASS</span></td><td class="num">0.091</td></tr>
-<tr><td class="mono">aMissingTelemetryFileYieldsNoSamples</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">aSessionThatNeverMovedHasNoCornersAndNoBraking</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">aSessionWithASingleSampleIsEmpty</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">aSessionWithNoSamplesIsEmptyRatherThanAnError</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">samplesOutOfOrderAreSortedBeforeAnalysis</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">samplesWithoutPositionOrTimeAreDiscarded</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">theMedianSampleIntervalIgnoresGapsInTheRecording</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-</table></div></details>
-<details><summary>SessionAnalysisProcessorTest <span class='note'>— 10 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">aChosenLapOverridesTheBestLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.047</td></tr>
-<tr><td class="mono">aParkedCarIsNotReportedAsCornering</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
-<tr><td class="mono">brakingZonesShedSpeedAndReportPlausibleG</td><td><span class="tag PASS">PASS</span></td><td class="num">0.051</td></tr>
-<tr><td class="mono">eachBrakingZoneIsAttributedToTheCornerItLeadsInto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.056</td></tr>
-<tr><td class="mono">sessionStatisticsMatchTheRecordedDrive</td><td><span class="tag PASS">PASS</span></td><td class="num">0.042</td></tr>
-<tr><td class="mono">theApexIsTheSlowestPointOfEachCorner</td><td><span class="tag PASS">PASS</span></td><td class="num">0.049</td></tr>
-<tr><td class="mono">theBestLapIsUsedAsTheReferenceWhenNoneIsChosen</td><td><span class="tag PASS">PASS</span></td><td class="num">0.059</td></tr>
-<tr><td class="mono">theHeaderLineIsNotMistakenForATelemetrySample</td><td><span class="tag PASS">PASS</span></td><td class="num">0.030</td></tr>
-<tr><td class="mono">theKartTrackCornersAreDetectedAndNumberedInPassingOrder</td><td><span class="tag PASS">PASS</span></td><td class="num">0.050</td></tr>
-<tr><td class="mono">theSessionSpeedTraceCoversTheWholeSessionRegardlessOfReferenceLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.049</td></tr>
-</table></div></details>
-<details><summary>SessionAnalysisRateInvarianceTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">sessionStatisticsAgreeAtBothRates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.067</td></tr>
-<tr><td class="mono">theRenderedTrackStaysWithinItsBudgetAsTheSampleRateRises</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
-<tr><td class="mono">theSameBrakingZonesAreFoundAtOneHertzAndAtTenHertz</td><td><span class="tag PASS">PASS</span></td><td class="num">0.053</td></tr>
-<tr><td class="mono">theSameCornersAreFoundAtOneHertzAndAtTenHertz</td><td><span class="tag PASS">PASS</span></td><td class="num">0.034</td></tr>
-</table></div></details>
-<details><summary>SessionShareBuilderTest <span class='note'>— 14 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">aDirectoryMasqueradingAsTheTelemetryFileIsReportedNotThrown</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">buildingABundlePrunesStaleArtifactsFirst</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
-<tr><td class="mono">bundleContainsTelemetryAndMetadataEntries</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">bundleIsWrittenIntoTheShareCacheEvenWhenItDoesNotExistYet</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">bundleNameIsFilesystemSafeEvenForAwkwardTrackNames</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">exportDoesNotModifyTheSourceTelemetryFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">exportSucceedsFromAReadOnlySourceFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">exportWritesNothingOutsideTheShareCache</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">metadataCarriesTheDiagnosticContextNeededToInterpretTheTelemetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
-<tr><td class="mono">missingTelemetryFileIsReportedRatherThanThrown</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">pruneDeletesStaleArtifactsAndKeepsFreshOnes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">pruneDoesNotReachOutsideTheShareCacheDirectory</td><td><span class="tag PASS">PASS</span></td><td class="num">0.039</td></tr>
-<tr><td class="mono">pruneIgnoresFilesItDidNotCreate</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">telemetryEntryIsAByteForByteCopyOfTheSource</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-</table></div></details>
-<details><summary>SplashViewModelTest <span class='note'>— 26 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">a failed launch count write does not block startup</td><td><span class="tag PASS">PASS</span></td><td class="num">0.012</td></tr>
-<tr><td class="mono">completion flag without a name routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">destination is withheld until the minimum display time has elapsed</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">driver profile does not skip onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">first launch is held long enough to read the manifesto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
-<tr><td class="mono">fresh install routes to onboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">0.062</td></tr>
-<tr><td class="mono">hint invites continuation during the introduction and skipping afterwards</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">hold falls back to the start clock when the handoff is never reported</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
-<tr><td class="mono">hold is measured from the handoff, not from start</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
-<tr><td class="mono">initialisation timeout falls back to onboarding without blocking</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">introduction is spent after the configured number of launches</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
-<tr><td class="mono">launch count is recorded during the introduction</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">launch count stops being written once the introduction is spent</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">name without the completion flag routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">onboarded with a driver profile routes to home</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">onboarded without a driver profile routes to driver naming</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">only the first reported handoff anchors the hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">pending upload count is captured during warm up</td><td><span class="tag PASS">PASS</span></td><td class="num">0.116</td></tr>
-<tr><td class="mono">progress never regresses across the startup sequence</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">progress reaches one hundred when initialisation completes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">returning user is not charged the introduction hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.013</td></tr>
-<tr><td class="mono">skip shortens the minimum display hold</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">slow database warm up does not change the destination</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">start is idempotent across configuration changes</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">successful initialisation does not report a fallback</td><td><span class="tag PASS">PASS</span></td><td class="num">0.006</td></tr>
-<tr><td class="mono">tap cuts the introduction short</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-</table></div></details>
-<details><summary>TelemetryFileWriterIntegrationTest <span class='note'>— 5 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">gpsCoordinatesProgressRealisticallDuringDrive</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
-<tr><td class="mono">highFrequencyWritesMaintainValidJsonlFormat</td><td><span class="tag PASS">PASS</span></td><td class="num">0.172</td></tr>
-<tr><td class="mono">oneMinuteRecordingProducesValidJsonlFile</td><td><span class="tag PASS">PASS</span></td><td class="num">0.050</td></tr>
-<tr><td class="mono">periodicFlushPersistsDataBeforeClose</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
-<tr><td class="mono">unflushedDataMayBeLostOnCrash</td><td><span class="tag PASS">PASS</span></td><td class="num">0.016</td></tr>
-</table></div></details>
-<details><summary>TelemetryFileWriterTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">benchmark 18000 samples writes in under 100ms</td><td><span class="tag PASS">PASS</span></td><td class="num">0.538</td></tr>
-<tr><td class="mono">empty file returns empty list</td><td><span class="tag PASS">PASS</span></td><td class="num">0.003</td></tr>
-<tr><td class="mono">malformed line does not crash readAll</td><td><span class="tag PASS">PASS</span></td><td class="num">0.004</td></tr>
-<tr><td class="mono">non-existent file returns empty list</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">sample values are preserved through serialization</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">write and read round-trip with 100 samples</td><td><span class="tag PASS">PASS</span></td><td class="num">0.015</td></tr>
-</table></div></details>
-<details><summary>TelemetryUploadWorkerMockWebServerTest <span class='note'>— 8 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">clientError400ReturnsFailureNoRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
-<tr><td class="mono">clientError401ReturnsFailureNoRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.033</td></tr>
-<tr><td class="mono">connectionTimeoutTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">1.039</td></tr>
-<tr><td class="mono">multipleRetryAttemptsWithEventualSuccess</td><td><span class="tag PASS">PASS</span></td><td class="num">0.079</td></tr>
-<tr><td class="mono">requestContainsCorrectMultipartData</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
-<tr><td class="mono">serverError500TriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.028</td></tr>
-<tr><td class="mono">serverError503TriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">1.953</td></tr>
-<tr><td class="mono">successfulUploadReturnsSuccess</td><td><span class="tag PASS">PASS</span></td><td class="num">0.036</td></tr>
-</table></div></details>
-<details><summary>TelemetryUploadWorkerTest <span class='note'>— 8 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">alreadyUploadedSessionReturnsSuccessWithoutApiCall</td><td><span class="tag PASS">PASS</span></td><td class="num">0.009</td></tr>
-<tr><td class="mono">clientErrorReturnsFailureWithoutRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.219</td></tr>
-<tr><td class="mono">invalidSessionIdReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">missingTelemetryFileReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">networkExceptionTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.014</td></tr>
-<tr><td class="mono">serverErrorTriggersRetry</td><td><span class="tag PASS">PASS</span></td><td class="num">0.010</td></tr>
-<tr><td class="mono">sessionNotFoundReturnsFailure</td><td><span class="tag PASS">PASS</span></td><td class="num">0.041</td></tr>
-<tr><td class="mono">successfulUploadTransitionsStatusToDone</td><td><span class="tag PASS">PASS</span></td><td class="num">0.012</td></tr>
-</table></div></details>
-<details><summary>TrackPathProjectionTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">brakingPointsFallInsideBrakingZones</td><td><span class="tag PASS">PASS</span></td><td class="num">0.018</td></tr>
-<tr><td class="mono">everyCornerHasAMarkerOnTheOutline</td><td><span class="tag PASS">PASS</span></td><td class="num">0.023</td></tr>
-<tr><td class="mono">everyDrawnPointIsInsideTheUnitSquare</td><td><span class="tag PASS">PASS</span></td><td class="num">0.030</td></tr>
-<tr><td class="mono">theShapeOfTheTrackIsNotStretched</td><td><span class="tag PASS">PASS</span></td><td class="num">0.025</td></tr>
-<tr><td class="mono">theStartFinishLineIsMarkedWhereItWasCaptured</td><td><span class="tag PASS">PASS</span></td><td class="num">0.019</td></tr>
-<tr><td class="mono">thinningKeepsBothEndsOfTheLap</td><td><span class="tag PASS">PASS</span></td><td class="num">0.043</td></tr>
-</table></div></details>
-<details><summary>TrackSetupViewModelTest <span class='note'>— 11 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">clear resets all state</td><td><span class="tag PASS">PASS</span></td><td class="num">0.007</td></tr>
-<tr><td class="mono">getStartLineCoords returns coords when valid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.008</td></tr>
-<tr><td class="mono">getStartLineCoords returns null when invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.002</td></tr>
-<tr><td class="mono">initial state has no points and is invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">re-capturing pointA clears pointB</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
-<tr><td class="mono">setPointA captures location</td><td><span class="tag PASS">PASS</span></td><td class="num">0.005</td></tr>
-<tr><td class="mono">setPointB calculates distance and validates</td><td><span class="tag PASS">PASS</span></td><td class="num">0.011</td></tr>
-<tr><td class="mono">setPointB with too short distance is invalid</td><td><span class="tag PASS">PASS</span></td><td class="num">0.120</td></tr>
-<tr><td class="mono">updateGpsStatus marks GPS not ready with few satellites</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-<tr><td class="mono">updateGpsStatus marks GPS not ready with poor accuracy</td><td><span class="tag PASS">PASS</span></td><td class="num">0.000</td></tr>
-<tr><td class="mono">updateGpsStatus marks GPS ready when accuracy and satellites are good</td><td><span class="tag PASS">PASS</span></td><td class="num">0.001</td></tr>
-</table></div></details>
-<h3>L2 — 19 classes</h3>
-<details><summary>AboutScreenTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">aboutIsReachableFromTheProfileScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">1.532</td></tr>
-<tr><td class="mono">aboutScreenReportsTheBuildIdentityFromBuildConfig</td><td><span class="tag PASS">PASS</span></td><td class="num">0.861</td></tr>
-<tr><td class="mono">aboutScreenShowsTheBrandIdentityAndManifesto</td><td><span class="tag PASS">PASS</span></td><td class="num">0.831</td></tr>
-<tr><td class="mono">reportedVersionMatchesTheInstalledPackage</td><td><span class="tag PASS">PASS</span></td><td class="num">0.055</td></tr>
-</table></div></details>
-<details><summary>AnalysisTabTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">analysisTabIsPresentOnTheSessionResultScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">1.008</td></tr>
-<tr><td class="mono">analysisTabRendersStatsMapAndDerivedTables</td><td><span class="tag PASS">PASS</span></td><td class="num">2.530</td></tr>
-<tr><td class="mono">missingTelemetryShowsTheEmptyStateInsteadOfCrashing</td><td><span class="tag PASS">PASS</span></td><td class="num">2.288</td></tr>
-<tr><td class="mono">pickingADifferentLapRebuildsTheReferenceView</td><td><span class="tag PASS">PASS</span></td><td class="num">3.707</td></tr>
-</table></div></details>
-<details><summary>DriverNameFlowTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">aSavedDriverGoesStraightToHomeOnRelaunch</td><td><span class="tag PASS">PASS</span></td><td class="num">5.587</td></tr>
-<tr><td class="mono">anOnboardedDriverWithoutAProfileIsAskedToName</td><td><span class="tag PASS">PASS</span></td><td class="num">1.912</td></tr>
-<tr><td class="mono">namingTheDriverOpensTheApp</td><td><span class="tag PASS">PASS</span></td><td class="num">2.734</td></tr>
-<tr><td class="mono">surroundingWhitespaceIsTrimmedFromTheSavedName</td><td><span class="tag PASS">PASS</span></td><td class="num">3.192</td></tr>
-<tr><td class="mono">theCallToActionIsDisabledUntilTheNameIsValid</td><td><span class="tag PASS">PASS</span></td><td class="num">2.170</td></tr>
-<tr><td class="mono">theDemoModeShortcutIsGone</td><td><span class="tag PASS">PASS</span></td><td class="num">2.619</td></tr>
-<tr><td class="mono">theSavedNameIsShownOnTheProfileScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">4.184</td></tr>
-</table></div></details>
-<details><summary>EndToEndTest <span class='note'>— @Ignore — 5 test(s) never ran</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.087</td></tr>
-</table></div></details>
-<details><summary>HomeGpsChipTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">backgroundingTheAppReleasesTheChip</td><td><span class="tag PASS">PASS</span></td><td class="num">3.724</td></tr>
-<tr><td class="mono">chipReportsAcquiringUntilAFixIsAccurateEnough</td><td><span class="tag PASS">PASS</span></td><td class="num">3.133</td></tr>
-<tr><td class="mono">chipReportsReadyOnceTheFixIsUsable</td><td><span class="tag PASS">PASS</span></td><td class="num">2.084</td></tr>
-<tr><td class="mono">homeGoingAwayDoesNotReleaseTheChip</td><td><span class="tag PASS">PASS</span></td><td class="num">5.681</td></tr>
-<tr><td class="mono">homeSubscribesToLocationWithoutBeingAsked</td><td><span class="tag PASS">PASS</span></td><td class="num">2.225</td></tr>
-<tr><td class="mono">readinessDegradesIfAccuracyWorsens</td><td><span class="tag PASS">PASS</span></td><td class="num">2.240</td></tr>
-<tr><td class="mono">returningToTheAppWarmsUpAgain</td><td><span class="tag PASS">PASS</span></td><td class="num">2.960</td></tr>
-</table></div></details>
-<details><summary>HomeHeroTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">collapsingTheHeroRevealsThePinnedBrandBar</td><td><span class="tag PASS">PASS</span></td><td class="num">2.135</td></tr>
-<tr><td class="mono">expandedHeroShowsTheBrandAndHidesThePinnedBar</td><td><span class="tag PASS">PASS</span></td><td class="num">1.863</td></tr>
-<tr><td class="mono">heroIsConfiguredToCollapseOnScroll</td><td><span class="tag PASS">PASS</span></td><td class="num">2.067</td></tr>
-<tr><td class="mono">startSessionRemainsVisibleAcrossTheWholeCollapse</td><td><span class="tag PASS">PASS</span></td><td class="num">2.214</td></tr>
-</table></div></details>
-<details><summary>RecordingFragmentTest <span class='note'>— @Ignore — 7 test(s) never ran</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.012</td></tr>
-</table></div></details>
-<details><summary>SessionShareTest <span class='note'>— 6 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">exportingLeavesTheRecordedSessionUntouched</td><td><span class="tag PASS">PASS</span></td><td class="num">1.348</td></tr>
-<tr><td class="mono">longPressIsConsumedSoNoTooltipIsShown</td><td><span class="tag PASS">PASS</span></td><td class="num">1.303</td></tr>
-<tr><td class="mono">longPressingShareExportsTheTelemetryBundle</td><td><span class="tag PASS">PASS</span></td><td class="num">1.227</td></tr>
-<tr><td class="mono">missingTelemetryFileSurfacesAnErrorInsteadOfFailingSilently</td><td><span class="tag PASS">PASS</span></td><td class="num">1.265</td></tr>
-<tr><td class="mono">shareActionIsPresentOnTheSessionResultToolbar</td><td><span class="tag PASS">PASS</span></td><td class="num">1.954</td></tr>
-<tr><td class="mono">tappingShareSendsTheSessionCardImage</td><td><span class="tag PASS">PASS</span></td><td class="num">1.479</td></tr>
-</table></div></details>
-<details><summary>SplashFallbackTest <span class='note'>— 3 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">startupNeverStrandsTheUserOnTheLoadingScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">3.913</td></tr>
-<tr><td class="mono">unreadableStartupStateFallsBackToOnboarding</td><td><span class="tag PASS">PASS</span></td><td class="num">3.747</td></tr>
-<tr><td class="mono">unreadableStartupStateNeverFallsBackToLogin</td><td><span class="tag PASS">PASS</span></td><td class="num">3.853</td></tr>
-</table></div></details>
-<details><summary>SplashIntroductionTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">firstLaunchHoldsTheManifestoOnScreen</td><td><span class="tag PASS">PASS</span></td><td class="num">4.725</td></tr>
-<tr><td class="mono">firstLaunchInvitesTheUserToContinueRatherThanToSkip</td><td><span class="tag PASS">PASS</span></td><td class="num">2.647</td></tr>
-</table></div></details>
-<details><summary>SplashMainThreadTest <span class='note'>— 3 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">loadingScreenRendersWhileStartupStateIsUnavailable</td><td><span class="tag PASS">PASS</span></td><td class="num">1.472</td></tr>
-<tr><td class="mono">mainThreadStaysResponsiveWhileStartupStateIsUnavailable</td><td><span class="tag PASS">PASS</span></td><td class="num">4.398</td></tr>
-<tr><td class="mono">stalledStartupHoldsTheLoadingScreenRatherThanNavigatingBlindly</td><td><span class="tag PASS">PASS</span></td><td class="num">4.831</td></tr>
-</table></div></details>
-<details><summary>SplashReturningUserTest <span class='note'>— 1 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">returningUserIsNotHeldByTheIntroductionWindow</td><td><span class="tag PASS">PASS</span></td><td class="num">1.703</td></tr>
-</table></div></details>
-<details><summary>SplashScreenTest <span class='note'>— 7 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">footerMetricsAreNotClippedByTheSystemBars</td><td><span class="tag PASS">PASS</span></td><td class="num">1.323</td></tr>
-<tr><td class="mono">loadingScreenDisplaysEveryBrandElement</td><td><span class="tag PASS">PASS</span></td><td class="num">1.828</td></tr>
-<tr><td class="mono">loadingScreenRemainsWhileTheBrandHoldIsPending</td><td><span class="tag PASS">PASS</span></td><td class="num">4.841</td></tr>
-<tr><td class="mono">progressIndicatorIsDeterminateAndAdvances</td><td><span class="tag PASS">PASS</span></td><td class="num">1.435</td></tr>
-<tr><td class="mono">progressLabelMatchesTheIndicatorValue</td><td><span class="tag PASS">PASS</span></td><td class="num">2.405</td></tr>
-<tr><td class="mono">tapAffordanceIsVisibleNotJustAnAccessibilityLabel</td><td><span class="tag PASS">PASS</span></td><td class="num">1.294</td></tr>
-<tr><td class="mono">tappingTheLoadingScreenSkipsTheBrandHold</td><td><span class="tag PASS">PASS</span></td><td class="num">1.866</td></tr>
-</table></div></details>
-<details><summary>StartLineFreshnessTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">aStaleFixDoesNotUnlockStartLineCapture</td><td><span class="tag PASS">PASS</span></td><td class="num">3.630</td></tr>
-<tr><td class="mono">captureUnlocksAsSoonAsAFreshFixArrives</td><td><span class="tag PASS">PASS</span></td><td class="num">3.156</td></tr>
-</table></div></details>
-<details><summary>StartupBackStackTest <span class='note'>— 2 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">loadingScreenIsPoppedOffTheBackStack</td><td><span class="tag PASS">PASS</span></td><td class="num">4.279</td></tr>
-<tr><td class="mono">seededSessionLandsOnHome</td><td><span class="tag PASS">PASS</span></td><td class="num">1.654</td></tr>
-</table></div></details>
-<details><summary>TelemetryForegroundServiceTest <span class='note'>— @Ignore — 6 test(s) never ran</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.009</td></tr>
-</table></div></details>
-<details><summary>TrackSetupFragmentTest <span class='note'>— @Ignore — 11 test(s) never ran</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">(whole class skipped)</td><td><span class="tag SKIPPED">SKIPPED</span></td><td class="num">0.002</td></tr>
-</table></div></details>
-<details><summary>TrackSetupResubscribeTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">captureBecomesAvailableOnceTheFixIsAccurateEnough</td><td><span class="tag PASS">PASS</span></td><td class="num">2.718</td></tr>
-<tr><td class="mono">captureStillWorksAfterAStopStartCycle</td><td><span class="tag PASS">PASS</span></td><td class="num">4.188</td></tr>
-<tr><td class="mono">locationUpdatesResumeAfterTheScreenStops</td><td><span class="tag PASS">PASS</span></td><td class="num">3.345</td></tr>
-<tr><td class="mono">trackSetupSubscribesOnArrival</td><td><span class="tag PASS">PASS</span></td><td class="num">2.130</td></tr>
-</table></div></details>
-<details><summary>WarmUpHandoverTest <span class='note'>— 4 test(s)</span></summary><div class='body'><table>
-<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>
-<tr><td class="mono">captureIsAvailableOnArrivalWhenGpsWasAlreadyReady</td><td><span class="tag PASS">PASS</span></td><td class="num">6.167</td></tr>
-<tr><td class="mono">gpsSubscriptionSurvivesTheHandoverFromHomeToTrackSetup</td><td><span class="tag PASS">PASS</span></td><td class="num">5.375</td></tr>
-<tr><td class="mono">warmUpStopsWhenTheAppLeavesTheForeground</td><td><span class="tag PASS">PASS</span></td><td class="num">5.776</td></tr>
-<tr><td class="mono">warmUpSurvivesAConfigurationChange</td><td><span class="tag PASS">PASS</span></td><td class="num">7.565</td></tr>
-</table></div></details>
-<h2>7. Manual acceptance tests (L4)</h2>
-<div class="verdict warn"><b>These tests are not automated and were not run.</b><br>A human must execute them with a car on a circuit and record the result. Nothing in sections 1 to 6 covers what they check: whether the app tells the truth about a real drive.</div>
-<p class="note">133 checks across 9 checklists in <code>05_tests/L4_SYS5_acceptance/</code>.</p>
-<details><summary>10_PRE_TRACK_DAY_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">PRE-01</td><td>Backend Health Check</td></tr>
-<tr><td class="mono">PRE-02</td><td>Firebase Authentication Test</td></tr>
-<tr><td class="mono">PRE-03</td><td>Permission Flow Test</td></tr>
-<tr><td class="mono">PRE-04</td><td>Home Screen Load Test</td></tr>
-<tr><td class="mono">PRE-05</td><td>Start Session Flow Test (Indoor/Simulated)</td></tr>
-<tr><td class="mono">PRE-06</td><td>Session Upload Test</td></tr>
-<tr><td class="mono">PRE-07</td><td>Session Result Tabs Test</td></tr>
-<tr><td class="mono">PRE-08</td><td>Share Functionality Test</td></tr>
-<tr><td class="mono">PRE-09</td><td>Profile and Sign Out Test</td></tr>
-<tr><td class="mono">PRE-10</td><td>Error Handling Test</td></tr>
-</table></div></details>
-<details><summary>20_ONBOARDING_TESTS.md <span class='note'>— 17 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">BRD-01</td><td>Helmet Emblem Renders Correctly at All Sizes</td></tr>
-<tr><td class="mono">BRD-02</td><td>Engineering Manifesto Is Actually Readable</td></tr>
-<tr><td class="mono">BRD-03</td><td>About Screen Reports the Build</td></tr>
-<tr><td class="mono">ONB-01</td><td>First Launch Shows Onboarding</td></tr>
-<tr><td class="mono">ONB-02</td><td>Onboarding Page Content</td></tr>
-<tr><td class="mono">ONB-03</td><td>Permission Grant — All Accepted</td></tr>
-<tr><td class="mono">ONB-04</td><td>Permission Grant — Location Denied</td></tr>
-<tr><td class="mono">ONB-05</td><td>Permission Grant — Skip After Denial</td></tr>
-<tr><td class="mono">ONB-06</td><td>Onboarding Persistence</td></tr>
-<tr><td class="mono">REG-01</td><td>Registration Form Validation</td></tr>
-<tr><td class="mono">REG-02</td><td>Successful Registration</td></tr>
-<tr><td class="mono">REG-03</td><td>Duplicate Email Registration</td></tr>
-<tr><td class="mono">LOG-01</td><td>Login Form Validation</td></tr>
-<tr><td class="mono">LOG-02</td><td>Successful Login</td></tr>
-<tr><td class="mono">LOG-03</td><td>Failed Login — Wrong Password</td></tr>
-<tr><td class="mono">LOG-04</td><td>Failed Login — Non-existent User</td></tr>
-<tr><td class="mono">LOG-05</td><td>Session Persistence</td></tr>
-</table></div></details>
-<details><summary>30_TRACK_SETUP_TESTS.md <span class='note'>— 9 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">TS-00</td><td>GPS Warm-Up on Home</td></tr>
-<tr><td class="mono">TS-01</td><td>Access Track Setup Screen</td></tr>
-<tr><td class="mono">TS-02</td><td>GPS Status Display</td></tr>
-<tr><td class="mono">TS-03</td><td>Capture Point A</td></tr>
-<tr><td class="mono">TS-04</td><td>Capture Point B and Line Width</td></tr>
-<tr><td class="mono">TS-05</td><td>Line Distance Validation — Too Close</td></tr>
-<tr><td class="mono">TS-06</td><td>Clear Button</td></tr>
-<tr><td class="mono">TS-07</td><td>Valid Line Distance and Start Recording</td></tr>
-<tr><td class="mono">TS-08</td><td>Start/Finish Coordinates Storage</td></tr>
-</table></div></details>
-<details><summary>40_SESSION_RECORDING_TESTS.md <span class='note'>— 16 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">REC-01</td><td>Start Recording Screen</td></tr>
-<tr><td class="mono">REC-02</td><td>Elapsed Time Counter</td></tr>
-<tr><td class="mono">REC-03</td><td>GPS Status Indicator</td></tr>
-<tr><td class="mono">REC-04</td><td>REC Badge Animation</td></tr>
-<tr><td class="mono">REC-05</td><td>Screen Stays On</td></tr>
-<tr><td class="mono">REC-06</td><td>Stop Recording</td></tr>
-<tr><td class="mono">REC-07</td><td>Permission Denied Handling</td></tr>
-<tr><td class="mono">SVC-01</td><td>Foreground Service Notification</td></tr>
-<tr><td class="mono">SVC-02</td><td>GPS Signal Lost Notification</td></tr>
-<tr><td class="mono">SVC-03</td><td>Background Recording</td></tr>
-<tr><td class="mono">SVC-04</td><td>Recording Survives Process Kill</td></tr>
-<tr><td class="mono">TEL-01</td><td>GPS Data Quality at Track</td></tr>
-<tr><td class="mono">TEL-02</td><td>10 Hz GPS Sample Rate</td></tr>
-<tr><td class="mono">TEL-03</td><td>IMU Data Capture</td></tr>
-<tr><td class="mono">TEL-04</td><td>GPS Accuracy Warning</td></tr>
-<tr><td class="mono">TEL-05</td><td>Long Session Stability (30 minutes)</td></tr>
-</table></div></details>
-<details><summary>50_LAP_DETECTION_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">LD-01</td><td>Basic Lap Detection</td></tr>
-<tr><td class="mono">LD-02</td><td>Out-Lap Ignored (10-Second Skip)</td></tr>
-<tr><td class="mono">LD-03</td><td>Minimum Lap Time Guard (20 seconds)</td></tr>
-<tr><td class="mono">LD-04</td><td>Last Incomplete Lap Discarded</td></tr>
-<tr><td class="mono">LD-05</td><td>Insufficient Samples Handling</td></tr>
-<tr><td class="mono">LD-06</td><td>Fewer Than 2 Laps Handling</td></tr>
-<tr><td class="mono">LD-07</td><td>Sector Computation</td></tr>
-<tr><td class="mono">LD-08</td><td>Best Lap Identification</td></tr>
-<tr><td class="mono">LD-09</td><td>Processing Status Progression</td></tr>
-<tr><td class="mono">LD-10</td><td>Processing Time Performance</td></tr>
-</table></div></details>
-<details><summary>60_SESSION_RESULTS_TESTS.md <span class='note'>— 23 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">RES-01</td><td>Session Result Screen Layout</td></tr>
-<tr><td class="mono">RES-02</td><td>Tab Navigation</td></tr>
-<tr><td class="mono">LAP-01</td><td>Lap List Display</td></tr>
-<tr><td class="mono">LAP-02</td><td>Best Lap Styling</td></tr>
-<tr><td class="mono">LAP-03</td><td>Delta Badge Colors</td></tr>
-<tr><td class="mono">LAP-04</td><td>Lap Card Tap Navigation</td></tr>
-<tr><td class="mono">DET-01</td><td>Lap Detail Layout</td></tr>
-<tr><td class="mono">DET-02</td><td>Sector Comparison</td></tr>
-<tr><td class="mono">DET-03</td><td>Monospace Formatting</td></tr>
-<tr><td class="mono">COACH-01</td><td>Consistency Score Display</td></tr>
-<tr><td class="mono">COACH-02</td><td>Coaching Insight Cards</td></tr>
-<tr><td class="mono">COACH-03</td><td>Processing In Progress UI</td></tr>
-<tr><td class="mono">COACH-04</td><td>Failed Processing UI</td></tr>
-<tr><td class="mono">CHART-01</td><td>Speed Chart Display</td></tr>
-<tr><td class="mono">CHART-02</td><td>Lap Line Colors</td></tr>
-<tr><td class="mono">CHART-03</td><td>Speed Unit Conversion</td></tr>
-<tr><td class="mono">CHART-04</td><td>Chart Interactions</td></tr>
-<tr><td class="mono">ANA-01</td><td>Analysis Tab Layout</td></tr>
-<tr><td class="mono">ANA-02</td><td>Track Map Fidelity</td></tr>
-<tr><td class="mono">ANA-03</td><td>Corner Detection Plausibility</td></tr>
-<tr><td class="mono">ANA-04</td><td>Braking Zones</td></tr>
-<tr><td class="mono">ANA-05</td><td>Reference Lap Selection</td></tr>
-<tr><td class="mono">ANA-06</td><td>Degraded Sessions</td></tr>
-</table></div></details>
-<details><summary>70_AI_COACHING_TESTS.md <span class='note'>— 10 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">AI-01</td><td>Coaching Trigger After Lap Detection</td></tr>
-<tr><td class="mono">AI-02</td><td>Coaching Insight Count</td></tr>
-<tr><td class="mono">AI-03</td><td>Insight Headline Quality</td></tr>
-<tr><td class="mono">AI-04</td><td>Insight Detail Quality</td></tr>
-<tr><td class="mono">AI-05</td><td>Insights Reference Session Data</td></tr>
-<tr><td class="mono">AI-06</td><td>Consistency Score Accuracy</td></tr>
-<tr><td class="mono">AI-07</td><td>Coaching Without Enough Laps</td></tr>
-<tr><td class="mono">AI-08</td><td>Coaching API Failure Handling</td></tr>
-<tr><td class="mono">AI-09</td><td>Coaching Insights Persistence</td></tr>
-<tr><td class="mono">AI-10</td><td>Multiple Sessions Different Insights</td></tr>
-</table></div></details>
-<details><summary>80_SHARE_AND_PROFILE_TESTS.md <span class='note'>— 20 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">SHARE-01</td><td>Share Icon Visibility</td></tr>
-<tr><td class="mono">SHARE-02</td><td>Share Card Generation</td></tr>
-<tr><td class="mono">SHARE-03</td><td>Share Card Content</td></tr>
-<tr><td class="mono">SHARE-04</td><td>Share Card Typography</td></tr>
-<tr><td class="mono">SHARE-05</td><td>Share to Different Targets</td></tr>
-<tr><td class="mono">SHARE-06</td><td>FileProvider Configuration</td></tr>
-<tr><td class="mono">SHARE-07</td><td>Telemetry Export Gesture</td></tr>
-<tr><td class="mono">SHARE-08</td><td>Telemetry Bundle Contents</td></tr>
-<tr><td class="mono">SHARE-09</td><td>Export Failure Is Visible</td></tr>
-<tr><td class="mono">SHARE-10</td><td>Sharing Does Not Alter Recorded Data</td></tr>
-<tr><td class="mono">PROF-01</td><td>Profile Screen Access</td></tr>
-<tr><td class="mono">PROF-02</td><td>Avatar Display</td></tr>
-<tr><td class="mono">PROF-03</td><td>User Information Display</td></tr>
-<tr><td class="mono">PROF-04</td><td>Statistics Row</td></tr>
-<tr><td class="mono">PROF-05</td><td>Statistics Accuracy</td></tr>
-<tr><td class="mono">SIGN-01</td><td>Sign Out Button Visibility</td></tr>
-<tr><td class="mono">SIGN-02</td><td>Sign Out Execution</td></tr>
-<tr><td class="mono">SIGN-03</td><td>Local Data Cleared on Sign Out</td></tr>
-<tr><td class="mono">SIGN-04</td><td>Sign Out and Re-login</td></tr>
-<tr><td class="mono">SIGN-05</td><td>Sign Out During Recording</td></tr>
-</table></div></details>
-<details><summary>90_ERROR_HANDLING_TESTS.md <span class='note'>— 18 checks</span></summary><div class='body'><table>
-<tr><th>ID</th><th>Check</th></tr>
-<tr><td class="mono">NET-01</td><td>No Network on Login</td></tr>
-<tr><td class="mono">NET-02</td><td>No Network on Registration</td></tr>
-<tr><td class="mono">NET-03</td><td>Network Loss During Session Upload</td></tr>
-<tr><td class="mono">NET-04</td><td>Backend Unavailable</td></tr>
-<tr><td class="mono">NET-05</td><td>Slow Network Handling</td></tr>
-<tr><td class="mono">AUTH-01</td><td>Session Expired Handling</td></tr>
-<tr><td class="mono">AUTH-02</td><td>Token Refresh Transparency</td></tr>
-<tr><td class="mono">GPS-01</td><td>GPS Not Available</td></tr>
-<tr><td class="mono">GPS-02</td><td>GPS Signal Lost During Recording</td></tr>
-<tr><td class="mono">GPS-03</td><td>Poor GPS Accuracy</td></tr>
-<tr><td class="mono">DATA-01</td><td>Empty Session History</td></tr>
-<tr><td class="mono">DATA-02</td><td>Processing Failed Session</td></tr>
-<tr><td class="mono">DATA-03</td><td>Telemetry File Missing</td></tr>
-<tr><td class="mono">DATA-04</td><td>Stale Upload Banner</td></tr>
-<tr><td class="mono">EDGE-01</td><td>Screen Rotation</td></tr>
-<tr><td class="mono">EDGE-02</td><td>Process Death Recovery</td></tr>
-<tr><td class="mono">EDGE-03</td><td>Low Storage</td></tr>
-<tr><td class="mono">EDGE-04</td><td>Battery Saver Mode</td></tr>
-</table></div></details>
+<div class="verdict warn" style="margin-top:34px"><b>Before this build is trusted on track, a human still has to run the 133 manual checks in section 5.</b><br>Nothing above proves that the lap time on the screen matches the driver's own stopwatch, or that the drawn map is the circuit they just drove. Only a person in the car can do that.</div>
 <footer>
-Generated by <code>generate-html-report.py</code> at 2026-09-10 01:24:21 BST. 
+Generated by <code>generate-html-report.py</code> at 2026-09-10 01:38:09 BST. 
 Every figure is derived from JUnit XML, Kotlin source and <code>05_tests/coverage-map.tsv</code>; none of it is written by hand.
 </footer></div></body></html>

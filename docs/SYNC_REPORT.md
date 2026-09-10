@@ -4,6 +4,64 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-10] Report section order — evidence before interpretation
+
+**Codebase Version:** v2.95
+**Trigger:** The report asserted requirements coverage before showing a single test name.
+The test inventory and the manual checklist now come first.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `generate-html-report.py` | ✅ Updated | Section order, 7 headings renumbered, 5 cross-references, closing L4 reminder |
+| `test_generate_html_report.py` | ✅ Updated | +3 tests (40 → 43): full order assertion, closing reminder, dangling-reference check |
+| `Test_Strategy.md` | ✅ Updated | §7 section table reordered, with the rationale |
+
+### New order
+
+| # | Section | Was |
+|---|---------|-----|
+| 1 | Results by test level | 1 |
+| 2 | How we test | 2 |
+| 3 | **Failures** | 5 |
+| 4 | Every automated test in this run | 6 |
+| 5 | Manual acceptance tests (L4) | 7 |
+| 6 | Requirements coverage | 3 |
+| 7 | Gaps and caveats | 4 |
+
+### Two deviations from the literal request, both agreed
+
+The request was to move sections 6 and 7 above section 3. Taken literally that would have
+left **Failures last**, below 245 requirement rows and a 55-row deferred table — on a red
+run, the one thing that matters would be the hardest thing to reach. Failures moved to 3
+instead.
+
+Moving L4 up also reversed an earlier explicit requirement that manual tests end the
+document. The warning banner stays at its new position, and a closing reminder was added
+after section 7 so the parting thought is still the human's:
+
+> Before this build is trusted on track, a human still has to run the 133 manual checks in
+> section 5.
+
+### Guarding the order
+
+Reordering prose is exactly the kind of edit that silently leaves a *"see section 4"*
+pointing at the wrong heading. Two new tests prevent it:
+
+- `test_sections_run_evidence_before_interpretation` asserts all seven headings appear in
+  the intended sequence, so a future move fails loudly instead of shuffling the narrative.
+- `test_no_dangling_section_references` extracts every `see section N` from the rendered
+  page and asserts that section exists.
+
+### Validation
+
+- Generator tests: **43/43 PASS** (the one ordering test that should have broken, did)
+- Rendered order verified: 1–7 in sequence; all 5 cross-references resolve
+- Deterministic, valid HTML nesting, no JS, no external URLs
+
+---
+
 ## [2026-09-10] Scope map — separating deferred from untested
 
 **Codebase Version:** v2.95

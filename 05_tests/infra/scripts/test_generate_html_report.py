@@ -11,6 +11,7 @@ Run with:
 """
 
 import importlib.util
+import re
 import sys
 import tempfile
 import unittest
@@ -283,11 +284,44 @@ class RenderingTest(unittest.TestCase):
         self.assertNotIn("http://", page)
         self.assertNotIn("https://", page)
 
-    def test_manual_tests_come_last_with_a_human_instruction(self):
+    def test_sections_run_evidence_before_interpretation(self):
+        # A reader is shown the failures, then every test that ran, then the
+        # manual checks -- and only then the claims made about them. Coverage
+        # asserted before a single test name has appeared is coverage taken on
+        # trust.
+        page = gen.render(self.context())
+        order = [
+            "1. Results by test level",
+            "2. How we test",
+            "3. Failures",
+            "4. Every automated test in this run",
+            "5. Manual acceptance tests (L4)",
+            "6. Requirements coverage",
+            "7. Gaps and caveats",
+        ]
+        positions = [page.index(heading) for heading in order]
+        self.assertEqual(positions, sorted(positions), "sections are out of order")
+
+    def test_manual_tests_carry_a_human_instruction(self):
         page = gen.render(self.context())
         self.assertIn("Manual acceptance tests", page)
         self.assertIn("A human must execute them", page)
-        self.assertGreater(page.index("Manual acceptance tests"), page.index("Requirements coverage"))
+
+    def test_the_document_closes_on_the_human_checks(self):
+        # L4 moved up the document, so the parting thought has to be restored
+        # deliberately: the last thing a reader sees is that a person still has
+        # to drive this.
+        page = gen.render(self.context())
+        self.assertIn("a human still has to run", page)
+        self.assertGreater(page.index("a human still has to run"), page.index("7. Gaps and caveats"))
+
+    def test_no_dangling_section_references(self):
+        page = gen.render(self.context(
+            deferred=[gen.Requirement("BE-01", "Backend API", "x", scope=gen.DEFERRED)],
+            uncovered=[gen.Requirement("LD-02", "Lap detection", "y")],
+        ))
+        for reference in re.findall(r"see section (\d+)", page):
+            self.assertIn(f"{reference}. ", page, f"section {reference} referenced but absent")
 
     def test_failures_are_shown_not_hidden(self):
         page = gen.render(self.context(

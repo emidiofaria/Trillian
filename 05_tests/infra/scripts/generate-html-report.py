@@ -607,8 +607,68 @@ def render(ctx) -> str:
           "have a passing test is reported as an error, so this cannot be used to quietly retire "
           "anything that was actually built.</p>")
 
+    # ---- failures ----
+    w("<h2>3. Failures</h2>")
+    if not ctx["failures"]:
+        w("<p>No test failed in this run.</p>")
+    else:
+        w("<table><tr><th>Level</th><th>Test</th><th>Message</th></tr>")
+        for case in ctx["failures"]:
+            w(f'<tr><td>{case.level}</td><td class="mono">{esc(case.simple_class)}.{esc(case.name)}</td>'
+              f'<td class="mono">{esc(case.message[:400])}</td></tr>')
+        w("</table>")
+
+    # ---- full inventory ----
+    w("<h2>4. Every automated test in this run</h2>")
+    w('<p class="note">The complete inventory, listed before any claim is made about it, so that '
+      "the coverage in section 6 is read against tests you have already seen rather than taken on "
+      "trust.</p>")
+    for level in ("L1", "L2"):
+        classes = ctx["by_class"].get(level, {})
+        if not classes:
+            continue
+        w(f"<h3>{level} — {len(classes)} classes</h3>")
+        for class_name in sorted(classes):
+            cases = classes[class_name]
+            failed = sum(1 for c in cases if c.status == "failed")
+            skipped = sum(1 for c in cases if c.status == "skipped")
+            source = ctx["source_classes"].get(class_name)
+            if source and source.ignored:
+                label = f"@Ignore — {source.declared} test(s) never ran"
+            else:
+                label = f"{len(cases)} test(s)"
+                if failed:
+                    label += f", {failed} failed"
+                if skipped:
+                    label += f", {skipped} skipped"
+            w(f"<details><summary>{esc(class_name)} <span class='note'>— {esc(label)}</span>"
+              "</summary><div class='body'><table>")
+            w('<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>')
+            for case in sorted(cases, key=lambda c: c.name):
+                status = {"passed": "PASS", "failed": "FAILED", "skipped": "SKIPPED"}[case.status]
+                name = case.name if case.name != "null" else "(whole class skipped)"
+                w(f'<tr><td class="mono">{esc(name)}</td><td>{tag(status)}</td>'
+                  f'<td class="num">{case.time:.3f}</td></tr>')
+            w("</table></div></details>")
+
+    # ---- manual, last ----
+    w("<h2>5. Manual acceptance tests (L4)</h2>")
+    w('<div class="verdict warn"><b>These tests are not automated and were not run.</b><br>'
+      "A human must execute them with a car on a circuit and record the result. Nothing in "
+      "else in this report covers what they check: whether the app tells the truth about a "
+      "real drive.</div>")
+    w(f'<p class="note">{ctx["l4_total"]} checks across {len(ctx["l4"])} checklists in '
+      "<code>05_tests/L4_SYS5_acceptance/</code>.</p>")
+    for filename, entries in ctx["l4"].items():
+        w(f"<details><summary>{esc(filename)} <span class='note'>— {len(entries)} checks</span>"
+          "</summary><div class='body'><table>")
+        w("<tr><th>ID</th><th>Check</th></tr>")
+        for test_id, title in entries:
+            w(f'<tr><td class="mono">{esc(test_id)}</td><td>{esc(title)}</td></tr>')
+        w("</table></div></details>")
+
     # ---- coverage ----
-    w("<h2>3. Requirements coverage</h2>")
+    w("<h2>6. Requirements coverage</h2>")
     w('<p class="note">Every requirement in the SRS, and the tests that claim it. '
       "Claims come from <code>05_tests/coverage-map.tsv</code> and are checked against the run: "
       "a claim naming a test that did not run, or no longer exists, is reported rather than "
@@ -619,7 +679,7 @@ def render(ctx) -> str:
       f'{len(ctx["deferred"])} deferred to V2. Both numbers are printed because either one alone '
       "misleads: the first flatters V1 by ignoring what was never built, the second punishes it "
       "for a scope decision that was made on purpose. Deferred requirements keep their row, their "
-      "reason and their count — see section 4.</p>")
+      "reason and their count — see section 7.</p>")
     w('<p class="note">The denominator is every requirement row in the SRS, excluding the '
       "architecture-decision and out-of-scope sections, which record intent rather than "
       "behaviour. No requirement is removed for being inconvenient.</p>")
@@ -673,7 +733,7 @@ def render(ctx) -> str:
         w("</table>")
 
     # ---- gaps ----
-    w("<h2>4. Gaps and caveats</h2>")
+    w("<h2>7. Gaps and caveats</h2>")
     if ctx["ignored_classes"]:
         w("<h3>Test classes that are switched off</h3>")
         w('<p class="note">These classes are annotated <code>@Ignore</code>. They compile, they '
@@ -711,7 +771,7 @@ def render(ctx) -> str:
         w(f'<p class="note">{len(ctx["uncovered"])} of {ctx["v1_total"]} V1 requirements carry no '
           "automated test. These are not deferred: they describe software that ships today and "
           "is not covered. Every one is "
-          'listed and marked <span class="tag UNCOVERED">UNCOVERED</span> in section 3, so none of '
+          'listed and marked <span class="tag UNCOVERED">UNCOVERED</span> in section 6, so none of '
           "them can hide. The count by area:</p>")
         by_section = OrderedDict()
         for req in ctx["uncovered"]:
@@ -728,63 +788,12 @@ def render(ctx) -> str:
             w(f'<tr><td class="mono">{esc(err)}</td></tr>')
         w("</table>")
 
-    # ---- failures ----
-    w("<h2>5. Failures</h2>")
-    if not ctx["failures"]:
-        w("<p>No test failed in this run.</p>")
-    else:
-        w("<table><tr><th>Level</th><th>Test</th><th>Message</th></tr>")
-        for case in ctx["failures"]:
-            w(f'<tr><td>{case.level}</td><td class="mono">{esc(case.simple_class)}.{esc(case.name)}</td>'
-              f'<td class="mono">{esc(case.message[:400])}</td></tr>')
-        w("</table>")
-
-    # ---- full inventory ----
-    w("<h2>6. Every automated test in this run</h2>")
-    w('<p class="note">The complete inventory, so that nothing above is taken on trust.</p>')
-    for level in ("L1", "L2"):
-        classes = ctx["by_class"].get(level, {})
-        if not classes:
-            continue
-        w(f"<h3>{level} — {len(classes)} classes</h3>")
-        for class_name in sorted(classes):
-            cases = classes[class_name]
-            failed = sum(1 for c in cases if c.status == "failed")
-            skipped = sum(1 for c in cases if c.status == "skipped")
-            source = ctx["source_classes"].get(class_name)
-            if source and source.ignored:
-                label = f"@Ignore — {source.declared} test(s) never ran"
-            else:
-                label = f"{len(cases)} test(s)"
-                if failed:
-                    label += f", {failed} failed"
-                if skipped:
-                    label += f", {skipped} skipped"
-            w(f"<details><summary>{esc(class_name)} <span class='note'>— {esc(label)}</span>"
-              "</summary><div class='body'><table>")
-            w('<tr><th>Test</th><th>Status</th><th class="num">Time (s)</th></tr>')
-            for case in sorted(cases, key=lambda c: c.name):
-                status = {"passed": "PASS", "failed": "FAILED", "skipped": "SKIPPED"}[case.status]
-                name = case.name if case.name != "null" else "(whole class skipped)"
-                w(f'<tr><td class="mono">{esc(name)}</td><td>{tag(status)}</td>'
-                  f'<td class="num">{case.time:.3f}</td></tr>')
-            w("</table></div></details>")
-
-    # ---- manual, last ----
-    w("<h2>7. Manual acceptance tests (L4)</h2>")
-    w('<div class="verdict warn"><b>These tests are not automated and were not run.</b><br>'
-      "A human must execute them with a car on a circuit and record the result. Nothing in "
-      "sections 1 to 6 covers what they check: whether the app tells the truth about a real "
-      "drive.</div>")
-    w(f'<p class="note">{ctx["l4_total"]} checks across {len(ctx["l4"])} checklists in '
-      "<code>05_tests/L4_SYS5_acceptance/</code>.</p>")
-    for filename, entries in ctx["l4"].items():
-        w(f"<details><summary>{esc(filename)} <span class='note'>— {len(entries)} checks</span>"
-          "</summary><div class='body'><table>")
-        w("<tr><th>ID</th><th>Check</th></tr>")
-        for test_id, title in entries:
-            w(f'<tr><td class="mono">{esc(test_id)}</td><td>{esc(title)}</td></tr>')
-        w("</table></div></details>")
+    if ctx["l4"]:
+        w('<div class="verdict warn" style="margin-top:34px"><b>Before this build is trusted on '
+          f'track, a human still has to run the {ctx["l4_total"]} manual checks in section 5.</b>'
+          "<br>Nothing above proves that the lap time on the screen matches the driver's own "
+          "stopwatch, or that the drawn map is the circuit they just drove. Only a person in the "
+          "car can do that.</div>")
 
     w("<footer>")
     w(f"Generated by <code>{esc(Path(__file__).name)}</code> at {esc(ctx['generated'])}. ")
@@ -858,7 +867,7 @@ def build_context(args):
         if level == "L3":
             status = "Not implemented"
         elif level == "L4":
-            status = "Manual — see section 7"
+            status = "Manual — see section 5"
             declared = sum(len(e) for e in l4.values())
             executed = passed = failed = skipped = hidden = 0
         elif not level_cases:
