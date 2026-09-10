@@ -4,6 +4,52 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-10] Evidence lives with the release, not in the working tree
+
+**Codebase Version:** v2.95
+**Trigger:** Two decisions taken by the human: test-run directories should not
+accumulate in the repository, and the README must not carry hardcoded counts.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `.gitignore` | Updated | `05_tests/reports/RUN_*/` now ignored |
+| `05_tests/reports/` | Untracked | 1 `RUN_` directory and 9 legacy flat reports removed from the index; files kept on disk |
+| `05_tests/reports/README.md` | Updated | "What is committed" now says nothing is |
+| `README.md` | Updated | Every count replaced by a link |
+
+### Why runs are no longer committed
+
+A `RUN_` directory is about 220 KB, almost all of it HTML that differs little
+between runs. Committing one per run would add tens of megabytes of
+near-duplicate evidence to a repository whose `.git` is already 62 MB, in
+exchange for snapshots nobody navigates by.
+
+Evidence still exists where it means something: `releases/v<version>-<slug>/`
+holds the APK together with the report describing it. That is the moment worth
+freezing — a build someone might install.
+
+Nine legacy `TEST_REPORT_*.md` files had been tracked while simultaneously
+matching an ignore rule, because git does not retroactively ignore a file it
+already follows. That contradiction is now resolved. Nothing is lost: they
+remain in history.
+
+### Why the README no longer states counts
+
+It had drifted to claiming 84 passing tests when 322 ran, and 117 requirements
+when there were 245. The fix earlier today was to correct the numbers, which
+only reset the clock — the next run would make them wrong again.
+
+Counts now appear only in generated artefacts. The README links to the
+traceability matrix and the test report and says "see there". Badges no longer
+carry figures: `tests-ASPICE L1 + L2` and `SRS-traceability matrix` are true for
+as long as the statements behind them are.
+
+The status table keeps its two ⚠️ rows but describes them qualitatively —
+"several classes sit behind a class-level `@Ignore`", "partial coverage" —
+so the admission survives without a number to go stale.
+
 ## [2026-09-10] Documentation drift audit — four stale artefacts
 
 **Codebase Version:** v2.95

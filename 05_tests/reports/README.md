@@ -78,14 +78,16 @@ python3 05_tests/infra/scripts/generate-html-report.py --source-date "2026-01-01
 
 ## What is committed
 
-`RUN_<timestamp>/` directories **are** tracked, so the evidence for a given
-commit stays with it. The legacy flat `TEST_REPORT_*.md` files are matched by
-`.gitignore`, though the ones committed before that rule was added remain
-tracked — git does not retroactively ignore a file it is already following.
+**Nothing in this directory except this README.** Test runs are scratch: they
+are regenerated on every run and would otherwise add a few hundred KB of
+near-identical HTML to the repository forever.
 
-Release copies live in `releases/v<version>-<slug>/` next to the APK they
-describe, so a build and its evidence cannot be separated. That directory is
-gitignored: it holds binaries.
+Evidence is kept where it means something — `releases/v<version>-<slug>/`, next
+to the APK it describes, so a build and the evidence for it cannot be separated.
+
+Local `RUN_<timestamp>/` directories and the legacy flat `TEST_REPORT_*.md`
+files are gitignored. Older reports committed before that rule remain reachable
+in git history.
 
 ---
 

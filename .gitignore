@@ -74,8 +74,11 @@ Thumbs.db
 # ============================================
 # Signed/unsigned APK archives kept locally for device testing
 /releases/
-# Generated test run reports (regenerated on every run)
+# Generated test run reports (regenerated on every run).
+# Evidence that matters is kept in releases/v<version>-<slug>/ next to the APK
+# it describes; a working-directory run is scratch, not history.
 05_tests/reports/TEST_REPORT_*.md
+05_tests/reports/RUN_*/
 
 # Python bytecode from the test report tooling
 __pycache__/
