@@ -265,6 +265,7 @@ class RenderingTest(unittest.TestCase):
                        "skipped_entries": 0, "hidden": 0},
             "sections": {"Startup": [req]},
             "uncovered": [], "covered_reqs": 1, "total_reqs": 1, "coverage_pct": 100,
+            "deferred": [], "v1_total": 1, "v1_covered": 1, "v1_pct": 100,
             "unbacked": [], "ignored_classes": [], "failures": [],
             "by_class": {"L1": {"SplashTest": [gen.TestCase("L1", "c.SplashTest", "a", "passed", 0.1)]}},
             "source_classes": {}, "map_errors": [], "l4": {"file.md": [("BRD-01", "Brake")]},
@@ -326,6 +327,129 @@ class DeterminismTest(unittest.TestCase):
         first = gen.render(ctx)
         req.claims.reverse()
         self.assertEqual(first, gen.render(ctx))
+
+
+class ScopeMapTest(unittest.TestCase):
+    """Deferring a requirement must be visible, overridable, and impossible to abuse."""
+
+    def requirements(self):
+        return {
+            "UM-01": gen.Requirement("UM-01", "User management", "Register"),
+            "UM-18": gen.Requirement("UM-18", "User management", "Profile screen"),
+            "LD-02": gen.Requirement("LD-02", "Lap detection", "Detect a lap"),
+            "OC-01": gen.Requirement("OC-01", "Offline coaching", "Local insights"),
+        }
+
+    def apply(self, text, requirements=None):
+        requirements = requirements or self.requirements()
+        original = gen.SCOPE_MAP
+        with tempfile.TemporaryDirectory() as tmp:
+            gen.SCOPE_MAP = write(Path(tmp), "scope-map.tsv", text)
+            try:
+                errors = gen.parse_scope_map(requirements)
+            finally:
+                gen.SCOPE_MAP = original
+        return requirements, errors
+
+    def test_a_section_line_defers_every_requirement_in_it(self):
+        reqs, errors = self.apply("V2-BACKEND\t@User management\tno server in V1\n")
+        self.assertEqual(errors, [])
+        self.assertTrue(reqs["UM-01"].deferred)
+        self.assertTrue(reqs["UM-18"].deferred)
+        self.assertFalse(reqs["LD-02"].deferred)
+        self.assertEqual(reqs["UM-01"].scope_reason, "no server in V1")
+
+    def test_a_requirement_line_overrides_its_section(self):
+        # The exception stays on its own line rather than being buried in a sweep.
+        reqs, errors = self.apply(
+            "V2-BACKEND\t@User management\tno server\n"
+            "V1\tUM-18\tProfile screen ships in V1\n"
+        )
+        self.assertEqual(errors, [])
+        self.assertTrue(reqs["UM-01"].deferred)
+        self.assertFalse(reqs["UM-18"].deferred)
+        self.assertEqual(reqs["UM-18"].scope_reason, "Profile screen ships in V1")
+
+    def test_override_order_in_the_file_does_not_matter(self):
+        reqs, _ = self.apply(
+            "V1\tUM-18\tships in V1\n"
+            "V2-BACKEND\t@User management\tno server\n"
+        )
+        self.assertFalse(reqs["UM-18"].deferred)
+
+    def test_deferring_something_that_has_a_passing_test_is_an_error(self):
+        # The guard that stops this file becoming a place to hide inconvenient
+        # requirements: it cannot be both unbuilt and proven.
+        reqs = self.requirements()
+        reqs["OC-01"].claims = [gen.Claim("OC-01", "OfflineCoachingEngineTest", "", "PASS")]
+        _, errors = self.apply("V2-BACKEND\tOC-01\twrongly deferred\n", reqs)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("OC-01", errors[0])
+        self.assertIn("passing test", errors[0])
+
+    def test_deferring_something_with_only_a_manual_claim_is_allowed(self):
+        reqs = self.requirements()
+        reqs["UM-01"].claims = [gen.Claim("UM-01", "L4:REG-01", "", "MANUAL")]
+        _, errors = self.apply("V2-BACKEND\tUM-01\tno auth in V1\n", reqs)
+        self.assertEqual(errors, [])
+
+    def test_unknown_section_is_reported(self):
+        _, errors = self.apply("V2-BACKEND\t@Nonexistent Section\ttypo\n")
+        self.assertEqual(len(errors), 1)
+        self.assertIn("Nonexistent Section", errors[0])
+
+    def test_unknown_requirement_is_reported(self):
+        _, errors = self.apply("V2-BACKEND\tZZ-99\ttypo\n")
+        self.assertEqual(len(errors), 1)
+        self.assertIn("ZZ-99", errors[0])
+
+    def test_unknown_scope_value_is_reported(self):
+        _, errors = self.apply("MAYBE\tLD-02\tvague\n")
+        self.assertEqual(len(errors), 1)
+        self.assertIn("MAYBE", errors[0])
+
+    def test_a_deferred_requirement_with_no_claim_is_not_uncovered(self):
+        reqs, _ = self.apply("V2-BACKEND\tUM-01\tno server\n")
+        self.assertEqual(reqs["UM-01"].status, "V2-BACKEND")
+        self.assertEqual(reqs["LD-02"].status, "UNCOVERED")
+
+    def test_scope_defaults_to_v1(self):
+        reqs, errors = self.apply("")
+        self.assertEqual(errors, [])
+        self.assertTrue(all(not r.deferred for r in reqs.values()))
+
+
+class DeferredRenderingTest(unittest.TestCase):
+    def page(self):
+        v1 = gen.Requirement("LD-02", "Lap detection", "Detect a lap")
+        deferred = gen.Requirement("BE-01", "Backend API", "Routes require a token")
+        deferred.scope, deferred.scope_reason = gen.DEFERRED, "No server in V1"
+        ctx = RenderingTest().context(
+            sections={"Lap detection": [v1], "Backend API": [deferred]},
+            uncovered=[v1], deferred=[deferred],
+            v1_total=1, v1_covered=0, v1_pct=0,
+            covered_reqs=0, total_reqs=2, coverage_pct=0,
+        )
+        return gen.render(ctx)
+
+    def test_both_denominators_are_printed(self):
+        # Either number alone misleads, so neither is allowed to appear on its own.
+        page = self.page()
+        self.assertIn("0 of 1 V1 requirements", page)
+        self.assertIn("0 of 2", page)
+
+    def test_deferred_requirements_are_listed_with_their_reason(self):
+        page = self.page()
+        self.assertIn("Deferred to V2", page)
+        self.assertIn("BE-01", page)
+        self.assertIn("No server in V1", page)
+
+    def test_deferred_requirements_are_not_counted_as_uncovered(self):
+        page = self.page()
+        self.assertIn("1 of 1 V1 requirements carry no", page)
+
+    def test_the_method_section_explains_the_scope_decision(self):
+        self.assertIn("V1 is deliberately offline-first", self.page())
 
 
 if __name__ == "__main__":

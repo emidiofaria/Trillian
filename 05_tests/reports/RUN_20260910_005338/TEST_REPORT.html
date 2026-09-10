@@ -38,6 +38,7 @@ letter-spacing:.3px;white-space:nowrap}
 .MISSING{background:#fdecea;color:var(--fail)}
 .MANUAL{background:#eceefc;color:var(--manual)}
 .UNCOVERED{background:#eceff1;color:var(--muted)}
+.V2-BACKEND{background:#e8f0fe;color:#1a56b0}
 details{background:#fff;border:1px solid var(--line);border-radius:6px;margin:8px 0}
 details[open]{box-shadow:0 1px 3px rgba(0,0,0,.07)}
 summary{cursor:pointer;padding:10px 14px;font-size:13.5px;font-weight:600;list-style:none}
@@ -62,10 +63,10 @@ color:var(--muted);font-size:12.5px}
 <div class="sub">Automated evidence, generated from test results — not written by hand.</div>
 <div class="meta">
 <span><b>Version:</b> v2.95</span>
-<span><b>Commit:</b> 7d307dc</span>
+<span><b>Commit:</b> 364a8d3</span>
 <span><b>Branch:</b> FT_Add_Advanced_racing_coach_step_1</span>
 <span><b>L2 device:</b> DrivingCoach_Test(AVD) - 11</span>
-<span><b>Generated:</b> 2026-09-10 00:55:40 BST</span>
+<span><b>Generated:</b> 2026-09-10 01:24:21 BST</span>
 </div></div></header>
 <div class="wrap">
 <div class="verdict warn"><b>All executed tests passed, with caveats below</b><br>
@@ -77,7 +78,8 @@ color:var(--muted);font-size:12.5px}
 <div><div class="n">322</div><div class="l">Passed</div></div>
 <div class=""><div class="n">0</div><div class="l">Failed</div></div>
 <div class="alert"><div class="n">29</div><div class="l">Never ran</div></div>
-<div><div class="n">68/245</div><div class="l">Requirements claimed</div></div>
+<div><div class="n">68/190</div><div class="l">V1 requirements claimed</div></div>
+<div><div class="n">55</div><div class="l">Deferred to V2</div></div>
 </div>
 <h2>1. Results by test level</h2>
 <p class="note">Levels follow Automotive SPICE. "Declared" counts <code>@Test</code> annotations in the source; "executed" counts what the run actually reported. A gap between the two is the number of tests that exist but are switched off.</p>
@@ -97,9 +99,12 @@ color:var(--muted);font-size:12.5px}
 <p>Reserved for end-to-end qualification against simulated GPS. Not implemented; reported here so its absence is visible rather than assumed.</p>
 <h3>L4 — Acceptance tests <span class='note'>(SYS.5)</span></h3>
 <p>A human with a car on a circuit. It is the only level that can judge whether the drawn track looks like the track, whether the corners found are the corners driven, and whether a lap time matches the driver&#x27;s own stopwatch.</p>
+<h3>What V1 does not build</h3>
+<p>V1 is deliberately offline-first: it records, detects laps, analyses and coaches entirely on the phone. 55 requirements in the SRS describe a server, Firebase authentication or a hosted model, none of which V1 deploys. They are marked <span class="tag V2-BACKEND">V2-BACKEND</span> throughout this report and counted separately, never removed. A requirement marked deferred that turns out to have a passing test is reported as an error, so this cannot be used to quietly retire anything that was actually built.</p>
 <h2>3. Requirements coverage</h2>
 <p class="note">Every requirement in the SRS, and the tests that claim it. Claims come from <code>05_tests/coverage-map.tsv</code> and are checked against the run: a claim naming a test that did not run, or no longer exists, is reported rather than counted. Expand a row to see the individual tests.</p>
-<p class="note"><b>68 of 245 requirements (28%) have at least one automated claim.</b> The denominator is every requirement row in the SRS, excluding the architecture-decision and out-of-scope sections, which record intent rather than behaviour. No requirement is removed from the count for being inconvenient.</p>
+<p class="note"><b>68 of 190 V1 requirements (36%) have at least one automated claim</b>, and 68 of 245 (28%) counting the 55 deferred to V2. Both numbers are printed because either one alone misleads: the first flatters V1 by ignoring what was never built, the second punishes it for a scope decision that was made on purpose. Deferred requirements keep their row, their reason and their count — see section 4.</p>
+<p class="note">The denominator is every requirement row in the SRS, excluding the architecture-decision and out-of-scope sections, which record intent rather than behaviour. No requirement is removed for being inconvenient.</p>
 <table><tr><th>Status</th><th>Meaning</th></tr>
 <tr><td><span class="tag PASS">PASS</span></td><td>The cited test ran and passed</td></tr>
 <tr><td><span class="tag FAILED">FAILED</span></td><td>The cited test ran and failed</td></tr>
@@ -107,59 +112,60 @@ color:var(--muted);font-size:12.5px}
 <tr><td><span class="tag MISSING">MISSING</span></td><td>The cited test was not found — the claim has rotted</td></tr>
 <tr><td><span class="tag MANUAL">MANUAL</span></td><td>An L4 claim; only a human at a circuit can discharge it</td></tr>
 <tr><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>No test claims this requirement</td></tr>
+<tr><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>V1 does not implement this; it needs a server, Firebase or a hosted model</td></tr>
 </table>
-<h3>User management <span class='note'>— 0/19 claimed</span></h3>
+<h3>User management <span class='note'>— 0/2 V1 requirements claimed, 17 deferred to V2</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
-<tr><td class="mono"><b>UM-01</b></td><td>The app shall allow a new user to register with an email address, password, and display name.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-01</b></td><td>The app shall allow a new user to register with an email address, password, and display name.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-02</b></td><td>Registration shall be handled entirely by Firebase Authentication SDK on the Android client; the backend shall not expose a `/register` endpoint.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-02</b></td><td>Registration shall be handled entirely by Firebase Authentication SDK on the Android client; the backend shall not expose a `/register` endpoint.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-03</b></td><td>Password minimum length shall be 8 characters, enforced client-side before submitting to Firebase.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-03</b></td><td>Password minimum length shall be 8 characters, enforced client-side before submitting to Firebase.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-04</b></td><td>The display name shall be a minimum of 2 characters and a maximum of 100 characters.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-04</b></td><td>The display name shall be a minimum of 2 characters and a maximum of 100 characters.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-05</b></td><td>On successful registration, the user shall be automatically signed in and directed to the Home screen with the back stack cleared.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-05</b></td><td>On successful registration, the user shall be automatically signed in and directed to the Home screen with the back stack cleared.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-06</b></td><td>On registration failure (e.g. email already in use), the app shall display the Firebase error message as a Snackbar.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-06</b></td><td>On registration failure (e.g. email already in use), the app shall display the Firebase error message as a Snackbar.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-07</b></td><td>The app shall allow an existing user to sign in with email and password via Firebase Authentication.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-07</b></td><td>The app shall allow an existing user to sign in with email and password via Firebase Authentication.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-08</b></td><td>On successful login, the user shall be directed to the Home screen with the back stack cleared.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-08</b></td><td>On successful login, the user shall be directed to the Home screen with the back stack cleared.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-09</b></td><td>On login failure, the app shall display a Snackbar with a clear error message; the password field shall not be cleared.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-09</b></td><td>On login failure, the app shall display a Snackbar with a clear error message; the password field shall not be cleared.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-10</b></td><td>While a login or registration request is in flight, the submit button shall be disabled and a circular progress indicator shall be visible.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-10</b></td><td>While a login or registration request is in flight, the submit button shall be disabled and a circular progress indicator shall be visible.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-11</b></td><td>The email field shall use `inputType=textEmailAddress`. The password field shall use `inputType=textPassword` with a visibility toggle icon.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-11</b></td><td>The email field shall use `inputType=textEmailAddress`. The password field shall use `inputType=textPassword` with a visibility toggle icon.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-12</b></td><td>Firebase ID tokens shall be attached automatically to every backend API request via an OkHttp interceptor (`FirebaseAuthInterceptor`).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-12</b></td><td>Firebase ID tokens shall be attached automatically to every backend API request via an OkHttp interceptor (`FirebaseAuthInterceptor`).</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-13</b></td><td>The Firebase SDK shall handle token refresh transparently; the app shall not implement custom token refresh logic.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-13</b></td><td>The Firebase SDK shall handle token refresh transparently; the app shall not implement custom token refresh logic.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-14</b></td><td>If the backend returns HTTP 401, the app shall emit a `sessionExpired` event, display a Snackbar &#x27;Session expired — please sign in again&#x27;, and navigate to the Login screen, clearing the back stack.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-14</b></td><td>If the backend returns HTTP 401, the app shall emit a `sessionExpired` event, display a Snackbar &#x27;Session expired — please sign in again&#x27;, and navigate to the Login screen, clearing the back stack.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-15</b></td><td>The backend shall verify all incoming Firebase ID tokens using the Firebase Admin SDK (`admin.auth().verifyIdToken()`). Requests with a missing, invalid, or expired token shall receive HTTP 401.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-15</b></td><td>The backend shall verify all incoming Firebase ID tokens using the Firebase Admin SDK (`admin.auth().verifyIdToken()`). Requests with a missing, invalid, or expired token shall receive HTTP 401.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-16</b></td><td>The app shall allow the user to sign out from the Profile screen.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-16</b></td><td>The app shall allow the user to sign out from the Profile screen.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
-<tr><td class="mono"><b>UM-17</b></td><td>On sign out, the app shall call `FirebaseAuth.signOut()`, delete all local Room DB records belonging to the current Firebase UID, and navigate to the Login screen.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>UM-17</b></td><td>On sign out, the app shall call `FirebaseAuth.signOut()`, delete all local Room DB records belonging to the current Firebase UID, and navigate to the Login screen.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</span>
 </td></tr>
 <tr><td class="mono"><b>UM-18</b></td><td>The Profile screen shall display the user&#x27;s display name, total session count, total lap count, and overall best lap time. *(Amended for V1: the email address is not displayed, because V1 has no account and therefore no email. The V2 restoration of accounts shall re-introduce it.)*</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -168,7 +174,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Driver profile (V1 local) <span class='note'>— 8/8 claimed</span></h3>
+<h3>Driver profile (V1 local) <span class='note'>— 8/8 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>DR-01</b></td><td>After onboarding completes, and before the Home screen is reachable, the app shall present a Driver Name screen asking the driver for a display name.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
 <details><summary>2 claim(s)</summary><div class='body'><table>
@@ -226,7 +232,7 @@ color:var(--muted);font-size:12.5px}
 </table></div></details>
 </td></tr>
 </table>
-<h3>Onboarding and permissions <span class='note'>— 0/8 claimed</span></h3>
+<h3>Onboarding and permissions <span class='note'>— 0/8 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>ON-01</b></td><td>On first launch, the app shall display the branded loading screen, followed by the onboarding screen before any other functional screen.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -253,7 +259,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Application startup and branding <span class='note'>— 9/12 claimed</span></h3>
+<h3>Application startup and branding <span class='note'>— 9/12 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>UI-01</b></td><td>On cold start the app shall display a branded loading screen showing the Trillian emblem, wordmark, kicker, tagline, engineering manifesto, and a determinate progress indicator reflecting actual initialisation progress.</td><td>L1 + L2</td><td><span class="tag PASS">PASS</span></td><td>
 <details><summary>2 claim(s)</summary><div class='body'><table>
@@ -325,7 +331,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Track setup — start/finish line <span class='note'>— 12/23 claimed</span></h3>
+<h3>Track setup — start/finish line <span class='note'>— 12/23 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>TS-01</b></td><td>Before starting a recording, the user shall define a start/finish line by capturing two GPS points at the track edges.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -438,7 +444,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Session recording <span class='note'>— 3/11 claimed</span></h3>
+<h3>Session recording <span class='note'>— 3/11 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>SR-01</b></td><td>The app shall provide a &#x27;START RECORDING&#x27; button on the Track Setup screen that begins a telemetry capture session.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -483,7 +489,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Telemetry capture <span class='note'>— 2/12 claimed</span></h3>
+<h3>Telemetry capture <span class='note'>— 2/12 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>TC-01</b></td><td>GPS samples shall be collected using `LocationManager` with provider `GPS_PROVIDER`, `minTimeMs=100` (targeting 10 Hz), `minDistanceM=0`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -528,7 +534,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Telemetry storage and upload <span class='note'>— 4/13 claimed</span></h3>
+<h3>Telemetry storage and upload <span class='note'>— 4/11 V1 requirements claimed, 2 deferred to V2</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>TU-01</b></td><td>Telemetry data shall be written to a local JSONL file during capture; the app shall not depend on a live network connection during recording.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -569,11 +575,11 @@ color:var(--muted);font-size:12.5px}
 <tr><td class="mono"><b>TU-09</b></td><td>If the local JSONL file does not exist when the worker runs, the worker shall return `Result.failure()`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
 </td></tr>
-<tr><td class="mono"><b>TU-10</b></td><td>The backend shall store the JSONL file in Azure Blob Storage under the path `{firebase_uid}/{sessionId}.jsonl` in the `telemetry` container.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>TU-10</b></td><td>The backend shall store the JSONL file in Azure Blob Storage under the path `{firebase_uid}/{sessionId}.jsonl` in the `telemetry` container.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Azure Blob Storage layout is a server concern</span>
 </td></tr>
-<tr><td class="mono"><b>TU-11</b></td><td>The backend shall accept JSONL files up to 50 MB.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>TU-11</b></td><td>The backend shall accept JSONL files up to 50 MB.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side upload size limit</span>
 </td></tr>
 <tr><td class="mono"><b>TU-12</b></td><td>If a session has `uploadStatus=PENDING` for more than 5 minutes, the Home screen shall show a dismissible banner: &#x27;Session upload pending — connect to Wi-Fi&#x27;.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -582,7 +588,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Lap detection <span class='note'>— 1/16 claimed</span></h3>
+<h3>Lap detection <span class='note'>— 1/16 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>LD-01</b></td><td>Lap detection shall be performed on the device, after recording stops, from the local JSONL telemetry file. It shall not require network connectivity.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -636,7 +642,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Lap comparison <span class='note'>— 0/15 claimed</span></h3>
+<h3>Lap comparison <span class='note'>— 0/15 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>LC-01</b></td><td>The Session Result screen shall display a &#x27;LAPS&#x27; tab listing all laps for the session, sorted by lap time ascending.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -684,7 +690,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Session analysis (ANALYSIS tab) <span class='note'>— 17/17 claimed</span></h3>
+<h3>Session analysis (ANALYSIS tab) <span class='note'>— 17/17 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>AS-01</b></td><td>The Session Result screen shall display a fourth tab labelled &#x27;ANALYSIS&#x27;, positioned after &#x27;CHART&#x27;.</td><td>L2</td><td><span class="tag PASS">PASS</span></td><td>
 <details><summary>1 claim(s)</summary><div class='body'><table>
@@ -797,37 +803,37 @@ color:var(--muted);font-size:12.5px}
 </table></div></details>
 </td></tr>
 </table>
-<h3>AI coaching feedback <span class='note'>— 8/24 claimed</span></h3>
+<h3>AI coaching feedback <span class='note'>— 8/13 V1 requirements claimed, 11 deferred to V2</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
-<tr><td class="mono"><b>AI-01</b></td><td>After lap processing completes (`processingStatus=LAPS_DONE`), the backend shall trigger an asynchronous AI coaching job.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-01</b></td><td>After lap processing completes (`processingStatus=LAPS_DONE`), the backend shall trigger an asynchronous AI coaching job.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Backend triggers the coaching job</span>
 </td></tr>
-<tr><td class="mono"><b>AI-02</b></td><td>The coaching job shall call the Anthropic API using the model `claude-sonnet-4-20250514` with `max_tokens=700`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-02</b></td><td>The coaching job shall call the Anthropic API using the model `claude-sonnet-4-20250514` with `max_tokens=700`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side Anthropic API call</span>
 </td></tr>
-<tr><td class="mono"><b>AI-03</b></td><td>The coaching prompt shall include: track name, total lap count, best lap time, average lap time, consistency score, and a sector-by-sector delta table comparing all laps to the best lap.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-03</b></td><td>The coaching prompt shall include: track name, total lap count, best lap time, average lap time, consistency score, and a sector-by-sector delta table comparing all laps to the best lap.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side prompt construction</span>
 </td></tr>
-<tr><td class="mono"><b>AI-04</b></td><td>The system prompt shall instruct the model to act as a professional motorsport driving coach and to always reference specific lap numbers, sector numbers, and time values.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-04</b></td><td>The system prompt shall instruct the model to act as a professional motorsport driving coach and to always reference specific lap numbers, sector numbers, and time values.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side system prompt</span>
 </td></tr>
-<tr><td class="mono"><b>AI-05</b></td><td>The model shall be instructed to respond with **exactly 4 coaching tips** in a valid JSON array and no other text: `[{&quot;headline&quot;:&quot;...&quot;,&quot;detail&quot;:&quot;...&quot;}]`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-05</b></td><td>The model shall be instructed to respond with **exactly 4 coaching tips** in a valid JSON array and no other text: `[{&quot;headline&quot;:&quot;...&quot;,&quot;detail&quot;:&quot;...&quot;}]`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Constrains the hosted model&#x27;s response</span>
 </td></tr>
-<tr><td class="mono"><b>AI-06</b></td><td>Each coaching tip headline shall be a maximum of 8 words. Each detail shall be a maximum of 35 words.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-06</b></td><td>Each coaching tip headline shall be a maximum of 8 words. Each detail shall be a maximum of 35 words.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Constrains the hosted model&#x27;s response</span>
 </td></tr>
-<tr><td class="mono"><b>AI-07</b></td><td>The backend shall strip markdown code fences from the response before JSON parsing.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-07</b></td><td>The backend shall strip markdown code fences from the response before JSON parsing.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side response cleaning</span>
 </td></tr>
-<tr><td class="mono"><b>AI-08</b></td><td>The backend shall validate the parsed response: must be an array of 3–5 items, each with `headline` (string, ≤ 100 chars) and `detail` (string, ≤ 300 chars).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-08</b></td><td>The backend shall validate the parsed response: must be an array of 3–5 items, each with `headline` (string, ≤ 100 chars) and `detail` (string, ≤ 300 chars).</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side response validation</span>
 </td></tr>
-<tr><td class="mono"><b>AI-09</b></td><td>Validated coaching tips shall be inserted into the `coaching_insights` table linked to the session.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-09</b></td><td>Validated coaching tips shall be inserted into the `coaching_insights` table linked to the session.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Writes to a backend table</span>
 </td></tr>
-<tr><td class="mono"><b>AI-10</b></td><td>If the Anthropic API call fails, or the response cannot be parsed or validated, the error shall be logged and coaching insights shall not be stored. The failure shall NOT set `processingStatus=FAILED`; the session shall still complete.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>AI-10</b></td><td>If the Anthropic API call fails, or the response cannot be parsed or validated, the error shall be logged and coaching insights shall not be stored. The failure shall NOT set `processingStatus=FAILED`; the session shall still complete.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side failure handling for the Anthropic call</span>
 </td></tr>
 <tr><td class="mono"><b>AI-11</b></td><td>The `COACH` tab on the Session Result screen shall display a consistency score summary card and one card per coaching insight (headline in H3 style, detail in Body style).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -892,11 +898,11 @@ color:var(--muted);font-size:12.5px}
 <tr><td class="mono"><b>OC-09</b></td><td>Offline insights shall be stored with `source=&quot;LOCAL&quot;` flag in `coaching_insights` table.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
 </td></tr>
-<tr><td class="mono"><b>OC-10</b></td><td>When backend coaching arrives, local insights shall be replaced by backend insights.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>OC-10</b></td><td>When backend coaching arrives, local insights shall be replaced by backend insights.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Nothing can arrive from a backend that does not exist</span>
 </td></tr>
 </table>
-<h3>Driver progression tracking <span class='note'>— 3/16 claimed</span></h3>
+<h3>Driver progression tracking <span class='note'>— 3/16 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>DP-01</b></td><td>The Home screen shall display a history list of all sessions, ordered by `startedAt` descending. (Single-user MVP: no userId filtering)</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -956,7 +962,7 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Share accomplishments <span class='note'>— 0/11 claimed</span></h3>
+<h3>Share accomplishments <span class='note'>— 0/11 V1 requirements claimed</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>SH-01</b></td><td>The Session Result screen shall include a share icon in the toolbar.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -992,55 +998,55 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Backend API <span class='note'>— 0/15 claimed</span></h3>
+<h3>Backend API <span class='note'>— all 15 deferred to V2</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
-<tr><td class="mono"><b>BE-01</b></td><td>All backend routes except health check shall require a valid Firebase ID token in the `Authorization: Bearer &lt;token&gt;` header.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-01</b></td><td>All backend routes except health check shall require a valid Firebase ID token in the `Authorization: Bearer &lt;token&gt;` header.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-02</b></td><td>On valid token, the middleware shall attach `req.user = { uid, email }` and call `next()`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-02</b></td><td>On valid token, the middleware shall attach `req.user = { uid, email }` and call `next()`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-03</b></td><td>On missing, expired, or invalid token, the middleware shall return HTTP 401 `{ error: &#x27;Unauthorized&#x27; }`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-03</b></td><td>On missing, expired, or invalid token, the middleware shall return HTTP 401 `{ error: &#x27;Unauthorized&#x27; }`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-04</b></td><td>`POST /telemetry/upload` shall accept `multipart/form-data` with fields: `trackName`, `startedAt`, `endedAt`, `startLineLat1`, `startLineLng1`, `startLineLat2`, `startLineLng2`, and `file` (JSONL).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-04</b></td><td>`POST /telemetry/upload` shall accept `multipart/form-data` with fields: `trackName`, `startedAt`, `endedAt`, `startLineLat1`, `startLineLng1`, `startLineLat2`, `startLineLng2`, and `file` (JSONL).</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-05</b></td><td>All fields shall be validated with Zod. Missing or unparseable fields shall return HTTP 400 with a structured error body.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-05</b></td><td>All fields shall be validated with Zod. Missing or unparseable fields shall return HTTP 400 with a structured error body.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-06</b></td><td>The JSONL file shall be uploaded to Azure Blob Storage at path `{firebase_uid}/{sessionId}.jsonl` before the database record is created.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-06</b></td><td>The JSONL file shall be uploaded to Azure Blob Storage at path `{firebase_uid}/{sessionId}.jsonl` before the database record is created.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-07</b></td><td>A session row shall be inserted into PostgreSQL with `processing_status=&#x27;PENDING&#x27;`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-07</b></td><td>A session row shall be inserted into PostgreSQL with `processing_status=&#x27;PENDING&#x27;`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-08</b></td><td>Lap processing shall be triggered as a fire-and-forget async function — the HTTP response shall be returned immediately.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-08</b></td><td>Lap processing shall be triggered as a fire-and-forget async function — the HTTP response shall be returned immediately.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-09</b></td><td>`POST /telemetry/upload` shall return HTTP 201 `{ sessionId, status: &#x27;PROCESSING&#x27; }`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-09</b></td><td>`POST /telemetry/upload` shall return HTTP 201 `{ sessionId, status: &#x27;PROCESSING&#x27; }`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-10</b></td><td>`GET /sessions` shall return all sessions for `req.user.uid`, ordered by `started_at DESC`. Each record shall include `bestLapMs` and `lapCount`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-10</b></td><td>`GET /sessions` shall return all sessions for `req.user.uid`, ordered by `started_at DESC`. Each record shall include `bestLapMs` and `lapCount`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-11</b></td><td>`GET /sessions/:sessionId` shall return the session, its laps array, and its coaching insights array.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-11</b></td><td>`GET /sessions/:sessionId` shall return the session, its laps array, and its coaching insights array.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-12</b></td><td>`GET /sessions/:sessionId` shall return HTTP 403 if `session.firebase_uid` does not match `req.user.uid`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-12</b></td><td>`GET /sessions/:sessionId` shall return HTTP 403 if `session.firebase_uid` does not match `req.user.uid`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-13</b></td><td>The processing pipeline shall run in this order: parse JSONL → detect laps → compute sectors → insert laps → generate coaching insights → set `processingStatus=COMPLETE`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-13</b></td><td>The processing pipeline shall run in this order: parse JSONL → detect laps → compute sectors → insert laps → generate coaching insights → set `processingStatus=COMPLETE`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-14</b></td><td>Any unhandled exception in the pipeline shall set `processingStatus=FAILED` and log the error with the `sessionId`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-14</b></td><td>Any unhandled exception in the pipeline shall set `processingStatus=FAILED` and log the error with the `sessionId`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
-<tr><td class="mono"><b>BE-15</b></td><td>The backend shall support concurrent session processing without one session&#x27;s failure affecting another.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>BE-15</b></td><td>The backend shall support concurrent session processing without one session&#x27;s failure affecting another.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Describes a server that V1 does not deploy</span>
 </td></tr>
 </table>
-<h3>Non-functional requirements <span class='note'>— 1/16 claimed</span></h3>
+<h3>Non-functional requirements <span class='note'>— 1/12 V1 requirements claimed, 4 deferred to V2</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
 <tr><td class="mono"><b>NF-01</b></td><td>The app shall target Android API 26 (Android 8.0) as minimum and API 35 as target.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -1051,11 +1057,11 @@ color:var(--muted);font-size:12.5px}
 <tr><td class="mono"><b>NF-03</b></td><td>The app shall not crash during recording if the network is unavailable.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
 </td></tr>
-<tr><td class="mono"><b>NF-04</b></td><td>Telemetry JSONL upload for a 30-minute session shall complete within 30 seconds on a 4G connection.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>NF-04</b></td><td>Telemetry JSONL upload for a 30-minute session shall complete within 30 seconds on a 4G connection.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Measures an upload to a server</span>
 </td></tr>
-<tr><td class="mono"><b>NF-05</b></td><td>Lap detection and AI coaching generation shall complete within 60 seconds of upload for sessions with 20 laps or fewer.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>NF-05</b></td><td>Lap detection and AI coaching generation shall complete within 60 seconds of upload for sessions with 20 laps or fewer.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Measures the server-side processing pipeline</span>
 </td></tr>
 <tr><td class="mono"><b>NF-06</b></td><td>Battery consumption during a 30-minute recording session shall not exceed 15% on a mid-range device (Pixel 5 equivalent).</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -1072,8 +1078,8 @@ color:var(--muted);font-size:12.5px}
 <tr><td class="mono"><b>NF-09</b></td><td>The app shall display a loading state for any operation expected to take longer than 300 ms.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
 </td></tr>
-<tr><td class="mono"><b>NF-10</b></td><td>The backend shall process requests from multiple concurrent users without session data cross-contamination.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>NF-10</b></td><td>The backend shall process requests from multiple concurrent users without session data cross-contamination.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Concurrency across users of a backend</span>
 </td></tr>
 <tr><td class="mono"><b>NF-11</b></td><td>Unit test line coverage shall be ≥ 70% across domain and data layers.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -1081,8 +1087,8 @@ color:var(--muted);font-size:12.5px}
 <tr><td class="mono"><b>NF-12</b></td><td>`./gradlew assembleRelease` shall succeed with R8/ProGuard enabled.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
 </td></tr>
-<tr><td class="mono"><b>NF-13</b></td><td>The backend Docker image shall build and start within 60 seconds.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>NF-13</b></td><td>The backend Docker image shall build and start within 60 seconds.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Backend Docker image build time</span>
 </td></tr>
 <tr><td class="mono"><b>NF-14</b></td><td>High-accuracy location shall not be held while the app is not in the foreground, outside an active recording, which runs under a visible foreground-service notification. This is a privacy bound before it is a battery one: the user shall always be able to see that the receiver is in use.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -1094,28 +1100,28 @@ color:var(--muted);font-size:12.5px}
 <span class="note">No claim recorded</span>
 </td></tr>
 </table>
-<h3>Security requirements <span class='note'>— 0/9 claimed</span></h3>
+<h3>Security requirements <span class='note'>— 0/3 V1 requirements claimed, 6 deferred to V2</span></h3>
 <table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>
-<tr><td class="mono"><b>SEC-01</b></td><td>All network traffic shall use HTTPS / TLS 1.2 or higher.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>SEC-01</b></td><td>All network traffic shall use HTTPS / TLS 1.2 or higher.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">V1 sends no network traffic</span>
 </td></tr>
-<tr><td class="mono"><b>SEC-02</b></td><td>Firebase ID tokens shall be verified server-side on every request; they shall never be trusted client-side only.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>SEC-02</b></td><td>Firebase ID tokens shall be verified server-side on every request; they shall never be trusted client-side only.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side token verification</span>
 </td></tr>
-<tr><td class="mono"><b>SEC-03</b></td><td>The `ANTHROPIC_API_KEY` shall only be stored in Azure App Service Application Settings and shall never be committed to source control.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>SEC-03</b></td><td>The `ANTHROPIC_API_KEY` shall only be stored in Azure App Service Application Settings and shall never be committed to source control.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Secret stored in Azure App Settings</span>
 </td></tr>
-<tr><td class="mono"><b>SEC-04</b></td><td>The Firebase service account JSON shall be base64-encoded and stored in Azure App Settings; it shall never be committed to source control.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>SEC-04</b></td><td>The Firebase service account JSON shall be base64-encoded and stored in Azure App Settings; it shall never be committed to source control.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Secret stored in Azure App Settings</span>
 </td></tr>
 <tr><td class="mono"><b>SEC-05</b></td><td>`google-services.json` shall never be committed to source control; this shall be documented in `README.md`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
 </td></tr>
-<tr><td class="mono"><b>SEC-06</b></td><td>The Azure Blob Storage container `telemetry` shall have private access level; blobs shall not be publicly accessible.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>SEC-06</b></td><td>The Azure Blob Storage container `telemetry` shall have private access level; blobs shall not be publicly accessible.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Azure Blob Storage container access level</span>
 </td></tr>
-<tr><td class="mono"><b>SEC-07</b></td><td>The backend shall enforce that a user can only read their own sessions; `GET /sessions/:id` shall return HTTP 403 if the session belongs to a different `firebase_uid`.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
-<span class="note">No claim recorded</span>
+<tr><td class="mono"><b>SEC-07</b></td><td>The backend shall enforce that a user can only read their own sessions; `GET /sessions/:id` shall return HTTP 403 if the session belongs to a different `firebase_uid`.</td><td>—</td><td><span class="tag V2-BACKEND">V2-BACKEND</span></td><td>
+<span class="note">Server-side authorisation between users</span>
 </td></tr>
 <tr><td class="mono"><b>SEC-08</b></td><td>The API base URL shall be configured via `BuildConfig.API_BASE_URL` per build flavour; it shall not be hardcoded.</td><td>—</td><td><span class="tag UNCOVERED">UNCOVERED</span></td><td>
 <span class="note">No claim recorded</span>
@@ -1144,24 +1150,82 @@ color:var(--muted);font-size:12.5px}
 <tr><td class="mono">TS-06</td><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td></tr>
 <tr><td class="mono">TS-12</td><td class="mono">TrackSetupFragmentTest</td><td><span class="tag SKIPPED">SKIPPED</span></td><td>Class is @Ignore&#x27;d — 11 declared test(s) never ran</td></tr>
 </table>
+<h3>Deferred to V2 — needs a backend</h3>
+<p class="note">55 requirements describe software V1 does not build: a server, Firebase authentication, or a hosted model. They cannot be tested because they do not exist, which is a scope decision rather than a testing gap. They are listed here in full, with the reason recorded per requirement, so the distinction is visible rather than asserted. The rule applied is the subject of the sentence: <em>the backend shall</em> is deferred, <em>the app shall</em> is not — the client half of a network feature is testable against a fake server, and some of it already is.</p>
+<table><tr><th>ID</th><th>Section</th><th>Requirement</th><th>Why deferred</th></tr>
+<tr><td class="mono">UM-01</td><td>User management</td><td>The app shall allow a new user to register with an email address, password, and display name.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-02</td><td>User management</td><td>Registration shall be handled entirely by Firebase Authentication SDK on the Android client; the backend shall not expose a `/register` endpoint.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-03</td><td>User management</td><td>Password minimum length shall be 8 characters, enforced client-side before submitting to Firebase.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-04</td><td>User management</td><td>The display name shall be a minimum of 2 characters and a maximum of 100 characters.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-05</td><td>User management</td><td>On successful registration, the user shall be automatically signed in and directed to the Home screen with the back stack cleared.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-06</td><td>User management</td><td>On registration failure (e.g. email already in use), the app shall display the Firebase error message as a Snackbar.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-07</td><td>User management</td><td>The app shall allow an existing user to sign in with email and password via Firebase Authentication.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-08</td><td>User management</td><td>On successful login, the user shall be directed to the Home screen with the back stack cleared.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-09</td><td>User management</td><td>On login failure, the app shall display a Snackbar with a clear error message; the password field shall not be cleared.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-10</td><td>User management</td><td>While a login or registration request is in flight, the submit button shall be disabled and a circular progress indicator shall be visible.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-11</td><td>User management</td><td>The email field shall use `inputType=textEmailAddress`. The password field shall use `inputType=textPassword` with a visibility toggle icon.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-12</td><td>User management</td><td>Firebase ID tokens shall be attached automatically to every backend API request via an OkHttp interceptor (`FirebaseAuthInterceptor`).</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-13</td><td>User management</td><td>The Firebase SDK shall handle token refresh transparently; the app shall not implement custom token refresh logic.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-14</td><td>User management</td><td>If the backend returns HTTP 401, the app shall emit a `sessionExpired` event, display a Snackbar &#x27;Session expired — please sign in again&#x27;, and navigate to the Login screen, clearing the back stack.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-15</td><td>User management</td><td>The backend shall verify all incoming Firebase ID tokens using the Firebase Admin SDK (`admin.auth().verifyIdToken()`). Requests with a missing, invalid, or expired token shall receive HTTP 401.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-16</td><td>User management</td><td>The app shall allow the user to sign out from the Profile screen.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">UM-17</td><td>User management</td><td>On sign out, the app shall call `FirebaseAuth.signOut()`, delete all local Room DB records belonging to the current Firebase UID, and navigate to the Login screen.</td><td class="note">No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first</td></tr>
+<tr><td class="mono">TU-10</td><td>Telemetry storage and upload</td><td>The backend shall store the JSONL file in Azure Blob Storage under the path `{firebase_uid}/{sessionId}.jsonl` in the `telemetry` container.</td><td class="note">Azure Blob Storage layout is a server concern</td></tr>
+<tr><td class="mono">TU-11</td><td>Telemetry storage and upload</td><td>The backend shall accept JSONL files up to 50 MB.</td><td class="note">Server-side upload size limit</td></tr>
+<tr><td class="mono">AI-01</td><td>AI coaching feedback</td><td>After lap processing completes (`processingStatus=LAPS_DONE`), the backend shall trigger an asynchronous AI coaching job.</td><td class="note">Backend triggers the coaching job</td></tr>
+<tr><td class="mono">AI-02</td><td>AI coaching feedback</td><td>The coaching job shall call the Anthropic API using the model `claude-sonnet-4-20250514` with `max_tokens=700`.</td><td class="note">Server-side Anthropic API call</td></tr>
+<tr><td class="mono">AI-03</td><td>AI coaching feedback</td><td>The coaching prompt shall include: track name, total lap count, best lap time, average lap time, consistency score, and a sector-by-sector delta table comparing all laps to the best lap.</td><td class="note">Server-side prompt construction</td></tr>
+<tr><td class="mono">AI-04</td><td>AI coaching feedback</td><td>The system prompt shall instruct the model to act as a professional motorsport driving coach and to always reference specific lap numbers, sector numbers, and time values.</td><td class="note">Server-side system prompt</td></tr>
+<tr><td class="mono">AI-05</td><td>AI coaching feedback</td><td>The model shall be instructed to respond with **exactly 4 coaching tips** in a valid JSON array and no other text: `[{&quot;headline&quot;:&quot;...&quot;,&quot;detail&quot;:&quot;...&quot;}]`.</td><td class="note">Constrains the hosted model&#x27;s response</td></tr>
+<tr><td class="mono">AI-06</td><td>AI coaching feedback</td><td>Each coaching tip headline shall be a maximum of 8 words. Each detail shall be a maximum of 35 words.</td><td class="note">Constrains the hosted model&#x27;s response</td></tr>
+<tr><td class="mono">AI-07</td><td>AI coaching feedback</td><td>The backend shall strip markdown code fences from the response before JSON parsing.</td><td class="note">Server-side response cleaning</td></tr>
+<tr><td class="mono">AI-08</td><td>AI coaching feedback</td><td>The backend shall validate the parsed response: must be an array of 3–5 items, each with `headline` (string, ≤ 100 chars) and `detail` (string, ≤ 300 chars).</td><td class="note">Server-side response validation</td></tr>
+<tr><td class="mono">AI-09</td><td>AI coaching feedback</td><td>Validated coaching tips shall be inserted into the `coaching_insights` table linked to the session.</td><td class="note">Writes to a backend table</td></tr>
+<tr><td class="mono">AI-10</td><td>AI coaching feedback</td><td>If the Anthropic API call fails, or the response cannot be parsed or validated, the error shall be logged and coaching insights shall not be stored. The failure shall NOT set `processingStatus=FAILED`; the session shall still complete.</td><td class="note">Server-side failure handling for the Anthropic call</td></tr>
+<tr><td class="mono">OC-10</td><td>AI coaching feedback</td><td>When backend coaching arrives, local insights shall be replaced by backend insights.</td><td class="note">Nothing can arrive from a backend that does not exist</td></tr>
+<tr><td class="mono">BE-01</td><td>Backend API</td><td>All backend routes except health check shall require a valid Firebase ID token in the `Authorization: Bearer &lt;token&gt;` header.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-02</td><td>Backend API</td><td>On valid token, the middleware shall attach `req.user = { uid, email }` and call `next()`.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-03</td><td>Backend API</td><td>On missing, expired, or invalid token, the middleware shall return HTTP 401 `{ error: &#x27;Unauthorized&#x27; }`.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-04</td><td>Backend API</td><td>`POST /telemetry/upload` shall accept `multipart/form-data` with fields: `trackName`, `startedAt`, `endedAt`, `startLineLat1`, `startLineLng1`, `startLineLat2`, `startLineLng2`, and `file` (JSONL).</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-05</td><td>Backend API</td><td>All fields shall be validated with Zod. Missing or unparseable fields shall return HTTP 400 with a structured error body.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-06</td><td>Backend API</td><td>The JSONL file shall be uploaded to Azure Blob Storage at path `{firebase_uid}/{sessionId}.jsonl` before the database record is created.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-07</td><td>Backend API</td><td>A session row shall be inserted into PostgreSQL with `processing_status=&#x27;PENDING&#x27;`.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-08</td><td>Backend API</td><td>Lap processing shall be triggered as a fire-and-forget async function — the HTTP response shall be returned immediately.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-09</td><td>Backend API</td><td>`POST /telemetry/upload` shall return HTTP 201 `{ sessionId, status: &#x27;PROCESSING&#x27; }`.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-10</td><td>Backend API</td><td>`GET /sessions` shall return all sessions for `req.user.uid`, ordered by `started_at DESC`. Each record shall include `bestLapMs` and `lapCount`.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-11</td><td>Backend API</td><td>`GET /sessions/:sessionId` shall return the session, its laps array, and its coaching insights array.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-12</td><td>Backend API</td><td>`GET /sessions/:sessionId` shall return HTTP 403 if `session.firebase_uid` does not match `req.user.uid`.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-13</td><td>Backend API</td><td>The processing pipeline shall run in this order: parse JSONL → detect laps → compute sectors → insert laps → generate coaching insights → set `processingStatus=COMPLETE`.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-14</td><td>Backend API</td><td>Any unhandled exception in the pipeline shall set `processingStatus=FAILED` and log the error with the `sessionId`.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">BE-15</td><td>Backend API</td><td>The backend shall support concurrent session processing without one session&#x27;s failure affecting another.</td><td class="note">Describes a server that V1 does not deploy</td></tr>
+<tr><td class="mono">NF-04</td><td>Non-functional requirements</td><td>Telemetry JSONL upload for a 30-minute session shall complete within 30 seconds on a 4G connection.</td><td class="note">Measures an upload to a server</td></tr>
+<tr><td class="mono">NF-05</td><td>Non-functional requirements</td><td>Lap detection and AI coaching generation shall complete within 60 seconds of upload for sessions with 20 laps or fewer.</td><td class="note">Measures the server-side processing pipeline</td></tr>
+<tr><td class="mono">NF-10</td><td>Non-functional requirements</td><td>The backend shall process requests from multiple concurrent users without session data cross-contamination.</td><td class="note">Concurrency across users of a backend</td></tr>
+<tr><td class="mono">NF-13</td><td>Non-functional requirements</td><td>The backend Docker image shall build and start within 60 seconds.</td><td class="note">Backend Docker image build time</td></tr>
+<tr><td class="mono">SEC-01</td><td>Security requirements</td><td>All network traffic shall use HTTPS / TLS 1.2 or higher.</td><td class="note">V1 sends no network traffic</td></tr>
+<tr><td class="mono">SEC-02</td><td>Security requirements</td><td>Firebase ID tokens shall be verified server-side on every request; they shall never be trusted client-side only.</td><td class="note">Server-side token verification</td></tr>
+<tr><td class="mono">SEC-03</td><td>Security requirements</td><td>The `ANTHROPIC_API_KEY` shall only be stored in Azure App Service Application Settings and shall never be committed to source control.</td><td class="note">Secret stored in Azure App Settings</td></tr>
+<tr><td class="mono">SEC-04</td><td>Security requirements</td><td>The Firebase service account JSON shall be base64-encoded and stored in Azure App Settings; it shall never be committed to source control.</td><td class="note">Secret stored in Azure App Settings</td></tr>
+<tr><td class="mono">SEC-06</td><td>Security requirements</td><td>The Azure Blob Storage container `telemetry` shall have private access level; blobs shall not be publicly accessible.</td><td class="note">Azure Blob Storage container access level</td></tr>
+<tr><td class="mono">SEC-07</td><td>Security requirements</td><td>The backend shall enforce that a user can only read their own sessions; `GET /sessions/:id` shall return HTTP 403 if the session belongs to a different `firebase_uid`.</td><td class="note">Server-side authorisation between users</td></tr>
+</table>
 <h3>Requirements with no automated claim</h3>
-<p class="note">177 of 245 requirements carry no automated test. Some are deferred features, some are genuinely untested; every one is listed and marked <span class="tag UNCOVERED">UNCOVERED</span> in section 3, so none of them can hide. The count by area:</p>
+<p class="note">122 of 190 V1 requirements carry no automated test. These are not deferred: they describe software that ships today and is not covered. Every one is listed and marked <span class="tag UNCOVERED">UNCOVERED</span> in section 3, so none of them can hide. The count by area:</p>
 <table><tr><th>Area</th><th class="num">Uncovered</th><th>Requirements</th></tr>
-<tr><td>User management</td><td class="num">19</td><td class="mono">UM-01, UM-02, UM-03, UM-04, UM-05, UM-06, UM-07, UM-08, UM-09, UM-10, UM-11, UM-12, UM-13, UM-14, UM-15, UM-16, UM-17, UM-18, UM-19</td></tr>
+<tr><td>User management</td><td class="num">2</td><td class="mono">UM-18, UM-19</td></tr>
 <tr><td>Onboarding and permissions</td><td class="num">8</td><td class="mono">ON-01, ON-02, ON-03, ON-04, ON-05, ON-06, ON-07, ON-08</td></tr>
 <tr><td>Application startup and branding</td><td class="num">3</td><td class="mono">UI-10, UI-11, UI-12</td></tr>
 <tr><td>Track setup — start/finish line</td><td class="num">11</td><td class="mono">TS-01, TS-04, TS-07, TS-09, TS-10, TS-11, TS-13, TS-14, TS-21, TS-22, TS-23</td></tr>
 <tr><td>Session recording</td><td class="num">8</td><td class="mono">SR-01, SR-02, SR-03, SR-06, SR-07, SR-08, SR-10, SR-11</td></tr>
 <tr><td>Telemetry capture</td><td class="num">10</td><td class="mono">TC-01, TC-02, TC-03, TC-04, TC-05, TC-08, TC-09, TC-10, TC-11, TC-12</td></tr>
-<tr><td>Telemetry storage and upload</td><td class="num">9</td><td class="mono">TU-01, TU-03, TU-05, TU-08, TU-09, TU-10, TU-11, TU-12, TU-13</td></tr>
+<tr><td>Telemetry storage and upload</td><td class="num">7</td><td class="mono">TU-01, TU-03, TU-05, TU-08, TU-09, TU-12, TU-13</td></tr>
 <tr><td>Lap detection</td><td class="num">15</td><td class="mono">LD-01, LD-02, LD-03, LD-05, LD-06, LD-07, LD-08, LD-09, LD-10, LD-11, LD-12, LD-13, LD-14, LD-15, LD-16</td></tr>
 <tr><td>Lap comparison</td><td class="num">15</td><td class="mono">LC-01, LC-02, LC-03, LC-04, LC-05, LC-06, LC-07, LC-08, LC-09, LC-10, LC-11, LC-12, LC-13, LC-14, LC-15</td></tr>
-<tr><td>AI coaching feedback</td><td class="num">16</td><td class="mono">AI-01, AI-02, AI-03, AI-04, AI-05, AI-06, AI-07, AI-08, AI-09, AI-10, AI-11, AI-12, AI-13, AI-14, OC-09, OC-10</td></tr>
+<tr><td>AI coaching feedback</td><td class="num">5</td><td class="mono">AI-11, AI-12, AI-13, AI-14, OC-09</td></tr>
 <tr><td>Driver progression tracking</td><td class="num">13</td><td class="mono">DP-01, DP-02, DP-03, DP-04, DP-05, DP-06, SM-02, SM-03, SM-04, SM-06, SM-08, SM-09, SM-10</td></tr>
 <tr><td>Share accomplishments</td><td class="num">11</td><td class="mono">SH-01, SH-02, SH-03, SH-04, SH-05, SH-06, SH-07, SH-08, SH-09, SH-10, SH-11</td></tr>
-<tr><td>Backend API</td><td class="num">15</td><td class="mono">BE-01, BE-02, BE-03, BE-04, BE-05, BE-06, BE-07, BE-08, BE-09, BE-10, BE-11, BE-12, BE-13, BE-14, BE-15</td></tr>
-<tr><td>Non-functional requirements</td><td class="num">15</td><td class="mono">NF-01, NF-02, NF-03, NF-04, NF-05, NF-06, NF-08, NF-09, NF-10, NF-11, NF-12, NF-13, NF-14, NF-15, NF-16</td></tr>
-<tr><td>Security requirements</td><td class="num">9</td><td class="mono">SEC-01, SEC-02, SEC-03, SEC-04, SEC-05, SEC-06, SEC-07, SEC-08, SEC-09</td></tr>
+<tr><td>Non-functional requirements</td><td class="num">11</td><td class="mono">NF-01, NF-02, NF-03, NF-06, NF-08, NF-09, NF-11, NF-12, NF-14, NF-15, NF-16</td></tr>
+<tr><td>Security requirements</td><td class="num">3</td><td class="mono">SEC-05, SEC-08, SEC-09</td></tr>
 </table>
 <h2>5. Failures</h2>
 <p>No test failed in this run.</p>
@@ -1791,6 +1855,6 @@ color:var(--muted);font-size:12.5px}
 <tr><td class="mono">EDGE-04</td><td>Battery Saver Mode</td></tr>
 </table></div></details>
 <footer>
-Generated by <code>generate-html-report.py</code> at 2026-09-10 00:55:40 BST. 
+Generated by <code>generate-html-report.py</code> at 2026-09-10 01:24:21 BST. 
 Every figure is derived from JUnit XML, Kotlin source and <code>05_tests/coverage-map.tsv</code>; none of it is written by hand.
 </footer></div></body></html>

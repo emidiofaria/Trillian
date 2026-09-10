@@ -4,6 +4,71 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-10] Scope map — separating deferred from untested
+
+**Codebase Version:** v2.95
+**Trigger:** The report counted a backend route V1 never builds and a shipped lap-detection
+requirement as the same kind of gap. Scope decisions are now recorded and reported separately.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `05_tests/scope-map.tsv` | ✅ New | 27 lines: 2 section sweeps, 2 V1 overrides, 23 per-ID deferrals |
+| `generate-html-report.py` | ✅ Updated | Scope parsing, two denominators, `V2-BACKEND` badge, deferred table, 3 guards |
+| `test_generate_html_report.py` | ✅ Updated | +14 tests (26 → 40) |
+| `Test_Strategy.md` | ✅ Updated | New "The scope map" subsection in §7 |
+| `test_strategy_execution_instructions.md` | ✅ Updated | §1.4: quote both denominators; how to read a scope warning |
+| `components.md` | ✅ Updated | Test Evidence Pipeline: scope inputs and 2 new failure modes |
+| `DrivingCoach_SRS_v1.md` | — | Deliberately unchanged; scope facts live in one reviewable file, not scattered through 550 lines of prose |
+
+### The rule applied
+
+The discriminator is **the subject of the sentence**:
+
+- *"The backend shall …"* → `V2-BACKEND`. There is nothing to run it on.
+- *"The app shall …"* → V1, **even when the sentence mentions upload.** The client half of a
+  network feature is testable against a fake server, and TU-04, TU-06 and TU-07 already pass
+  that way against MockWebServer. Deferring them would have hidden work that is done.
+
+This rule caught two sweeps that would have been wrong:
+
+| Nearly swept | Why it stayed V1 |
+|---|---|
+| `OC-01` … `OC-09` | Sit inside the *AI coaching feedback* SRS section, but are the offline engine — shipped and 100% covered |
+| `AI-11` … `AI-14` | The COACH tab, which renders today from local insights |
+| `UM-18`, `UM-19` | The Profile screen ships in V1; the SRS already amends UM-18 for it |
+
+### Result
+
+| Measure | Before | After |
+|---|---|---|
+| Requirements claimed | 68 / 245 (28%) | 68 / **190 V1** (36%), 55 deferred |
+| "Uncovered" pile | 177, undifferentiated | 122 V1 gaps + 55 deferred, each with a reason |
+
+The 122 remaining gaps are the honest ones: `LC` (15), `LD` (15), `SH` (11), `TS` (11),
+`DP`/`SM` (13) all ship today and are untested.
+
+### Guards, verified by deliberately breaking the file
+
+| Guard | Message produced |
+|---|---|
+| Contradiction | `OC-01 is marked V2-BACKEND but has a passing test (OfflineCoachingEngineTest)` |
+| Unknown section | `no SRS section named 'No Such Section'` |
+| Unknown requirement | `no such requirement ZZ-99` |
+| Unknown scope value | `unknown scope 'BOGUS'` |
+
+A deferred requirement may still carry an L4 manual claim; only a passing automated test is
+contradictory.
+
+### Validation
+
+- Generator tests: **40/40 PASS**
+- Report regenerated: deterministic, valid HTML nesting, no JS, no external URLs
+- Real data: 0 scope errors — no contradiction, no rotted target
+
+---
+
 ## [2026-09-10] Test Evidence Pipeline — HTML report and release packaging
 
 **Codebase Version:** v2.95

@@ -1919,6 +1919,7 @@ Build-time only. Nothing here runs on a phone and no product code depends on it.
 | `05_tests/infra/scripts/package-release.sh` | Groups APK + report + notes under `releases/v<ver>-<slug>/` |
 | `05_tests/infra/scripts/run-all-tests.sh` | Writes `05_tests/reports/RUN_<ts>/`, then offers a release |
 | `05_tests/coverage-map.tsv` | The claim ledger: `requirement<TAB>test<TAB>note` |
+| `05_tests/scope-map.tsv` | The scope ledger: what V1 deliberately does not build |
 
 ### Dependencies
 
@@ -1935,6 +1936,7 @@ output — the report must open from a USB stick in a paddock with no signal.
 | `05_tests/coverage-map.tsv` | Requirement-to-test claims |
 | `01_requirements/DrivingCoach_SRS_v1.md` | The requirement denominator |
 | `05_tests/L4_SYS5_acceptance/*.md` | Manual checks, listed last |
+| `05_tests/scope-map.tsv` | V2-BACKEND deferrals, by section or requirement ID |
 
 ### Algorithm
 
@@ -1956,6 +1958,8 @@ output — the report must open from a USB stick in a paddock with no signal.
 | Hidden tests | Class-level `@Ignore` | 29 L2 tests do not run | Declared count from source ≠ executed count from XML |
 | Rotted claim | Test class deleted or renamed | Traceability silently breaks | `MISSING`, plus a `[WARN]` on stdout |
 | Unknown requirement ID | Typo in the TSV | Claim would vanish | Reported as an error in the report, never dropped |
+| Scope used as a rug | A built requirement marked `V2-BACKEND` | Coverage would look better than it is | Contradiction guard: deferred + passing test is an error |
+| Deferral hides work | A whole section swept when part of it ships | V1 gaps disappear from the count | Both denominators always printed; deferred items listed in full with reasons |
 | Stale results | Report generated without re-running tests | Report describes an older build | Header carries commit, branch and device |
 
 ### Observable Signals

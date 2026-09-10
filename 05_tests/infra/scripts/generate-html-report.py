@@ -46,6 +46,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_L1_RESULTS = PROJECT_ROOT / "app/build/test-results/testDebugUnitTest"
 DEFAULT_L2_RESULTS = PROJECT_ROOT / "app/build/outputs/androidTest-results/connected/debug"
 COVERAGE_MAP = PROJECT_ROOT / "05_tests/coverage-map.tsv"
+SCOPE_MAP = PROJECT_ROOT / "05_tests/scope-map.tsv"
 SRS = PROJECT_ROOT / "01_requirements/DrivingCoach_SRS_v1.md"
 L4_DIR = PROJECT_ROOT / "05_tests/L4_SYS5_acceptance"
 SOURCE_DIRS = {
@@ -96,6 +97,11 @@ EXCLUDED_SECTIONS = ("Architecture decisions", "Out of scope")
 
 STATUS_ORDER = {"FAILED": 0, "MISSING": 1, "SKIPPED": 2, "MANUAL": 3, "PASS": 4}
 
+# Requirements V1 deliberately does not implement. Deferred is not the same as
+# untested, and a report that conflates the two teaches the reader to distrust
+# all of it.
+DEFERRED = "V2-BACKEND"
+
 
 # ---------------------------------------------------------------------------
 # Model
@@ -138,11 +144,17 @@ class Requirement:
     section: str
     text: str
     claims: list = field(default_factory=list)
+    scope: str = "V1"
+    scope_reason: str = ""
+
+    @property
+    def deferred(self) -> bool:
+        return self.scope == DEFERRED
 
     @property
     def status(self) -> str:
         if not self.claims:
-            return "UNCOVERED"
+            return DEFERRED if self.deferred else "UNCOVERED"
         return min((c.status for c in self.claims), key=lambda s: STATUS_ORDER[s])
 
 
@@ -311,6 +323,66 @@ def parse_coverage_map():
     return claims, errors
 
 
+def parse_scope_map(requirements):
+    """Apply scope decisions to requirements. Returns a list of errors.
+
+    A section line covers everything in that SRS section; a requirement line
+    always wins over it, so an exception stays visible on its own line instead
+    of being buried in a sweep.
+    """
+    errors = []
+    if not SCOPE_MAP.is_file():
+        return errors
+
+    by_section = {}
+    for req in requirements.values():
+        by_section.setdefault(req.section, []).append(req)
+
+    section_lines, id_lines = [], []
+    for number, raw in enumerate(SCOPE_MAP.read_text(encoding="utf-8").splitlines(), 1):
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        parts = raw.split("\t")
+        if len(parts) < 2 or not parts[0].strip() or not parts[1].strip():
+            errors.append(f"scope-map line {number}: expected 'scope<TAB>target[<TAB>reason]'")
+            continue
+        scope, target = parts[0].strip(), parts[1].strip()
+        reason = parts[2].strip() if len(parts) > 2 else ""
+        if scope not in (DEFERRED, "V1"):
+            errors.append(f"scope-map line {number}: unknown scope {scope!r}")
+            continue
+        (section_lines if target.startswith("@") else id_lines).append(
+            (number, scope, target, reason)
+        )
+
+    # Sections first, so that a requirement line can override one.
+    for number, scope, target, reason in section_lines:
+        name = target[1:]
+        if name not in by_section:
+            errors.append(f"scope-map line {number}: no SRS section named {name!r}")
+            continue
+        for req in by_section[name]:
+            req.scope, req.scope_reason = scope, reason
+
+    for number, scope, target, reason in id_lines:
+        req = requirements.get(target)
+        if req is None:
+            errors.append(f"scope-map line {number}: no such requirement {target}")
+            continue
+        req.scope, req.scope_reason = scope, reason
+
+    # The guard that stops this file becoming a rug: a requirement cannot be
+    # deferred and simultaneously proven by a test that runs today.
+    for req in requirements.values():
+        if req.deferred and any(c.status == "PASS" for c in req.claims):
+            passing = ", ".join(sorted(c.citation for c in req.claims if c.status == "PASS"))
+            errors.append(
+                f"{req.rid} is marked {DEFERRED} but has a passing test ({passing}). "
+                "Either the scope note is stale, or this was built after all."
+            )
+    return errors
+
+
 # ---------------------------------------------------------------------------
 # Resolution: turn claims into verdicts backed by real results
 # ---------------------------------------------------------------------------
@@ -413,6 +485,7 @@ letter-spacing:.3px;white-space:nowrap}
 .MISSING{background:#fdecea;color:var(--fail)}
 .MANUAL{background:#eceefc;color:var(--manual)}
 .UNCOVERED{background:#eceff1;color:var(--muted)}
+.V2-BACKEND{background:#e8f0fe;color:#1a56b0}
 details{background:#fff;border:1px solid var(--line);border-radius:6px;margin:8px 0}
 details[open]{box-shadow:0 1px 3px rgba(0,0,0,.07)}
 summary{cursor:pointer;padding:10px 14px;font-size:13.5px;font-weight:600;list-style:none}
@@ -492,8 +565,10 @@ def render(ctx) -> str:
     w(f'<div class="{bad.strip()}"><div class="n">{totals["failed"]}</div><div class="l">Failed</div></div>')
     alert = " alert" if totals["hidden"] else ""
     w(f'<div class="{alert.strip()}"><div class="n">{totals["hidden"]}</div><div class="l">Never ran</div></div>')
-    w(f'<div><div class="n">{ctx["covered_reqs"]}/{ctx["total_reqs"]}</div>'
-      f'<div class="l">Requirements claimed</div></div>')
+    w(f'<div><div class="n">{ctx["v1_covered"]}/{ctx["v1_total"]}</div>'
+      f'<div class="l">V1 requirements claimed</div></div>')
+    w(f'<div><div class="n">{len(ctx["deferred"])}</div>'
+      f'<div class="l">Deferred to V2</div></div>')
     w("</div>")
 
     # ---- summary by level ----
@@ -522,6 +597,15 @@ def render(ctx) -> str:
     for level, (aspice, name, _) in LEVELS.items():
         w(f"<h3>{level} — {esc(name)} <span class='note'>({aspice})</span></h3>")
         w(f"<p>{esc(LEVEL_METHOD[level])}</p>")
+    if ctx["deferred"]:
+        w("<h3>What V1 does not build</h3>")
+        w(f'<p>V1 is deliberately offline-first: it records, detects laps, analyses and coaches '
+          f"entirely on the phone. {len(ctx['deferred'])} requirements in the SRS describe a "
+          "server, Firebase authentication or a hosted model, none of which V1 deploys. They are "
+          "marked <span class=\"tag V2-BACKEND\">V2-BACKEND</span> throughout this report and "
+          "counted separately, never removed. A requirement marked deferred that turns out to "
+          "have a passing test is reported as an error, so this cannot be used to quietly retire "
+          "anything that was actually built.</p>")
 
     # ---- coverage ----
     w("<h2>3. Requirements coverage</h2>")
@@ -529,11 +613,16 @@ def render(ctx) -> str:
       "Claims come from <code>05_tests/coverage-map.tsv</code> and are checked against the run: "
       "a claim naming a test that did not run, or no longer exists, is reported rather than "
       "counted. Expand a row to see the individual tests.</p>")
-    w(f'<p class="note"><b>{ctx["covered_reqs"]} of {ctx["total_reqs"]} requirements '
-      f"({ctx['coverage_pct']}%) have at least one automated claim.</b> The denominator is every "
-      "requirement row in the SRS, excluding the architecture-decision and out-of-scope sections, "
-      "which record intent rather than behaviour. No requirement is removed from the count for "
-      "being inconvenient.</p>")
+    w(f'<p class="note"><b>{ctx["v1_covered"]} of {ctx["v1_total"]} V1 requirements '
+      f'({ctx["v1_pct"]}%) have at least one automated claim</b>, and '
+      f'{ctx["covered_reqs"]} of {ctx["total_reqs"]} ({ctx["coverage_pct"]}%) counting the '
+      f'{len(ctx["deferred"])} deferred to V2. Both numbers are printed because either one alone '
+      "misleads: the first flatters V1 by ignoring what was never built, the second punishes it "
+      "for a scope decision that was made on purpose. Deferred requirements keep their row, their "
+      "reason and their count — see section 4.</p>")
+    w('<p class="note">The denominator is every requirement row in the SRS, excluding the '
+      "architecture-decision and out-of-scope sections, which record intent rather than "
+      "behaviour. No requirement is removed for being inconvenient.</p>")
     w("<table><tr><th>Status</th><th>Meaning</th></tr>")
     for status, meaning in [
         ("PASS", "The cited test ran and passed"),
@@ -542,13 +631,22 @@ def render(ctx) -> str:
         ("MISSING", "The cited test was not found — the claim has rotted"),
         ("MANUAL", "An L4 claim; only a human at a circuit can discharge it"),
         ("UNCOVERED", "No test claims this requirement"),
+        (DEFERRED, "V1 does not implement this; it needs a server, Firebase or a hosted model"),
     ]:
         w(f"<tr><td>{tag(status)}</td><td>{esc(meaning)}</td></tr>")
     w("</table>")
 
     for section, reqs in ctx["sections"].items():
-        counted = sum(1 for r in reqs if r.status not in ("UNCOVERED",))
-        w(f"<h3>{esc(section)} <span class='note'>— {counted}/{len(reqs)} claimed</span></h3>")
+        in_v1 = [r for r in reqs if not r.deferred]
+        counted = sum(1 for r in in_v1 if r.claims)
+        deferred_here = len(reqs) - len(in_v1)
+        if not in_v1:
+            label = f"all {deferred_here} deferred to V2"
+        else:
+            label = f"{counted}/{len(in_v1)} V1 requirements claimed"
+            if deferred_here:
+                label += f", {deferred_here} deferred to V2"
+        w(f"<h3>{esc(section)} <span class='note'>— {esc(label)}</span></h3>")
         w("<table><tr><th>ID</th><th>Requirement</th><th>Level</th><th>Status</th><th>Evidence</th></tr>")
         for req in reqs:
             levels = sorted({c.level for c in req.claims if c.level != "-"})
@@ -556,7 +654,9 @@ def render(ctx) -> str:
                 f'<tr><td class="mono"><b>{esc(req.rid)}</b></td><td>{esc(req.text)}</td>'
                 f'<td>{esc(" + ".join(levels) or "—")}</td><td>{tag(req.status)}</td><td>'
             )
-            if not req.claims:
+            if req.deferred and not req.claims:
+                w(f'<span class="note">{esc(req.scope_reason or "Deferred to V2")}</span>')
+            elif not req.claims:
                 w('<span class="note">No claim recorded</span>')
             else:
                 w("<details><summary>"
@@ -591,10 +691,26 @@ def render(ctx) -> str:
               f'<td class="mono">{esc(claim.citation)}</td><td>{tag(claim.status)}</td>'
               f"<td>{esc(claim.detail)}</td></tr>")
         w("</table>")
+    if ctx["deferred"]:
+        w("<h3>Deferred to V2 — needs a backend</h3>")
+        w(f'<p class="note">{len(ctx["deferred"])} requirements describe software V1 does not '
+          "build: a server, Firebase authentication, or a hosted model. They cannot be tested "
+          "because they do not exist, which is a scope decision rather than a testing gap. They "
+          "are listed here in full, with the reason recorded per requirement, so the distinction "
+          "is visible rather than asserted. The rule applied is the subject of the sentence: "
+          "<em>the backend shall</em> is deferred, <em>the app shall</em> is not — the client half "
+          "of a network feature is testable against a fake server, and some of it already is.</p>")
+        w("<table><tr><th>ID</th><th>Section</th><th>Requirement</th><th>Why deferred</th></tr>")
+        for req in ctx["deferred"]:
+            w(f'<tr><td class="mono">{esc(req.rid)}</td><td>{esc(req.section)}</td>'
+              f'<td>{esc(req.text)}</td><td class="note">{esc(req.scope_reason)}</td></tr>')
+        w("</table>")
+
     if ctx["uncovered"]:
         w("<h3>Requirements with no automated claim</h3>")
-        w(f'<p class="note">{len(ctx["uncovered"])} of {ctx["total_reqs"]} requirements carry no '
-          "automated test. Some are deferred features, some are genuinely untested; every one is "
+        w(f'<p class="note">{len(ctx["uncovered"])} of {ctx["v1_total"]} V1 requirements carry no '
+          "automated test. These are not deferred: they describe software that ships today and "
+          "is not covered. Every one is "
           'listed and marked <span class="tag UNCOVERED">UNCOVERED</span> in section 3, so none of '
           "them can hide. The count by area:</p>")
         by_section = OrderedDict()
@@ -719,6 +835,10 @@ def build_context(args):
             continue
         req.claims.append(claim)
 
+    # Scope is applied after claims, because the contradiction guard needs to
+    # see whether a deferred requirement has a test that passes.
+    map_errors.extend(parse_scope_map(requirements))
+
     # Per-level roll-up. "declared" counts @Test in source; "executed" counts
     # what the run reported. The difference is what is switched off.
     levels = OrderedDict()
@@ -772,6 +892,10 @@ def build_context(args):
     for req in requirements.values():
         sections.setdefault(req.section, []).append(req)
 
+    deferred = [r for r in requirements.values() if r.deferred]
+    v1_reqs = [r for r in requirements.values() if not r.deferred]
+    v1_covered = sum(1 for r in v1_reqs if r.claims)
+
     by_class = {}
     for case in cases:
         by_class.setdefault(case.level, {}).setdefault(case.simple_class, []).append(case)
@@ -794,7 +918,11 @@ def build_context(args):
         "levels": levels,
         "totals": totals,
         "sections": sections,
-        "uncovered": [r for r in requirements.values() if not r.claims],
+        "uncovered": [r for r in requirements.values() if not r.claims and not r.deferred],
+        "deferred": deferred,
+        "v1_total": len(v1_reqs),
+        "v1_covered": v1_covered,
+        "v1_pct": round(100.0 * v1_covered / max(len(v1_reqs), 1)),
         "covered_reqs": sum(1 for r in requirements.values() if r.claims),
         "total_reqs": len(requirements),
         "coverage_pct": round(
@@ -845,7 +973,13 @@ def main():
     if context["unbacked"]:
         print(f"[WARN] {len(context['unbacked'])} coverage claim(s) not backed by a passing test")
     if context["map_errors"]:
-        print(f"[WARN] {len(context['map_errors'])} problem(s) in coverage-map.tsv")
+        print(f"[WARN] {len(context['map_errors'])} problem(s) in the coverage or scope map")
+        for problem in context["map_errors"][:10]:
+            print(f"       {problem}")
+    print(
+        f"[INFO] {context['v1_covered']}/{context['v1_total']} V1 requirements claimed "
+        f"({context['v1_pct']}%), {len(context['deferred'])} deferred to V2"
+    )
     return 0
 
 

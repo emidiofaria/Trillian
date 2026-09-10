@@ -81,6 +81,21 @@ The HTML report is the one to hand to somebody else: it states what ran, what
 is declared but switched off, which requirements are claimed by which test, and
 which are not covered at all. Read it before claiming a feature is tested.
 
+Coverage is reported against **two** denominators — V1 requirements, and all
+requirements including those deferred to V2 (`05_tests/scope-map.tsv`). Quote
+both. Quoting only the V1 figure overstates completeness; quoting only the
+overall figure penalises a scope decision that was made on purpose.
+
+If the generator prints a scope problem, fix it rather than ignoring it:
+
+```
+[WARN] N problem(s) in the coverage or scope map
+       OC-01 is marked V2-BACKEND but has a passing test ...
+```
+
+That message means a requirement is recorded as unbuilt while a test proves
+otherwise. One of the two is wrong.
+
 **Non-interactive runs:** pass `--no-prompt` so the release question is never
 asked.
 

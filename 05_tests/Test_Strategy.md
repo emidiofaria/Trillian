@@ -326,6 +326,7 @@ coverage without anyone noticing:
 | JUnit XML | What ran, what passed, how long it took |
 | Kotlin source (`@Test` counts) | How many tests are *declared* |
 | `05_tests/coverage-map.tsv` | Which test claims which requirement |
+| `05_tests/scope-map.tsv` | Which requirements V1 deliberately does not build |
 | `01_requirements/DrivingCoach_SRS_v1.md` | The full requirement list — the denominator |
 | `05_tests/L4_SYS5_acceptance/*.md` | The manual checks only a human can discharge |
 
@@ -361,6 +362,47 @@ is resolved against the actual run:
 
 `TRACEABILITY_MATRIX.md` remains the human narrative. The TSV is what the report
 believes; drift between the two is detected loudly rather than prevented.
+
+### The scope map
+
+`05_tests/scope-map.tsv` records what V1 deliberately does not build. Without it
+the report says *"177 requirements have no automated test"* and lists them flat,
+putting `BE-01` — a route on a server V1 never deploys — next to `LD-02`, which
+ships on phones today and is genuinely untested. A reader cannot tell a scope
+decision from neglect, so they assume the worst about everything.
+
+```
+scope <TAB> target <TAB> reason
+V2-BACKEND	@User management	No authentication provider in V1 (SRS AD-04)
+V1	UM-18	The Profile screen ships in V1, reading counts from Room
+V2-BACKEND	AI-02	Server-side Anthropic API call
+```
+
+`target` is either an SRS section (`@Backend API`) or a single requirement ID.
+A requirement line always wins over a section line, so an exception stays
+visible on its own line instead of being buried in a sweep.
+
+**The rule for deciding is the subject of the sentence.** *"The backend shall…"*
+is deferred; *"The app shall…"* is not, even when it mentions upload — the
+client half of a network feature is testable against a fake server, and
+TU-04, TU-06 and TU-07 already pass that way. Marking them deferred would hide
+work that is done.
+
+The report then prints **both** denominators, never one: 68 of 190 V1
+requirements, and 68 of 245 counting the 55 deferred. Either figure alone
+misleads — the first flatters V1 by ignoring what was never built, the second
+punishes it for a deliberate decision.
+
+Three guards stop the file becoming a place to hide inconvenient requirements:
+
+| Guard | Behaviour |
+|-------|-----------|
+| Contradiction | A deferred requirement with a *passing* test is an error: either the note is stale or it was built after all |
+| Unknown target | A section or ID that is not in the SRS is an error |
+| No silent removal | Deferred requirements keep their row, their reason and their own count in section 4 |
+
+A deferred requirement may still carry an L4 manual claim; only a passing
+automated test is contradictory.
 
 ### Generating reports
 
