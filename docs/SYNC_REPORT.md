@@ -4,6 +4,85 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-10] Documentation drift audit — four stale artefacts
+
+**Codebase Version:** v2.95
+**Trigger:** Asked whether the docs still reflected the project. Audited every
+documentation artefact against the code rather than assuming. Four had drifted;
+one was actively wrong.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `README.md` | ✅ Updated | Badges, counts, dead directory reference, test commands, Analysis tab, V1/V2 scope |
+| `05_tests/reports/README.md` | ✅ Rewritten | Documented the pre-`RUN_` world and denied that reports are committed |
+| `SkunkOps/atlas/system.md` | ✅ Updated | `releases/` is directories now, not a filename series; version snippet said 2.8 |
+| `SkunkOps/atlas/failure-patterns.md` | ✅ Updated | New `FP-TEST-BLINDSPOT` |
+
+### What was wrong
+
+The root README had not been touched since 26 Aug and **understated the test
+suite by roughly 4x**:
+
+| Claim | Reality |
+|-------|---------|
+| Badge `tests-84 passing` | 322 executed of 351 declared |
+| Badge `SRS-117 requirements` | 245 |
+| `human_system_acceptance_tests/` in the tree | Directory does not exist |
+| `135` acceptance tests | 133 |
+| "Run tests: `./gradlew test`" | `run-all-tests.sh` is the documented path |
+
+The dead directory is worth noting: a sync entry from an earlier session
+recorded renaming that path to `05_tests/L4_SYS5_acceptance/`, but two
+references in the README were missed. A rename is not complete until nothing
+points at the old name.
+
+`05_tests/reports/README.md` (22 Jul) described a single flat Markdown file per
+run and stated that reports are *not* committed. Both untrue since the `RUN_<ts>/`
+change: runs now produce Markdown **and** HTML, and the directories are tracked.
+
+`system.md` described `releases/` as a flat filename series. `package-release.sh`
+has since made releases directories carrying the APK, its test report and notes.
+Documentation contradicting the code is the failure mode the Atlas exists to
+prevent, so it is now written down with the reasoning: an APK on its own asserts
+nothing about whether it was tested.
+
+### The pattern worth keeping
+
+`FP-TEST-BLINDSPOT` records the most valuable finding of the report work: a
+class-level `@Ignore` collapses a whole test class into **one** `<testcase
+name="null">` entry, so a suite looks green while dozens of tests never run.
+Four classes hid 29 tests, and 8 coverage claims rested on them.
+
+It is a measurement failure rather than a code failure — every tool downstream
+faithfully reported what the XML said. The mitigation is to count `@Test` in the
+source and print declared against executed, so a suite that skips everything
+scores zero instead of passing. Two parser subtleties are recorded with it,
+because both were real bugs: brace-depth nesting (a private fake inside a test
+class swallowed 22 tests) and matching `@Test` on a word boundary (`@TestInstallIn`
+inflated the count by 2).
+
+### Honesty in the status table
+
+The README's status table now carries two ⚠️ rows it did not have before: L2 at
+60/89, and V1 requirements coverage at 68/190 (36%). These are not new problems,
+only newly visible ones. For a project whose thesis is engineering rigour, a
+number that flatters us is worth less than one we can defend.
+
+### Reviewed, no change needed
+
+`SRS`, `TRACEABILITY_MATRIX`, `USER_MANUAL`, `flows.md`, `components.md`,
+`Test_Strategy.md` — synced during the work they describe.
+`instructions.md` (14 Jul) is a stable operating model carrying no stale facts.
+
+### Open decision
+
+`RUN_<ts>/` directories are tracked, so every future run adds ~215 KB of HTML to
+the repository permanently. Flagged to the human, not decided here.
+
+---
+
 ## [2026-09-10] Report identity — the helmet and the name
 
 **Codebase Version:** v2.95
@@ -65,6 +144,8 @@ stays under 16 KB so the 257 KB master cannot be copied over it unnoticed.
 | Release repackaged | ✅ HTML + Markdown retitled |
 
 ---
+
+## [2026-09-10] Report section order — evidence before interpretation
 
 **Codebase Version:** v2.95
 **Trigger:** The report asserted requirements coverage before showing a single test name.

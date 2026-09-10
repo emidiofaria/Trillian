@@ -1323,6 +1323,79 @@ the platform's own first-frame marker to ~17 ms.
 
 ---
 
+## Pattern: A Suite That Looks Green Because Its Tests Never Ran (FP-TEST-BLINDSPOT)
+
+### Symptoms
+
+- `connectedDebugAndroidTest` reports **0 failures** and the run is called a success.
+- The JUnit XML contains far fewer `<testcase>` entries than there are `@Test`
+  functions in the source, but nobody notices because nothing compares the two.
+- A requirement is cited as covered by a test that has not executed in months.
+- Test count in the XML is oddly round and lower than expected — 64 entries for
+  89 declared tests.
+
+### Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `<testcase name="null" classname="com.example.FooTest" />` | JUnit XML | **The whole class is `@Ignore`d.** Gradle emits exactly one entry for it regardless of how many tests it holds |
+| Declared `@Test` count ≠ executed count | `generate-html-report.py` output | The difference is the number of tests silently not running |
+| `[INFO] 322/351 tests executed, 29 never ran` | Report stdout | The gap, stated |
+
+### Root Cause
+
+A class-level `@Ignore` collapses an entire test class into a **single skipped
+entry** in the JUnit XML. The runner does not enumerate what it skipped, so the
+information about how many tests were disabled is destroyed at the moment it
+would be most useful.
+
+The failure is one of measurement, not of code. Every tool downstream —
+Gradle's console summary, CI status, a coverage table written by hand — reads
+the XML and faithfully reports what it says. Nothing lies; the question is
+simply never asked. Four classes hid **29 tests** this way:
+
+| Class | Hidden tests |
+|-------|--------------|
+| `EndToEndTest` | 5 |
+| `RecordingFragmentTest` | 7 |
+| `TelemetryForegroundServiceTest` | 6 |
+| `TrackSetupFragmentTest` | 11 |
+
+The compounding harm is traceability: 8 coverage claims pointed at tests inside
+those classes. Coverage looked earned while nothing was verifying it.
+
+### Mitigations
+
+- **Count the declared tests from the source, not from the run.** The report
+  parses `@Test` out of the Kotlin files and prints declared and executed side by
+  side. A gap cannot hide, because a suite that skips everything scores zero
+  rather than passing.
+- **Parse with a brace-depth stack, not line-by-line.** A private fake declared
+  inside a test class will otherwise absorb every `@Test` below it and the
+  totals will quietly stop matching. This bug was real: `FailingDataStore`
+  nested in `DriverProfileStoreTest` swallowed 22 tests until the parser
+  tracked nesting.
+- **Match `@Test` on a word boundary** (`^@Test\b`). A naive `startswith("@Test")`
+  also matches `@TestInstallIn` and inflates the declared count — here by 2.
+- **Resolve every coverage claim against actual results.** A claim on a skipped
+  test resolves to `SKIPPED`, never `PASS`, and is listed as unbacked.
+- **Treat a class-level `@Ignore` as debt with an owner**, not as a neutral
+  state. It is invisible by construction; only an external count makes it visible.
+
+### Confidence
+
+**HIGH** — found 2026-09-09 while building the HTML test report. Verified by
+arithmetic: 89 declared − 29 ignored = 60 real, and the XML holds 64 entries,
+being those 60 plus 4 `name="null"` placeholders.
+
+### Status
+
+⚠️ **OPEN.** The measurement gap is closed — every report states it plainly —
+but the 29 tests are still switched off and 8 requirement claims still rest on
+them.
+
+---
+
 ## Pattern: Instrumented Test Hangs Forever Instead of Failing (FP-TEST-HANG)
 
 ### Symptoms

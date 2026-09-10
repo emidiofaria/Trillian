@@ -447,14 +447,14 @@ while (processingStatus in [PENDING, UPLOADING, DETECTING_LAPS, GENERATING_COACH
 version code is derived from it, so the two can never drift:
 
 ```kotlin
-val appVersionName = "2.8"
+val appVersionName = "2.95"
 val appVersionCode = appVersionName.split(".").let { it[0].toInt() * 100 + it[1].toInt() }
 ```
 
 | Property | Rule |
 |----------|------|
-| `versionName` | `major.minor`, matching the `releases/` filename series |
-| `versionCode` | `major*100 + minor` — monotonic across the whole v1.0 (100) → v2.8 (208) history |
+| `versionName` | `major.minor`, matching the `releases/` directory series |
+| `versionCode` | `major*100 + minor` — monotonic across the whole v1.0 (100) → v2.95 (295) history |
 | Headroom | 99 minor releases per major |
 | APK filename | Emitted as `DrivingCoach-v<versionName>-<variant>.apk` by an `applicationVariants` output rule |
 
@@ -463,6 +463,32 @@ val appVersionCode = appVersionName.split(".").let { it[0].toInt() * 100 + it[1]
 on-device builds, `adb`, and any future crash reporter could not distinguish releases. The
 auto-generated APK filename closes the loop — a copy into `releases/` cannot be labelled with
 a version the binary does not actually report.
+
+### Release layout
+
+Releases are **directories**, not loose APKs:
+
+```
+releases/v2.95-session-analysis/
+├── DrivingCoach-v2.95-session-analysis.apk
+├── TEST_REPORT.html      Evidence for this exact build
+├── TEST_REPORT.md
+└── RELEASE_NOTES.md      Generated from git log since the previous release
+```
+
+Written by `05_tests/infra/scripts/package-release.sh`, which reads
+`appVersionName` from `app/build.gradle.kts` and derives the slug from the
+branch name unless `--slug` is given. `run-all-tests.sh` offers to invoke it at
+the end of a run.
+
+**Why a directory:** an APK on its own asserts nothing about whether it was
+tested. Shipping the test report inside the same directory means a build and the
+evidence for it cannot be separated, mislaid, or quietly regenerated later
+against a different commit — the report header carries the commit, branch and
+test device.
+
+Loose `DrivingCoach-v*.apk` files at the top of `releases/` predate this
+convention and are kept for history.
 
 **Bump procedure:** edit `appVersionName` only. Never hand-edit `versionCode`.
 
