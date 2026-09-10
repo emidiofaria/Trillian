@@ -123,6 +123,12 @@ The generator has its own tests. Run them after changing it:
 python3 -m unittest discover -s 05_tests/infra/scripts -p 'test_*.py'
 ```
 
+Expect 51 tests. Among them are guards on the header emblem: it must be square
+(Incident 11 was this artwork deformed by a non-uniform scale), it must stay
+under 16 KB so nobody drops the 528x528 master in and triples every report, and
+it must be embedded as a `data:` URI rather than linked so the page still works
+when copied into a release directory on its own.
+
 ---
 
 ## 2. Environment Detection (Manual Method)

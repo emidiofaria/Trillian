@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Driving Coach v2.95 — Test Report</title>
+<title>Trillian · Driving Coach v2.95 — Test Report</title>
 <style>
 :root{--bmw:#1C69D4;--gold:#C9A227;--ink:#1a1d21;--muted:#5b6570;--line:#dfe3e8;
 --pass:#2e7d32;--fail:#c62828;--warn:#e07b00;--manual:#5a6acf;--bg:#f6f7f9}
@@ -11,6 +11,9 @@ font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Aria
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px 72px}
 header{background:linear-gradient(135deg,#0f2a52,var(--bmw));color:#fff;padding:36px 0 30px;margin-bottom:28px}
 header .wrap{padding-bottom:0}
+.brand{display:flex;align-items:flex-start;gap:18px}
+.brand img{flex:none;display:block}
+.brand-text{min-width:0}
 h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
 .sub{opacity:.85;font-size:14px}
 .meta{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:18px;font-size:13px;opacity:.92}
@@ -58,16 +61,18 @@ box-shadow:0 1px 2px rgba(0,0,0,.06);border-top:3px solid var(--bmw)}
 footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);
 color:var(--muted);font-size:12.5px}
 </style></head><body>
-<header><div class="wrap">
-<h1>Driving Coach v2.95 — Test Report</h1>
+<header><div class="wrap"><div class="brand">
+<img src="data:image/png;base64,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" width="56" height="56" alt="">
+<div class="brand-text">
+<h1>Trillian · Driving Coach v2.95 — Test Report</h1>
 <div class="sub">Automated evidence, generated from test results — not written by hand.</div>
 <div class="meta">
 <span><b>Version:</b> v2.95</span>
-<span><b>Commit:</b> 73b9062</span>
+<span><b>Commit:</b> 1c570b0</span>
 <span><b>Branch:</b> FT_Add_Advanced_racing_coach_step_1</span>
 <span><b>L2 device:</b> DrivingCoach_Test(AVD) - 11</span>
-<span><b>Generated:</b> 2026-09-10 01:38:09 BST</span>
-</div></div></header>
+<span><b>Generated:</b> 2026-09-10 12:24:33 BST</span>
+</div></div></div></div></header>
 <div class="wrap">
 <div class="verdict warn"><b>All executed tests passed, with caveats below</b><br>
 322 of 351 declared automated tests ran; 322 passed, 0 failed, 4 skipped.
@@ -1856,6 +1861,6 @@ color:var(--muted);font-size:12.5px}
 </table>
 <div class="verdict warn" style="margin-top:34px"><b>Before this build is trusted on track, a human still has to run the 133 manual checks in section 5.</b><br>Nothing above proves that the lap time on the screen matches the driver's own stopwatch, or that the drawn map is the circuit they just drove. Only a person in the car can do that.</div>
 <footer>
-Generated by <code>generate-html-report.py</code> at 2026-09-10 01:38:09 BST. 
+Generated by <code>generate-html-report.py</code> at 2026-09-10 12:24:33 BST. 
 Every figure is derived from JUnit XML, Kotlin source and <code>05_tests/coverage-map.tsv</code>; none of it is written by hand.
 </footer></div></body></html>

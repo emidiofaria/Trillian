@@ -12,6 +12,7 @@ Run with:
 
 import importlib.util
 import re
+import struct
 import sys
 import tempfile
 import unittest
@@ -484,6 +485,71 @@ class DeferredRenderingTest(unittest.TestCase):
 
     def test_the_method_section_explains_the_scope_decision(self):
         self.assertIn("V1 is deliberately offline-first", self.page())
+
+
+class BrandingTest(unittest.TestCase):
+    """The helmet and the title.
+
+    Cosmetic, but two of these guard real defects: incident #11 was this exact
+    artwork rendered deformed, and an asset referenced rather than embedded
+    would break silently only in the release directory, which is the one place
+    a stranger ever opens the file.
+    """
+
+    LOGO_RE = re.compile(r'<img src="data:image/png;base64,[^"]+" width="(\d+)" height="(\d+)"')
+
+    def context(self, **overrides):
+        return RenderingTest().context(**overrides)
+
+    def test_the_committed_asset_is_square(self):
+        # Read the PNG header directly rather than through Pillow: the point is
+        # that this asset needs no image library to be trustworthy.
+        data = gen.LOGO.read_bytes()
+        self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n", "not a PNG")
+        width, height = struct.unpack(">II", data[16:24])
+        self.assertEqual(width, height, f"helmet must be square, got {width}x{height}")
+
+    def test_the_committed_asset_stays_small(self):
+        # The 528x528 master is 257 KB, which is 343 KB base64 on a ~200 KB
+        # report. If someone ever copies the master over this file, fail loudly
+        # rather than quietly tripling every report we ship.
+        size = gen.LOGO.stat().st_size
+        self.assertLess(size, 16 * 1024, f"helmet grew to {size} bytes; re-scale it")
+
+    def test_the_logo_is_embedded_not_linked(self):
+        page = gen.render(self.context(logo=gen.logo_data_uri()))
+        self.assertIn('<img src="data:image/png;base64,', page)
+        # A relative src would survive the no-external-URL check and still be a
+        # broken image once package-release.sh copies the HTML on its own.
+        self.assertNotIn('<img src="05_tests', page)
+        self.assertNotIn('<img src="helmet', page)
+
+    def test_the_logo_is_scaled_uniformly(self):
+        # Incident #11: the helmet rendered deformed by a non-uniform scale.
+        page = gen.render(self.context(logo=gen.logo_data_uri()))
+        match = self.LOGO_RE.search(page)
+        self.assertIsNotNone(match, "logo img must state explicit width and height")
+        self.assertEqual(match.group(1), match.group(2), "logo must be scaled square")
+
+    def test_the_logo_precedes_the_title(self):
+        page = gen.render(self.context(logo=gen.logo_data_uri()))
+        self.assertLess(page.index("<img src=\"data:image/png"), page.index("<h1>"))
+
+    def test_a_missing_logo_does_not_break_the_report(self):
+        # An ornament must never be able to stop the evidence being produced.
+        self.assertEqual(gen.logo_data_uri(Path("/nonexistent/helmet.png")), "")
+        page = gen.render(self.context(logo=""))
+        self.assertTrue(page.startswith("<!DOCTYPE html>"))
+        self.assertNotIn("<img", page)
+
+    def test_the_title_names_the_programme_and_the_product(self):
+        self.assertEqual(gen.default_title("2.95"),
+                         "Trillian · Driving Coach v2.95 — Test Report")
+
+    def test_the_title_reaches_the_browser_tab_as_well_as_the_page(self):
+        page = gen.render(self.context(title=gen.default_title("2.95")))
+        self.assertIn("<title>Trillian · Driving Coach v2.95 — Test Report</title>", page)
+        self.assertIn("<h1>Trillian · Driving Coach v2.95 — Test Report</h1>", page)
 
 
 if __name__ == "__main__":

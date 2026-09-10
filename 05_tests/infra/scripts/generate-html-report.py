@@ -30,6 +30,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import base64
 import html
 import os
 import re
@@ -54,6 +55,8 @@ SOURCE_DIRS = {
     "L2": PROJECT_ROOT / "app/src/androidTest",
 }
 BUILD_GRADLE = PROJECT_ROOT / "app/build.gradle.kts"
+LOGO = PROJECT_ROOT / "05_tests/infra/assets/helmet.png"
+LOGO_PX = 56
 
 LEVELS = OrderedDict(
     [
@@ -458,6 +461,9 @@ font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Aria
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px 72px}
 header{background:linear-gradient(135deg,#0f2a52,var(--bmw));color:#fff;padding:36px 0 30px;margin-bottom:28px}
 header .wrap{padding-bottom:0}
+.brand{display:flex;align-items:flex-start;gap:18px}
+.brand img{flex:none;display:block}
+.brand-text{min-width:0}
 h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
 .sub{opacity:.85;font-size:14px}
 .meta{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:18px;font-size:13px;opacity:.92}
@@ -515,6 +521,34 @@ def tag(status: str) -> str:
     return f'<span class="tag {status}">{status}</span>'
 
 
+def default_title(version: str) -> str:
+    """The name both reports carry.
+
+    "Trillian" is the programme, "Driving Coach" the product. Leading with the
+    programme matters beyond the heading: this string is also the <title>, so
+    it becomes the browser tab and the filename a reader gets when they print
+    the report to PDF and mail it on.
+    """
+    return f"Trillian · Driving Coach v{version} — Test Report"
+
+
+def logo_data_uri(path: Path = LOGO) -> str:
+    """Return the helmet as a base64 data URI, or "" if it is unavailable.
+
+    Embedded rather than linked because package-release.sh copies only the HTML
+    file into the release directory -- a relative <img src> would pass our
+    no-external-URL check and still render as a broken image on the one machine
+    that matters, the reader's.
+
+    Never raises. A test report that fails to generate because an ornament is
+    missing would be a worse defect than the missing ornament.
+    """
+    try:
+        return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+    except OSError:
+        return ""
+
+
 def render(ctx) -> str:
     out = []
     w = out.append
@@ -526,13 +560,22 @@ def render(ctx) -> str:
     w(f"<style>{CSS}</style></head><body>")
 
     # ---- header ----
-    w('<header><div class="wrap">')
+    # The helmet is the mark the reader already saw on the app's splash screen,
+    # so the report and the product are visibly the same thing. Width and
+    # height are stated explicitly and equal: incident #11 was this artwork
+    # deformed by a non-uniform scale, and it is not going to happen again in
+    # the document that exists to demonstrate we test properly.
+    logo = ctx.get("logo", "")
+    w('<header><div class="wrap"><div class="brand">')
+    if logo:
+        w(f'<img src="{logo}" width="{LOGO_PX}" height="{LOGO_PX}" alt="">')
+    w('<div class="brand-text">')
     w(f"<h1>{esc(ctx['title'])}</h1>")
     w('<div class="sub">Automated evidence, generated from test results — not written by hand.</div>')
     w('<div class="meta">')
     for label, value in ctx["meta"]:
         w(f"<span><b>{esc(label)}:</b> {esc(value)}</span>")
-    w("</div></div></header>")
+    w("</div></div></div></div></header>")
 
     w('<div class="wrap">')
 
@@ -915,7 +958,8 @@ def build_context(args):
     version = app_version()
 
     return {
-        "title": args.title or f"Driving Coach v{version} — Test Report",
+        "title": args.title or default_title(version),
+        "logo": logo_data_uri(),
         "generated": generated,
         "meta": [
             ("Version", f"v{version}"),

@@ -4,7 +4,67 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
-## [2026-09-10] Report section order — evidence before interpretation
+## [2026-09-10] Report identity — the helmet and the name
+
+**Codebase Version:** v2.95
+**Trigger:** The report is handed to people who were not in the room. It carried
+no mark and no programme name, so nothing tied it to the product it describes.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `05_tests/infra/assets/helmet.png` | ✅ Created | 144x144 emblem, 3.2 KB, pre-scaled from the brand master |
+| `05_tests/infra/assets/README.md` | ✅ Created | Provenance, the determinism and size rationale, regeneration command |
+| `generate-html-report.py` | ✅ Updated | `logo_data_uri()`, `default_title()`, flex header, logo left of the title |
+| `generate-report.sh` | ✅ Updated | Markdown report takes the same title, read from `appVersionName` |
+| `test_generate_html_report.py` | ✅ Updated | +8 tests (43 → 51), new `BrandingTest` |
+| `Test_Strategy.md` | ✅ Updated | §7 records the title, the embedding rule and why the asset is committed |
+| `test_strategy_execution_instructions.md` | ✅ Updated | §1.6 expects 51 tests and explains the emblem guards |
+| `SkunkOps/atlas/components.md` | ✅ Updated | 3 failure modes, asset rows, cross-link from Brand Assets |
+
+### What changed
+
+Title is now `Trillian · Driving Coach v2.95 — Test Report` in both the HTML and
+the Markdown report, which previously disagreed — the Markdown heading was a
+bare `# Test Report`. The string is also the `<title>`, so it names the browser
+tab and the PDF a reader saves.
+
+The app's yellow helmet sits left of the title, the same mark seen on the splash
+screen, so the report and the product are visibly one thing.
+
+### Three decisions worth keeping
+
+**Embedded, not linked.** `package-release.sh` copies only `TEST_REPORT.html`
+into the release directory. A relative `src` would pass the no-external-URL test
+and still render broken in the one place a stranger opens the file.
+
+**Committed pre-scaled, not resized at generate time.** Running Pillow during
+generation would tie output to the image library on the machine and break
+byte-reproducibility. The generator now only base64-encodes bytes; it has no
+image dependency at all. Cost: 4.5 KB on a 213 KB report, +2.1%.
+
+**Ornaments cannot break evidence.** A missing asset degrades to a plain header
+rather than raising. A test report that fails to generate over decoration would
+be a worse defect than the missing decoration.
+
+### Guards added
+
+Incident 11 was this exact artwork rendered deformed. Tests now assert the asset
+is square, that the `<img>` states equal explicit width and height, and that it
+stays under 16 KB so the 257 KB master cannot be copied over it unnoticed.
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| Generator self-tests | ✅ 51/51 |
+| Determinism (`--source-date`) | ✅ byte-identical |
+| HTML nesting | ✅ 149/149 divs balanced |
+| Embedded logo round-trip | ✅ decodes to 144x144, hash matches committed asset |
+| Release repackaged | ✅ HTML + Markdown retitled |
+
+---
 
 **Codebase Version:** v2.95
 **Trigger:** The report asserted requirements coverage before showing a single test name.

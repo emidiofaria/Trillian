@@ -1581,6 +1581,7 @@ hand-authored vector with a raster emblem derived from owner-supplied artwork.
 | PNG decoder for the gate | `app/src/test/java/com/drivingcoach/brand/ArgbBitmap.kt` |
 | Geometry master | `app/src/test/resources/brand/ic_helmet_emblem_master.png` |
 | Negative fixture | `app/src/test/resources/brand/legacy_deformed_emblem.png` |
+| Report emblem | `05_tests/infra/assets/helmet.png` (144x144 derivative of the master, embedded in every HTML test report) |
 
 ### Render Sites
 
@@ -1915,7 +1916,9 @@ Build-time only. Nothing here runs on a phone and no product code depends on it.
 | Path | Role |
 |------|------|
 | `05_tests/infra/scripts/generate-html-report.py` | The generator |
-| `05_tests/infra/scripts/test_generate_html_report.py` | Its own unit tests (26) |
+| `05_tests/infra/scripts/test_generate_html_report.py` | Its own unit tests (51) |
+| `05_tests/infra/assets/helmet.png` | The report's header emblem, 144x144, committed pre-scaled |
+| `05_tests/infra/assets/README.md` | Why it is a committed derivative and how to regenerate it |
 | `05_tests/infra/scripts/package-release.sh` | Groups APK + report + notes under `releases/v<ver>-<slug>/` |
 | `05_tests/infra/scripts/run-all-tests.sh` | Writes `05_tests/reports/RUN_<ts>/`, then offers a release |
 | `05_tests/coverage-map.tsv` | The claim ledger: `requirement<TAB>test<TAB>note` |
@@ -1961,6 +1964,9 @@ output — the report must open from a USB stick in a paddock with no signal.
 | Scope used as a rug | A built requirement marked `V2-BACKEND` | Coverage would look better than it is | Contradiction guard: deferred + passing test is an error |
 | Deferral hides work | A whole section swept when part of it ships | V1 gaps disappear from the count | Both denominators always printed; deferred items listed in full with reasons |
 | Stale results | Report generated without re-running tests | Report describes an older build | Header carries commit, branch and device |
+| Broken emblem in the release | Logo linked by path instead of embedded | Image renders broken only in `releases/`, where strangers read it | Test asserts a `data:` URI and rejects a relative `src` |
+| Deformed emblem | Non-uniform scale, as in Incident 11 | Brand damage on the document meant to show rigour | Tests assert the asset is square and the `<img>` width equals its height |
+| Report bloat | Someone copies the 528x528 master over the pre-scaled asset | Every report triples in size | Test fails if the asset exceeds 16 KB |
 
 ### Observable Signals
 

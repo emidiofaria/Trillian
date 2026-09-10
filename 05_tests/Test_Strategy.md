@@ -305,6 +305,21 @@ external stylesheets, nothing fetched from a network — that answers a single
 question for a reader who has never seen this project: *how is this software
 tested, and how much of it is actually covered?*
 
+The page is titled `Trillian · Driving Coach v<version> — Test Report` and
+carries the app's yellow helmet in its header. The name is not only the
+heading: it is also the `<title>`, so it becomes the browser tab and the
+filename when a reader prints the page to PDF and mails it on. The Markdown
+report uses the same title, so the two artefacts describing one run cannot
+disagree about what they are called.
+
+The emblem is embedded as a base64 `data:` URI rather than linked. A relative
+`src` would pass the no-external-URL rule and still render as a broken image
+once `package-release.sh` copies the HTML into a release directory on its own —
+the one place a stranger ever opens it. It is committed pre-scaled at 144x144
+(3 KB) rather than resized at generate time, because scaling through Pillow
+would make output depend on the image library installed on the machine and the
+report would stop being byte-reproducible. See `05_tests/infra/assets/README.md`.
+
 Sections, in order:
 
 | # | Section | What it shows |
