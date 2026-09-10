@@ -30,7 +30,7 @@ failures and every test that ran before any claim is made about what they cover.
 | # | Section | What it shows |
 |---|---------|---------------|
 | 1 | Results by test level | Declared vs executed per ASPICE level |
-| 2 | How we test | What each level can and cannot prove |
+| 2 | How we test — Software and System Test Strategy | What each level can and cannot prove |
 | 3 | Failures | Every failure in full |
 | 4 | Every automated test in this run | The complete inventory |
 | 5 | Manual acceptance tests (L4) | The checks only a human can discharge |

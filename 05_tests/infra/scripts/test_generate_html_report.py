@@ -290,18 +290,22 @@ class RenderingTest(unittest.TestCase):
         # manual checks -- and only then the claims made about them. Coverage
         # asserted before a single test name has appeared is coverage taken on
         # trust.
+        #
+        # Asserted as exact <h2> equality rather than substring positions. The
+        # substring version of this test passed straight through a rename of
+        # section 2, because the old title was still a prefix of the new one --
+        # a guard that cannot see an edit is not a guard.
         page = gen.render(self.context())
-        order = [
+        headings = re.findall(r"<h2>(.*?)</h2>", page, re.S)
+        self.assertEqual(headings, [
             "1. Results by test level",
-            "2. How we test",
+            "2. How we test — Software and System Test Strategy",
             "3. Failures",
             "4. Every automated test in this run",
             "5. Manual acceptance tests (L4)",
             "6. Requirements coverage",
             "7. Gaps and caveats",
-        ]
-        positions = [page.index(heading) for heading in order]
-        self.assertEqual(positions, sorted(positions), "sections are out of order")
+        ])
 
     def test_manual_tests_carry_a_human_instruction(self):
         page = gen.render(self.context())
@@ -550,6 +554,26 @@ class BrandingTest(unittest.TestCase):
         page = gen.render(self.context(title=gen.default_title("2.95")))
         self.assertIn("<title>Trillian · Driving Coach v2.95 — Test Report</title>", page)
         self.assertIn("<h1>Trillian · Driving Coach v2.95 — Test Report</h1>", page)
+
+    def test_the_report_names_the_human_who_ran_it(self):
+        # An ASPICE-style report says who executed it. Automation produced the
+        # numbers; a person is answerable for them.
+        page = gen.render(self.context(meta=[("Human behind the wheel", gen.HUMAN)]))
+        self.assertIn("Human behind the wheel", page)
+        self.assertIn(gen.HUMAN, page)
+
+    def test_the_attribution_sits_in_the_header_not_the_body(self):
+        page = gen.render(self.context(meta=[("Human behind the wheel", gen.HUMAN)]))
+        header = page[page.index("<header"):page.index("</header>")]
+        self.assertIn("Human behind the wheel", header)
+
+    def test_the_attribution_is_a_constant_not_a_machine_lookup(self):
+        # Hardcoded on purpose: reading git config would make the report differ
+        # depending on who regenerated it, and evidence that changes with the
+        # reader is not reproducible.
+        self.assertIsInstance(gen.HUMAN, str)
+        self.assertTrue(gen.HUMAN.strip())
+        self.assertNotIn("@", gen.HUMAN, "no email address in a shipped artefact")
 
 
 if __name__ == "__main__":

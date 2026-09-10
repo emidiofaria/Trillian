@@ -4,6 +4,67 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-10] The report names the human, and section 2 names the strategy
+
+**Codebase Version:** v2.95
+**Trigger:** Two requested changes to the HTML report header and section titles.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `generate-html-report.py` | Updated | `HUMAN` constant, meta entry, section 2 renamed |
+| `generate-report.sh` | Updated | Same attribution line in the Markdown report |
+| `test_generate_html_report.py` | Updated | +3 tests (51 -> 54), order guard strengthened |
+| `Test_Strategy.md` | Updated | Section table, and why the name is a constant |
+| `05_tests/reports/README.md` | Updated | Section table |
+| `test_strategy_execution_instructions.md` | Updated | Expected test count |
+
+### Attribution
+
+The header now closes with **Human behind the wheel: Emidio Costa**. An
+ASPICE-style test record names who executed it; automation produced the numbers
+but a person is answerable for them.
+
+Hardcoded rather than read from `git config`. Reading the machine would make the
+report differ depending on who regenerated it, and evidence that changes with
+the reader is not reproducible evidence. It also keeps an email address out of
+an artefact that gets handed to people — a test asserts `HUMAN` contains no `@`.
+
+The Markdown report carries the same line, on the same reasoning that already
+aligned the two titles: two artefacts describing one run should not disagree.
+
+### Section 2
+
+`2. How we test` is now `2. How we test — Software and System Test Strategy`.
+
+The originally requested wording was *System Integration Test Strategy*. The
+section documents four levels — SWE.4 unit, SWE.5 integration, SWE.6
+qualification and SYS.5 acceptance — so naming it after one of them would have
+described the section as narrower than it is. In a report whose value rests on
+not overstating anything, a heading that misdescribes its own contents is a
+poor trade. The agreed wording spans software and system levels and stays true.
+
+### A guard that could not see an edit
+
+The rename **passed the existing order test untouched**, which it should not
+have. `test_sections_run_evidence_before_interpretation` matched heading
+substrings, and the old title `2. How we test` is still a prefix of the new one.
+
+It now extracts every `<h2>` and asserts exact list equality, which catches
+renames, reorders, insertions and deletions in a single assertion. Verified
+negatively: appending one word to a heading fails the suite. The previous
+version would have let any suffix through silently.
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| Generator self-tests | 54/54 |
+| Order guard fails on a deliberate rename | Confirmed |
+| Determinism (`--source-date`) | Byte-identical |
+| Meta block renders 6 fields ending in the attribution | Confirmed |
+
 ## [2026-09-10] Evidence lives with the release, not in the working tree
 
 **Codebase Version:** v2.95

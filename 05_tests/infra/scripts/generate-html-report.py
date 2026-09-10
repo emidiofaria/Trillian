@@ -58,6 +58,11 @@ BUILD_GRADLE = PROJECT_ROOT / "app/build.gradle.kts"
 LOGO = PROJECT_ROOT / "05_tests/infra/assets/helmet.png"
 LOGO_PX = 56
 
+# Who ran it. Hardcoded rather than read from git config so the report stays
+# byte-identical on any machine -- an artefact that changes depending on who
+# regenerates it is no longer reproducible evidence.
+HUMAN = "Emidio Costa"
+
 LEVELS = OrderedDict(
     [
         ("L1", ("SWE.4", "Unit tests", "JVM, no device")),
@@ -634,7 +639,7 @@ def render(ctx) -> str:
     w("</table>")
 
     # ---- method ----
-    w("<h2>2. How we test</h2>")
+    w("<h2>2. How we test — Software and System Test Strategy</h2>")
     w('<p class="note">What each level can prove, and what it cannot. A test at the wrong '
       "level is a test that will pass while the product is broken.</p>")
     for level, (aspice, name, _) in LEVELS.items():
@@ -967,6 +972,7 @@ def build_context(args):
             ("Branch", git("rev-parse", "--abbrev-ref", "HEAD", default="unknown")),
             ("L2 device", device or "not run"),
             ("Generated", generated),
+            ("Human behind the wheel", HUMAN),
         ],
         "levels": levels,
         "totals": totals,

@@ -312,6 +312,13 @@ filename when a reader prints the page to PDF and mails it on. The Markdown
 report uses the same title, so the two artefacts describing one run cannot
 disagree about what they are called.
 
+The header closes with **Human behind the wheel**, naming the person answerable
+for the run. Automation produced the numbers; a person stands behind them, which
+is the same reason an ASPICE test record names who executed it. The name is a
+constant in the generator rather than a read of `git config`: evidence that
+changes depending on who regenerates it is not reproducible evidence. The
+Markdown report carries the same line.
+
 The emblem is embedded as a base64 `data:` URI rather than linked. A relative
 `src` would pass the no-external-URL rule and still render as a broken image
 once `package-release.sh` copies the HTML into a release directory on its own —
@@ -325,7 +332,7 @@ Sections, in order:
 | # | Section | What it shows |
 |---|---------|---------------|
 | 1 | Results by test level | Declared vs executed per ASPICE level |
-| 2 | How we test | What each level can and cannot prove |
+| 2 | How we test — Software and System Test Strategy | What each level can and cannot prove |
 | 3 | Failures | Every failure in full |
 | 4 | Every automated test | The complete inventory |
 | 5 | Manual acceptance tests | L4, with a note that a human must run them |

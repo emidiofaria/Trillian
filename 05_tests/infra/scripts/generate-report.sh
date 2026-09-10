@@ -191,6 +191,7 @@ cat > "$REPORT_FILE" << EOF
 
 **Date:** $(date "+%Y-%m-%d %H:%M:%S")  
 **Executed by:** Automated / Agent  
+**Human behind the wheel:** Emidio Costa  
 **Duration:** ${TOTAL_DURATION}s
 
 ---
