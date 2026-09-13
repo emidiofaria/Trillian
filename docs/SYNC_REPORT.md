@@ -4,6 +4,63 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-14] The release evidence described a different build
+
+**Codebase Version:** v2.96
+**Trigger:** Packaging the v2.96 release surfaced three defects in the release
+evidence chain. No application code changed; this entry records tooling fixes
+and one build-integrity finding.
+
+### What was wrong
+
+| # | Defect | Consequence |
+|---|--------|-------------|
+| 1 | `package-release.sh` copied the newest `RUN_*/TEST_REPORT.html` without checking it | The v2.96 APK shipped a test report generated on 2026-09-10 against v2.95. The evidence described a different build to the one in the box. |
+| 2 | Release-notes commit range was anchored with `git log -1 -- releases/<prev>/`, but `releases/` is gitignored | The anchor never resolved, so the script silently fell back to "last 15 commits". v2.96's true range is 6. |
+| 3 | `BuildConfig.VERSION_NAME` is a compile-time constant that Kotlin inlines at call sites | After the 2.95 → 2.96 bump, an incremental build produced an APK whose manifest said 2.96 while `AboutFragment` still rendered the inlined `2.94`. Verified by extracting the dex: the APK contained **both** literals. |
+
+### Fixes
+
+- `package-release.sh` now refuses to package unless the report's embedded
+  `Version:` and `Commit:` match the version being released and `HEAD`. The
+  check runs *before* the directory is created, so a refusal writes nothing
+  rather than leaving a half-built release.
+- The release-notes anchor now reads the previous release's own
+  `RELEASE_NOTES.md` commit hash, which survives the gitignore.
+- `.gitignore` now also ignores the stray `05_tests/reports/TEST_REPORT.html`,
+  consistent with the existing rule that working-directory runs are scratch and
+  evidence lives in `releases/`.
+
+### Defect 3 needs no code change
+
+`AboutScreenTest.aboutScreenReportsTheBuildIdentityFromBuildConfig` caught the
+stale constant on its own — that is the test doing exactly its job, at the right
+layer. The remedy is procedural: **a release build must be a clean build.** A
+clean rebuild removed the `2.94` literal from the dex entirely.
+
+Left deliberately unfixed: no guard was added to `package-release.sh` for this.
+A second check of the same property would duplicate the test without adding
+information, and the test already fails the release run.
+
+### Validation
+
+Clean rebuild, then L1 + L2 on a cold-booted emulator:
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4 unit) | ✅ 281/281 |
+| L2 (SWE.5 integration) | ✅ 60 passed, 4 `@Ignore`d (pre-existing) |
+
+An earlier L2 run failed 29 tests with `RootViewWithoutFocusException`. This was
+environmental — the headless emulator's screen timing out while idle, not a code
+regression (L1 stayed green throughout). Holding the device awake for the
+duration of the run cleared it.
+
+Packaged `releases/v2.96-stationary-start-point/` and verified the shipped
+report header reads v2.96 / `85e9ff2`, and the notes list 6 commits.
+
+---
+
 ## [2026-09-13] A start point fixed while standing still (Incident 14)
 
 **Codebase Version:** v2.96

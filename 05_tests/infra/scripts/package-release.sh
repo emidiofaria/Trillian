@@ -99,19 +99,56 @@ if [ -z "$APK_SOURCE" ] || [ ! -f "$APK_SOURCE" ]; then
     exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# Test report -- resolved and checked BEFORE anything is written
+# ---------------------------------------------------------------------------
+# A report that exists is not the same as a report that describes THIS build.
+# Packaging copies the newest run it can find, and before this check that run
+# could be days old: v2.96 was first packaged with a report from a v2.95 run,
+# silently, because the copy succeeded. The promise at the top of this file --
+# that an APK and its evidence cannot be separated -- was not being kept.
+#
+# This runs before the release directory is created or the APK copied, so a
+# refusal leaves the tree exactly as it found it rather than a half-written
+# release with the APK stripped out of it.
+if [ -z "$REPORT" ]; then
+    REPORT="$(ls -t "$PROJECT_ROOT"/05_tests/reports/RUN_*/TEST_REPORT.html 2>/dev/null | head -1 || true)"
+fi
+
+if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
+    REPORT_VERSION="$(grep -oP '<b>Version:</b>\s*v\K[^<]+' "$REPORT" 2>/dev/null | head -1 || true)"
+    REPORT_COMMIT="$(grep -oP '<b>Commit:</b>\s*\K[0-9a-f]+' "$REPORT" 2>/dev/null | head -1 || true)"
+    HEAD_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+    STALE=""
+    [ "$REPORT_VERSION" != "$VERSION" ] && \
+        STALE="report covers v${REPORT_VERSION:-unknown}, this build is v$VERSION"
+    [ -z "$STALE" ] && [ "$REPORT_COMMIT" != "$HEAD_COMMIT" ] && \
+        STALE="report covers commit ${REPORT_COMMIT:-unknown}, HEAD is $HEAD_COMMIT"
+
+    if [ -n "$STALE" ]; then
+        log_error "Refusing to package: $STALE"
+        log_error "  Stale report: ${REPORT#$PROJECT_ROOT/}"
+        log_error ""
+        log_error "  Shipping this would put an APK next to evidence for a different"
+        log_error "  build, which is worse than shipping no evidence at all."
+        log_error ""
+        log_error "  Run the tests against this build first:"
+        log_error "    ./05_tests/infra/scripts/run-all-tests.sh --start-emulator --stop-emulator"
+        exit 1
+    fi
+fi
+
 mkdir -p "$RELEASE_DIR"
 cp "$APK_SOURCE" "$RELEASE_DIR/$APK_NAME"
 log_info "APK: $(du -h "$RELEASE_DIR/$APK_NAME" | cut -f1)"
 
 # ---------------------------------------------------------------------------
-# Test report
+# Test report -- already resolved and verified above
 # ---------------------------------------------------------------------------
-if [ -z "$REPORT" ]; then
-    REPORT="$(ls -t "$PROJECT_ROOT"/05_tests/reports/RUN_*/TEST_REPORT.html 2>/dev/null | head -1 || true)"
-fi
 if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
     cp "$REPORT" "$RELEASE_DIR/TEST_REPORT.html"
-    log_info "Test report: TEST_REPORT.html"
+    log_info "Test report: TEST_REPORT.html (v$REPORT_VERSION, $REPORT_COMMIT)"
     RUN_DIR="$(dirname "$REPORT")"
     [ -f "$RUN_DIR/TEST_REPORT.md" ] && cp "$RUN_DIR/TEST_REPORT.md" "$RELEASE_DIR/TEST_REPORT.md"
 else
@@ -135,11 +172,18 @@ log_step "Writing release notes"
 PREV_TAG=""
 PREV_RELEASE="$(ls -d "$RELEASES_DIR"/v*/ 2>/dev/null | grep -v "/$RELEASE_NAME/$" | tail -1 || true)"
 
-# Prefer a git tag; fall back to the commit that added the previous release.
+# Prefer a git tag; fall back to the commit the previous release recorded.
+#
+# This used to ask git which commit added the previous release directory, which
+# can never work: releases/ is gitignored, so the path has no history and the
+# lookup silently returned nothing. Every release therefore fell through to
+# "the last 15 commits" regardless of what it contained -- v2.96 listed 15 when
+# 6 were its own. The previous release's RELEASE_NOTES.md records its own commit
+# and lives on disk, so it survives gitignore and is the reliable anchor.
 if git rev-parse "v$VERSION" >/dev/null 2>&1; then
     PREV_TAG="v$VERSION^"
-elif [ -n "$PREV_RELEASE" ]; then
-    PREV_TAG="$(git log -1 --format=%H -- "$PREV_RELEASE" 2>/dev/null || true)"
+elif [ -n "$PREV_RELEASE" ] && [ -f "$PREV_RELEASE/RELEASE_NOTES.md" ]; then
+    PREV_TAG="$(grep -oP '^\| Commit \| `\K[0-9a-f]+' "$PREV_RELEASE/RELEASE_NOTES.md" 2>/dev/null | head -1 || true)"
 fi
 # With no anchor at all (the first release), fall back to the recent history
 # rather than replaying the whole project.
