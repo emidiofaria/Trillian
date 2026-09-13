@@ -4,6 +4,89 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-13] A start point fixed while standing still (Incident 14)
+
+**Codebase Version:** v2.96
+**Trigger:** Incident 14 — driver completed three laps, app reported none.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| failure-patterns.md | ✅ Updated | +93 lines (1 new pattern: `FP-STATIONARY-POSITION-BIAS`) |
+| components.md | ✅ Updated | +30 lines (new section + 5 constants) |
+| flows.md | ✅ Updated | +9 lines (fallback branch, rejection recording) |
+| SRS_v1.md | ✅ Updated | 2 amended (LD-02, LD-04), 2 new (LD-17, LD-18) |
+| USER_MANUAL.md | ✅ Updated | Section 7 "No Laps Detected" extended |
+| coverage-map.tsv | ✅ Updated | +7 claims, all PASS |
+| 03_incidents/14 | ✅ Added | RCA document + raw evidence committed |
+
+### New Requirement IDs
+
+- **LD-17** — bounded projection of the start point onto the driven path
+- **LD-18** — an empty result must describe the session, not instruct the driver
+
+### What changed and why
+
+The app mandates capturing the start/finish line **while standing still** (TS-05, TS-07), which is
+the one condition in which a consumer GPS receiver is least able to place itself. On the incident
+14 session that put the start point **15.9 m perpendicular** to the track, while the racing laps
+themselves overlaid within **4.5 m**. Because both endpoints were captured seconds apart they
+shared the same bias, so the line's length and bearing came out perfect and every internal check
+passed. Only the absolute position was wrong.
+
+The decisive measurement: the reported position sat 10–20 m to one side for the whole opening of
+the session, then jumped ~11 m in 2 seconds as the kart accelerated, landing 0.3 m from the racing
+line. The bias does not decay — it vanishes the moment the receiver gets velocity aiding.
+
+Contributing factor: `RejectionReason.TOO_FAR_TO_THE_SIDE` already existed in the enum, fully
+documented, **referenced nowhere**. Four passes were discarded and the diagnostics reported no
+rejections at all.
+
+### Documentation decisions worth recording
+
+- The user manual originally gained advice to "capture while rolling slowly past" the line. This
+  was **removed before commit**: TS-05/TS-07 have the user capture on foot at the track edges, so
+  the advice was not actionable in the shipped UI.
+- `LD-18` was added beyond the approved plan, because the message change is user-visible and the
+  SRS had no requirement covering it. Flagged to the operator.
+- The message logic was extracted from `RecordingViewModel` into `NoLapsExplanation` so it could be
+  tested directly — the previous wording survived for months because nothing asserted on it.
+
+### Verification
+
+**281 L1 tests, 0 failures** (262 before this work). All 7 new coverage claims resolve to PASS; the
+8 unbacked claims in the report are the pre-existing `@Ignore`d L2 classes, unchanged.
+
+### Files Modified
+
+```
+M  SkunkOps/atlas/failure-patterns.md                        (+93)
+M  SkunkOps/atlas/components.md                              (+30, -2)
+M  SkunkOps/atlas/flows.md                                   (+9)
+M  01_requirements/DrivingCoach_SRS_v1.md                    (+4, -2)
+M  docs/USER_MANUAL.md                                       (+20)
+M  05_tests/coverage-map.tsv                                 (+7)
+M  app/build.gradle.kts                                      (2.95 -> 2.96)
+M  app/src/main/java/com/drivingcoach/lap/LocalLapDetector.kt
+M  app/src/main/java/com/drivingcoach/ui/recording/RecordingViewModel.kt
+M  app/src/main/java/com/drivingcoach/util/GeoUtils.kt
+A  app/src/main/java/com/drivingcoach/lap/NoLapsExplanation.kt
+A  app/src/test/java/com/drivingcoach/lap/LapDetectionIncident14Test.kt
+A  app/src/test/java/com/drivingcoach/lap/NoLapsExplanationTest.kt
+A  app/src/test/resources/lapfixtures/ines3/
+A  03_incidents/14_no_lap_detected_test/14_RCA_start_point_fixed_while_stationary.md
+```
+
+### Recommendations
+
+- [ ] The 20 m bound spent 80% of its budget on the one session that needed it. If a second session
+      approaches it, change the capture workflow rather than the number.
+- [ ] Watch for `anchor: PROJECTED_ONTO_PATH` appearing routinely — that would mean the capture
+      workflow, not the receiver, is the thing to fix.
+
+---
+
 ## [2026-09-10] The report names the human, and section 2 names the strategy
 
 **Codebase Version:** v2.95

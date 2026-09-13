@@ -301,4 +301,91 @@ class LocalLapDetectorGuardsTest {
         const val BASE_LAT = 41.2005
         const val BASE_LNG = -8.6109
     }
+
+    // ------------------------------------------- anchor projection (incident 14)
+
+    @Test
+    fun `the correction is refused when the captured point is further out than the bound`() {
+        // The fallback exists to rescue a line displaced by a stationary GPS fix,
+        // which incident 14 measured at 16m. A line hundreds of metres out is a
+        // different fault -- the wrong track, or the wrong session -- and silently
+        // dragging it onto the path would fabricate laps the driver never drove.
+        // The bound is what keeps the fallback a correction rather than a guess.
+        val fixture = LapReplayHarness.load("ines3", tempFolder.newFolder())
+        val farAway = fixture.startLine.copy(
+            lat1 = fixture.startLine.lat1 + 0.0045,
+            lat2 = fixture.startLine.lat2 + 0.0045
+        )
+
+        val outcome = detector.detectLapsWithDiagnostics(fixture.telemetryFile, farAway)
+
+        val diagnostics = requireNotNull(outcome.diagnostics)
+        assertEquals(
+            "a line 500m from the track must be left where it was captured",
+            LocalLapDetector.AnchorSource.CAPTURED,
+            diagnostics.anchor
+        )
+        assertEquals("and must not be credited with laps", 0, diagnostics.lapCount)
+    }
+
+    @Test
+    fun `a line captured on the racing line is left untouched`() {
+        // Incident 13's line was captured while the car was moving and sits on the
+        // path. If the fallback altered that session it would be changing answers
+        // that were already right, and no amount of passing tests elsewhere would
+        // make that acceptable. The fallback must be inert wherever it is not needed.
+        val fixture = LapReplayHarness.load("teste3", tempFolder.newFolder())
+
+        val outcome = detector.detectLapsWithDiagnostics(fixture.telemetryFile, fixture.startLine)
+
+        val diagnostics = requireNotNull(outcome.diagnostics)
+        assertEquals(
+            "a healthy session must never reach the fallback",
+            LocalLapDetector.AnchorSource.CAPTURED,
+            diagnostics.anchor
+        )
+        assertEquals("and must keep the laps it already had", 4, diagnostics.lapCount)
+    }
+
+    @Test
+    fun `a failed session still records that the driver was lapping a circuit`() {
+        // This is the evidence that separates "the driver never completed a lap"
+        // from "the driver lapped all afternoon and we could not see it" -- the
+        // distinction incident 14 got wrong when it told a driver who had done
+        // three laps to complete at least two.
+        val fixture = LapReplayHarness.load("ines3", tempFolder.newFolder())
+        val farAway = fixture.startLine.copy(
+            lat1 = fixture.startLine.lat1 + 0.0045,
+            lat2 = fixture.startLine.lat2 + 0.0045
+        )
+
+        val outcome = detector.detectLapsWithDiagnostics(fixture.telemetryFile, farAway)
+
+        val diagnostics = requireNotNull(outcome.diagnostics)
+        assertEquals("no laps were found", 0, diagnostics.lapCount)
+        assertEquals(
+            "yet the telemetry plainly shows a repeating circuit",
+            true,
+            diagnostics.pathRepeats
+        )
+    }
+
+    @Test
+    fun `the recurrence sweep is skipped when detection already succeeded`() {
+        // The sweep compares the path against itself at every plausible lag, which
+        // is far more work than detection itself. It answers a question only a
+        // failed session asks, so a session that already has its laps must not pay
+        // for it. Recorded as a test because the cost is invisible until it is not.
+        val fixture = LapReplayHarness.load("teste3", tempFolder.newFolder())
+
+        val outcome = detector.detectLapsWithDiagnostics(fixture.telemetryFile, fixture.startLine)
+
+        val diagnostics = requireNotNull(outcome.diagnostics)
+        assertEquals(4, diagnostics.lapCount)
+        assertEquals(
+            "a successful session must not run the sweep at all",
+            null,
+            diagnostics.pathRepeats
+        )
+    }
 }

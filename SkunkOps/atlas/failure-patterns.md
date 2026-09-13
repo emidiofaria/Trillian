@@ -1902,3 +1902,96 @@ consumer of GPS-derived direction needs the same minimum-baseline check.
 
 **HIGH** — covered by `SessionAnalysisGuardsTest`, which replays stationary scatter and asserts
 that no corner is produced.
+
+---
+
+## Pattern: A Position Fixed While Standing Still (FP-STATIONARY-POSITION-BIAS) — ✅ FIXED (Incident 14)
+
+### Symptoms
+
+A driver completes several laps. The app reports **"No laps detected. Complete at least 2 laps."**
+Every diagnostic looks healthy: the start line has a sensible length, its bearing is sensible, the
+telemetry is dense and continuous, the reported accuracy is unremarkable, and the detector records
+**no rejected crossings at all**. There is nothing to investigate and nothing was done wrong.
+
+### Signals
+
+Measured on the incident 14 session (`ines3`, 3 laps driven, 0 reported):
+
+| Signal | Value | Reading |
+|--------|-------|---------|
+| Racing laps overlaid on each other | median **4.5 m**, max 8.7 m | GPS is *good* while moving |
+| Reported movement while the kart stood still | **11.2 m** | the same receiver, stationary |
+| Scatter about its own mean during capture | 9.2 m at 7.7 m *claimed* accuracy | the claim understates the error |
+| Offset of start point, perpendicular to track | **15.9 m** | against a 15 m corridor |
+| Offset of start point, along the track | 6.2 m | harmless |
+| Lateral jump as the kart accelerated away | **~11 m in 2 s**, landing 0.3 m from the racing line | the bias collapsing |
+
+The last row is the signature. The bias does not decay — it **vanishes the moment the receiver
+gets velocity aiding**. Before that instant the whole opening of the session is drawn 10–20 m to
+one side of a path the kart never took.
+
+### Root Cause
+
+The app *mandates* capturing the start line while standing still (TS-05, TS-07), then searches for
+it with a 15 m corridor (LD-04). Standing still is the condition in which a consumer GPS receiver
+is **least** able to place itself: with no Doppler velocity to constrain the solution, multipath
+and atmospheric error express themselves as a slowly wandering position offset.
+
+What makes this invisible is that **both endpoints are captured seconds apart and therefore share
+the same bias**. The line's length (8.15 m) and bearing (171.6°) come out perfect. Every internal
+consistency check passes. Only the *absolute* position is wrong, and nothing in the session has
+anything to compare it against.
+
+The driver then laps a track 16 m away from where the app believes the start is, and the corridor
+— correctly — refuses every pass.
+
+### The generalisation worth keeping
+
+[FP-STATIONARY-GEOMETRY](#pattern-geometry-derived-while-the-car-is-parked-fp-stationary-geometry--fixed-v295)
+established that a *direction* derived while parked is noise. This incident is the stronger claim:
+**the position itself is biased while parked, and the bias is shared by everything captured in that
+window** — so no amount of cross-checking captured values against each other can reveal it. A
+stationary fix can only be validated against something measured *while moving*.
+
+Corollary: an internal consistency check is not a validity check. The start line was
+self-consistent and wrong.
+
+### Fix
+
+Three parts, in `LocalLapDetector`:
+
+| Part | Mechanism | Why |
+|------|-----------|-----|
+| Say what was refused | `TOO_FAR_TO_THE_SIDE` recorded for passes within `REJECTION_REPORTING_RADIUS_M` (60 m) | The enum value already existed and was wired to nothing. The failure was silent because a comment had argued the rejection was "not noteworthy". |
+| Correct it | Retry once against the midpoint projected perpendicularly onto the **driven** path, considering only stretches at ≥ `MIN_ANCHOR_SPEED_MS` (4 m/s) | The driven path is the only evidence in the session recorded under velocity aiding, and therefore the only thing the stationary fix can be corrected against. |
+| Refuse to guess | Accept the projection only within `MAX_ANCHOR_PROJECTION_M` (20 m) **and** only if the retry yields ≥ 2 laps | Keeps it a correction, not a search. A line hundreds of metres out is a different fault and must fail loudly. |
+
+The moving-only filter is load-bearing, not an optimisation: projecting onto the *whole* path lands
+on the out-lap — a stretch visited once — and yields **0 laps at every corridor width**.
+
+The fix is self-limiting by construction. On incident 13, whose line was captured while moving, the
+projection would move the point **0.8 m**, so the fallback is never reached and that session's 4 laps
+are untouched. On incident 14 it moves **16.1 m** and recovers **3 laps** at 104.2 / 85.8 / 94.5 s.
+
+### Detection
+
+Two numbers now ride in the diagnostics sidecar for every session: the speed and the positional
+scatter during the capture window. Together they say whether the start line was fixed under velocity
+aiding or not — which is the question that could not be answered when this incident was opened.
+
+Watch for: `anchor: PROJECTED_ONTO_PATH` appearing routinely rather than exceptionally. That would
+mean the capture workflow, not the receiver, is the thing to fix.
+
+### Open risk
+
+The 20 m bound consumed **80% of its budget** on the single real session that needed it (16.1 m).
+Accepted deliberately: a session beyond the bound fails loudly and reports why, rather than
+silently. If a second session approaches the bound, the capture workflow should change rather than
+the number.
+
+### Confidence
+
+**HIGH** — `LapDetectionIncident14Test` replays the real session and asserts the recovered lap
+count and times; `LocalLapDetectorGuardsTest` asserts the bound refuses a displaced line and that
+incident 13 never reaches the fallback.

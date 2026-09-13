@@ -97,6 +97,13 @@ TU-07	TelemetryUploadWorkerTest	HTTP 5xx retry
 
 # --- Lap Detection ---
 LD-04	GeoUtilsTest	Line intersection
+LD-04	LapDetectionIncident14Test.theDiscardedPassesAreReportedRatherThanDroppedInSilence	Wide passes recorded, not dropped
+LD-17	LapDetectionIncident14Test	Incident 14 replay: 3 laps recovered from a start point 16.1 m off
+LD-17	LocalLapDetectorGuardsTest.the correction is refused when the captured point is further out than the bound	20 m bound refuses a displaced line
+LD-17	LocalLapDetectorGuardsTest.a line captured on the racing line is left untouched	Incident 13 never reaches the fallback
+LD-16	LapDiagnosticsWriterTest.carries the incident 14 evidence into the file that outlives the session	Anchor and capture-window evidence reach disk
+LD-18	NoLapsExplanationTest	Empty-result message describes the session instead of blaming the driver
+LD-18	NoLapsExplanationTest.never tells a driver to complete laps they may already have driven	The incident 14 wording cannot return
 
 # --- Offline Coaching ---
 OC-01	OfflineCoachingEngineTest	Local insights generated

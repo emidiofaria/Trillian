@@ -725,12 +725,21 @@ RecordingViewModel.stopRecording()
           heading = bearing(previous, current)          // skip if segment < 0.5 m
           cross a plane through startPoint PERPENDICULAR to heading
           reject if |lateral offset| > DETECTION_HALF_WIDTH_M (15 m)
+              → if within REJECTION_REPORTING_RADIUS_M (60 m), record TOO_FAR_TO_THE_SIDE
+                with the measured distance   // silent before Incident 14
           reject if since last accepted < MIN_LAP_TIME_MS (20 s)
           reject if travelled since last accepted < MIN_DISTANCE_FROM_START_M (50 m)
           reject if heading differs > MAX_HEADING_DIFFERENCE_DEG (60°) from first crossing
           interpolate the crossing instant between the two samples
       → record every rejection with its reason
     → buildLaps(crossings)
+    → IF laps < 2:                            // Incident 14 fallback
+        projectOntoDrivenPath(startPoint, samples)   // segments at >= 4 m/s only
+        IF projected != null AND moved <= MAX_ANCHOR_PROJECTION_M (20 m):
+          retry detectCrossings + buildLaps against the projected point
+          IF retry yields >= 2 laps: keep it, anchor = PROJECTED_ONTO_PATH
+          ELSE: discard the retry entirely, captured point stands
+        pathRepeats(samples)                  // only when still < 2 laps
     → Mark best lap (shortest duration)
     → Return DetectionOutcome(result, diagnostics)
   → LapDiagnosticsWriter.write(file, sessionId, outcome)   // whatever the result

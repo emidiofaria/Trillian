@@ -228,4 +228,26 @@ class GeoUtilsTest {
         assertTrue("Distance should be positive", distance > 0)
         assertEquals(1968000.0, distance, 50000.0) // 50km tolerance
     }
+
+    @Test
+    fun `local metres convert back to the coordinates they came from`() {
+        // fromLocalMetres was added so the lap detector could turn a point computed
+        // in the local plane back into a latitude and longitude. A silent error in
+        // that inverse would move a corrected start point without anything failing,
+        // so the round trip is pinned here.
+        val refLat = 37.7749
+        val refLng = -122.4194
+
+        listOf(
+            0.0 to 0.0,
+            15.0 to 0.0,
+            0.0 to -15.0,
+            -120.5 to 87.25
+        ).forEach { (x, y) ->
+            val (lat, lng) = GeoUtils.fromLocalMetres(x, y, refLat, refLng)
+            val (backX, backY) = GeoUtils.toLocalMetres(lat, lng, refLat, refLng)
+            assertEquals("x for ($x, $y)", x, backX, 0.001)
+            assertEquals("y for ($x, $y)", y, backY, 0.001)
+        }
+    }
 }

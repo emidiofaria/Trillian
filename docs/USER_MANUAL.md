@@ -597,6 +597,26 @@ The app no longer uses the direction of the line you capture — only where it i
 longer happen. If you saw this on an older version, re-recording on 2.94 or later will work; the
 old session cannot be recovered.
 
+**Improved in version 2.96:** The app now tells you what it actually saw. Instead of "Complete at
+least 2 laps" — which was unhelpful if you had just driven five — it reports how many times you
+went past the start/finish and how far to the side you were.
+
+It also corrects itself where it can. Your phone is least accurate at placing itself when it is
+**standing still**, which is exactly when you capture the start/finish. It can record that point
+10–20 metres to one side of where you were actually standing — and because both taps happen
+within seconds of each other, the line still looks perfectly sensible. On one real session the
+start/finish was recorded 16 metres off the track; the driver completed three laps and the app
+reported none.
+
+If the app finds no laps, it now checks whether moving the start/finish onto the path you actually
+drove would find them, and uses that only if it is a small correction (under 20 metres) and only if
+it genuinely produces laps. Your recorded sessions are unaffected where detection already worked.
+
+**What you can do about it:** stand on the part of the track you actually drive when you capture,
+wait for the GPS dot to go green, and give it a few seconds to settle before tapping. If the app
+still finds no laps, the message will now tell you how far off it was, so you know whether to
+re-capture or whether something else went wrong.
+
 ### My Lap Times Are About Half What I Drove
 
 **Symptoms:** Twice as many laps as you completed, each about half the time you expected. No

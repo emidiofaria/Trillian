@@ -236,7 +236,9 @@ Detects laps locally (offline) from a JSONL telemetry file using start/finish li
    than `MAX_HEADING_DIFFERENCE_DEG` from the session's first accepted crossing.
 5. **Interpolate** the crossing instant between the two samples either side of it.
 6. Build laps from accepted crossings, mark the best lap, save to Room.
-7. Write the reasoning to a diagnostics sidecar via `LapDiagnosticsWriter`.
+7. **If fewer than 2 laps resulted**, retry once against the midpoint projected onto the driven
+   path (see below), and keep that answer only if it produces 2 or more laps.
+8. Write the reasoning to a diagnostics sidecar via `LapDiagnosticsWriter`.
 
 ### Why the captured line's *direction* is ignored
 
@@ -250,6 +252,27 @@ metres, replaces it. See `FP-DEGENERATE-BASELINE` in `failure-patterns.md`.
 captured — a single point gives identical lap times to two (`OneTapStartFinishCaptureTest`), so
 PLAN-003 is a UI change with no algorithm work behind it.
 
+### Why the start point may be moved onto the driven path
+
+The app requires the line to be captured **standing still** (TS-05, TS-07) — the one condition in
+which a consumer GPS receiver is least able to place itself, because it has no Doppler velocity to
+constrain the solution. In the Incident 14 session the captured midpoint landed **15.9 m
+perpendicular** to the track while the racing laps themselves overlaid within 4.5 m. Both endpoints
+were captured seconds apart and so shared the same bias: the line's length and bearing came out
+perfect, and only its absolute position was wrong. Every internal check passed.
+
+The driven path is the only thing in the session recorded *under velocity aiding*, so it is the only
+evidence the stationary fix can be corrected against. The fallback projects the midpoint
+perpendicularly onto it, considering only stretches driven at `MIN_ANCHOR_SPEED_MS` or more.
+
+The filter on speed is load-bearing, not an optimisation: projecting onto the *whole* path lands on
+the out-lap, a stretch visited once, and yields **0 laps at every corridor width**.
+
+Three gates keep this a correction rather than a search — it runs only when detection already
+failed, only within `MAX_ANCHOR_PROJECTION_M`, and its answer is kept only if it yields 2+ laps.
+On Incident 13, captured while moving, the projection would move the point **0.8 m**, so the
+fallback is never reached. See `FP-STATIONARY-POSITION-BIAS` in `failure-patterns.md`.
+
 ### Configuration Constants
 
 | Constant | Value | Purpose |
@@ -258,6 +281,11 @@ PLAN-003 is a UI change with no algorithm work behind it.
 | `MIN_DISTANCE_FROM_START_M` | 50 | Ensures driver traveled around track (kart-track compatible) |
 | `MIN_SAMPLES` | 50 | Minimum telemetry samples for valid detection |
 | `DETECTION_HALF_WIDTH_M` | 15 | How far to the side of the start point a pass still counts. Results are identical across 10–25 m on the Incident 13 replay, so this is not a tuned value |
+| `MAX_ANCHOR_PROJECTION_M` | 20 | Furthest the start point may be moved onto the driven path. Incident 14 needed 16.1 m, so 80% of the budget is spent; beyond this a session fails loudly rather than guessing |
+| `MIN_ANCHOR_SPEED_MS` | 4 | Only path driven at this speed or above is a projection target, and below it a capture is treated as stationary |
+| `REJECTION_REPORTING_RADIUS_M` | 60 | A pass wider than the corridor but within this radius is recorded as `TOO_FAR_TO_THE_SIDE` rather than dropped silently |
+| `MIN_REPEAT_LAG_S` / `MAX_REPEAT_LAG_S` | 25 / 180 | Lag window searched when asking whether the driver was lapping a circuit at all |
+| `REPEAT_RATIO_THRESHOLD` | 0.5 | Separation ratio below which a path counts as repeating. Real sessions measure 0.15 and 0.21; the same samples shuffled measure 0.87 and 0.88 |
 | `MAX_HEADING_DIFFERENCE_DEG` | 60 | Rejects passes in a materially different direction. 60 rather than 90 because at a corner start/finish arriving and leaving differ by *exactly* 90°, which made a real case turn on floating-point rounding |
 | `MIN_SEGMENT_LENGTH_M` | 0.5 | Below this, the bearing between two samples is meaningless |
 
