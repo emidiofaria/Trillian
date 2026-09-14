@@ -111,7 +111,8 @@ regression (L1 stayed green throughout). Holding the device awake for the
 duration of the run cleared it.
 
 Packaged `releases/v2.96-stationary-start-point/` and verified the shipped
-report header reads v2.96 / `85e9ff2`, and the notes list 6 commits.
+report header reads v2.96 and carries the commit it was built from, and the
+notes list 6 commits.
 
 ---
 

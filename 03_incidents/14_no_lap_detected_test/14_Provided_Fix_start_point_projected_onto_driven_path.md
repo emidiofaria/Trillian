@@ -8,7 +8,7 @@
 | **Fix Date** | 2026-09-13 (message correction 2026-09-14) |
 | **Engineer** | SW_dev agent, in session with the operator |
 | **Shipped in** | v2.96 |
-| **Commits** | `85e9ff2` (fix), `29659de` (release tooling) |
+| **Commits** | *"Correct a start point fixed while the phone was standing still"* (fix), *"Make the release evidence describe the build it ships with"* (release tooling), *"Stop telling the driver to do something the app has no button for"* (message correction). Cited by message rather than SHA: this branch is squash-merged, so its per-commit hashes do not survive onto `main`. |
 | **RCA** | [`14_RCA_start_point_fixed_while_stationary.md`](14_RCA_start_point_fixed_while_stationary.md) |
 
 > Informative record of what changed. The RCA owns the evidence; this owns the
@@ -57,7 +57,7 @@ Rejected alternatives and why:
 
 ## Files Changed
 
-Commit `85e9ff2` — 23 files, +2154 / −21.
+*"Correct a start point fixed while the phone was standing still"* — 23 files, +2154 / −21.
 
 ### Production code
 
@@ -194,7 +194,7 @@ and were flagged as such.
 
 | Level | Result |
 |-------|--------|
-| L1 (SWE.4 unit) | **282 / 282**, 0 failures (262 before this work; 281 at `85e9ff2`, +1 for the advice guard) |
+| L1 (SWE.4 unit) | **282 / 282**, 0 failures (262 before this work; 281 after the detector fix, +1 for the advice guard) |
 | L2 (SWE.5 integration) | **60 passed**, 4 `@Ignore`d (pre-existing) |
 
 Behavioural outcomes:
