@@ -725,12 +725,21 @@ RecordingViewModel.stopRecording()
           heading = bearing(previous, current)          // skip if segment < 0.5 m
           cross a plane through startPoint PERPENDICULAR to heading
           reject if |lateral offset| > DETECTION_HALF_WIDTH_M (15 m)
+              → if within REJECTION_REPORTING_RADIUS_M (60 m), record TOO_FAR_TO_THE_SIDE
+                with the measured distance   // silent before Incident 14
           reject if since last accepted < MIN_LAP_TIME_MS (20 s)
           reject if travelled since last accepted < MIN_DISTANCE_FROM_START_M (50 m)
           reject if heading differs > MAX_HEADING_DIFFERENCE_DEG (60°) from first crossing
           interpolate the crossing instant between the two samples
       → record every rejection with its reason
     → buildLaps(crossings)
+    → IF laps < 2:                            // Incident 14 fallback
+        projectOntoDrivenPath(startPoint, samples)   // segments at >= 4 m/s only
+        IF projected != null AND moved <= MAX_ANCHOR_PROJECTION_M (20 m):
+          retry detectCrossings + buildLaps against the projected point
+          IF retry yields >= 2 laps: keep it, anchor = PROJECTED_ONTO_PATH
+          ELSE: discard the retry entirely, captured point stands
+        pathRepeats(samples)                  // only when still < 2 laps
     → Mark best lap (shortest duration)
     → Return DetectionOutcome(result, diagnostics)
   → LapDiagnosticsWriter.write(file, sessionId, outcome)   // whatever the result
@@ -1618,6 +1627,104 @@ file is opened for writing, nothing is renamed or deleted outside the share cach
 | `E/SessionResultFragment: Failed to share session card` | Logcat | Card path threw |
 | `E/SessionResultFragment: Failed to start share chooser` | Logcat | FileProvider/intent problem |
 | Files in `cacheDir/shared/` | Device | Share artifacts, auto-pruned after 24 h |
+
+---
+
+## Flow: Session Analysis (ANALYSIS Tab)
+
+### Goal
+
+Derive and render a track-engineer report for a finished session — statistics, an offline
+track map, corner and braking-zone tables and a session speed trace — without any network
+access and without re-deriving laps.
+
+### Trigger
+
+- User selects the ANALYSIS tab (position 3) on `SessionResultFragment`
+- `SessionUiState` emits with `rawFilePath`, `laps` and the session's start-line corners
+- User taps a different lap chip (recompute for a new reference window)
+
+### Execution Path
+
+```
+AnalysisFragment observes parentViewModel.uiState
+→ state.isLoading == false
+→ startLine = midpoint of (startLineLat1/Lng1, startLineLat2/Lng2) when all four are set
+→ AnalysisViewModel.submit(rawFilePath, laps, startLine)
+  → de-duplicates: recomputes only when file path, lap ids or start line changed
+  → default reference lap = best lap, else shortest lap
+→ [ASYNC] AnalysisViewModel.recompute()
+  → File(path).canRead() on Dispatchers.IO       (drives the empty-state message)
+  → SessionAnalysisProcessor.analyze(...)
+    → TelemetryFileReader.readAll(path)          (Dispatchers.IO)
+    → prepare(): drop header line + null-island fixes, sort by timestamp
+    → [Dispatchers.Default]
+      → computeStats(samples, laps)
+      → reference window = lapWindows[referenceLapId] ∩ samples, else whole session
+      → detectCorners(reference window)
+      → detectBrakingZones(reference window) + association to the next corner
+      → buildTrackPath(reference window) + start/finish marker
+      → speed trace over the WHOLE session, decimated
+→ Main thread: bind stats, TrackMapView, lap chips, corner rows, braking rows, LineChart
+```
+
+### Async Boundaries
+
+| Boundary | Type | Location |
+|----------|------|----------|
+| File readability probe | `withContext(Dispatchers.IO)` | `AnalysisViewModel.recompute()` |
+| File read | `withContext(Dispatchers.IO)` | `TelemetryFileReader.readAll()` |
+| Detection maths | `withContext(Dispatchers.Default)` | `SessionAnalysisProcessor.analyze()` |
+| Rendering | Main thread | `AnalysisFragment.showAnalysis()` |
+
+A recompute cancels the previous job, so rapid lap-chip taps cannot interleave results.
+
+### Persistence Boundaries
+
+| Storage | Data | Purpose |
+|---------|------|---------|
+| JSONL file | Telemetry samples | Sole source of speed, position and time |
+| Room `sessions` | `rawFilePath`, start-line corners | File location and S/F marker |
+| Room `laps` | `startTs`, `endTs`, `isBestLap` | Reference window and lap chips |
+
+Nothing is written. The tab is strictly read-only.
+
+### External Dependencies
+
+None — fully offline, by design. No map SDK, no tiles, no geocoding.
+
+### Failure Points
+
+| Stage | Failure | Symptom | Propagation |
+|-------|---------|---------|-------------|
+| File probe | Path set but file deleted | "…no longer on this device" | Empty state, no crash |
+| Parse | Fewer than 2 usable samples | "too little telemetry to analyse" | Empty state |
+| Reference window | Lap window outside the file | "Reference: whole session" | Analysis still shown |
+| Corner detection | Thresholds not met | "No corners detected on this lap." | Table placeholder |
+| Braking detection | Thresholds not met | "No braking zones detected on this lap." | Table placeholder |
+
+### Configuration
+
+See the constants table in `components.md` → *Session Analysis Engine*. All thresholds are
+per second so that 1 Hz archives and 10 Hz recordings analyse identically.
+
+### User-Visible Symptoms
+
+| Symptom | Cause |
+|---------|-------|
+| Spinner on entering the tab | Telemetry being parsed and analysed |
+| Grey/blue-to-green track outline | Speed gradient over the reference lap |
+| Red stretches on the outline | Detected braking zones |
+| `T1..Tn` labels | Detection order of passage, not the circuit's own numbering |
+| "Reference: whole session (no laps detected)" | No usable lap window |
+
+### Operational Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `contentContainer` visible | UI | Analysis succeeded |
+| `emptyStateText` visible | UI | Degraded input, handled |
+| Checked lap chip | UI | Which window the tables describe |
 
 ---
 

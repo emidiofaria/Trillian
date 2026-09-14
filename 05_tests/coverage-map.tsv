@@ -1,0 +1,151 @@
+# coverage-map.tsv — which test backs which requirement
+#
+# This file is the machine-readable half of 01_requirements/TRACEABILITY_MATRIX.md.
+# The matrix is the narrative; this is the claim ledger the HTML report verifies.
+#
+# FORMAT   requirement <TAB> test <TAB> note
+#
+#   requirement  An ID that exists in 01_requirements/DrivingCoach_SRS_v1.md.
+#                Unknown IDs are reported as errors, not ignored.
+#
+#   test         A test class simple name (e.g. GeoUtilsTest) or a specific
+#                method (e.g. AnalysisTabTest.pickingADifferentLapRebuildsTheReferenceView).
+#                Prefix with "L4:" for a manual acceptance test ID (e.g. L4:BRD-01).
+#                The test level is NOT recorded here: the report derives it from
+#                where the class actually ran, so this file cannot claim the
+#                wrong level.
+#
+#   note         Free text. Shown in the report, never parsed.
+#
+# ONE CLAIM PER LINE. A requirement backed by three tests gets three lines.
+#
+# The report marks each claim from real results:
+#   PASS     the cited test ran and passed
+#   SKIPPED  the cited test exists but did not run (e.g. @Ignore) — claim unbacked
+#   MISSING  the cited test was not found at all — the citation has rotted
+#   MANUAL   an L4 claim, which only a human can discharge
+#
+# Editing rule: add the claim in the same commit as the test that backs it.
+
+# --- Startup & Branding ---
+UI-01	SplashViewModelTest	Progress reflects real startup work
+UI-01	SplashScreenTest
+UI-02	SplashViewModelTest	Minimum display time
+UI-02	SplashScreenTest	Tap to skip
+UI-03	SplashViewModelTest	8 s essential timeout
+UI-03	SplashFallbackTest	Falls back to Onboarding
+UI-04	SplashViewModelTest	State resolved off the main thread
+UI-04	SplashMainThreadTest	Main-thread latency probe
+UI-05	StartupBackStackTest	Loading screen popped from the back stack
+UI-06	HomeHeroTest	Brand hero collapses on scroll
+UI-07	SplashViewModelTest	Warm-up bounded, does not affect destination
+UI-08	BrandAssetGeometryTest	Emblem undistorted at all densities
+UI-08	L4:BRD-01	Human visual check
+UI-09	BrandAssetGeometryTest	Includes falsification against the legacy asset
+UI-09	L4:BRD-01	Human visual check
+
+# --- Driver Profile ---
+DR-01	SplashViewModelTest	Driver Name screen after onboarding
+DR-01	DriverNameFlowTest
+DR-02	DriverProfileStoreTest	Bounds 1 / 2 / 100 / 101
+DR-02	DriverNameViewModelTest	Action disabled while invalid
+DR-02	DriverNameFlowTest
+DR-03	DriverProfileStoreTest	Name trimmed before persistence
+DR-03	DriverNameFlowTest.surroundingWhitespaceIsTrimmedFromTheSavedName
+DR-04	DriverProfileStoreTest	Round-trip and flag independence
+DR-05	SplashViewModelTest	Destination resolution order
+DR-05	DriverNameFlowTest.aSavedDriverGoesStraightToHomeOnRelaunch
+DR-05	StartupBackStackTest
+DR-06	ProfileViewModelTest	Asserts the database is untouched by a rename
+DR-06	DriverNameFlowTest.theSavedNameIsShownOnTheProfileScreen
+DR-07	ProfileViewModelTest	inOrder: paths read before clearAllTables()
+DR-08	DriverNameFlowTest.theDemoModeShortcutIsGone
+
+# --- Track Setup ---
+TS-02	TrackSetupFragmentTest	UI elements displayed
+TS-03	TrackSetupFragmentTest	GPS status indicator
+TS-05	TrackSetupFragmentTest	Point A capture
+TS-06	TrackSetupFragmentTest	Point B disabled initially
+TS-08	GeoUtilsTest	Haversine distance
+TS-12	TrackSetupFragmentTest	Start Recording disabled until valid
+TS-15	TrackSetupResubscribeTest	Resubscribe after stop/start
+TS-16	LocationWarmUpTest	Warm-up starts when Home becomes visible
+TS-16	HomeViewModelTest
+TS-16	HomeGpsChipTest
+TS-17	LocationWarmUpTest	Readiness chip states
+TS-17	HomeGpsChipTest
+TS-18	LocationWarmUpTest	Stops on background / 3 min idle ceiling
+TS-18	HomeViewModelTest
+TS-18	HomeGpsChipTest
+TS-19	LocationWarmUpTest	Time-to-first-fix metrics recorded
+TS-20	LocationWarmUpTest	Exposes readiness only, never a position
+
+# --- Session Recording ---
+SR-04	TelemetryForegroundServiceTest	Elapsed time MM:SS.mmm
+SR-05	TelemetryForegroundServiceTest	GPS status indicator
+SR-09	TelemetryForegroundServiceTest	Foreground service lifecycle
+
+# --- Telemetry Capture ---
+TC-06	TelemetryFileWriterTest	JSONL format
+TC-07	TelemetryFileWriterTest	Mutex protection
+
+# --- Telemetry Upload ---
+TU-02	TelemetryUploadWorkerTest	WorkManager enqueue
+TU-04	TelemetryUploadWorkerMockWebServerTest	Multipart upload
+TU-06	TelemetryUploadWorkerTest	HTTP 200 to DONE
+TU-07	TelemetryUploadWorkerTest	HTTP 5xx retry
+
+# --- Lap Detection ---
+LD-04	GeoUtilsTest	Line intersection
+LD-04	LapDetectionIncident14Test.theDiscardedPassesAreReportedRatherThanDroppedInSilence	Wide passes recorded, not dropped
+LD-17	LapDetectionIncident14Test	Incident 14 replay: 3 laps recovered from a start point 16.1 m off
+LD-17	LocalLapDetectorGuardsTest.the correction is refused when the captured point is further out than the bound	20 m bound refuses a displaced line
+LD-17	LocalLapDetectorGuardsTest.a line captured on the racing line is left untouched	Incident 13 never reaches the fallback
+LD-16	LapDiagnosticsWriterTest.carries the incident 14 evidence into the file that outlives the session	Anchor and capture-window evidence reach disk
+LD-18	NoLapsExplanationTest	Empty-result message describes the session instead of blaming the driver
+LD-18	NoLapsExplanationTest.never tells a driver to complete laps they may already have driven	The incident 14 wording cannot return
+
+# --- Offline Coaching ---
+OC-01	OfflineCoachingEngineTest	Local insights generated
+OC-02	OfflineCoachingEngineTest	3-4 insights
+OC-03	OfflineCoachingEngineTest	Best Lap insight
+OC-04	OfflineCoachingEngineTest	Zero sectors handled
+OC-05	OfflineCoachingEngineTest	Top Speed insight
+OC-06	OfflineCoachingEngineTest	GPS noise filter
+OC-07	OfflineCoachingEngineTest	Consistency wording
+OC-08	OfflineCoachingEngineTest	Sector Focus upsell
+
+# --- Session Management ---
+SM-01	HomeViewModelTest	Delete session
+SM-05	HomeViewModelTest	Rename session
+SM-07	HomeViewModelTest	Track name validation
+
+# --- Session Analysis ---
+AS-01	AnalysisTabTest.analysisTabIsPresentOnTheSessionResultScreen
+AS-02	SessionAnalysisProcessorTest	Statistics computed from telemetry
+AS-02	AnalysisTabTest.analysisTabRendersStatsMapAndDerivedTables
+AS-03	SessionAnalysisProcessorTest	Cumulative haversine; average includes standing time
+AS-04	TrackPathProjectionTest	Path projected from GPS, no SDK
+AS-04	AnalysisTabTest
+AS-05	TrackPathProjectionTest	Path and markers only; rendering itself is L4 visual
+AS-05	L4:ANA-02	Track map fidelity, human visual
+AS-06	SessionAnalysisProcessorTest	Lap windows supplied, never computed here
+AS-06	AnalysisTabTest
+AS-07	AnalysisTabTest.pickingADifferentLapRebuildsTheReferenceView
+AS-08	SessionAnalysisProcessorTest	Yaw-rate corner detection with apex speed
+AS-08	L4:ANA-03	Corner plausibility against a real circuit
+AS-09	SessionAnalysisProcessorTest	Numbering by order of passage
+AS-10	SessionAnalysisProcessorTest	GPS deceleration, peak g, duration
+AS-10	L4:ANA-04	Braking plausibility against a real circuit
+AS-11	L4:ANA-04	Provenance caveat is a static string; no IMU field is read
+AS-12	SessionAnalysisProcessorTest	Braking zone associated with the next corner
+AS-13	SessionAnalysisProcessorTest	Speed trace spans the whole session
+AS-13	AnalysisTabTest
+AS-14	SessionAnalysisRateInvarianceTest	Same result at 1 Hz and 10 Hz
+AS-15	SessionAnalysisGuardsTest	No heading below 2 m; no corner below 10 km/h
+AS-16	SessionAnalysisGuardsTest	Too-short session
+AS-16	AnalysisTabTest.missingTelemetryShowsTheEmptyStateInsteadOfCrashing
+AS-17	SessionAnalysisGuardsTest.aLapWindowThatDoesNotOverlapTheTelemetryFallsBackToTheWholeSession
+
+# --- Non-Functional ---
+NF-07	TelemetryFileWriterTest	18K samples benchmark

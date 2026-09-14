@@ -176,11 +176,22 @@ fi
 # =============================================================================
 log_info "Writing report..."
 
+# The HTML and Markdown reports describe the same run, so they carry the same
+# name. Falling back to a bare title keeps report generation working even if
+# the version cannot be read -- the report matters more than its heading.
+APP_VERSION="$(grep -oP 'val\s+appVersionName\s*=\s*"\K[^"]+' "$PROJECT_ROOT/app/build.gradle.kts" 2>/dev/null || true)"
+if [[ -n "$APP_VERSION" ]]; then
+    REPORT_TITLE="Trillian · Driving Coach v$APP_VERSION — Test Report"
+else
+    REPORT_TITLE="Trillian · Driving Coach — Test Report"
+fi
+
 cat > "$REPORT_FILE" << EOF
-# Test Report
+# $REPORT_TITLE
 
 **Date:** $(date "+%Y-%m-%d %H:%M:%S")  
 **Executed by:** Automated / Agent  
+**Human behind the wheel:** Emidio Costa  
 **Duration:** ${TOTAL_DURATION}s
 
 ---

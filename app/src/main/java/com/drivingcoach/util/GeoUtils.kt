@@ -130,6 +130,21 @@ object GeoUtils {
         toLocal(lat, lng, refLat, refLng)
 
     /**
+     * Inverse of [toLocalMetres]: a local offset in metres back to a coordinate.
+     *
+     * Kept immediately beside its forward form, and tested as a round trip, because
+     * the two share an equirectangular approximation about `refLat` that only
+     * cancels out if both sides make it identically.
+     *
+     * @return the (latitude, longitude) that [toLocalMetres] would map to (x, y).
+     */
+    fun fromLocalMetres(x: Double, y: Double, refLat: Double, refLng: Double): Pair<Double, Double> {
+        val lat = refLat + Math.toDegrees(y / EARTH_RADIUS_M)
+        val lng = refLng + Math.toDegrees(x / (EARTH_RADIUS_M * cos(Math.toRadians(refLat))))
+        return Pair(lat, lng)
+    }
+
+    /**
      * Initial bearing from one coordinate to another, in degrees clockwise from north.
      *
      * Used in preference to [android.location.Location.getBearing] when detecting

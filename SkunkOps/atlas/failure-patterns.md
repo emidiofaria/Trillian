@@ -1323,6 +1323,79 @@ the platform's own first-frame marker to ~17 ms.
 
 ---
 
+## Pattern: A Suite That Looks Green Because Its Tests Never Ran (FP-TEST-BLINDSPOT)
+
+### Symptoms
+
+- `connectedDebugAndroidTest` reports **0 failures** and the run is called a success.
+- The JUnit XML contains far fewer `<testcase>` entries than there are `@Test`
+  functions in the source, but nobody notices because nothing compares the two.
+- A requirement is cited as covered by a test that has not executed in months.
+- Test count in the XML is oddly round and lower than expected — 64 entries for
+  89 declared tests.
+
+### Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `<testcase name="null" classname="com.example.FooTest" />` | JUnit XML | **The whole class is `@Ignore`d.** Gradle emits exactly one entry for it regardless of how many tests it holds |
+| Declared `@Test` count ≠ executed count | `generate-html-report.py` output | The difference is the number of tests silently not running |
+| `[INFO] 322/351 tests executed, 29 never ran` | Report stdout | The gap, stated |
+
+### Root Cause
+
+A class-level `@Ignore` collapses an entire test class into a **single skipped
+entry** in the JUnit XML. The runner does not enumerate what it skipped, so the
+information about how many tests were disabled is destroyed at the moment it
+would be most useful.
+
+The failure is one of measurement, not of code. Every tool downstream —
+Gradle's console summary, CI status, a coverage table written by hand — reads
+the XML and faithfully reports what it says. Nothing lies; the question is
+simply never asked. Four classes hid **29 tests** this way:
+
+| Class | Hidden tests |
+|-------|--------------|
+| `EndToEndTest` | 5 |
+| `RecordingFragmentTest` | 7 |
+| `TelemetryForegroundServiceTest` | 6 |
+| `TrackSetupFragmentTest` | 11 |
+
+The compounding harm is traceability: 8 coverage claims pointed at tests inside
+those classes. Coverage looked earned while nothing was verifying it.
+
+### Mitigations
+
+- **Count the declared tests from the source, not from the run.** The report
+  parses `@Test` out of the Kotlin files and prints declared and executed side by
+  side. A gap cannot hide, because a suite that skips everything scores zero
+  rather than passing.
+- **Parse with a brace-depth stack, not line-by-line.** A private fake declared
+  inside a test class will otherwise absorb every `@Test` below it and the
+  totals will quietly stop matching. This bug was real: `FailingDataStore`
+  nested in `DriverProfileStoreTest` swallowed 22 tests until the parser
+  tracked nesting.
+- **Match `@Test` on a word boundary** (`^@Test\b`). A naive `startswith("@Test")`
+  also matches `@TestInstallIn` and inflates the declared count — here by 2.
+- **Resolve every coverage claim against actual results.** A claim on a skipped
+  test resolves to `SKIPPED`, never `PASS`, and is listed as unbacked.
+- **Treat a class-level `@Ignore` as debt with an owner**, not as a neutral
+  state. It is invisible by construction; only an external count makes it visible.
+
+### Confidence
+
+**HIGH** — found 2026-09-09 while building the HTML test report. Verified by
+arithmetic: 89 declared − 29 ignored = 60 real, and the XML holds 64 entries,
+being those 60 plus 4 `name="null"` placeholders.
+
+### Status
+
+⚠️ **OPEN.** The measurement gap is closed — every report states it plainly —
+but the 29 tests are still switched off and 8 requirement claims still rest on
+them.
+
+---
+
 ## Pattern: Instrumented Test Hangs Forever Instead of Failing (FP-TEST-HANG)
 
 ### Symptoms
@@ -1716,3 +1789,209 @@ case is reasoned, not measured, because no such recording exists.
 Field testing on v2.94 (2026-09-09) found lap times and counts matching the drivers' own count,
 so this pattern did **not** occur on the venues tested. That is absence of evidence on ordinary
 circuit layouts, not evidence of absence on a crossing one — the limitation stands as written.
+
+---
+
+## Pattern: A Flag That Describes the Request Instead of the Result (FP-LABEL-VS-DATA) — ✅ FIXED (v2.95)
+
+### Symptoms
+
+- The screen shows a value that is correct for something the code *asked for*, next to a value
+  computed from something else it actually *got*.
+- Two instances were found in the ANALYSIS tab within an hour of each other, both by tests:
+  - A lap whose recorded window did not overlap the telemetry was analysed over the **whole
+    session**, while the caption above the map still read *"Reference: Lap 2"*. The numbers on
+    screen were real, but they described a different stretch of driving than the label claimed.
+  - A session whose telemetry file had been deleted still had a non-blank `rawFilePath`, so
+    "do we have telemetry?" answered **yes** and the driver was told their lap was *"too short
+    to analyse"* — a statement about their driving — when the truth was that the recording was
+    gone.
+
+### Signals
+
+| Signal | Meaning |
+|--------|---------|
+| A boolean derived from a *request* parameter (`lapId != null`, `path != null`) | The flag cannot see failure |
+| The same concept computed twice, in two places, from two sources | The two will diverge |
+| A caption that is built before the data it captions | Ordering bug waiting to happen |
+
+### Root Cause
+
+The flag was computed from the **input** (`lapWindows[id] == null`, `filePath.isNullOrBlank()`)
+rather than from the **outcome** (`lapRange == null`, `File(path).canRead()`). Inputs describe an
+intention; only the outcome knows whether that intention survived contact with the device. When
+the two disagree — a lap outside the file, a path to a file that was cleaned up — the UI reports
+the intention and the numbers report the outcome.
+
+### Fix
+
+Compute the outcome first and derive every label from it:
+
+- `analyzeSamples()` resolves `lapRange` *before* anything else and sets
+  `isWholeSession = lapRange == null`; the lap caption is suppressed when the fallback fired.
+- `AnalysisViewModel` probes `File(path).canRead()` on `Dispatchers.IO` and uses *that* as
+  `hasTelemetryFile`, so a missing recording is reported as a missing recording.
+
+### Detection
+
+Both instances were invisible to the compiler and to a casual read; both were caught the first
+time a test asserted on the *caption* rather than on the numbers. Any state where a message and a
+measurement come from different sources deserves a test that reads the message.
+
+### Generalisation
+
+Whenever a UI string names the data it is describing — a lap, a file, a driver, a track — assert
+that the name and the data have a single common origin. If a fallback can change which data is
+used, the fallback must also change the name.
+
+### Confidence
+
+**HIGH** — both instances are reproduced by tests
+(`SessionAnalysisGuardsTest.aLapWindowThatDoesNotOverlapTheTelemetryFallsBackToTheWholeSession`,
+`AnalysisTabTest.missingTelemetryShowsTheEmptyStateInsteadOfCrashing`) that fail against the old
+behaviour.
+
+---
+
+## Pattern: Geometry Derived While the Car Is Parked (FP-STATIONARY-GEOMETRY) — ✅ FIXED (v2.95)
+
+### Symptoms
+
+- Corners appear in the analysis that the driver never drove: a "turn" of **310°** with an apex
+  speed of **0 km/h**, at the moment the phone was sitting in the paddock before the out-lap.
+- The rest of the report is credible, which makes the phantom entries more damaging than an
+  obvious failure: they are indistinguishable from real corners in the table.
+
+### Signals
+
+| Signal | Value observed |
+|--------|----------------|
+| Apex speed of the detected corner | 0.0 km/h |
+| Total heading change | 310° |
+| Distance travelled across the bearing window | < 1 m |
+
+### Root Cause
+
+This is [FP-DEGENERATE-BASELINE](#pattern-a-direction-derived-from-points-closer-than-the-measurement-error-fp-degenerate-baseline--fixed-incident-13)
+reappearing in a second consumer. A stationary phone still reports a moving position — GPS scatter
+of a few metres — and a bearing computed between two scattered fixes is *pure noise with a
+plausible magnitude*. Integrated over thirty stationary seconds it looks exactly like sustained
+cornering.
+
+### Fix
+
+Two guards in `SessionAnalysisProcessor`, both expressed in physical units rather than samples:
+
+| Guard | Value | Rejects |
+|-------|-------|---------|
+| `MIN_BEARING_TRAVEL_M` | 2.0 m | A bearing measured over a distance smaller than the fix error |
+| `MIN_CORNERING_SPEED_KMH` | 10.0 km/h | A "corner" whose fastest moment is a walking pace |
+
+### Detection
+
+Any derived heading must be accompanied by the distance it was measured over. If that distance is
+not recorded, the value cannot be distinguished from noise after the fact.
+
+### Generalisation
+
+The lap detector learned this lesson in Incident 13; the analysis engine had to learn it again
+because the guard lived in the lap detector rather than in a shared primitive. **Every** new
+consumer of GPS-derived direction needs the same minimum-baseline check.
+
+### Confidence
+
+**HIGH** — covered by `SessionAnalysisGuardsTest`, which replays stationary scatter and asserts
+that no corner is produced.
+
+---
+
+## Pattern: A Position Fixed While Standing Still (FP-STATIONARY-POSITION-BIAS) — ✅ FIXED (Incident 14)
+
+### Symptoms
+
+A driver completes several laps. The app reports **"No laps detected. Complete at least 2 laps."**
+Every diagnostic looks healthy: the start line has a sensible length, its bearing is sensible, the
+telemetry is dense and continuous, the reported accuracy is unremarkable, and the detector records
+**no rejected crossings at all**. There is nothing to investigate and nothing was done wrong.
+
+### Signals
+
+Measured on the incident 14 session (`ines3`, 3 laps driven, 0 reported):
+
+| Signal | Value | Reading |
+|--------|-------|---------|
+| Racing laps overlaid on each other | median **4.5 m**, max 8.7 m | GPS is *good* while moving |
+| Reported movement while the kart stood still | **11.2 m** | the same receiver, stationary |
+| Scatter about its own mean during capture | 9.2 m at 7.7 m *claimed* accuracy | the claim understates the error |
+| Offset of start point, perpendicular to track | **15.9 m** | against a 15 m corridor |
+| Offset of start point, along the track | 6.2 m | harmless |
+| Lateral jump as the kart accelerated away | **~11 m in 2 s**, landing 0.3 m from the racing line | the bias collapsing |
+
+The last row is the signature. The bias does not decay — it **vanishes the moment the receiver
+gets velocity aiding**. Before that instant the whole opening of the session is drawn 10–20 m to
+one side of a path the kart never took.
+
+### Root Cause
+
+The app *mandates* capturing the start line while standing still (TS-05, TS-07), then searches for
+it with a 15 m corridor (LD-04). Standing still is the condition in which a consumer GPS receiver
+is **least** able to place itself: with no Doppler velocity to constrain the solution, multipath
+and atmospheric error express themselves as a slowly wandering position offset.
+
+What makes this invisible is that **both endpoints are captured seconds apart and therefore share
+the same bias**. The line's length (8.15 m) and bearing (171.6°) come out perfect. Every internal
+consistency check passes. Only the *absolute* position is wrong, and nothing in the session has
+anything to compare it against.
+
+The driver then laps a track 16 m away from where the app believes the start is, and the corridor
+— correctly — refuses every pass.
+
+### The generalisation worth keeping
+
+[FP-STATIONARY-GEOMETRY](#pattern-geometry-derived-while-the-car-is-parked-fp-stationary-geometry--fixed-v295)
+established that a *direction* derived while parked is noise. This incident is the stronger claim:
+**the position itself is biased while parked, and the bias is shared by everything captured in that
+window** — so no amount of cross-checking captured values against each other can reveal it. A
+stationary fix can only be validated against something measured *while moving*.
+
+Corollary: an internal consistency check is not a validity check. The start line was
+self-consistent and wrong.
+
+### Fix
+
+Three parts, in `LocalLapDetector`:
+
+| Part | Mechanism | Why |
+|------|-----------|-----|
+| Say what was refused | `TOO_FAR_TO_THE_SIDE` recorded for passes within `REJECTION_REPORTING_RADIUS_M` (60 m) | The enum value already existed and was wired to nothing. The failure was silent because a comment had argued the rejection was "not noteworthy". |
+| Correct it | Retry once against the midpoint projected perpendicularly onto the **driven** path, considering only stretches at ≥ `MIN_ANCHOR_SPEED_MS` (4 m/s) | The driven path is the only evidence in the session recorded under velocity aiding, and therefore the only thing the stationary fix can be corrected against. |
+| Refuse to guess | Accept the projection only within `MAX_ANCHOR_PROJECTION_M` (20 m) **and** only if the retry yields ≥ 2 laps | Keeps it a correction, not a search. A line hundreds of metres out is a different fault and must fail loudly. |
+
+The moving-only filter is load-bearing, not an optimisation: projecting onto the *whole* path lands
+on the out-lap — a stretch visited once — and yields **0 laps at every corridor width**.
+
+The fix is self-limiting by construction. On incident 13, whose line was captured while moving, the
+projection would move the point **0.8 m**, so the fallback is never reached and that session's 4 laps
+are untouched. On incident 14 it moves **16.1 m** and recovers **3 laps** at 104.2 / 85.8 / 94.5 s.
+
+### Detection
+
+Two numbers now ride in the diagnostics sidecar for every session: the speed and the positional
+scatter during the capture window. Together they say whether the start line was fixed under velocity
+aiding or not — which is the question that could not be answered when this incident was opened.
+
+Watch for: `anchor: PROJECTED_ONTO_PATH` appearing routinely rather than exceptionally. That would
+mean the capture workflow, not the receiver, is the thing to fix.
+
+### Open risk
+
+The 20 m bound consumed **80% of its budget** on the single real session that needed it (16.1 m).
+Accepted deliberately: a session beyond the bound fails loudly and reports why, rather than
+silently. If a second session approaches the bound, the capture workflow should change rather than
+the number.
+
+### Confidence
+
+**HIGH** — `LapDetectionIncident14Test` replays the real session and asserts the recovered lap
+count and times; `LocalLapDetectorGuardsTest` asserts the bound refuses a displaced line and that
+incident 13 never reaches the fallback.

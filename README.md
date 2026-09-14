@@ -5,9 +5,9 @@
 > An Android Driving Coach built entirely with an AI-first approach — spec, code, tests, ops, docs — with ZERO human-written code.  using specification-driven development, Test Driven Development and a V-model-inspired verification process. 
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Tests](https://img.shields.io/badge/tests-84%20passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-ASPICE%20L1%20%2B%20L2-brightgreen)](05_tests/Test_Strategy.md)
 [![Human Code](https://img.shields.io/badge/human%20code-0%20lines-blueviolet)]()
-[![Requirements](https://img.shields.io/badge/SRS-117%20requirements-blue)]()
+[![Requirements](https://img.shields.io/badge/SRS-traceability%20matrix-blue)](01_requirements/TRACEABILITY_MATRIX.md)
 [![SDLC](https://img.shields.io/badge/SDLC-AI--First-orange)]()
 
 ---
@@ -50,7 +50,20 @@ Welcome to the experiment.
 
 Think of it as **Strava for track days, with a very opinionated AI in the passenger seat**.
 
+After a session you get four tabs: **Laps** (times and deltas), **Coach**
+(what to fix next), **Chart** (speed traces) and **Analysis** — a track
+engineer's debrief with a rendered map of the circuit coloured by speed, braking
+zones marked in red, numbered corners with apex speeds, and per-zone g-forces.
+All of it computed on the phone, so it works with no signal at the track.
+
 V1 is post-session coaching only — no real-time alerts, because a push notification saying "BRAKE NOW" at 150km/h is less a feature and more a lawsuit.
+
+**On scope:** steps 5 and 6 above describe the finished system. V1 as it stands
+is deliberately **offline-first** — recording, lap detection and the whole
+Analysis debrief run on-device with no server. The cloud upload, hosted AI
+coaching and cross-device history are **deferred to V2**, and every requirement
+that depends on a backend is labelled `V2-BACKEND` in the test report rather
+than quietly counted as untested.
 
 ---
 
@@ -85,7 +98,7 @@ The classic aerospace systems engineering model from the 1980s:
 - Design defines integration tests (middle)
 - Code defines unit tests (bottom)
 
-All **135 human system acceptance tests** were derived from the SRS *before the app existed*. That's the methodology.
+Every human system acceptance test was derived from the SRS *before the app existed*. That's the methodology. The current set lives in [`05_tests/L4_SYS5_acceptance/`](05_tests/L4_SYS5_acceptance/).
 
 ---
 
@@ -99,7 +112,7 @@ All **135 human system acceptance tests** were derived from the SRS *before the 
 | **Auth** | Firebase Authentication |
 | **AI Coach** | Anthropic Claude (claude-sonnet-4) |
 
-117 requirements. 10 architecture decisions. Two full test suites. 135 human acceptance test cases ready for a real track day.
+A locked [requirements specification](01_requirements/DrivingCoach_SRS_v1.md). Architecture decisions recorded, not improvised. Two full automated test suites plus a set of human acceptance tests ready for a real track day — the live counts are in the [traceability matrix](01_requirements/TRACEABILITY_MATRIX.md) and in the test report generated with every release.
 
 **It's not a toy. It's a real system. And it was built entirely by humans "driving" AI.**
 
@@ -111,7 +124,7 @@ No experiment runs on a single mind. This one uses five distinct AI roles:
 
 ### 🏗️ The Architect — Claude Sonnet
 
-Handed a napkin-sketch product idea and told to turn it into a 117-requirement SRS. The human wrote the vision in plain English; the AI wrote the specification with numbered requirements, locked architecture decisions, and enough edge case coverage to make a QA engineer emotional.
+Handed a napkin-sketch product idea and told to turn it into a full SRS. The human wrote the vision in plain English; the AI wrote the specification with numbered requirements, locked architecture decisions, and enough edge case coverage to make a QA engineer emotional.
 
 *It thought of things the human hadn't — like what happens when the Firebase token expires mid-upload at 200km/h.*
 
@@ -119,7 +132,7 @@ Handed a napkin-sketch product idea and told to turn it into a 117-requirement S
 
 The engine room. Fed the SRS plus a detailed implementation plan, it built the app phase by phase — scaffold, database layer, telemetry service, backend, UI, API client, test suite — across 10 structured phases.
 
-*Output: ~50 Kotlin files, ~30 XML layouts, ~15 TypeScript files, 84+ automated tests.*
+*Output: ~50 Kotlin files, ~30 XML layouts, ~15 TypeScript files, and an automated test suite across both ASPICE levels.*
 
 ### 🔍 RCA Agent — The Doctor
 
@@ -155,7 +168,7 @@ Keeps documentation synchronized with code changes. Updates:
 - Atlas architecture docs (`SkunkOps/atlas/`)
 - Requirements (`01_requirements/`)
 - User Manual (`docs/USER_MANUAL.md`)
-- Acceptance tests (`human_system_acceptance_tests/`)
+- Acceptance tests (`05_tests/L4_SYS5_acceptance/`)
 
 *Because documentation that doesn't match the code is worse than no documentation.*
 
@@ -204,16 +217,29 @@ Every improvement — defect or feature — flows through the same pipeline:
 
 | Dimension | Status |
 |-----------|--------|
-| SRS (117 requirements) | ✅ Approved, locked |
+| SRS | ✅ Approved, locked — [requirements](01_requirements/DrivingCoach_SRS_v1.md) |
 | Android App Build | ✅ Builds successfully |
 | Backend Build | ✅ Builds successfully |
-| Unit Tests (84) | ✅ Passing |
-| Human Acceptance Tests (135) | ✅ Documented, ready for execution |
+| L1 unit tests | ✅ Passing — counts in the test report |
+| L2 integration tests | ⚠️ Passing, but several classes sit behind a class-level `@Ignore` |
+| Requirements coverage (V1) | ⚠️ Partial — see the [traceability matrix](01_requirements/TRACEABILITY_MATRIX.md) |
+| Scope deferred to V2 | Backend-dependent requirements, labelled `V2-BACKEND` in every report |
+| Human Acceptance Tests | ✅ [Documented](05_tests/L4_SYS5_acceptance/), ready for execution |
 | Emulator validation | ✅ Laps detected, coaching works |
 | Real device testing | ✅ One crash found, one crash fixed |
 | Track day validation | 🔜 Pending |
 | Backend on Azure | 🔜 Pending deployment |
 | Human code written | **0 lines** |
+
+No counts are written down here on purpose. Every release ships a generated
+[HTML test report](05_tests/reports/) next to its APK, and that report is the
+only artefact allowed to state coverage — it is built from the tests themselves,
+so it cannot drift the way a hand-maintained number does.
+
+The two ⚠️ rows are deliberate. The report counts `@Test` in the Kotlin source
+rather than trusting the run, which is exactly how a set of silently switched-off
+integration tests was found. A number that flatters us is worth less than one we
+can defend.
 
 ---
 
@@ -232,8 +258,9 @@ Trillian/
 ├── app/                  # Android application (Kotlin)
 ├── backend/              # Node.js/TypeScript API
 ├── docs/                 # User manual, sync reports
-├── human_system_acceptance_tests/  # 135 test checklists
-├── releases/             # APK releases
+├── 05_tests/             # Test strategy, L4 checklists, infra scripts,
+│                         #   coverage-map.tsv and scope-map.tsv
+├── releases/             # v<version>-<slug>/ — APK + its test report + notes
 └── SkunkOps/atlas/       # Living architecture documentation
 ```
 
@@ -281,12 +308,23 @@ npm run build
 ### Run Tests
 
 ```bash
-# Android tests
-./gradlew test
+# Everything: both levels, a Markdown + HTML report, and an offer to
+# package a release. This is the documented path.
+./05_tests/infra/scripts/run-all-tests.sh --start-emulator --stop-emulator
+
+# L1 only (~30s, JVM, no device needed)
+./05_tests/infra/scripts/run-all-tests.sh --level L1
 
 # Backend tests
 cd backend && npm test
 ```
+
+Each run writes `05_tests/reports/RUN_<timestamp>/`, containing `TEST_REPORT.md`
+and a self-contained `TEST_REPORT.html` that opens offline — no JavaScript, no
+network, readable from a USB stick in a paddock with no signal.
+
+See [Test_Strategy.md](05_tests/Test_Strategy.md) for the ASPICE level
+definitions and what each level can and cannot prove.
 
 ---
 

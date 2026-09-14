@@ -20,6 +20,7 @@
 7. [Telemetry storage and upload](#7-telemetry-storage-and-upload)
 8. [Lap detection](#8-lap-detection)
 9. [Lap comparison](#9-lap-comparison)
+9a. [Session analysis (ANALYSIS tab)](#9a-session-analysis-analysis-tab)
 10. [AI coaching feedback](#10-ai-coaching-feedback)
 11. [Driver progression tracking](#11-driver-progression-tracking)
 12. [Share accomplishments](#12-share-accomplishments)
@@ -257,9 +258,9 @@ authenticated account rather than the sole source of identity.
 | ID | Requirement |
 |---|---|
 | LD-01 | Lap detection shall be performed on the device, after recording stops, from the local JSONL telemetry file. It shall not require network connectivity. |
-| LD-02 | When a start/finish line is provided (startLineLat1/Lng1, startLineLat2/Lng2), lap boundaries shall be detected by identifying the moments at which the car passes the **midpoint** of that line. |
+| LD-02 | When a start/finish line is provided (startLineLat1/Lng1, startLineLat2/Lng2), lap boundaries shall be detected by identifying the moments at which the car passes a **start point**. That start point shall be the **midpoint** of the captured line, except where LD-17 replaces it. |
 | LD-03 | When no start/finish line is provided, or either captured endpoint is at latitude 0 and longitude 0, the app shall report that no start line is defined and shall detect no laps. |
-| LD-04 | A lap boundary shall be recorded when consecutive GPS samples cross a plane through the start point that is **perpendicular to the car's direction of travel**, and the car passes no further than 15 m to the side of the start point. |
+| LD-04 | A lap boundary shall be recorded when consecutive GPS samples cross a plane through the start point that is **perpendicular to the car's direction of travel**, and the car passes no further than 15 m to the side of the start point. A pass rejected solely for passing wider than 15 m, while within 60 m of the start point, shall be recorded as a rejection giving its distance to the side, so that the reason for an empty result is never lost. |
 | LD-05 | A minimum lap time guard of 20,000 ms shall be enforced between consecutive lap boundaries. |
 | LD-06 | The driver must travel at least 50 m from the start point before a lap crossing is counted (prevents false triggers while manoeuvring near the line). |
 | LD-07 | The last incomplete lap (started after the final boundary, session ends before re-crossing) shall be discarded. Only complete laps shall be stored. |
@@ -272,6 +273,8 @@ authenticated account rather than the sole source of identity.
 | LD-14 | A candidate crossing whose direction of travel differs by more than 60° from the direction of travel at the first accepted crossing of the session shall be rejected. |
 | LD-15 | The instant of a lap boundary shall be interpolated between the two GPS samples either side of it, rather than taken from either sample. |
 | LD-16 | For each detection run the app shall record, alongside the session's telemetry file, what it observed and why each candidate crossing was accepted or rejected. Failure to record this shall not affect the outcome presented to the user. |
+| LD-17 | Where detection against the captured midpoint yields fewer than 2 laps, the app shall retry once against that midpoint projected perpendicularly onto the path the car actually drove, considering only stretches driven at 4 m/s or more. The projected point shall be used only if it lies within **20 m** of the captured midpoint and only if the retry yields at least 2 laps; otherwise the captured midpoint stands and no laps are reported. The start point actually used, and the distance it moved, shall be recorded under LD-16. |
+| LD-18 | Where no laps are detected, the message shown to the driver shall describe what the session contained — how many passes were seen, how far to the side they went, and whether the line was captured while stationary — rather than instructing the driver to complete laps they may already have completed. |
 
 **Remark on LD-02 and LD-04 — why the *orientation* of the captured line is ignored.**
 Track Setup asks the user to capture a point at each edge of the start/finish, typically 5–10 m apart. GPS accuracy on a phone is of the same order (4.8 m mean, 15.0 m worst, measured in incident 13). The *direction* of a line drawn between two points that close together is therefore dominated by measurement noise rather than by where the user stood, and can come out pointing along the track instead of across it. In incident 13 it did exactly that — within 0.1°–5.1° of the direction of travel — and no lap could be detected, because a car driving along a line never crosses it. The app therefore uses the captured points only for their midpoint, which is a *position* and is measurable, and derives the crossing direction from the car's own motion, which is measured over hundreds of metres. See `03_incidents/13_no_laps_detected_start_line_parallel_to_travel/`.
@@ -306,6 +309,34 @@ Incident 09 reported "no laps detected" and was closed without a cause, at 55% c
 | LC-13 | For sessions with more than 10 laps, the app shall display a warning: "Offline processing is limited and may take some time." |
 | LC-14 | For sessions with large telemetry data, the app shall prompt the user to choose between "Fast" (downsampled to ~100 points per lap) or "Detailed" (all samples) processing modes. |
 | LC-15 | In Fast mode, samples shall be uniformly downsampled to approximately 100 points per lap to optimize rendering performance. |
+
+---
+
+## 9a. Session analysis (ANALYSIS tab)
+
+All analysis is derived from data the app already holds: the session's telemetry file and the
+laps produced by lap detection (§8). The tab is read-only, writes nothing, and shall work with
+no network connection of any kind.
+
+| ID | Requirement |
+|---|---|
+| AS-01 | The Session Result screen shall display a fourth tab labelled 'ANALYSIS', positioned after 'CHART'. |
+| AS-02 | The ANALYSIS tab shall display session statistics: total distance (km), session duration (M:SS), maximum speed (km/h), average speed (km/h) and best lap time. |
+| AS-03 | Total distance shall be the cumulative haversine distance between consecutive GPS samples over the whole session. Average speed shall be the mean speed over the whole recording, standing time included, and the tab shall state this. |
+| AS-04 | The ANALYSIS tab shall display a track map drawn from the recorded GPS trace. The map shall not use any map SDK, map tiles or network service. |
+| AS-05 | The track map shall colour the trace by speed on a continuous gradient from `#1C69D4` (slowest) through `#F39C12` to `#2ECC71` (fastest), overdraw detected braking zones in red (`#E74C3C`), mark each detected corner with a numbered `T1..Tn` label, and mark the start/finish line when the session has one. |
+| AS-06 | The ANALYSIS tab shall list the session's laps as selectable chips showing lap number and lap time, taken from the laps produced by §8. Laps shall never be re-derived by the analysis. |
+| AS-07 | The reference lap shall default to the best lap, and the user shall be able to select any other lap. Selecting a lap shall recompute the track map, the corner table and the braking table for that lap, and the tab shall state which lap the tables describe. |
+| AS-08 | Corners shall be detected from the rate of change of GPS heading: a corner is a stretch where the smoothed yaw rate exceeds 6 °/s for at least 1.5 s. For each corner the app shall display its number, turn direction, total heading change and apex (minimum) speed. |
+| AS-09 | Corner numbering shall follow the order in which corners are passed and the tab shall state that this numbering does not necessarily match the circuit's official numbering. |
+| AS-10 | Braking zones shall be detected from GPS speed only: a zone is a stretch where longitudinal deceleration exceeds 0.8 m/s² for at least 0.5 s and speed falls by at least 4 km/h. For each zone the app shall display entry and exit speed, speed lost, peak deceleration expressed in g (a/9.81) and duration. |
+| AS-11 | The tab shall state that braking figures come from GPS speed and that the phone accelerometer is deliberately not used, because its axes depend on how the phone is mounted and do not reliably track longitudinal acceleration. |
+| AS-12 | Each braking zone shall be associated with the corner it leads into, where one exists. |
+| AS-13 | The ANALYSIS tab shall display a speed-versus-time graph covering the whole session, not only the reference lap. |
+| AS-14 | Corner and braking detection thresholds shall be expressed per unit of time, so that the same recording analysed at 1 Hz or 10 Hz yields the same corners and braking zones. |
+| AS-15 | A heading shall not be derived from GPS positions less than 2 m apart, and a detected corner whose maximum speed is below 10 km/h shall be discarded, so that GPS scatter recorded while the vehicle is stationary cannot be reported as cornering. |
+| AS-16 | When the session's telemetry file is missing or unreadable, the tab shall say so explicitly and shall not attribute the failure to the driving. When fewer than two usable samples exist, the tab shall say the session is too short to analyse. |
+| AS-17 | When no lap is usable as a reference — no laps detected, or the lap's time window does not overlap the telemetry — the analysis shall fall back to the whole session and shall label itself as such, rather than presenting whole-session figures under a lap's name. |
 
 ---
 
