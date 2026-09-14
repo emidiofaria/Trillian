@@ -257,6 +257,17 @@ jobs:
         run: ./gradlew assembleDebug
         # GC-01
 
+      - name: Normalize debug APK filename
+        run: |
+          expected="${{ env.APK_DEBUG_PATH }}"
+          if [ ! -f "$expected" ]; then
+            produced="$(find "$(dirname "$expected")" -maxdepth 1 -name '*.apk' | head -n1)"
+            [ -n "$produced" ] || { echo "::error::No debug APK found in $(dirname "$expected")"; exit 1; }
+            cp "$produced" "$expected"
+          fi
+        # app/build.gradle.kts renames outputs to DrivingCoach-v<version>-<variant>.apk;
+        # copy to the stable path the rest of the pipeline references.
+
       - name: Submit APK to Google Checks
         uses: google-checks/checks-app-scan-github-action@v1.0.3
         with:
@@ -322,6 +333,17 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
         # E2E-04
+
+      - name: Normalize debug APK filename
+        run: |
+          expected="${{ env.APK_DEBUG_PATH }}"
+          if [ ! -f "$expected" ]; then
+            produced="$(find "$(dirname "$expected")" -maxdepth 1 -name '*.apk' | head -n1)"
+            [ -n "$produced" ] || { echo "::error::No debug APK found in $(dirname "$expected")"; exit 1; }
+            cp "$produced" "$expected"
+          fi
+        # app/build.gradle.kts renames outputs to DrivingCoach-v<version>-<variant>.apk;
+        # copy to the stable path the rest of the pipeline references.
 
       - name: Enable KVM for hardware acceleration
         run: |

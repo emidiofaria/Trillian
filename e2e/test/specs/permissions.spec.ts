@@ -19,13 +19,13 @@ describe('E2E-F-03: Onboarding permissions', () => {
   });
 
   it('should display the location permission rationale screen', async () => {
-    const locationRationale = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/btn_grant_location")');
+    const locationRationale = await $('android=new UiSelector().resourceId("com.drivingcoach:id/btn_grant_location")');
     await locationRationale.waitForDisplayed({ timeout: 10000 });
     expect(await locationRationale.isDisplayed()).toBe(true);
   });
 
   it('should grant location permission without crashing', async () => {
-    const grantBtn = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/btn_grant_location")');
+    const grantBtn = await $('android=new UiSelector().resourceId("com.drivingcoach:id/btn_grant_location")');
     await grantBtn.click();
 
     // Android system permission dialog
@@ -36,21 +36,21 @@ describe('E2E-F-03: Onboarding permissions', () => {
 
     await driver.pause(1000);
     // App should still be running — no crash
-    expect(await driver.isAppInstalled('com.bmw.drivingcoach')).toBe(true);
+    expect(await driver.isAppInstalled('com.drivingcoach')).toBe(true);
   });
 
   it('should grant sensor permission without crashing', async () => {
-    const sensorBtn = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/btn_grant_sensors")');
+    const sensorBtn = await $('android=new UiSelector().resourceId("com.drivingcoach:id/btn_grant_sensors")');
     if (await sensorBtn.isExisting()) {
       await sensorBtn.click();
       await driver.pause(500);
     }
-    expect(await driver.isAppInstalled('com.bmw.drivingcoach')).toBe(true);
+    expect(await driver.isAppInstalled('com.drivingcoach')).toBe(true);
   });
 
   it('should advance past the onboarding screen after all permissions are granted', async () => {
     // After permissions the app should show Home or Login — either means onboarding completed
-    const nextScreen = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/nav_host_fragment")');
+    const nextScreen = await $('android=new UiSelector().resourceId("com.drivingcoach:id/nav_host_fragment")');
     await nextScreen.waitForDisplayed({ timeout: 15000 });
     expect(await nextScreen.isDisplayed()).toBe(true);
   });

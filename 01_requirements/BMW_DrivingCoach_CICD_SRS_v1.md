@@ -202,7 +202,7 @@ All secrets are stored in GitHub Actions secrets at the repository level. Enviro
 | ID | Requirement |
 |---|---|
 | UA-01 | The job shall run `./gradlew testDebugUnitTest jacocoTestReport`. |
-| UA-02 | JaCoCo shall be configured to enforce a minimum of **95% line coverage** and **95% branch coverage** across the `com.bmw.drivingcoach` package. The build shall fail if either threshold is not met. |
+| UA-02 | JaCoCo shall be configured to enforce a minimum of **95% line coverage** and **95% branch coverage** across the `com.drivingcoach` package. The build shall fail if either threshold is not met. |
 | UA-03 | The JaCoCo HTML report (`app/build/reports/jacoco/`) and the JUnit XML results (`app/build/test-results/`) shall be uploaded as artifacts named `unit-android-report` and `unit-android-junit` respectively. |
 | UA-04 | The GitHub Actions test-reporter action (or equivalent) shall parse the JUnit XML and publish test results inline in the pull request check. |
 | UA-05 | The job shall use the same Gradle cache defined in LA-04. |

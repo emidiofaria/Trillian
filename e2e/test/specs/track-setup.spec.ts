@@ -15,24 +15,24 @@ describe('E2E-F-04: Track setup', () => {
   });
 
   it('should navigate to the track setup screen', async () => {
-    const trackSetupBtn = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/nav_track_setup")');
+    const trackSetupBtn = await $('android=new UiSelector().resourceId("com.drivingcoach:id/nav_track_setup")');
     await trackSetupBtn.waitForDisplayed({ timeout: 10000 });
     await trackSetupBtn.click();
 
-    const mapFragment = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/map_view")');
+    const mapFragment = await $('android=new UiSelector().resourceId("com.drivingcoach:id/map_view")');
     await mapFragment.waitForDisplayed({ timeout: 15000 });
     expect(await mapFragment.isDisplayed()).toBe(true);
   });
 
   it('should display the draw start/finish line prompt', async () => {
-    const prompt = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/tv_draw_instruction")');
+    const prompt = await $('android=new UiSelector().resourceId("com.drivingcoach:id/tv_draw_instruction")');
     await prompt.waitForDisplayed({ timeout: 8000 });
     expect(await prompt.isDisplayed()).toBe(true);
   });
 
   it('should allow placing start/finish markers on the map', async () => {
     // Tap the map in two positions to simulate drawing the start/finish line
-    const mapView = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/map_view")');
+    const mapView = await $('android=new UiSelector().resourceId("com.drivingcoach:id/map_view")');
     const mapRect = await mapView.getSize();
     const mapLoc = await mapView.getLocation();
 
@@ -53,33 +53,33 @@ describe('E2E-F-04: Track setup', () => {
       .up({ button: 0 })
       .perform();
 
-    const saveBtn = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/btn_save_line")');
+    const saveBtn = await $('android=new UiSelector().resourceId("com.drivingcoach:id/btn_save_line")');
     await saveBtn.waitForDisplayed({ timeout: 8000 });
     expect(await saveBtn.isDisplayed()).toBe(true);
   });
 
   it('should save the start/finish line and return to home', async () => {
-    const saveBtn = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/btn_save_line")');
+    const saveBtn = await $('android=new UiSelector().resourceId("com.drivingcoach:id/btn_save_line")');
     await saveBtn.click();
 
-    const homeScreen = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/fragment_home")');
+    const homeScreen = await $('android=new UiSelector().resourceId("com.drivingcoach:id/fragment_home")');
     await homeScreen.waitForDisplayed({ timeout: 10000 });
     expect(await homeScreen.isDisplayed()).toBe(true);
   });
 
   it('should persist the marker after app restart', async () => {
     // Restart the app
-    await driver.terminateApp('com.bmw.drivingcoach');
-    await driver.activateApp('com.bmw.drivingcoach');
+    await driver.terminateApp('com.drivingcoach');
+    await driver.activateApp('com.drivingcoach');
     await driver.pause(3000);
 
     // Navigate back to track setup
-    const trackSetupBtn = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/nav_track_setup")');
+    const trackSetupBtn = await $('android=new UiSelector().resourceId("com.drivingcoach:id/nav_track_setup")');
     await trackSetupBtn.waitForDisplayed({ timeout: 10000 });
     await trackSetupBtn.click();
 
     // Saved line indicator should be visible
-    const savedLineIndicator = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/tv_saved_line_label")');
+    const savedLineIndicator = await $('android=new UiSelector().resourceId("com.drivingcoach:id/tv_saved_line_label")');
     await savedLineIndicator.waitForDisplayed({ timeout: 10000 });
     expect(await savedLineIndicator.isDisplayed()).toBe(true);
   });

@@ -153,6 +153,17 @@ jobs:
           STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
         # BA-01, BA-03
 
+      - name: Normalize release APK filename
+        run: |
+          expected="${{ env.APK_RELEASE_PATH }}"
+          if [ ! -f "$expected" ]; then
+            produced="$(find "$(dirname "$expected")" -maxdepth 1 -name '*.apk' | head -n1)"
+            [ -n "$produced" ] || { echo "::error::No release APK found in $(dirname "$expected")"; exit 1; }
+            cp "$produced" "$expected"
+          fi
+        # app/build.gradle.kts renames outputs to DrivingCoach-v<version>-<variant>.apk;
+        # copy to the stable path the rest of the pipeline references.
+
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:

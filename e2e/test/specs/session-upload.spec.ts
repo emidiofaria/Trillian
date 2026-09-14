@@ -16,7 +16,7 @@ const POLL_INTERVAL_MS = 3_000;
 describe('E2E-F-06: Session upload', () => {
   before(async () => {
     // Ensure we are on the history screen
-    const historyTab = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/nav_history")');
+    const historyTab = await $('android=new UiSelector().resourceId("com.drivingcoach:id/nav_history")');
     await historyTab.waitForDisplayed({ timeout: 8000 });
     const isActive = await historyTab.getAttribute('selected');
     if (isActive !== 'true') {
@@ -26,7 +26,7 @@ describe('E2E-F-06: Session upload', () => {
   });
 
   it('should show an upload status badge on the most recent session', async () => {
-    const uploadBadge = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/upload_status").instance(0)');
+    const uploadBadge = await $('android=new UiSelector().resourceId("com.drivingcoach:id/upload_status").instance(0)');
     await uploadBadge.waitForDisplayed({ timeout: 10000 });
     expect(await uploadBadge.isDisplayed()).toBe(true);
   });
@@ -36,7 +36,7 @@ describe('E2E-F-06: Session upload', () => {
     let uploadedText: string | null = null;
 
     while (Date.now() < deadline) {
-      const badge = await $('android=new UiSelector().resourceId("com.bmw.drivingcoach:id/upload_status").instance(0)');
+      const badge = await $('android=new UiSelector().resourceId("com.drivingcoach:id/upload_status").instance(0)');
       const text = await badge.getText();
       if (text === 'UPLOADED') {
         uploadedText = text;
