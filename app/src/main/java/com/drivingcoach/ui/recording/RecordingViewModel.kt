@@ -19,6 +19,7 @@ import com.drivingcoach.data.repository.SessionRepository
 import com.drivingcoach.data.telemetry.TelemetryFileWriter
 import com.drivingcoach.lap.LapDiagnosticsWriter
 import com.drivingcoach.lap.LocalLapDetector
+import com.drivingcoach.lap.NoLapsExplanation
 import com.drivingcoach.service.RecordingState
 import com.drivingcoach.service.TelemetryForegroundService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -336,7 +337,7 @@ class RecordingViewModel @Inject constructor(
                                 result.lapCount
                             )
                         } else {
-                            finishProcessing("No laps detected. Complete at least 2 laps.", 0)
+                            finishProcessing(NoLapsExplanation.of(outcome.diagnostics), 0)
                         }
                     }
                     is LocalLapDetector.DetectionResult.NoStartLine -> {

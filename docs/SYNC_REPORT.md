@@ -4,6 +4,797 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-14] Incident 14 explainer and fix record, and a message that misdirected
+
+**Codebase Version:** v2.96
+**Trigger:** Request for an informative write-up of the Incident 14 RCA. Writing
+it surfaced a defect in the shipped user-facing copy.
+
+### Defect found while documenting
+
+The empty-result message introduced by LD-18 ended *"Set the start line again
+while driving past it."* Track Setup captures both start-line points on foot —
+the UI reads *"Walk to each edge of the track and capture two GPS points"* — and
+there is no capture-while-moving control in the app.
+
+The driver was handed a correct diagnosis followed by an instruction he could
+not carry out, which leaves him as stuck as the message it replaced.
+
+The same wording had already been caught and removed from `USER_MANUAL.md`
+during the Incident 14 docs sync. It was missed in `NoLapsExplanation.kt` — the
+copy a driver actually reads.
+
+**Fixed in place at the operator's decision, keeping v2.96.** Now reads: *"Set it
+again from the track edges, and wait for the GPS signal to settle before you
+capture each point."*
+
+Guarded by `NoLapsExplanationTest.the advice must be something the app lets you
+do`, which rejects "while driving", "as you drive", "driving past" and "while
+moving" across every message branch. The guard matters more than the wording:
+nothing had been comparing the remedy the app offers against the controls the
+app ships.
+
+### Artifacts
+
+| Artifact | Status | Notes |
+|----------|--------|-------|
+| `14_EXPLAINER_why_no_laps_were_detected.md` | ✅ New | The reasoning, for a developer new to lap detection. Owns no facts — cites the RCA |
+| `14_Provided_Fix_start_point_projected_onto_driven_path.md` | ✅ New | The change record, following the `01_Provided_Fix_*` precedent |
+| `14_RCA_start_point_fixed_while_stationary.md` | ✅ Updated | Cross-links added; records the post-release message correction |
+| `NoLapsExplanation.kt` | ✅ Fixed | Advice now matches the shipped capture workflow |
+| `NoLapsExplanationTest.kt` | ✅ Updated | +1 guard test |
+
+Division of responsibility, so the three incident documents do not drift:
+**report** = what was observed · **RCA** = the evidence · **explainer** = the
+reasoning · **provided fix** = the change. Only the RCA owns measurements.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4 unit) | ✅ 282/282 (281 before the new guard) |
+
+No production behaviour changed beyond the message text.
+
+---
+
+## [2026-09-14] The release evidence described a different build
+
+**Codebase Version:** v2.96
+**Trigger:** Packaging the v2.96 release surfaced three defects in the release
+evidence chain. No application code changed; this entry records tooling fixes
+and one build-integrity finding.
+
+### What was wrong
+
+| # | Defect | Consequence |
+|---|--------|-------------|
+| 1 | `package-release.sh` copied the newest `RUN_*/TEST_REPORT.html` without checking it | The v2.96 APK shipped a test report generated on 2026-09-10 against v2.95. The evidence described a different build to the one in the box. |
+| 2 | Release-notes commit range was anchored with `git log -1 -- releases/<prev>/`, but `releases/` is gitignored | The anchor never resolved, so the script silently fell back to "last 15 commits". v2.96's true range is 6. |
+| 3 | `BuildConfig.VERSION_NAME` is a compile-time constant that Kotlin inlines at call sites | After the 2.95 → 2.96 bump, an incremental build produced an APK whose manifest said 2.96 while `AboutFragment` still rendered the inlined `2.94`. Verified by extracting the dex: the APK contained **both** literals. |
+
+### Fixes
+
+- `package-release.sh` now refuses to package unless the report's embedded
+  `Version:` and `Commit:` match the version being released and `HEAD`. The
+  check runs *before* the directory is created, so a refusal writes nothing
+  rather than leaving a half-built release.
+- The release-notes anchor now reads the previous release's own
+  `RELEASE_NOTES.md` commit hash, which survives the gitignore.
+- `.gitignore` now also ignores the stray `05_tests/reports/TEST_REPORT.html`,
+  consistent with the existing rule that working-directory runs are scratch and
+  evidence lives in `releases/`.
+
+### Defect 3 needs no code change
+
+`AboutScreenTest.aboutScreenReportsTheBuildIdentityFromBuildConfig` caught the
+stale constant on its own — that is the test doing exactly its job, at the right
+layer. The remedy is procedural: **a release build must be a clean build.** A
+clean rebuild removed the `2.94` literal from the dex entirely.
+
+Left deliberately unfixed: no guard was added to `package-release.sh` for this.
+A second check of the same property would duplicate the test without adding
+information, and the test already fails the release run.
+
+### Validation
+
+Clean rebuild, then L1 + L2 on a cold-booted emulator:
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4 unit) | ✅ 281/281 |
+| L2 (SWE.5 integration) | ✅ 60 passed, 4 `@Ignore`d (pre-existing) |
+
+An earlier L2 run failed 29 tests with `RootViewWithoutFocusException`. This was
+environmental — the headless emulator's screen timing out while idle, not a code
+regression (L1 stayed green throughout). Holding the device awake for the
+duration of the run cleared it.
+
+Packaged `releases/v2.96-stationary-start-point/` and verified the shipped
+report header reads v2.96 and carries the commit it was built from, and the
+notes list 6 commits.
+
+---
+
+## [2026-09-13] A start point fixed while standing still (Incident 14)
+
+**Codebase Version:** v2.96
+**Trigger:** Incident 14 — driver completed three laps, app reported none.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| failure-patterns.md | ✅ Updated | +93 lines (1 new pattern: `FP-STATIONARY-POSITION-BIAS`) |
+| components.md | ✅ Updated | +30 lines (new section + 5 constants) |
+| flows.md | ✅ Updated | +9 lines (fallback branch, rejection recording) |
+| SRS_v1.md | ✅ Updated | 2 amended (LD-02, LD-04), 2 new (LD-17, LD-18) |
+| USER_MANUAL.md | ✅ Updated | Section 7 "No Laps Detected" extended |
+| coverage-map.tsv | ✅ Updated | +7 claims, all PASS |
+| 03_incidents/14 | ✅ Added | RCA document + raw evidence committed |
+
+### New Requirement IDs
+
+- **LD-17** — bounded projection of the start point onto the driven path
+- **LD-18** — an empty result must describe the session, not instruct the driver
+
+### What changed and why
+
+The app mandates capturing the start/finish line **while standing still** (TS-05, TS-07), which is
+the one condition in which a consumer GPS receiver is least able to place itself. On the incident
+14 session that put the start point **15.9 m perpendicular** to the track, while the racing laps
+themselves overlaid within **4.5 m**. Because both endpoints were captured seconds apart they
+shared the same bias, so the line's length and bearing came out perfect and every internal check
+passed. Only the absolute position was wrong.
+
+The decisive measurement: the reported position sat 10–20 m to one side for the whole opening of
+the session, then jumped ~11 m in 2 seconds as the kart accelerated, landing 0.3 m from the racing
+line. The bias does not decay — it vanishes the moment the receiver gets velocity aiding.
+
+Contributing factor: `RejectionReason.TOO_FAR_TO_THE_SIDE` already existed in the enum, fully
+documented, **referenced nowhere**. Four passes were discarded and the diagnostics reported no
+rejections at all.
+
+### Documentation decisions worth recording
+
+- The user manual originally gained advice to "capture while rolling slowly past" the line. This
+  was **removed before commit**: TS-05/TS-07 have the user capture on foot at the track edges, so
+  the advice was not actionable in the shipped UI.
+- `LD-18` was added beyond the approved plan, because the message change is user-visible and the
+  SRS had no requirement covering it. Flagged to the operator.
+- The message logic was extracted from `RecordingViewModel` into `NoLapsExplanation` so it could be
+  tested directly — the previous wording survived for months because nothing asserted on it.
+
+### Verification
+
+**281 L1 tests, 0 failures** (262 before this work). All 7 new coverage claims resolve to PASS; the
+8 unbacked claims in the report are the pre-existing `@Ignore`d L2 classes, unchanged.
+
+### Files Modified
+
+```
+M  SkunkOps/atlas/failure-patterns.md                        (+93)
+M  SkunkOps/atlas/components.md                              (+30, -2)
+M  SkunkOps/atlas/flows.md                                   (+9)
+M  01_requirements/DrivingCoach_SRS_v1.md                    (+4, -2)
+M  docs/USER_MANUAL.md                                       (+20)
+M  05_tests/coverage-map.tsv                                 (+7)
+M  app/build.gradle.kts                                      (2.95 -> 2.96)
+M  app/src/main/java/com/drivingcoach/lap/LocalLapDetector.kt
+M  app/src/main/java/com/drivingcoach/ui/recording/RecordingViewModel.kt
+M  app/src/main/java/com/drivingcoach/util/GeoUtils.kt
+A  app/src/main/java/com/drivingcoach/lap/NoLapsExplanation.kt
+A  app/src/test/java/com/drivingcoach/lap/LapDetectionIncident14Test.kt
+A  app/src/test/java/com/drivingcoach/lap/NoLapsExplanationTest.kt
+A  app/src/test/resources/lapfixtures/ines3/
+A  03_incidents/14_no_lap_detected_test/14_RCA_start_point_fixed_while_stationary.md
+```
+
+### Recommendations
+
+- [ ] The 20 m bound spent 80% of its budget on the one session that needed it. If a second session
+      approaches it, change the capture workflow rather than the number.
+- [ ] Watch for `anchor: PROJECTED_ONTO_PATH` appearing routinely — that would mean the capture
+      workflow, not the receiver, is the thing to fix.
+
+---
+
+## [2026-09-10] The report names the human, and section 2 names the strategy
+
+**Codebase Version:** v2.95
+**Trigger:** Two requested changes to the HTML report header and section titles.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `generate-html-report.py` | Updated | `HUMAN` constant, meta entry, section 2 renamed |
+| `generate-report.sh` | Updated | Same attribution line in the Markdown report |
+| `test_generate_html_report.py` | Updated | +3 tests (51 -> 54), order guard strengthened |
+| `Test_Strategy.md` | Updated | Section table, and why the name is a constant |
+| `05_tests/reports/README.md` | Updated | Section table |
+| `test_strategy_execution_instructions.md` | Updated | Expected test count |
+
+### Attribution
+
+The header now closes with **Human behind the wheel: Emidio Costa**. An
+ASPICE-style test record names who executed it; automation produced the numbers
+but a person is answerable for them.
+
+Hardcoded rather than read from `git config`. Reading the machine would make the
+report differ depending on who regenerated it, and evidence that changes with
+the reader is not reproducible evidence. It also keeps an email address out of
+an artefact that gets handed to people — a test asserts `HUMAN` contains no `@`.
+
+The Markdown report carries the same line, on the same reasoning that already
+aligned the two titles: two artefacts describing one run should not disagree.
+
+### Section 2
+
+`2. How we test` is now `2. How we test — Software and System Test Strategy`.
+
+The originally requested wording was *System Integration Test Strategy*. The
+section documents four levels — SWE.4 unit, SWE.5 integration, SWE.6
+qualification and SYS.5 acceptance — so naming it after one of them would have
+described the section as narrower than it is. In a report whose value rests on
+not overstating anything, a heading that misdescribes its own contents is a
+poor trade. The agreed wording spans software and system levels and stays true.
+
+### A guard that could not see an edit
+
+The rename **passed the existing order test untouched**, which it should not
+have. `test_sections_run_evidence_before_interpretation` matched heading
+substrings, and the old title `2. How we test` is still a prefix of the new one.
+
+It now extracts every `<h2>` and asserts exact list equality, which catches
+renames, reorders, insertions and deletions in a single assertion. Verified
+negatively: appending one word to a heading fails the suite. The previous
+version would have let any suffix through silently.
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| Generator self-tests | 54/54 |
+| Order guard fails on a deliberate rename | Confirmed |
+| Determinism (`--source-date`) | Byte-identical |
+| Meta block renders 6 fields ending in the attribution | Confirmed |
+
+## [2026-09-10] Evidence lives with the release, not in the working tree
+
+**Codebase Version:** v2.95
+**Trigger:** Two decisions taken by the human: test-run directories should not
+accumulate in the repository, and the README must not carry hardcoded counts.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `.gitignore` | Updated | `05_tests/reports/RUN_*/` now ignored |
+| `05_tests/reports/` | Untracked | 1 `RUN_` directory and 9 legacy flat reports removed from the index; files kept on disk |
+| `05_tests/reports/README.md` | Updated | "What is committed" now says nothing is |
+| `README.md` | Updated | Every count replaced by a link |
+
+### Why runs are no longer committed
+
+A `RUN_` directory is about 220 KB, almost all of it HTML that differs little
+between runs. Committing one per run would add tens of megabytes of
+near-duplicate evidence to a repository whose `.git` is already 62 MB, in
+exchange for snapshots nobody navigates by.
+
+Evidence still exists where it means something: `releases/v<version>-<slug>/`
+holds the APK together with the report describing it. That is the moment worth
+freezing — a build someone might install.
+
+Nine legacy `TEST_REPORT_*.md` files had been tracked while simultaneously
+matching an ignore rule, because git does not retroactively ignore a file it
+already follows. That contradiction is now resolved. Nothing is lost: they
+remain in history.
+
+### Why the README no longer states counts
+
+It had drifted to claiming 84 passing tests when 322 ran, and 117 requirements
+when there were 245. The fix earlier today was to correct the numbers, which
+only reset the clock — the next run would make them wrong again.
+
+Counts now appear only in generated artefacts. The README links to the
+traceability matrix and the test report and says "see there". Badges no longer
+carry figures: `tests-ASPICE L1 + L2` and `SRS-traceability matrix` are true for
+as long as the statements behind them are.
+
+The status table keeps its two ⚠️ rows but describes them qualitatively —
+"several classes sit behind a class-level `@Ignore`", "partial coverage" —
+so the admission survives without a number to go stale.
+
+## [2026-09-10] Documentation drift audit — four stale artefacts
+
+**Codebase Version:** v2.95
+**Trigger:** Asked whether the docs still reflected the project. Audited every
+documentation artefact against the code rather than assuming. Four had drifted;
+one was actively wrong.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `README.md` | ✅ Updated | Badges, counts, dead directory reference, test commands, Analysis tab, V1/V2 scope |
+| `05_tests/reports/README.md` | ✅ Rewritten | Documented the pre-`RUN_` world and denied that reports are committed |
+| `SkunkOps/atlas/system.md` | ✅ Updated | `releases/` is directories now, not a filename series; version snippet said 2.8 |
+| `SkunkOps/atlas/failure-patterns.md` | ✅ Updated | New `FP-TEST-BLINDSPOT` |
+
+### What was wrong
+
+The root README had not been touched since 26 Aug and **understated the test
+suite by roughly 4x**:
+
+| Claim | Reality |
+|-------|---------|
+| Badge `tests-84 passing` | 322 executed of 351 declared |
+| Badge `SRS-117 requirements` | 245 |
+| `human_system_acceptance_tests/` in the tree | Directory does not exist |
+| `135` acceptance tests | 133 |
+| "Run tests: `./gradlew test`" | `run-all-tests.sh` is the documented path |
+
+The dead directory is worth noting: a sync entry from an earlier session
+recorded renaming that path to `05_tests/L4_SYS5_acceptance/`, but two
+references in the README were missed. A rename is not complete until nothing
+points at the old name.
+
+`05_tests/reports/README.md` (22 Jul) described a single flat Markdown file per
+run and stated that reports are *not* committed. Both untrue since the `RUN_<ts>/`
+change: runs now produce Markdown **and** HTML, and the directories are tracked.
+
+`system.md` described `releases/` as a flat filename series. `package-release.sh`
+has since made releases directories carrying the APK, its test report and notes.
+Documentation contradicting the code is the failure mode the Atlas exists to
+prevent, so it is now written down with the reasoning: an APK on its own asserts
+nothing about whether it was tested.
+
+### The pattern worth keeping
+
+`FP-TEST-BLINDSPOT` records the most valuable finding of the report work: a
+class-level `@Ignore` collapses a whole test class into **one** `<testcase
+name="null">` entry, so a suite looks green while dozens of tests never run.
+Four classes hid 29 tests, and 8 coverage claims rested on them.
+
+It is a measurement failure rather than a code failure — every tool downstream
+faithfully reported what the XML said. The mitigation is to count `@Test` in the
+source and print declared against executed, so a suite that skips everything
+scores zero instead of passing. Two parser subtleties are recorded with it,
+because both were real bugs: brace-depth nesting (a private fake inside a test
+class swallowed 22 tests) and matching `@Test` on a word boundary (`@TestInstallIn`
+inflated the count by 2).
+
+### Honesty in the status table
+
+The README's status table now carries two ⚠️ rows it did not have before: L2 at
+60/89, and V1 requirements coverage at 68/190 (36%). These are not new problems,
+only newly visible ones. For a project whose thesis is engineering rigour, a
+number that flatters us is worth less than one we can defend.
+
+### Reviewed, no change needed
+
+`SRS`, `TRACEABILITY_MATRIX`, `USER_MANUAL`, `flows.md`, `components.md`,
+`Test_Strategy.md` — synced during the work they describe.
+`instructions.md` (14 Jul) is a stable operating model carrying no stale facts.
+
+### Open decision
+
+`RUN_<ts>/` directories are tracked, so every future run adds ~215 KB of HTML to
+the repository permanently. Flagged to the human, not decided here.
+
+---
+
+## [2026-09-10] Report identity — the helmet and the name
+
+**Codebase Version:** v2.95
+**Trigger:** The report is handed to people who were not in the room. It carried
+no mark and no programme name, so nothing tied it to the product it describes.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `05_tests/infra/assets/helmet.png` | ✅ Created | 144x144 emblem, 3.2 KB, pre-scaled from the brand master |
+| `05_tests/infra/assets/README.md` | ✅ Created | Provenance, the determinism and size rationale, regeneration command |
+| `generate-html-report.py` | ✅ Updated | `logo_data_uri()`, `default_title()`, flex header, logo left of the title |
+| `generate-report.sh` | ✅ Updated | Markdown report takes the same title, read from `appVersionName` |
+| `test_generate_html_report.py` | ✅ Updated | +8 tests (43 → 51), new `BrandingTest` |
+| `Test_Strategy.md` | ✅ Updated | §7 records the title, the embedding rule and why the asset is committed |
+| `test_strategy_execution_instructions.md` | ✅ Updated | §1.6 expects 51 tests and explains the emblem guards |
+| `SkunkOps/atlas/components.md` | ✅ Updated | 3 failure modes, asset rows, cross-link from Brand Assets |
+
+### What changed
+
+Title is now `Trillian · Driving Coach v2.95 — Test Report` in both the HTML and
+the Markdown report, which previously disagreed — the Markdown heading was a
+bare `# Test Report`. The string is also the `<title>`, so it names the browser
+tab and the PDF a reader saves.
+
+The app's yellow helmet sits left of the title, the same mark seen on the splash
+screen, so the report and the product are visibly one thing.
+
+### Three decisions worth keeping
+
+**Embedded, not linked.** `package-release.sh` copies only `TEST_REPORT.html`
+into the release directory. A relative `src` would pass the no-external-URL test
+and still render broken in the one place a stranger opens the file.
+
+**Committed pre-scaled, not resized at generate time.** Running Pillow during
+generation would tie output to the image library on the machine and break
+byte-reproducibility. The generator now only base64-encodes bytes; it has no
+image dependency at all. Cost: 4.5 KB on a 213 KB report, +2.1%.
+
+**Ornaments cannot break evidence.** A missing asset degrades to a plain header
+rather than raising. A test report that fails to generate over decoration would
+be a worse defect than the missing decoration.
+
+### Guards added
+
+Incident 11 was this exact artwork rendered deformed. Tests now assert the asset
+is square, that the `<img>` states equal explicit width and height, and that it
+stays under 16 KB so the 257 KB master cannot be copied over it unnoticed.
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| Generator self-tests | ✅ 51/51 |
+| Determinism (`--source-date`) | ✅ byte-identical |
+| HTML nesting | ✅ 149/149 divs balanced |
+| Embedded logo round-trip | ✅ decodes to 144x144, hash matches committed asset |
+| Release repackaged | ✅ HTML + Markdown retitled |
+
+---
+
+## [2026-09-10] Report section order — evidence before interpretation
+
+**Codebase Version:** v2.95
+**Trigger:** The report asserted requirements coverage before showing a single test name.
+The test inventory and the manual checklist now come first.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `generate-html-report.py` | ✅ Updated | Section order, 7 headings renumbered, 5 cross-references, closing L4 reminder |
+| `test_generate_html_report.py` | ✅ Updated | +3 tests (40 → 43): full order assertion, closing reminder, dangling-reference check |
+| `Test_Strategy.md` | ✅ Updated | §7 section table reordered, with the rationale |
+
+### New order
+
+| # | Section | Was |
+|---|---------|-----|
+| 1 | Results by test level | 1 |
+| 2 | How we test | 2 |
+| 3 | **Failures** | 5 |
+| 4 | Every automated test in this run | 6 |
+| 5 | Manual acceptance tests (L4) | 7 |
+| 6 | Requirements coverage | 3 |
+| 7 | Gaps and caveats | 4 |
+
+### Two deviations from the literal request, both agreed
+
+The request was to move sections 6 and 7 above section 3. Taken literally that would have
+left **Failures last**, below 245 requirement rows and a 55-row deferred table — on a red
+run, the one thing that matters would be the hardest thing to reach. Failures moved to 3
+instead.
+
+Moving L4 up also reversed an earlier explicit requirement that manual tests end the
+document. The warning banner stays at its new position, and a closing reminder was added
+after section 7 so the parting thought is still the human's:
+
+> Before this build is trusted on track, a human still has to run the 133 manual checks in
+> section 5.
+
+### Guarding the order
+
+Reordering prose is exactly the kind of edit that silently leaves a *"see section 4"*
+pointing at the wrong heading. Two new tests prevent it:
+
+- `test_sections_run_evidence_before_interpretation` asserts all seven headings appear in
+  the intended sequence, so a future move fails loudly instead of shuffling the narrative.
+- `test_no_dangling_section_references` extracts every `see section N` from the rendered
+  page and asserts that section exists.
+
+### Validation
+
+- Generator tests: **43/43 PASS** (the one ordering test that should have broken, did)
+- Rendered order verified: 1–7 in sequence; all 5 cross-references resolve
+- Deterministic, valid HTML nesting, no JS, no external URLs
+
+---
+
+## [2026-09-10] Scope map — separating deferred from untested
+
+**Codebase Version:** v2.95
+**Trigger:** The report counted a backend route V1 never builds and a shipped lap-detection
+requirement as the same kind of gap. Scope decisions are now recorded and reported separately.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `05_tests/scope-map.tsv` | ✅ New | 27 lines: 2 section sweeps, 2 V1 overrides, 23 per-ID deferrals |
+| `generate-html-report.py` | ✅ Updated | Scope parsing, two denominators, `V2-BACKEND` badge, deferred table, 3 guards |
+| `test_generate_html_report.py` | ✅ Updated | +14 tests (26 → 40) |
+| `Test_Strategy.md` | ✅ Updated | New "The scope map" subsection in §7 |
+| `test_strategy_execution_instructions.md` | ✅ Updated | §1.4: quote both denominators; how to read a scope warning |
+| `components.md` | ✅ Updated | Test Evidence Pipeline: scope inputs and 2 new failure modes |
+| `DrivingCoach_SRS_v1.md` | — | Deliberately unchanged; scope facts live in one reviewable file, not scattered through 550 lines of prose |
+
+### The rule applied
+
+The discriminator is **the subject of the sentence**:
+
+- *"The backend shall …"* → `V2-BACKEND`. There is nothing to run it on.
+- *"The app shall …"* → V1, **even when the sentence mentions upload.** The client half of a
+  network feature is testable against a fake server, and TU-04, TU-06 and TU-07 already pass
+  that way against MockWebServer. Deferring them would have hidden work that is done.
+
+This rule caught two sweeps that would have been wrong:
+
+| Nearly swept | Why it stayed V1 |
+|---|---|
+| `OC-01` … `OC-09` | Sit inside the *AI coaching feedback* SRS section, but are the offline engine — shipped and 100% covered |
+| `AI-11` … `AI-14` | The COACH tab, which renders today from local insights |
+| `UM-18`, `UM-19` | The Profile screen ships in V1; the SRS already amends UM-18 for it |
+
+### Result
+
+| Measure | Before | After |
+|---|---|---|
+| Requirements claimed | 68 / 245 (28%) | 68 / **190 V1** (36%), 55 deferred |
+| "Uncovered" pile | 177, undifferentiated | 122 V1 gaps + 55 deferred, each with a reason |
+
+The 122 remaining gaps are the honest ones: `LC` (15), `LD` (15), `SH` (11), `TS` (11),
+`DP`/`SM` (13) all ship today and are untested.
+
+### Guards, verified by deliberately breaking the file
+
+| Guard | Message produced |
+|---|---|
+| Contradiction | `OC-01 is marked V2-BACKEND but has a passing test (OfflineCoachingEngineTest)` |
+| Unknown section | `no SRS section named 'No Such Section'` |
+| Unknown requirement | `no such requirement ZZ-99` |
+| Unknown scope value | `unknown scope 'BOGUS'` |
+
+A deferred requirement may still carry an L4 manual claim; only a passing automated test is
+contradictory.
+
+### Validation
+
+- Generator tests: **40/40 PASS**
+- Report regenerated: deterministic, valid HTML nesting, no JS, no external URLs
+- Real data: 0 scope errors — no contradiction, no rotted target
+
+---
+
+## [2026-09-10] Test Evidence Pipeline — HTML report and release packaging
+
+**Codebase Version:** v2.95
+**Trigger:** Test reports now ship with the APK. A run produces a self-contained HTML
+report generated from machine-readable evidence, and a release groups the build with
+the report and notes that belong to it.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `components.md` | ✅ Updated | +1 component (Test Evidence Pipeline), criticality matrix row |
+| `Test_Strategy.md` | ✅ Updated | §7 rewritten: run directories, HTML report, coverage map, releases; 4 script rows added |
+| `test_strategy_execution_instructions.md` | ✅ Updated | §1.4 rewritten, new §1.5 (packaging) and §1.6 (generator self-tests) |
+| `TRACEABILITY_MATRIX.md` | ✅ Updated | Header note: the TSV is now the machine truth, this table is the narrative |
+| `system.md` | — | No change (build-time tooling, no runtime component) |
+| `flows.md` | — | No change (no new runtime flow) |
+| `failure-patterns.md` | — | No change (no new product failure mode) |
+| `DrivingCoach_SRS_v1.md` | — | No change (no product behaviour changed) |
+| `USER_MANUAL.md` | — | No change (nothing user-facing in the app changed) |
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `05_tests/infra/scripts/generate-html-report.py` | The report generator |
+| `05_tests/infra/scripts/test_generate_html_report.py` | 26 unit tests for it |
+| `05_tests/infra/scripts/package-release.sh` | APK + report + release notes under `releases/v<ver>-<slug>/` |
+| `05_tests/coverage-map.tsv` | 94 requirement-to-test claims, machine-checked every run |
+
+### What the first report found
+
+Numbers that were previously invisible, now stated on the front page:
+
+| Measure | Value |
+|---------|-------|
+| L1 declared / executed | 262 / 262 |
+| L2 declared / executed | 89 / 60 |
+| Tests that exist but never run | **29**, behind 4 class-level `@Ignore`s |
+| Requirements with an automated claim | 68 / 245 (28%) |
+| Claims not backed by a passing test | 8 |
+| Claims citing a test that no longer exists | 0 |
+
+The 29 hidden tests are the reason declared counts are read from the Kotlin source
+rather than the JUnit XML: Gradle reports an `@Ignore`d class as one skipped entry
+regardless of how many tests it contains, so the XML alone cannot see them.
+
+### Design decisions
+
+- **No prose is parsed.** Inputs are JUnit XML, a TSV, and rigid SRS table rows. A
+  report that guesses at a document's meaning can overstate coverage without anyone
+  noticing, which is exactly the failure it exists to prevent.
+- **Level is not stored in the TSV.** It is derived from which results file the class
+  appears in, so a claim cannot assert the wrong level.
+- **Failures are annotated, never hidden.** Skipped, missing and failed claims all get
+  their own section.
+- **Manual L4 tests come last**, with an explicit note that a human must run them.
+- **Deterministic output.** Sorted iteration and `--source-date` mean two runs of the
+  same inputs are byte-identical, so reports can be diffed and therefore reviewed.
+
+---
+
+## [2026-09-09] Session Analysis Tab (ANALYSIS)
+
+**Codebase Version:** v2.95
+**Trigger:** New fourth tab on the Session Result screen — a derived, fully offline
+track-engineer report (statistics, drawn track map, corners, braking zones, speed trace)
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `system.md` | ✅ Updated | +4 lines (UI key classes), version table corrected 2.8 → 2.95 |
+| `components.md` | ✅ Updated | +141 lines (2 new components, criticality matrix rows) |
+| `flows.md` | ✅ Updated | +98 lines (1 new flow) |
+| `failure-patterns.md` | ✅ Updated | +113 lines (2 new patterns) |
+| `DrivingCoach_SRS_v1.md` | ✅ Updated | +29 lines (new §9a, 17 requirements) |
+| `TRACEABILITY_MATRIX.md` | ✅ Updated | +19 rows, coverage summary and total revised |
+| `USER_MANUAL.md` | ✅ Updated | New §5.4, §5.4 → §5.5, 4 new FAQ entries |
+| `60_SESSION_RESULTS_TESTS.md` | ✅ Updated | +89 lines (ANA-01..ANA-06), RES-01 now expects 4 tabs |
+
+### New Requirement IDs
+
+`AS-01` … `AS-17` — Session analysis (SRS §9a).
+
+### New Failure Patterns
+
+| ID | Pattern |
+|----|---------|
+| `FP-LABEL-VS-DATA` | A flag that describes the request instead of the result |
+| `FP-STATIONARY-GEOMETRY` | Geometry derived while the car is parked (recurrence of `FP-DEGENERATE-BASELINE` in a second consumer) |
+
+### New Acceptance Test IDs
+
+`ANA-01` … `ANA-06`.
+
+---
+
+## Detailed Changes
+
+### 📁 SkunkOps/atlas/system.md
+
+**Modified:**
+```diff
+- | Version Code | 208 (derived: `major*100 + minor`) |
+- | Version Name | 2.8 (single source of truth in `app/build.gradle.kts`) |
++ | Version Code | 295 (derived: `major*100 + minor`) |
++ | Version Name | 2.95 (single source of truth in `app/build.gradle.kts`) |
+```
+
+**Added:**
+```diff
++ - `AnalysisFragment` / `AnalysisViewModel` — ANALYSIS tab: derived session report, offline
++ - `TrackMapView` — custom `View` drawing the track outline from GPS, no map SDK
+```
+
+### 📁 SkunkOps/atlas/components.md
+
+**Added Sections:** *Session Analysis Engine (`SessionAnalysisProcessor`)*, *TrackMapView* —
+including the full threshold table and the note that every threshold is expressed per second
+rather than per sample. Two rows appended to the criticality matrix (both LOW).
+
+### 📁 SkunkOps/atlas/flows.md
+
+**Added Section:** *Flow: Session Analysis (ANALYSIS Tab)* — execution path, async boundaries
+(IO probe → IO read → Default maths → main thread bind), failure points, and the explicit
+statement that the flow has no external dependencies and writes nothing.
+
+### 📁 SkunkOps/atlas/failure-patterns.md
+
+Both patterns were **found by the tests written for this feature**, not by inspection:
+
+| ID | Found by | Fix |
+|----|----------|-----|
+| `FP-LABEL-VS-DATA` | `SessionAnalysisGuardsTest`, `AnalysisTabTest` | Derive labels from the outcome (`lapRange`, `File.canRead()`), never from the request |
+| `FP-STATIONARY-GEOMETRY` | scratch probe over the `teste3` fixture | `MIN_BEARING_TRAVEL_M = 2.0`, `MIN_CORNERING_SPEED_KMH = 10.0` |
+
+### 📁 01_requirements/DrivingCoach_SRS_v1.md
+
+**Added Section 9a — Session analysis (ANALYSIS tab)**
+
+| ID | Requirement |
+|----|-------------|
+| AS-01 | Fourth tab labelled 'ANALYSIS', after 'CHART' |
+| AS-02 → AS-03 | Session statistics and their exact definitions |
+| AS-04 → AS-05 | Offline track map: no SDK, no tiles; speed gradient, red braking, `T1..Tn`, S/F marker |
+| AS-06 → AS-07 | Lap chips from §8 laps; reference defaults to best lap and is selectable |
+| AS-08 → AS-09 | Yaw-rate corner detection and the order-of-passage numbering caveat |
+| AS-10 → AS-12 | GPS-only braking detection, g provenance caveat, corner association |
+| AS-13 | Whole-session speed graph |
+| AS-14 → AS-15 | Rate invariance; minimum baseline and minimum cornering speed |
+| AS-16 → AS-17 | Honest degraded states: missing file vs. short session; labelled whole-session fallback |
+
+### 📁 docs/USER_MANUAL.md
+
+**Added Section 5.4 — The Analysis Tab** (previous §5.4 *Managing Sessions* renumbered to §5.5),
+covering the stats table, how to read the coloured map, lap selection, apex speeds, braking
+figures, the speed graph and every empty state.
+
+**Added FAQ Entries:**
+```markdown
+**Q: The corner numbers in the Analysis tab don't match the circuit's map. Why?**
+**Q: Does the Analysis tab use my phone's motion sensors?**
+**Q: Why is my average speed so low?**
+**Q: Does the Analysis tab need internet?**
+```
+
+### 📁 05_tests/L4_SYS5_acceptance/60_SESSION_RESULTS_TESTS.md
+
+**Added Test Cases:**
+
+| ID | Test | Expected Result |
+|----|------|-----------------|
+| ANA-01 | Analysis tab layout | 4th tab opens, all five statistics populated and consistent with the LAPS tab |
+| ANA-02 | Track map fidelity | Outline recognisable, colours match speed, red where braked, draws in flight mode |
+| ANA-03 | Corner detection plausibility | Corner count, directions and apex speeds match the real circuit |
+| ANA-04 | Braking zones | One per heavy braking point, 0.1–1.0 g, correct corner association |
+| ANA-05 | Reference lap selection | Best lap preselected, selection redraws everything and relabels |
+| ANA-06 | Degraded sessions | Missing file, short session, no laps and stationary recording all handled honestly |
+
+**Modified:** RES-01 now expects **4** tabs and the label list `"LAPS", "COACH", "CHART", "ANALYSIS"`.
+
+---
+
+## Validation
+
+| Level | ASPICE | Result |
+|-------|--------|--------|
+| L1 unit | SWE.4 | **262/262 passed** (29 new across 4 analysis test classes) |
+| L2 integration | SWE.5 | **64/64 executed passed**, 4 pre-existing `@Ignore` skips (4 new in `AnalysisTabTest`) |
+| L3 qualification | SWE.6 | Not implemented |
+| L4 acceptance | SYS.5 | Checklist extended (ANA-01…ANA-06), awaiting a track day |
+
+Report: `05_tests/reports/TEST_REPORT_2026-09-09_22-22-34.md`
+
+---
+
+## Files Modified
+
+```
+M  SkunkOps/atlas/system.md                                   (+4, -2)
+M  SkunkOps/atlas/components.md                               (+141)
+M  SkunkOps/atlas/flows.md                                    (+98)
+M  SkunkOps/atlas/failure-patterns.md                         (+113)
+M  01_requirements/DrivingCoach_SRS_v1.md                     (+29)
+M  01_requirements/TRACEABILITY_MATRIX.md                     (+22, -3)
+M  docs/USER_MANUAL.md                                        (+79, -1)
+M  05_tests/L4_SYS5_acceptance/60_SESSION_RESULTS_TESTS.md    (+89, -2)
+M  app/build.gradle.kts                                       (+1, -1)
+```
+
+---
+
+## Recommendations
+
+- [ ] ANA-02 and ANA-03 need a real track day: corner counts have only been checked against one
+      recorded fixture (`teste3`) and the user's own Python analysis of it.
+- [ ] Rate invariance is proven by interpolating the 1 Hz fixture to 10 Hz. A genuine 10 Hz
+      recording should be added as a fixture at the next opportunity.
+- [ ] `MIN_BEARING_TRAVEL_M` now exists in two places conceptually — the lap detector and the
+      analysis engine. Consider a shared primitive so the next consumer inherits the guard
+      instead of rediscovering `FP-DEGENERATE-BASELINE`.
+
+---
+
 ## [2026-09-08] Lap Detection Geometry Corrected (Incident 13)
 
 **Codebase Version:** v2.94 (branch `improve_lap_detection`)

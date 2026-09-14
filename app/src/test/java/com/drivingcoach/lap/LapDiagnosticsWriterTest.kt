@@ -140,4 +140,35 @@ class LapDiagnosticsWriterTest {
             writer.write(fixture.telemetryFile, sessionId = 1L, outcome = outcome)
         )
     }
+
+    @Test
+    fun `carries the incident 14 evidence into the file that outlives the session`() {
+        // Incident 14's cause -- passes going wide of a start point captured while
+        // standing still -- was fully present in memory and absent from disk. The
+        // writer serialises the diagnostics object whole, so these fields ride along
+        // for free; this test exists so that stays true, because the fields are only
+        // worth having if an investigator finds them months later.
+        val incident14 = LapReplayHarness.load("ines3", temporaryFolder.newFolder())
+        val outcome = detector.detectLapsWithDiagnostics(
+            incident14.telemetryFile,
+            incident14.startLine
+        )
+
+        val sidecar = writer.write(incident14.telemetryFile, sessionId = 14L, outcome = outcome)
+        val json = requireNotNull(sidecar).readText()
+
+        assertTrue(
+            "the file must say which start point the laps were measured against",
+            json.contains("PROJECTED_ONTO_PATH")
+        )
+        assertTrue("the file must say how far that point moved", json.contains("anchorProjectionM"))
+        assertTrue(
+            "the file must record that the line was captured standing still",
+            json.contains("captureWindowSpeedMs")
+        )
+        assertTrue(
+            "the file must record how far the position wandered during capture",
+            json.contains("captureWindowScatterM")
+        )
+    }
 }

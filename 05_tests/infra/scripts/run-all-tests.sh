@@ -36,6 +36,7 @@ RUN_LEVEL="all"
 START_EMULATOR=false
 STOP_EMULATOR=false
 SKIP_REPORT=false
+NO_PROMPT=false
 
 # Colors
 RED='\033[0;31m'
@@ -68,6 +69,7 @@ Options:
   --start-emulator     Start emulator if no device connected (for L2)
   --stop-emulator      Stop emulator after tests complete
   --skip-report        Skip generating test report
+  --no-prompt          Never ask anything; for CI
   --help               Show this help message
 
 Examples:
@@ -101,6 +103,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --skip-report)
             SKIP_REPORT=true
+            shift
+            ;;
+        --no-prompt)
+            NO_PROMPT=true
             shift
             ;;
         --help)
@@ -256,12 +262,28 @@ fi
 # =============================================================================
 # Generate Report
 # =============================================================================
+RUN_DIR=""
 if [ "$SKIP_REPORT" != true ]; then
     log_header "Generating Test Report"
-    
-    "$SCRIPT_DIR/generate-report.sh" || {
-        log_warn "Report generation had issues, but continuing..."
+
+    # Every run gets its own directory, so a report is always tied to the run
+    # that produced it and nothing is overwritten.
+    RUN_DIR="$PROJECT_ROOT/05_tests/reports/RUN_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$RUN_DIR"
+
+    "$SCRIPT_DIR/generate-report.sh" --output "$RUN_DIR" || {
+        log_warn "Markdown report generation had issues, but continuing..."
     }
+    # generate-report.sh names its file TEST_REPORT_<timestamp>.md; give the
+    # run directory a stable name as well so packaging never has to guess.
+    LATEST_MD="$(ls -t "$RUN_DIR"/TEST_REPORT_*.md 2>/dev/null | head -1)"
+    [ -n "$LATEST_MD" ] && cp "$LATEST_MD" "$RUN_DIR/TEST_REPORT.md"
+
+    python3 "$SCRIPT_DIR/generate-html-report.py" --output "$RUN_DIR/TEST_REPORT.html" || {
+        log_warn "HTML report generation had issues, but continuing..."
+    }
+
+    log_info "Run directory: ${RUN_DIR#$PROJECT_ROOT/}"
 fi
 
 # =============================================================================
@@ -284,7 +306,40 @@ else
 fi
 
 echo ""
-echo "Report: 05_tests/reports/TEST_REPORT_*.md (most recent)"
+if [ -n "$RUN_DIR" ]; then
+    echo "Report: ${RUN_DIR#$PROJECT_ROOT/}/TEST_REPORT.html"
+else
+    echo "Report: skipped"
+fi
 echo ""
+
+# =============================================================================
+# Optional local release
+# =============================================================================
+# Only offered interactively, only when the run is clean, and only when there
+# is a report to ship. A release that carries a report from a failed run would
+# be worse than no report at all.
+if [ "$NO_PROMPT" != true ] && [ -t 0 ] && [ $OVERALL_EXIT_CODE -eq 0 ] && [ -n "$RUN_DIR" ]; then
+    log_header "Local Release"
+    echo "All executed tests passed. A local release would build the APK and place it"
+    echo "next to this run's HTML test report under releases/."
+    echo ""
+    read -r -p "Create a local release now? [y/N] " REPLY
+    case "$REPLY" in
+        [yY]|[yY][eE][sS])
+            "$SCRIPT_DIR/package-release.sh" --report "$RUN_DIR/TEST_REPORT.html" || {
+                log_error "Release packaging failed"
+                exit 1
+            }
+            ;;
+        *)
+            echo ""
+            log_info "No release created. To do it later:"
+            echo "  ./05_tests/infra/scripts/package-release.sh --report ${RUN_DIR#$PROJECT_ROOT/}/TEST_REPORT.html"
+            ;;
+    esac
+elif [ $OVERALL_EXIT_CODE -ne 0 ]; then
+    log_warn "Not offering a release: some tests failed."
+fi
 
 exit $OVERALL_EXIT_CODE
