@@ -60,10 +60,10 @@ Execute these `view` commands in parallel at startup:
 view 01_requirements/DrivingCoach_SRS_v1.md
 
 # 2. ATLAS — System architecture and operational knowledge
-view SkunkOps/atlas/system.md
-view SkunkOps/atlas/components.md
-view SkunkOps/atlas/flows.md
-view SkunkOps/atlas/failure-patterns.md
+view atlas/system.md
+view atlas/components.md
+view atlas/flows.md
+view atlas/failure-patterns.md
 
 # 3. USER MANUAL — How users interact with the app
 view docs/USER_MANUAL.md
@@ -144,7 +144,7 @@ view .github/skills/trillian-docs-sync.md
 
 # Step 2: Follow its workflow
 - Analyze codebase changes (git diff, recent commits)
-- Update SkunkOps/atlas/*.md with new components/flows
+- Update atlas/*.md with new components/flows
 - Update 01_requirements/DrivingCoach_SRS_v1.md with new requirement IDs
 - Update docs/USER_MANUAL.md with user-facing changes
 - Append new entry to docs/SYNC_REPORT.md (newest first)
@@ -368,8 +368,8 @@ The agent MUST create a **Task Plan** with the following structure:
 - **Execution Steps:**
   1. Read skill: `view .github/skills/trillian-docs-sync.md`
   2. Analyze codebase changes (git diff, new files)
-  3. Update `SkunkOps/atlas/components.md` with new/modified components
-  4. Update `SkunkOps/atlas/flows.md` if new flows added
+  3. Update `atlas/components.md` with new/modified components
+  4. Update `atlas/flows.md` if new flows added
   5. Update `01_requirements/DrivingCoach_SRS_v1.md` with new requirement IDs
   6. Update `docs/USER_MANUAL.md` with user-facing changes
   7. Append entry to `docs/SYNC_REPORT.md` (newest first format)
@@ -733,7 +733,7 @@ Atlas is the operational knowledge base. You MUST consult it to understand the s
 ### Atlas Location
 
 ```
-SkunkOps/atlas/
+atlas/
 ├── system.md           # Architecture, tech stack, runtime components
 ├── components.md       # Component inventory with failure modes & signals
 ├── flows.md            # Step-by-step execution paths with failure points
@@ -743,17 +743,17 @@ SkunkOps/atlas/
 
 ### Load Order (execute these view commands)
 
-1. **`view SkunkOps/atlas/components.md`** — Find affected component
+1. **`view atlas/components.md`** — Find affected component
    - Identify component by name from RCA
    - Note dependencies, inputs, outputs
    - Check failure modes and criticality
 
-2. **`view SkunkOps/atlas/flows.md`** — Trace execution path
+2. **`view atlas/flows.md`** — Trace execution path
    - Find the flow affected by the incident
    - Identify where fix should be applied
    - Note async/persistence boundaries
 
-3. **`view SkunkOps/atlas/failure-patterns.md`** — Check for existing mitigations
+3. **`view atlas/failure-patterns.md`** — Check for existing mitigations
    - If pattern exists, use documented mitigation approach
    - Avoid reinventing solutions for known problems
 

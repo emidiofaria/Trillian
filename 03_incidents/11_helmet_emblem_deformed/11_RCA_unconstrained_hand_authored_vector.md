@@ -280,10 +280,10 @@ Redraw `ic_helmet_emblem.xml` against explicit construction constraints:
 
 ### Documentation
 
-- Add a **"Brand Asset Geometry"** failure pattern to `SkunkOps/atlas/failure-patterns.md`
+- Add a **"Brand Asset Geometry"** failure pattern to `atlas/failure-patterns.md`
   (first of its kind — static-asset defects are currently unmodelled).
 - Add asset correctness as a failure mode under *Home Brand Hero* and *App Startup* in
-  `SkunkOps/atlas/components.md`.
+  `atlas/components.md`.
 - Record the intended emblem design (proportions, centre line, colour roles) so "correct"
   becomes verifiable rather than subjective.
 

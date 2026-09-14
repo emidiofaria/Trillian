@@ -458,13 +458,13 @@ def resolve(claims, cases, source_classes, l4_ids):
 # Rendering
 # ---------------------------------------------------------------------------
 CSS = """
-:root{--bmw:#1C69D4;--gold:#C9A227;--ink:#1a1d21;--muted:#5b6570;--line:#dfe3e8;
+:root{--brand:#1C69D4;--gold:#C9A227;--ink:#1a1d21;--muted:#5b6570;--line:#dfe3e8;
 --pass:#2e7d32;--fail:#c62828;--warn:#e07b00;--manual:#5a6acf;--bg:#f6f7f9}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
 font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px 72px}
-header{background:linear-gradient(135deg,#0f2a52,var(--bmw));color:#fff;padding:36px 0 30px;margin-bottom:28px}
+header{background:linear-gradient(135deg,#0f2a52,var(--brand));color:#fff;padding:36px 0 30px;margin-bottom:28px}
 header .wrap{padding-bottom:0}
 .brand{display:flex;align-items:flex-start;gap:18px}
 .brand img{flex:none;display:block}
@@ -508,7 +508,7 @@ details table{box-shadow:none;border:1px solid var(--line)}
 code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
 .kpi{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 4px}
 .kpi div{flex:1 1 150px;background:#fff;border-radius:6px;padding:13px 16px;
-box-shadow:0 1px 2px rgba(0,0,0,.06);border-top:3px solid var(--bmw)}
+box-shadow:0 1px 2px rgba(0,0,0,.06);border-top:3px solid var(--brand)}
 .kpi .n{font-size:25px;font-weight:600;line-height:1.15}
 .kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
 .kpi div.alert{border-top-color:var(--warn)}

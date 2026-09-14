@@ -173,9 +173,9 @@ rejections at all.
 ### Files Modified
 
 ```
-M  SkunkOps/atlas/failure-patterns.md                        (+93)
-M  SkunkOps/atlas/components.md                              (+30, -2)
-M  SkunkOps/atlas/flows.md                                   (+9)
+M  atlas/failure-patterns.md                                 (+93)
+M  atlas/components.md                                       (+30, -2)
+M  atlas/flows.md                                            (+9)
 M  01_requirements/DrivingCoach_SRS_v1.md                    (+4, -2)
 M  docs/USER_MANUAL.md                                       (+20)
 M  05_tests/coverage-map.tsv                                 (+7)
@@ -196,6 +196,115 @@ A  03_incidents/14_no_lap_detected_test/14_RCA_start_point_fixed_while_stationar
       approaches it, change the capture workflow rather than the number.
 - [ ] Watch for `anchor: PROJECTED_ONTO_PATH` appearing routinely — that would mean the capture
       workflow, not the receiver, is the thing to fix.
+
+---
+
+## [2026-09-10] Remove the last of the BMW branding
+
+**Codebase Version:** v2.95
+**Trigger:** Requested removal of the word "BMW" from all documents and code.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `DrivingCoach_SRS_v1.md` | Updated | Title, Document ID, UM-19, SR-10, SH-03 (+5, -5) |
+| `generate-html-report.py` | Updated | CSS token `--bmw` renamed `--brand` (+3, -3) |
+| `backend/package-lock.json` | Updated | Two stale `name` fields aligned to `package.json` (+2, -2) |
+| `40_SESSION_RECORDING_TESTS.md` | Updated | SVC-01 steps 3-4 corrected with SR-10 (+2, -2) |
+| `system.md` / `components.md` / `flows.md` / `failure-patterns.md` | No change | Already free of the term |
+| `USER_MANUAL.md` | No change | Already free of the term |
+
+### New Requirement IDs
+
+None. No requirements were added or removed; three were re-worded.
+
+### Detailed Changes
+
+#### `01_requirements/DrivingCoach_SRS_v1.md`
+
+```diff
+-# BMW Driving Coach — System Requirements Specification
+-**Document ID:** BMW-DC-SRS-001
++# Trillian — Driving Coach SRS
++**Document ID:** DC-SRS-001
+```
+
+The identifier was renamed rather than frozen because nothing in the repository
+cites it; `git grep DC-SRS` returns only the definition itself.
+
+Three requirements were re-worded. UM-19 is a pure rename, but SR-10 and SH-03
+were **describing behaviour the app no longer has**, so they were corrected
+against the source rather than merely de-branded:
+
+| ID | Was | Now | Evidence |
+|----|-----|-----|----------|
+| UM-19 | "on a BMW blue background" | "on a brand blue (`#1C69D4`) background" | `bg_avatar_circle.xml` -> `@color/colorPrimary` |
+| SR-10 | title `'BMW Driving Coach'`, content `'Recording — MM:SS'` | title `'Driving Coach — Recording'`, content `'MM:SS'` | `TelemetryForegroundService.kt:530` |
+| SH-03 | `'BMW DRIVING COACH'` branding, BMW blue | `'Driving Coach'` branding, brand blue | `ShareCardGenerator.kt:46` draws mixed case, not caps |
+
+#### `05_tests/L4_SYS5_acceptance/40_SESSION_RECORDING_TESTS.md`
+
+SVC-01 carried the same drift as SR-10 — it expected the em-dash in the content
+line instead of the title. A tester following it would have raised a false defect.
+
+```diff
+-| 3 | Notification title | "Driving Coach" | ☐ |
+-| 4 | Notification content | "Recording — MM:SS" | ☐ |
++| 3 | Notification title | "Driving Coach — Recording" | ☐ |
++| 4 | Notification content | "MM:SS" | ☐ |
+```
+
+SHARE-03 needed no change; it already described the card the code draws.
+
+#### `05_tests/infra/scripts/generate-html-report.py`
+
+```diff
+-:root{--bmw:#1C69D4;...
++:root{--brand:#1C69D4;...
+```
+
+Three sites — the declaration, the header gradient, and the KPI border-top.
+Rendered output is byte-identical apart from the token name.
+
+#### `backend/package-lock.json`
+
+`package.json` was renamed to `driving-coach-backend` at some point without the
+lockfile following. Both `name` fields were aligned by hand.
+
+**Two occurrences of the letters `bmw` deliberately remain**, at lines 1210 and
+3457. They are fragments of base64-encoded SHA-512 integrity hashes
+(`sha512-bEPFOaMAHTEP1EzpvHTbmwR8...`, `sha512-Rm0BMWtxBcio...`) and are not
+branding. Editing them would break `npm ci`. A future de-branding sweep must not
+"finish the job" here — line 1210 was checksummed before and after this edit to
+prove it was untouched.
+
+### Verification
+
+```
+git grep -Iin bmw            -> 2 hits, both integrity hashes
+sha256sum <line 1210>        -> unchanged before/after
+json.load(package-lock.json) -> parses, name = driving-coach-backend
+py_compile generate-html-report.py -> OK
+--brand x3, --bmw x0
+```
+
+No Kotlin, XML or resource file was modified, so app behaviour is unchanged and
+no build or L1 run was required.
+
+### Files Modified
+
+```
+M  01_requirements/DrivingCoach_SRS_v1.md                        (+5, -5)
+M  05_tests/infra/scripts/generate-html-report.py                (+3, -3)
+M  05_tests/L4_SYS5_acceptance/40_SESSION_RECORDING_TESTS.md     (+2, -2)
+M  backend/package-lock.json                                     (+2, -2)
+```
+
+### Recommendations
+
+- [ ] Historical APKs under `releases/00_old_versions/` keep the `BMW_DrivingCoach_*` filenames and contain the old strings internally. Left deliberately — they are a record of what shipped.
+- [ ] Git history still contains the term; rewriting it was out of scope.
 
 ---
 
@@ -319,8 +428,8 @@ one was actively wrong.
 |----------|--------|---------|
 | `README.md` | ✅ Updated | Badges, counts, dead directory reference, test commands, Analysis tab, V1/V2 scope |
 | `05_tests/reports/README.md` | ✅ Rewritten | Documented the pre-`RUN_` world and denied that reports are committed |
-| `SkunkOps/atlas/system.md` | ✅ Updated | `releases/` is directories now, not a filename series; version snippet said 2.8 |
-| `SkunkOps/atlas/failure-patterns.md` | ✅ Updated | New `FP-TEST-BLINDSPOT` |
+| `atlas/system.md` | ✅ Updated | `releases/` is directories now, not a filename series; version snippet said 2.8 |
+| `atlas/failure-patterns.md` | ✅ Updated | New `FP-TEST-BLINDSPOT` |
 
 ### What was wrong
 
@@ -402,7 +511,7 @@ no mark and no programme name, so nothing tied it to the product it describes.
 | `test_generate_html_report.py` | ✅ Updated | +8 tests (43 → 51), new `BrandingTest` |
 | `Test_Strategy.md` | ✅ Updated | §7 records the title, the embedding rule and why the asset is committed |
 | `test_strategy_execution_instructions.md` | ✅ Updated | §1.6 expects 51 tests and explains the emblem guards |
-| `SkunkOps/atlas/components.md` | ✅ Updated | 3 failure modes, asset rows, cross-link from Brand Assets |
+| `atlas/components.md` | ✅ Updated | 3 failure modes, asset rows, cross-link from Brand Assets |
 
 ### What changed
 
@@ -670,7 +779,7 @@ track-engineer report (statistics, drawn track map, corners, braking zones, spee
 
 ## Detailed Changes
 
-### 📁 SkunkOps/atlas/system.md
+### 📁 atlas/system.md
 
 **Modified:**
 ```diff
@@ -686,19 +795,19 @@ track-engineer report (statistics, drawn track map, corners, braking zones, spee
 + - `TrackMapView` — custom `View` drawing the track outline from GPS, no map SDK
 ```
 
-### 📁 SkunkOps/atlas/components.md
+### 📁 atlas/components.md
 
 **Added Sections:** *Session Analysis Engine (`SessionAnalysisProcessor`)*, *TrackMapView* —
 including the full threshold table and the note that every threshold is expressed per second
 rather than per sample. Two rows appended to the criticality matrix (both LOW).
 
-### 📁 SkunkOps/atlas/flows.md
+### 📁 atlas/flows.md
 
 **Added Section:** *Flow: Session Analysis (ANALYSIS Tab)* — execution path, async boundaries
 (IO probe → IO read → Default maths → main thread bind), failure points, and the explicit
 statement that the flow has no external dependencies and writes nothing.
 
-### 📁 SkunkOps/atlas/failure-patterns.md
+### 📁 atlas/failure-patterns.md
 
 Both patterns were **found by the tests written for this feature**, not by inspection:
 
@@ -770,10 +879,10 @@ Report: `05_tests/reports/TEST_REPORT_2026-09-09_22-22-34.md`
 ## Files Modified
 
 ```
-M  SkunkOps/atlas/system.md                                   (+4, -2)
-M  SkunkOps/atlas/components.md                               (+141)
-M  SkunkOps/atlas/flows.md                                    (+98)
-M  SkunkOps/atlas/failure-patterns.md                         (+113)
+M  atlas/system.md                                            (+4, -2)
+M  atlas/components.md                                        (+141)
+M  atlas/flows.md                                             (+98)
+M  atlas/failure-patterns.md                                  (+113)
 M  01_requirements/DrivingCoach_SRS_v1.md                     (+29)
 M  01_requirements/TRACEABILITY_MATRIX.md                     (+22, -3)
 M  docs/USER_MANUAL.md                                        (+79, -1)
@@ -870,7 +979,7 @@ completed five laps; the captured start/finish line lay parallel to the directio
 +          direction of travel at the first accepted crossing of the session shall be rejected. |
 ```
 
-#### 📁 `SkunkOps/atlas/failure-patterns.md`
+#### 📁 `atlas/failure-patterns.md`
 
 ```diff
 + ## Pattern: A Direction Derived From Points Closer Than the Measurement Error
@@ -915,9 +1024,9 @@ The generalisation recorded, which outlives this incident:
 
 ```
 M  01_requirements/DrivingCoach_SRS_v1.md                      (+39, -14)
-M  SkunkOps/atlas/components.md                                (+128, -25)
-M  SkunkOps/atlas/failure-patterns.md                          (+117)
-M  SkunkOps/atlas/flows.md                                     (+45, -12)
+M  atlas/components.md                                         (+128, -25)
+M  atlas/failure-patterns.md                                   (+117)
+M  atlas/flows.md                                              (+45, -12)
 M  docs/USER_MANUAL.md                                         (+41, -16)
 M  05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md       (+67, -9)
 M  app/src/main/java/com/drivingcoach/lap/LocalLapDetector.kt  (+443, -107)
@@ -953,13 +1062,13 @@ testing, and finding F4 of its RCA
 
 | Artifact | Status | Changes |
 |----------|--------|---------|
-| `SkunkOps/atlas/components.md` | ✅ Updated | +28 / -12 (warm-up lifetime, two new classes, revised design notes and failure modes) |
-| `SkunkOps/atlas/flows.md` | ✅ Updated | +38 / -6 (new Home → Track Setup handover flow; stop conditions rewritten) |
-| `SkunkOps/atlas/failure-patterns.md` | ✅ Updated | +122 (2 new patterns) |
+| `atlas/components.md` | ✅ Updated | +28 / -12 (warm-up lifetime, two new classes, revised design notes and failure modes) |
+| `atlas/flows.md` | ✅ Updated | +38 / -6 (new Home → Track Setup handover flow; stop conditions rewritten) |
+| `atlas/failure-patterns.md` | ✅ Updated | +122 (2 new patterns) |
 | `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +9 / -3 (TS-17 and TS-18 amended, 5 new requirements) |
 | `docs/USER_MANUAL.md` | ✅ Updated | +31 / -8 (§3.0 corrected, new troubleshooting entry) |
 | `05_tests/L4_SYS5_acceptance/30_TRACK_SETUP_TESTS.md` | ✅ Updated | +65 / -6 (2 new checklists, TS-00b corrected) |
-| `SkunkOps/atlas/system.md` | ⏭️ No change | No dependency, service or manifest change — `lifecycle-process` was trialled and removed |
+| `atlas/system.md` | ⏭️ No change | No dependency, service or manifest change — `lifecycle-process` was trialled and removed |
 
 ### New Requirement IDs
 
@@ -999,7 +1108,7 @@ TS-00b was corrected: step 4 asserted that leaving Home ends the warm-up, which 
 +   ... It shall **not** stop merely because the Home screen is no longer visible. |
 ```
 
-#### 📁 SkunkOps/atlas/failure-patterns.md
+#### 📁 atlas/failure-patterns.md
 
 **Added: FP-LIFECYCLE-SCOPE — Resource Scoped to the Wrong Lifecycle**
 
@@ -1016,7 +1125,7 @@ releases the resource" is in fact asserting the bug.
 The silent counterpart: a cached or retained position becomes Point A, offsetting every lap in
 the session by the same amount while the times still look plausible.
 
-#### 📁 SkunkOps/atlas/flows.md
+#### 📁 atlas/flows.md
 
 **Added: "Flow: Home → Track Setup handover"** — this handover was documented nowhere before
 this incident, which is part of why the defect was invisible. Records the ordering that made it
@@ -1050,9 +1159,9 @@ Report: `05_tests/reports/TEST_REPORT_2026-09-07_22-53-25.md`
 ### Files Modified
 
 ```
-M  SkunkOps/atlas/components.md                             (+28, -12)
-M  SkunkOps/atlas/flows.md                                  (+38, -6)
-M  SkunkOps/atlas/failure-patterns.md                       (+122, -0)
+M  atlas/components.md                                      (+28, -12)
+M  atlas/flows.md                                           (+38, -6)
+M  atlas/failure-patterns.md                                (+122, -0)
 M  01_requirements/DrivingCoach_SRS_v1.md                   (+9, -3)
 M  docs/USER_MANUAL.md                                      (+31, -8)
 M  05_tests/L4_SYS5_acceptance/30_TRACK_SETUP_TESTS.md      (+65, -6)
@@ -1140,9 +1249,9 @@ M  app/src/main/res/layout/fragment_profile.xml
 M  app/src/main/res/values/strings.xml                                   (+23)
 M  01_requirements/DrivingCoach_SRS_v1.md                                (+45, -7)
 M  01_requirements/TRACEABILITY_MATRIX.md                                (+22, -6)
-M  SkunkOps/atlas/components.md                                          (+85, -4)
-M  SkunkOps/atlas/flows.md                                               (+98, -4)
-M  SkunkOps/atlas/failure-patterns.md                                    (+62)
+M  atlas/components.md                                                   (+85, -4)
+M  atlas/flows.md                                                        (+98, -4)
+M  atlas/failure-patterns.md                                             (+62)
 M  docs/USER_MANUAL.md                                                   (+70, -18)
 ```
 
@@ -1224,9 +1333,9 @@ M  app/src/main/java/com/drivingcoach/ui/session/SessionResultFragment.kt  (+130
 M  app/src/main/res/values/strings.xml                                     (+11)
 M  app/src/androidTest/java/com/drivingcoach/di/TestNetworkModule.kt       (+12, -1)
 M  05_tests/infra/scripts/start-emulator.sh                                (+15)
-M  SkunkOps/atlas/components.md                                            (+63)
-M  SkunkOps/atlas/flows.md                                                 (+87)
-M  SkunkOps/atlas/failure-patterns.md                                      (+86)
+M  atlas/components.md                                                     (+63)
+M  atlas/flows.md                                                          (+87)
+M  atlas/failure-patterns.md                                               (+86)
 M  01_requirements/DrivingCoach_SRS_v1.md                                  (+5)
 M  01_requirements/TRACEABILITY_MATRIX.md                                  (+1)
 M  docs/USER_MANUAL.md                                                     (+26)
@@ -1298,9 +1407,9 @@ with `repeatOnLifecycle(STARTED)`; guarded by `TrackSetupResubscribeTest`.
 ### Files Modified
 
 ```
-M  SkunkOps/atlas/components.md                              (+78)
-M  SkunkOps/atlas/flows.md                                   (+103, -13)
-M  SkunkOps/atlas/failure-patterns.md                        (+57)
+M  atlas/components.md                                       (+78)
+M  atlas/flows.md                                            (+103, -13)
+M  atlas/failure-patterns.md                                 (+57)
 M  01_requirements/DrivingCoach_SRS_v1.md                    (+6, -1)
 M  01_requirements/TRACEABILITY_MATRIX.md                    (+9, -3)
 M  docs/USER_MANUAL.md                                       (+55, -8)
@@ -1393,9 +1502,9 @@ M  app/src/main/java/com/drivingcoach/ui/MainActivity.kt                    (+17
 M  app/src/main/java/com/drivingcoach/ui/splash/SplashViewModel.kt          (+86, -3)
 M  app/src/main/java/com/drivingcoach/ui/splash/SplashTimings.kt            (+23, -2)
 M  app/src/test/java/com/drivingcoach/ui/splash/SplashViewModelTest.kt      (+313, -5)
-M  SkunkOps/atlas/failure-patterns.md                                       (+69)
-M  SkunkOps/atlas/components.md                                             (+71, -3)
-M  SkunkOps/atlas/flows.md                                                  (+39, -2)
+M  atlas/failure-patterns.md                                                (+69)
+M  atlas/components.md                                                      (+71, -3)
+M  atlas/flows.md                                                           (+39, -2)
 M  01_requirements/DrivingCoach_SRS_v1.md                                   (+4, -1)
 M  docs/USER_MANUAL.md                                                      (+30, -5)
 M  05_tests/L4_SYS5_acceptance/20_ONBOARDING_TESTS.md                       (+55)
@@ -1471,9 +1580,9 @@ states explicitly that a tap is *never required* to proceed.
 M  01_requirements/DrivingCoach_SRS_v1.md                    (+4,  -1)
 M  05_tests/L2_SWE5_integration/README.md                    (+38, -1)
 M  05_tests/L4_SYS5_acceptance/20_ONBOARDING_TESTS.md        (+47, -0)
-M  SkunkOps/atlas/components.md                              (+67, -3)
-M  SkunkOps/atlas/flows.md                                   (+22, -2)
-M  SkunkOps/atlas/system.md                                  (+6,  -3)
+M  atlas/components.md                                       (+67, -3)
+M  atlas/flows.md                                            (+22, -2)
+M  atlas/system.md                                           (+6,  -3)
 M  docs/USER_MANUAL.md                                       (+23, -3)
 M  app/build.gradle.kts                                      (+3,  -0)
 M  app/src/main/java/.../ui/splash/SplashViewModel.kt        (+59, -1)
@@ -1607,7 +1716,7 @@ package: name='com.drivingcoach' versionCode='208' versionName='2.8' ...
 
 ### Detailed Changes
 
-#### 📁 SkunkOps/atlas/components.md
+#### 📁 atlas/components.md
 
 **Added Section: Brand Asset Pipeline (Helmet Emblem)** — render sites, density
 buckets, six invariants with thresholds, six failure modes with their detecting
@@ -1624,7 +1733,7 @@ test, and signals.
 + | Brand Asset Pipeline | LOW | Deformed or missing emblem on all branded surfaces |
 ```
 
-#### 📁 SkunkOps/atlas/failure-patterns.md
+#### 📁 atlas/failure-patterns.md
 
 **Added Pattern: Brand Asset Geometry (Unverified Static Artwork)** — the first
 static-asset pattern in the Atlas. Its defining signal is that there is **no
@@ -1635,7 +1744,7 @@ Records the generalisation that cost two incidents:
 An assertion that cannot fail when the defect is present is not coverage.
 ```
 
-#### 📁 SkunkOps/atlas/system.md
+#### 📁 atlas/system.md
 
 **Added:** brand artwork layout block — the five WebP buckets, the deliberate
 absence of `drawable/ic_helmet_emblem.xml`, the L1 gate package, test fixtures,
@@ -1701,10 +1810,10 @@ because the automated L2 suite could not see this defect.
 ### Files Modified
 
 ```
-M  SkunkOps/atlas/system.md                                     (+18, -0)
-M  SkunkOps/atlas/components.md                                 (+84, -0)
-M  SkunkOps/atlas/flows.md                                      (+7, -0)
-M  SkunkOps/atlas/failure-patterns.md                           (+95, -0)
+M  atlas/system.md                                              (+18, -0)
+M  atlas/components.md                                          (+84, -0)
+M  atlas/flows.md                                               (+7, -0)
+M  atlas/failure-patterns.md                                    (+95, -0)
 M  01_requirements/DrivingCoach_SRS_v1.md                       (+2, -0)
 M  01_requirements/TRACEABILITY_MATRIX.md                       (+5, -3)
 M  05_tests/L1_SWE4_unit/README.md                              (+28, -0)
@@ -1796,10 +1905,10 @@ The injected block was then fully reverted (`SplashFragment.kt` verified clean).
  A app/src/androidTest/java/com/drivingcoach/StartupBackStackTest.kt              (2 tests, UI-05)
  A app/src/androidTest/java/com/drivingcoach/ui/home/HomeHeroTest.kt              (4 tests, UI-06)
  M 01_requirements/TRACEABILITY_MATRIX.md
- M SkunkOps/atlas/system.md
- M SkunkOps/atlas/components.md
- M SkunkOps/atlas/flows.md
- M SkunkOps/atlas/failure-patterns.md
+ M atlas/system.md
+ M atlas/components.md
+ M atlas/flows.md
+ M atlas/failure-patterns.md
  M 05_tests/L2_SWE5_integration/README.md
  M docs/SYNC_REPORT.md
 ```
@@ -1814,22 +1923,22 @@ The injected block was then fully reverted (`SplashFragment.kt` verified clean).
 - New "Coverage caveat — `@Ignore`d L2 classes" callout above the matrix, naming the eight
   rows whose ✅ is backed by a skipped class and giving the XML-parsing verification command.
 
-**`SkunkOps/atlas/system.md`**
+**`atlas/system.md`**
 - Repository-layout `di/` entry now enumerates the split modules and states *why*
   (per-binding `@UninstallModules` in tests).
 
-**`SkunkOps/atlas/components.md`**
+**`atlas/components.md`**
 - Preferences DataStore component: key code area `di/AppModule.kt` → `di/DataStoreModule.kt`.
 - Branded Startup component: new **Test Hooks** section — a goal→uninstall→substitute table
   plus the "do not use Espresso for UI-04" warning.
 - New observable signal row: `MainThreadResponsivenessProbe.worstLatencyMs`.
 
-**`SkunkOps/atlas/flows.md`**
+**`atlas/flows.md`**
 - Timing-contract table: `SplashTimings` now injected via `SplashModule` (was `AppModule`).
 - New **Automated Verification (L2)** section mapping each stage of the startup flow to its
   instrumented test and SRS ID.
 
-**`SkunkOps/atlas/failure-patterns.md`**
+**`atlas/failure-patterns.md`**
 - *DataStore ANR on Startup* → **Regression Guard** rewritten: L1 + L2 split, the 2000 ms
   latency budget, and the Espresso falsification evidence.
 - Confidence rationale extended to "empirically falsified".
@@ -1988,7 +2097,7 @@ The pattern is now marked **✅ MITIGATED** and downgraded from P1 to Closed.
 
 ### Detailed Changes
 
-#### 📁 SkunkOps/atlas/system.md
+#### 📁 atlas/system.md
 
 ```diff
   ├── recording/
@@ -2002,7 +2111,7 @@ The pattern is now marked **✅ MITIGATED** and downgraded from P1 to Closed.
 + | ~~**Blocking DataStore read**~~ | ✅ RESOLVED v2.8 | Was `runBlocking` … | Replaced by async `SplashViewModel` |
 ```
 
-#### 📁 SkunkOps/atlas/components.md
+#### 📁 atlas/components.md
 
 **Added Section: App Startup / Branded Loading Screen** (criticality HIGH) — key code areas,
 dependencies, the 5-stage progress model, failure modes, observable signals.
@@ -2010,7 +2119,7 @@ dependencies, the 5-stage progress model, failure modes, observable signals.
 **Added Section: Home Brand Hero (Collapsing Toolbar)** (criticality LOW) — layout structure,
 scroll/alpha behaviour table, failure modes.
 
-#### 📁 SkunkOps/atlas/flows.md
+#### 📁 atlas/flows.md
 
 **Rewrote: Flow: App Startup & Navigation Resolution**
 
@@ -2028,7 +2137,7 @@ scroll/alpha behaviour table, failure modes.
 Added a **Timing Contract** table and rewrote Async Boundaries, Failure Points,
 Retry/Recovery and Operational Signals.
 
-#### 📁 SkunkOps/atlas/failure-patterns.md
+#### 📁 atlas/failure-patterns.md
 
 ```diff
 - ## Pattern: DataStore ANR on Startup
@@ -2086,10 +2195,10 @@ profile button, and the content below it.
 ### Files Modified
 
 ```
-M  SkunkOps/atlas/system.md                          (+6, -3)
-M  SkunkOps/atlas/components.md                      (+141, -0)
-M  SkunkOps/atlas/flows.md                           (+74, -16)
-M  SkunkOps/atlas/failure-patterns.md                (+80, -45)
+M  atlas/system.md                                   (+6, -3)
+M  atlas/components.md                               (+141, -0)
+M  atlas/flows.md                                    (+74, -16)
+M  atlas/failure-patterns.md                         (+80, -45)
 M  01_requirements/DrivingCoach_SRS_v1.md            (+16, -2)
 M  01_requirements/TRACEABILITY_MATRIX.md            (+12, -3)
 M  docs/USER_MANUAL.md                               (+49, -5)
@@ -2169,7 +2278,7 @@ A  app/src/test/java/com/drivingcoach/ui/splash/SplashViewModelTest.kt
 M  .github/skills/trillian-docs-sync.md     (+18, -8)
 M  .github/agents/SW_dev_agent.md           (+65, -25)
 M  .github/agents/RCA_agent.md              (+35, -0)
-M  SkunkOps/atlas/system.md                 (+5, -0)
+M  atlas/system.md                          (+5, -0)
 ```
 
 ---
@@ -2315,7 +2424,7 @@ Contains:
 M  app/src/main/java/.../service/TelemetryForegroundService.kt  (+17, -2)
 M  app/src/androidTest/java/.../service/TelemetryForegroundServiceTest.kt  (+53)
 M  app/src/androidTest/java/com/drivingcoach/EndToEndTest.kt  (+2, -2)
-M  SkunkOps/atlas/components.md  (+12)
+M  atlas/components.md           (+12)
 ```
 
 ### Design Rationale
@@ -2409,8 +2518,8 @@ M  app/src/main/java/.../data/telemetry/TelemetryFileWriter.kt     (+15)
 M  app/src/main/java/.../service/TelemetryForegroundService.kt     (+14)
 M  app/src/main/java/.../DrivingCoachApp.kt                        (+45)
 M  app/src/test/java/.../TelemetryFileWriterIntegrationTest.kt     (+75)
-M  SkunkOps/atlas/components.md                                     (+12)
-M  SkunkOps/atlas/failure-patterns.md                               (+85)
+M  atlas/components.md                                              (+12)
+M  atlas/failure-patterns.md                                        (+85)
 ```
 
 ### Related Incident
@@ -2495,7 +2604,7 @@ M  app/src/main/java/.../ui/home/HomeViewModel.kt          (+48)
 M  app/src/main/java/.../ui/home/HomeFragment.kt           (+55)
 A  app/src/test/java/.../ui/home/HomeViewModelTest.kt      (+165)
 M  app/build.gradle.kts                                     (+5)
-M  SkunkOps/atlas/components.md                            (+18)
+M  atlas/components.md                                     (+18)
 M  01_requirements/DrivingCoach_SRS_v1.md                  (+15)
 M  docs/USER_MANUAL.md                                     (+24)
 ```
@@ -2574,7 +2683,7 @@ M  03_incidents/08_.../08_RCA_track_name_lost_in_navigation.md (+25)
 
 ```
 M  01_requirements/DrivingCoach_SRS_v1.md           (+18)
-M  SkunkOps/atlas/components.md                    (+25, -15)
+M  atlas/components.md                             (+25, -15)
 M  03_incidents/06_coaching_incidents/06_RCA_invalid_sector_coaching.md (+28)
 ```
 
@@ -2607,8 +2716,8 @@ M  03_incidents/06_coaching_incidents/06_RCA_invalid_sector_coaching.md (+28)
 ### Files Modified
 
 ```
-M  SkunkOps/atlas/components.md         (+55)
-M  SkunkOps/atlas/flows.md              (+85)
+M  atlas/components.md                  (+55)
+M  atlas/flows.md                       (+85)
 M  01_requirements/SRS_v1.md            (+7, -2)
 M  docs/USER_MANUAL.md                  (+22, -6)
 ```
@@ -2655,9 +2764,9 @@ M  docs/USER_MANUAL.md                  (+22, -6)
 ### Files Modified
 
 ```
-M  SkunkOps/atlas/system.md
-M  SkunkOps/atlas/components.md
-M  SkunkOps/atlas/flows.md
+M  atlas/system.md
+M  atlas/components.md
+M  atlas/flows.md
 M  01_requirements/DrivingCoach_SRS_v1.md
 M  docs/USER_MANUAL.md
 ```
