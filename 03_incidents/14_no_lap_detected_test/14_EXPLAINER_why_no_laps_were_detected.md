@@ -206,6 +206,6 @@ sentence to argue with before you ship it.
 | The evidence, the ruled-out hypotheses, residual risk | [`14_RCA_start_point_fixed_while_stationary.md`](14_RCA_start_point_fixed_while_stationary.md) |
 | What changed, and how it was validated | [`14_Provided_Fix_start_point_projected_onto_driven_path.md`](14_Provided_Fix_start_point_projected_onto_driven_path.md) |
 | The original report and raw telemetry | [`14_no_laps_detected_after_3_laps.md`](14_no_laps_detected_after_3_laps.md) |
-| The reusable pattern | `FP-STATIONARY-POSITION-BIAS` in `SkunkOps/atlas/failure-patterns.md` |
+| The reusable pattern | `FP-STATIONARY-POSITION-BIAS` in `atlas/failure-patterns.md` |
 | The requirements | LD-02, LD-04, LD-17, LD-18 in `01_requirements/DrivingCoach_SRS_v1.md` |
 | The regression fixture | `app/src/test/resources/lapfixtures/ines3/` |

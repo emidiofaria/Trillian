@@ -1,5 +1,5 @@
-# BMW Driving Coach — System Requirements Specification
-**Document ID:** BMW-DC-SRS-001  
+# Trillian — Driving Coach SRS
+**Document ID:** DC-SRS-001  
 **Version:** 1.0  
 **Status:** Approved — Ready for coding  
 **Platform:** Android (phone-only)  
@@ -102,7 +102,7 @@ These decisions are locked. All requirements and implementation prompts reflect 
 | ID | Requirement |
 |---|---|
 | UM-18 | The Profile screen shall display the user's display name, total session count, total lap count, and overall best lap time. *(Amended for V1: the email address is not displayed, because V1 has no account and therefore no email. The V2 restoration of accounts shall re-introduce it.)* |
-| UM-19 | The user avatar shall be a circle displaying the first two letters of the display name on a BMW blue background. |
+| UM-19 | The user avatar shall be a circle displaying the first two letters of the display name on a brand blue (`#1C69D4`) background. |
 
 ---
 
@@ -207,7 +207,7 @@ authenticated account rather than the sole source of identity.
 | SR-07 | The device screen shall remain on during an active recording session using `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON`. The flag shall be cleared when the screen is paused. |
 | SR-08 | If `ACCESS_FINE_LOCATION` permission is not granted when recording attempts to start, the service shall stop itself and the app shall show: 'Location permission is required to record'. |
 | SR-09 | Recording shall continue when the app is sent to the background via a foreground service with `foregroundServiceType=location`. |
-| SR-10 | The foreground service notification shall display: title 'BMW Driving Coach', content text 'Recording — MM:SS', updating every second. |
+| SR-10 | The foreground service notification shall display: title 'Driving Coach — Recording', content text 'MM:SS', updating every second. |
 | SR-11 | If GPS hardware is not available on the device, the foreground service shall stop itself and post a state indicating GPS is unavailable. |
 
 ---
@@ -410,7 +410,7 @@ no network connection of any kind.
 |---|---|
 | SH-01 | The Session Result screen shall include a share icon in the toolbar. |
 | SH-02 | Tapping the share icon shall generate a 1080×1080 px share card as an Android `Bitmap`. |
-| SH-03 | The share card shall contain: 'BMW DRIVING COACH' branding text, best lap time (large, BMW blue, monospace), 'BEST LAP' label, track name, session date, consistency score, and a BMW blue bottom border line. |
+| SH-03 | The share card shall contain: 'Driving Coach' branding text, best lap time (large, brand blue, monospace), 'BEST LAP' label, track name, session date, consistency score, and a brand blue bottom border line. |
 | SH-04 | The bitmap shall be saved to the app's FileProvider cache directory and shared via `Intent.ACTION_SEND` with MIME type `image/png` through the Android Share Sheet. |
 | SH-05 | The FileProvider authority shall be `${applicationId}.fileprovider`. |
 | SH-06 | Share is a V1 placeholder for future social features. No social backend infrastructure is required in V1. |

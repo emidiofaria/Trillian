@@ -165,7 +165,7 @@ Plan-first methodology. Before ANY implementation:
 **Location:** [`.github/skills/trillian-docs-sync.md`](.github/skills/trillian-docs-sync.md)
 
 Keeps documentation synchronized with code changes. Updates:
-- Atlas architecture docs (`SkunkOps/atlas/`)
+- Atlas architecture docs (`atlas/`)
 - Requirements (`01_requirements/`)
 - User Manual (`docs/USER_MANUAL.md`)
 - Acceptance tests (`05_tests/L4_SYS5_acceptance/`)
@@ -261,7 +261,7 @@ Trillian/
 ├── 05_tests/             # Test strategy, L4 checklists, infra scripts,
 │                         #   coverage-map.tsv and scope-map.tsv
 ├── releases/             # v<version>-<slug>/ — APK + its test report + notes
-└── SkunkOps/atlas/       # Living architecture documentation
+└── atlas/                # Living architecture documentation
 ```
 
 ---

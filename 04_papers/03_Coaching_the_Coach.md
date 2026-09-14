@@ -382,7 +382,7 @@ Everything is traceable. Everything is documented. The process survives even whe
 | RCA #06: Invalid Sector Coaching | `03_incidents/06_coaching_incidents/` |
 | RCA #08: Track Name Lost | `03_incidents/08_track_name_not_saved/` |
 | New Requirements (OC-01 to OC-10) | `01_requirements/DrivingCoach_SRS_v1.md` |
-| Component Update | `SkunkOps/atlas/components.md` |
+| Component Update | `atlas/components.md` |
 | Sync Report | `docs/SYNC_REPORT.md` |
 | GPX Simulator Guide | `test_018_GPX_simulator/` |
 

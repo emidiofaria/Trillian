@@ -82,7 +82,7 @@ Rejected alternatives and why:
 
 ### Documentation
 
-`SRS_v1.md`, `SkunkOps/atlas/{components,flows,failure-patterns}.md`,
+`SRS_v1.md`, `atlas/{components,flows,failure-patterns}.md`,
 `docs/USER_MANUAL.md`, `docs/SYNC_REPORT.md`, `05_tests/coverage-map.tsv`.
 
 ---

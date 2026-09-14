@@ -64,7 +64,7 @@ Animations must be off. `05_tests/infra/scripts/start-emulator.sh` now sets
 `window_animation_scale`, `transition_animation_scale` and `animator_duration_scale` to `0`;
 without this, any screen with an indeterminate `ProgressBar` deadlocks the suite.
 
-See `SkunkOps/atlas/failure-patterns.md` → **FP-TEST-HANG** and **FP-TEST-WORKMANAGER**.
+See `atlas/failure-patterns.md` → **FP-TEST-HANG** and **FP-TEST-WORKMANAGER**.
 
 ---
 

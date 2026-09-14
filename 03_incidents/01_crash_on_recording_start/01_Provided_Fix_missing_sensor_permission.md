@@ -53,7 +53,7 @@ EFFECT
 |------|-------------|-------------|
 | `app/src/main/AndroidManifest.xml` | Modified | Added `HIGH_SAMPLING_RATE_SENSORS` permission declaration |
 | `app/src/main/java/com/drivingcoach/service/TelemetryForegroundService.kt` | Modified | Added try-catch with fallback around sensor registration |
-| `SkunkOps/atlas/failure-patterns.md` | Modified | Added new failure pattern for future RCA acceleration |
+| `atlas/failure-patterns.md` | Modified | Added new failure pattern for future RCA acceleration |
 
 ---
 

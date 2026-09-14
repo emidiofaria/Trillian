@@ -240,7 +240,7 @@ Corollary, and the reason this took so long to find:
 > **An internal consistency check is not a validity check.** The start line was
 > perfectly self-consistent, and wrong.
 
-Recorded as `FP-STATIONARY-POSITION-BIAS` in `SkunkOps/atlas/failure-patterns.md`.
+Recorded as `FP-STATIONARY-POSITION-BIAS` in `atlas/failure-patterns.md`.
 
 ---
 
