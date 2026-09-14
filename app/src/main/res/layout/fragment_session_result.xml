@@ -88,7 +88,7 @@
             app:tabGravity="fill"
             app:tabIndicatorColor="@color/colorPrimary"
             app:tabIndicatorFullWidth="false"
-            app:tabMode="fixed"
+            app:tabMode="auto"
             app:tabSelectedTextColor="@color/colorPrimary"
             app:tabTextAppearance="@style/TextAppearance.DrivingCoach.Tab"
             app:tabTextColor="@color/colorOnSurfaceVariant" />

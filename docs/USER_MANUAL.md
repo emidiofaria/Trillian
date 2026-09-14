@@ -340,7 +340,72 @@ Choose Fast for a quick look, Detailed for precise analysis.
 
 **Note:** Speed charts are processed locally from your telemetry file — no internet required!
 
-### 5.4 Managing Sessions
+### 5.4 The Analysis Tab
+
+The **Analysis** tab is your post-session debrief — the sort of thing a race engineer would hand
+you when you climb out of the car. Everything on it is worked out on your phone from the session
+you just drove, so it works with no signal at all.
+
+**At the top: your session at a glance**
+
+| | |
+|---|---|
+| **Total distance** | How far you drove, start to finish |
+| **Session duration** | How long the recording lasted |
+| **Max speed** | Your fastest moment of the day |
+| **Average speed** | Averaged over the *whole* recording — including any time you spent sitting still, so it will look low |
+| **Best lap** | Your quickest lap time |
+
+**The track map**
+
+Below the numbers is a map of the track — drawn from your own GPS trace, not downloaded from
+anywhere:
+
+- The **colour of the line shows your speed**: blue where you were slowest, through amber, to
+  green where you were fastest.
+- **Red stretches are where you braked.**
+- **T1, T2, T3…** mark the corners the app found, numbered in the order you drove through them.
+- A **gold marker** shows the start/finish line, if you set one up.
+
+**Choosing which lap to look at**
+
+Under the map is a row of lap chips. Your best lap is selected to begin with. Tap any other lap and
+the map, the corner list and the braking list are all redrawn for that lap. The line above the map
+always tells you which lap you're looking at.
+
+**Corners**
+
+For every corner on the selected lap you get the direction, how many degrees you turned, and your
+**apex speed** — the slowest point through the corner. That's the number to watch: carrying more
+speed at the apex is usually where lap time hides.
+
+> The corner numbers are the app's own, based on the order you pass them. They won't always match
+> the numbering on the circuit's official map.
+
+**Braking zones**
+
+For every place you braked hard: the speed you came in at, the speed you got down to, how much
+speed you shed, how long you were on the brakes, and the **peak g**.
+
+> These figures come from how quickly your GPS speed drops, not from the phone's motion sensors.
+> That's deliberate: what those sensors read depends entirely on how the phone happens to be
+> mounted, so they can't be trusted to tell forwards from sideways. GPS speed doesn't care which
+> way up your phone is.
+
+**Speed over the session**
+
+At the bottom, a graph of your speed for the entire session — every lap, in and out laps included.
+Useful for spotting the lap where you finally got it right, or the one where traffic ruined it.
+
+**If the tab looks empty**
+
+- *"The telemetry file for this session is no longer on this device"* — the recording has been
+  deleted from the phone. Nothing can be recovered, but your lap times are safe.
+- *"This session has too little telemetry to analyse"* — the recording is genuinely too short.
+- *"Reference: whole session"* — no usable lap was found, so the analysis covers everything you
+  recorded rather than a single lap.
+
+### 5.5 Managing Sessions
 
 You can rename or delete sessions from the Home screen:
 
@@ -532,6 +597,26 @@ The app no longer uses the direction of the line you capture — only where it i
 longer happen. If you saw this on an older version, re-recording on 2.94 or later will work; the
 old session cannot be recovered.
 
+**Improved in version 2.96:** The app now tells you what it actually saw. Instead of "Complete at
+least 2 laps" — which was unhelpful if you had just driven five — it reports how many times you
+went past the start/finish and how far to the side you were.
+
+It also corrects itself where it can. Your phone is least accurate at placing itself when it is
+**standing still**, which is exactly when you capture the start/finish. It can record that point
+10–20 metres to one side of where you were actually standing — and because both taps happen
+within seconds of each other, the line still looks perfectly sensible. On one real session the
+start/finish was recorded 16 metres off the track; the driver completed three laps and the app
+reported none.
+
+If the app finds no laps, it now checks whether moving the start/finish onto the path you actually
+drove would find them, and uses that only if it is a small correction (under 20 metres) and only if
+it genuinely produces laps. Your recorded sessions are unaffected where detection already worked.
+
+**What you can do about it:** stand on the part of the track you actually drive when you capture,
+wait for the GPS dot to go green, and give it a few seconds to settle before tapping. If the app
+still finds no laps, the message will now tell you how far off it was, so you know whether to
+re-capture or whether something else went wrong.
+
 ### My Lap Times Are About Half What I Drove
 
 **Symptoms:** Twice as many laps as you completed, each about half the time you expected. No
@@ -604,6 +689,18 @@ A: We analyze your telemetry data — speed, acceleration, position — and comp
 
 **Q: Is my data private?**  
 A: Yes. In this version your sessions never leave your phone unless you deliberately share or export them, and the name you enter is stored locally only. We don't share individual data with third parties.
+
+**Q: The corner numbers in the Analysis tab don't match the circuit's map. Why?**  
+A: Trillian works out corners from the way your car actually changed direction, and numbers them in the order you drove through them. It has no knowledge of the circuit's official layout — a chicane the circuit calls one corner may show up as two, and a gentle kink they number may not register at all.
+
+**Q: Does the Analysis tab use my phone's motion sensors?**  
+A: No. The g figures come from how fast your GPS speed drops. Your phone's accelerometer measures whatever direction the phone is pointing, which depends on your mount — so it can't reliably tell braking from cornering. GPS speed is independent of how the phone sits in the car.
+
+**Q: Why is my average speed so low?**  
+A: It's the average over the entire recording, including the time you spent stationary in the paddock or queuing at the pit exit. It's a session statistic, not a driving one — look at the best lap and the speed graph for that.
+
+**Q: Does the Analysis tab need internet?**  
+A: No. The map is drawn from your own GPS trace, not downloaded, so the whole tab works in flight mode.
 
 ---
 

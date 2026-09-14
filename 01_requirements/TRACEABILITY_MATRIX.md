@@ -2,7 +2,15 @@
 
 Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test cases.
 
-**Last Updated:** 2026-09-03 (updated by trillian-docs-sync — driver profile DR-01 to DR-08 added and fully covered; UM-01 to UM-17 deferred to V2)
+> **This document is now the human narrative; the machine truth is
+> [`05_tests/coverage-map.tsv`](../05_tests/coverage-map.tsv).** Every claim in that file is
+> resolved against the actual test results each time the HTML report is generated, so a claim
+> naming a test that did not run, or no longer exists, is reported rather than counted. If the
+> two disagree, the report is right and this table is stale — see section 3 and 4 of any
+> `TEST_REPORT.html`. The percentages below are hand-maintained and should be read as
+> intent, not evidence.
+
+**Last Updated:** 2026-09-09 (updated by trillian-docs-sync — session analysis AS-01 to AS-17 added; AS-05 partially covered, rendering verified visually at L4)
 
 ---
 
@@ -19,6 +27,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Telemetry Upload (TU) | 13 | 4 | 31% ⚠️ |
 | Lap Detection (LD) | 13 | 1 | 8% ❌ |
 | Lap Comparison (LC) | 15 | 0 | 0% ❌ |
+| Session Analysis (AS) | 17 | 16 | 94% ✅ |
 | AI Coaching (AI) | 14 | 0 | 0% ❌ |
 | Offline Coaching (OC) | 10 | 10 | 100% ✅ |
 | Driver Progression (DP) | 6 | 0 | 0% ⚠️ |
@@ -27,7 +36,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Startup & Branding (UI) | 9 | 9 | 100% ✅ |
 | Non-Functional (NF) | 13 | 1 | 8% ⚠️ |
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
-| **TOTAL** | **~201** | **~60** | **~30%** |
+| **TOTAL** | **~218** | **~76** | **~35%** |
 
 > ⚠️ **Coverage caveat — `@Ignore`d L2 classes.** Eight rows below cite
 > `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or
@@ -103,6 +112,24 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | SM-01 | Delete session | L1 | `HomeViewModelTest` | ✅ |
 | SM-05 | Rename session | L1 | `HomeViewModelTest` | ✅ |
 | SM-07 | Track name validation | L1 | `HomeViewModelTest` | ✅ |
+| **Session Analysis** | | | | |
+| AS-01 | ANALYSIS tab present, fourth, after CHART | L2 | `AnalysisTabTest.analysisTabIsPresentOnTheSessionResultScreen` | ✅ |
+| AS-02 | Distance, duration, max/avg speed, best lap | L1 + L2 | `SessionAnalysisProcessorTest`, `AnalysisTabTest.analysisTabRendersStatsMapAndDerivedTables` | ✅ |
+| AS-03 | Distance is cumulative haversine; average includes standing time | L1 | `SessionAnalysisProcessorTest` | ✅ |
+| AS-04 | Track map drawn from GPS trace, no SDK/tiles/network | L1 + L2 | `TrackPathProjectionTest`, `AnalysisTabTest` | ✅ |
+| AS-05 | Speed gradient, red braking, `T1..Tn`, start/finish marker | L1 | `TrackPathProjectionTest` (path + markers); rendering itself is L4 visual | ⚠️ |
+| AS-06 | Lap chips come from §8 laps; laps never re-derived | L1 + L2 | `SessionAnalysisProcessorTest` (lap windows supplied, not computed), `AnalysisTabTest` | ✅ |
+| AS-07 | Reference defaults to best lap; selection recomputes and is labelled | L2 | `AnalysisTabTest.pickingADifferentLapRebuildsTheReferenceView` | ✅ |
+| AS-08 | Corners from yaw rate > 6 °/s for ≥ 1.5 s, with apex speed | L1 | `SessionAnalysisProcessorTest` | ✅ |
+| AS-09 | Corner numbering by order of passage, caveat stated | L1 | `SessionAnalysisProcessorTest` (naming); caveat text is L4 visual | ✅ |
+| AS-10 | Braking from GPS decel, with peak g and duration | L1 | `SessionAnalysisProcessorTest` | ✅ |
+| AS-11 | Accelerometer explicitly not used, and said so | — | Static string + `SessionAnalysisProcessor` reads no IMU field | 📋 |
+| AS-12 | Braking zone associated with the corner it precedes | L1 | `SessionAnalysisProcessorTest` | ✅ |
+| AS-13 | Speed-vs-time graph spans the whole session | L1 + L2 | `SessionAnalysisProcessorTest`, `AnalysisTabTest` | ✅ |
+| AS-14 | Same result at 1 Hz and 10 Hz | L1 | `SessionAnalysisRateInvarianceTest` | ✅ |
+| AS-15 | No heading below 2 m travel; no corner below 10 km/h | L1 | `SessionAnalysisGuardsTest` | ✅ |
+| AS-16 | Missing file and too-short session reported distinctly | L1 + L2 | `SessionAnalysisGuardsTest`, `AnalysisTabTest.missingTelemetryShowsTheEmptyStateInsteadOfCrashing` | ✅ |
+| AS-17 | Unusable lap window falls back to whole session *and says so* | L1 | `SessionAnalysisGuardsTest.aLapWindowThatDoesNotOverlapTheTelemetryFallsBackToTheWholeSession` | ✅ |
 | **Non-Functional** | | | | |
 | NF-07 | 18K samples benchmark | L1 | `TelemetryFileWriterTest` | ✅ |
 

@@ -32,6 +32,43 @@
     <string name="tab_laps">Laps</string>
     <string name="tab_coach">Coach</string>
     <string name="tab_chart">Chart</string>
+    <string name="tab_analysis">Analysis</string>
+
+    <!-- Analysis tab -->
+    <string name="analysis_stats_title">Session</string>
+    <string name="analysis_stat_distance">Total distance</string>
+    <string name="analysis_stat_duration">Session duration</string>
+    <string name="analysis_stat_max_speed">Max speed</string>
+    <string name="analysis_stat_avg_speed">Average speed</string>
+    <string name="analysis_stat_best_lap">Best lap</string>
+    <string name="analysis_avg_speed_note">Average speed is the mean over the whole recording, standing time included.</string>
+    <string name="analysis_map_title">Track</string>
+    <string name="analysis_map_legend">Colour shows speed (slow → fast). Braking zones are red.</string>
+    <string name="analysis_map_content_description">Recorded track outline with %1$d corners marked</string>
+    <string name="analysis_map_empty">No track outline for this session</string>
+    <string name="analysis_laps_title">Laps</string>
+    <string name="analysis_laps_hint">Pick a lap to analyse</string>
+    <string name="analysis_lap_chip">L%1$d · %2$s</string>
+    <string name="analysis_corners_title">Corners</string>
+    <string name="analysis_corners_note">Corners are detected from how the car\'s direction changes, and numbered in the order you pass them. They do not necessarily match the circuit\'s own numbering.</string>
+    <string name="analysis_corner_apex">%1$s km/h apex</string>
+    <string name="analysis_corner_detail">%1$s · %2$s° · t+%3$s</string>
+    <string name="analysis_braking_title">Braking zones</string>
+    <string name="analysis_braking_note">Braking is measured from how quickly GPS speed falls. The phone accelerometer is not used: its axes depend on how the phone is mounted, so they do not reliably track real longitudinal g.</string>
+    <string name="analysis_braking_speeds">%1$s → %2$s km/h</string>
+    <string name="analysis_braking_detail">−%1$s km/h · %2$s g peak · %3$s s</string>
+    <string name="analysis_braking_into">→ %1$s</string>
+    <string name="analysis_speed_title">Speed over the session</string>
+    <string name="analysis_speed_axis">Time (s)</string>
+    <string name="analysis_reference_lap">Reference: %1$s</string>
+    <string name="analysis_reference_whole_session">Reference: whole session (no laps detected)</string>
+    <string name="analysis_turn_left">Left</string>
+    <string name="analysis_turn_right">Right</string>
+    <string name="analysis_empty_no_telemetry">The telemetry file for this session is no longer on this device, so it cannot be analysed.</string>
+    <string name="analysis_empty_too_short">This session has too little telemetry to analyse.</string>
+    <string name="analysis_no_corners">No corners detected on this lap.</string>
+    <string name="analysis_no_braking">No braking zones detected on this lap.</string>
+
     
     <!-- Common -->
     <string name="loading">Loading…</string>
