@@ -1,0 +1,30 @@
+{
+  "exportedAtMs": 1789335037468,
+  "app": {
+    "versionName": "2.94",
+    "versionCode": 294
+  },
+  "device": {
+    "model": "ZTE ZTE Blade A53+",
+    "sdkInt": 31
+  },
+  "session": {
+    "id": 10,
+    "trackName": "Inês 3 - no lap detection",
+    "startedAt": 1789328731638,
+    "endedAt": 1789329082629,
+    "uploadStatus": "FAILED",
+    "processingStatus": "PENDING",
+    "startLine": {
+      "lat1": 41.200443267822266,
+      "lng1": -8.611432075500488,
+      "lat2": 41.20037078857422,
+      "lng2": -8.611417770385742
+    }
+  },
+  "telemetry": {
+    "fileName": "session_10.jsonl",
+    "sizeBytes": 84179
+  },
+  "laps": []
+}

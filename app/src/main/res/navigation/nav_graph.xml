@@ -3,26 +3,83 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/loginFragment">
+    app:startDestination="@id/splashFragment">
+
+    <!-- Branded loading screen: resolves startup state, never stays on the back stack -->
+    <fragment
+        android:id="@+id/splashFragment"
+        android:name="com.drivingcoach.ui.splash.SplashFragment"
+        android:label="Splash"
+        tools:layout="@layout/fragment_splash">
+
+        <action
+            android:id="@+id/action_splash_to_onboarding"
+            app:destination="@id/onboardingFragment"
+            app:popUpTo="@id/splashFragment"
+            app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_splash_to_driver_name"
+            app:destination="@id/driverNameFragment"
+            app:popUpTo="@id/splashFragment"
+            app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_splash_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/splashFragment"
+            app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_splash_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/splashFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
 
     <!-- Onboarding Flow -->
     <fragment
         android:id="@+id/onboardingFragment"
-        android:name="com.bmw.drivingcoach.ui.onboarding.OnboardingFragment"
+        android:name="com.drivingcoach.ui.onboarding.OnboardingFragment"
         android:label="Onboarding"
         tools:layout="@layout/fragment_onboarding">
 
+        <!--
+            Onboarding hands over to driver naming, not straight to Home (SRS ON-04, DR-02).
+            It previously jumped to Home, which meant a first launch and every launch after
+            it took different paths and the app appeared to "forget" the driver.
+        -->
         <action
-            android:id="@+id/action_onboarding_to_home"
+            android:id="@+id/action_onboarding_to_driver_name"
+            app:destination="@id/driverNameFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- First-run local driver identity (SRS DR-01 … DR-08) -->
+    <fragment
+        android:id="@+id/driverNameFragment"
+        android:name="com.drivingcoach.ui.driver.DriverNameFragment"
+        android:label="Driver"
+        tools:layout="@layout/fragment_driver_name">
+
+        <action
+            android:id="@+id/action_driver_name_to_home"
             app:destination="@id/homeFragment"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
     </fragment>
 
-    <!-- Auth Flow -->
+    <!--
+        Auth Flow — V2 placeholder, unreachable in V1.
+
+        Retained rather than deleted so that reinstating Firebase Authentication is a
+        matter of restoring the navigation edges and filling in the fragments, instead of
+        rebuilding the screens from scratch. See SRS UM-01 … UM-17 (deferred to V2).
+    -->
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.bmw.drivingcoach.ui.auth.LoginFragment"
+        android:name="com.drivingcoach.ui.auth.LoginFragment"
         android:label="Login"
         tools:layout="@layout/fragment_login">
 
@@ -39,7 +96,7 @@
 
     <fragment
         android:id="@+id/registerFragment"
-        android:name="com.bmw.drivingcoach.ui.auth.RegisterFragment"
+        android:name="com.drivingcoach.ui.auth.RegisterFragment"
         android:label="Register"
         tools:layout="@layout/fragment_register">
 
@@ -53,9 +110,18 @@
     <!-- Main Flow -->
     <fragment
         android:id="@+id/homeFragment"
-        android:name="com.bmw.drivingcoach.ui.home.HomeFragment"
+        android:name="com.drivingcoach.ui.home.HomeFragment"
         android:label="Home"
         tools:layout="@layout/fragment_home">
+
+        <action
+            android:id="@+id/action_home_to_track_setup"
+            app:destination="@id/trackSetupFragment">
+            <argument
+                android:name="trackName"
+                app:argType="string"
+                android:defaultValue="Unknown Track" />
+        </action>
 
         <action
             android:id="@+id/action_home_to_recording"
@@ -78,15 +144,83 @@
         </action>
     </fragment>
 
+    <!-- Track Setup Flow -->
+    <fragment
+        android:id="@+id/trackSetupFragment"
+        android:name="com.drivingcoach.ui.tracksetup.TrackSetupFragment"
+        android:label="Track Setup"
+        tools:layout="@layout/fragment_track_setup">
+
+        <argument
+            android:name="trackName"
+            app:argType="string"
+            android:defaultValue="Unknown Track" />
+
+        <action
+            android:id="@+id/action_track_setup_to_recording"
+            app:destination="@id/recordingFragment">
+            <argument
+                android:name="sessionId"
+                app:argType="long"
+                android:defaultValue="-1L" />
+            <argument
+                android:name="trackName"
+                app:argType="string"
+                android:defaultValue="Unknown Track" />
+            <argument
+                android:name="startLineLat1"
+                app:argType="float"
+                android:defaultValue="0" />
+            <argument
+                android:name="startLineLng1"
+                app:argType="float"
+                android:defaultValue="0" />
+            <argument
+                android:name="startLineLat2"
+                app:argType="float"
+                android:defaultValue="0" />
+            <argument
+                android:name="startLineLng2"
+                app:argType="float"
+                android:defaultValue="0" />
+        </action>
+    </fragment>
+
     <fragment
         android:id="@+id/recordingFragment"
-        android:name="com.bmw.drivingcoach.ui.recording.RecordingFragment"
+        android:name="com.drivingcoach.ui.recording.RecordingFragment"
         android:label="Recording"
         tools:layout="@layout/fragment_recording">
 
         <argument
             android:name="sessionId"
-            app:argType="long" />
+            app:argType="long"
+            android:defaultValue="-1L" />
+
+        <argument
+            android:name="trackName"
+            app:argType="string"
+            android:defaultValue="Unknown Track" />
+
+        <argument
+            android:name="startLineLat1"
+            app:argType="float"
+            android:defaultValue="0" />
+
+        <argument
+            android:name="startLineLng1"
+            app:argType="float"
+            android:defaultValue="0" />
+
+        <argument
+            android:name="startLineLat2"
+            app:argType="float"
+            android:defaultValue="0" />
+
+        <argument
+            android:name="startLineLng2"
+            app:argType="float"
+            android:defaultValue="0" />
 
         <action
             android:id="@+id/action_recording_to_session_result"
@@ -100,7 +234,7 @@
 
     <fragment
         android:id="@+id/sessionResultFragment"
-        android:name="com.bmw.drivingcoach.ui.session.SessionResultFragment"
+        android:name="com.drivingcoach.ui.session.SessionResultFragment"
         android:label="Session Result"
         tools:layout="@layout/fragment_session_result">
 
@@ -119,7 +253,7 @@
 
     <fragment
         android:id="@+id/lapDetailFragment"
-        android:name="com.bmw.drivingcoach.ui.session.LapDetailFragment"
+        android:name="com.drivingcoach.ui.session.LapDetailFragment"
         android:label="Lap Detail"
         tools:layout="@layout/fragment_lap_detail">
 
@@ -130,8 +264,19 @@
 
     <fragment
         android:id="@+id/profileFragment"
-        android:name="com.bmw.drivingcoach.ui.profile.ProfileFragment"
+        android:name="com.drivingcoach.ui.profile.ProfileFragment"
         android:label="Profile"
-        tools:layout="@layout/fragment_profile" />
+        tools:layout="@layout/fragment_profile">
+
+        <action
+            android:id="@+id/action_profile_to_about"
+            app:destination="@id/aboutFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/aboutFragment"
+        android:name="com.drivingcoach.ui.about.AboutFragment"
+        android:label="About"
+        tools:layout="@layout/fragment_about" />
 
 </navigation>

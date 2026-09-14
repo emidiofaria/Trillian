@@ -8,18 +8,26 @@ plugins {
     jacoco                                // UA-02: coverage enforcement
 }
 
+// Single source of truth for the app version. Release APKs in releases/ are named
+// from this value, so the filename can never disagree with what the app reports.
+val appVersionName = "2.96"
+
+// major*100 + minor keeps codes monotonic across the whole v1.0 -> v2.8 history
+// (1.0 -> 100, 2.8 -> 208) and leaves room for 99 minor releases per major.
+val appVersionCode = appVersionName.split(".").let { it[0].toInt() * 100 + it[1].toInt() }
+
 android {
-    namespace = "com.bmw.drivingcoach"
+    namespace = "com.drivingcoach"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.bmw.drivingcoach"
+        applicationId = "com.drivingcoach"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
-        testInstrumentationRunner = "com.bmw.drivingcoach.HiltTestRunner"
+        testInstrumentationRunner = "com.drivingcoach.HiltTestRunner"
     }
 
     buildTypes {
@@ -46,6 +54,20 @@ android {
 
     buildFeatures {
         viewBinding = true
+        // Required for BuildConfig.VERSION_NAME/VERSION_CODE, consumed by the About screen.
+        // AGP 8 stopped generating BuildConfig unless explicitly asked.
+        buildConfig = true
+    }
+    
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+                .outputFileName = "DrivingCoach-v$appVersionName-$name.apk"
+        }
     }
 }
 
@@ -133,6 +155,7 @@ tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 dependencies {
     // AndroidX Core
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
 
     // Material Design
@@ -163,6 +186,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")
 
+    // Google Play Services - Location (FusedLocationProvider)
+    implementation("com.google.android.gms:play-services-location:21.2.0")
+
     // Retrofit & OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
@@ -187,12 +213,15 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("androidx.work:work-testing:2.9.0")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.test.espresso:espresso-intents:3.6.1")
-    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.test:runner:1.6.1")
+    testImplementation("org.json:json:20231013")  // For org.json.JSONObject in JVM tests
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test:core:1.5.0")
+    androidTestImplementation("androidx.test:core-ktx:1.5.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.5.1")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.work:work-testing:2.9.0")
     androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")

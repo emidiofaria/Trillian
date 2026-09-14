@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Incident ID** | 02 |
-| **Application** | BMW Driving Coach |
+| **Application** | Driving Coach |
 | **Severity** | CRITICAL |
 | **Fix Date** | 2026-05-28 |
 | **Engineer** | Copilot Provide Fix Agent |
@@ -12,7 +12,7 @@
 
 ## Incident Summary
 
-The BMW Driving Coach Android app crashed immediately when a user attempted to start a telemetry recording session on Android 12+ devices. The crash occurred because `TelemetryForegroundService` attempted to register accelerometer and gyroscope sensor listeners using `SENSOR_DELAY_FASTEST` without declaring the required `HIGH_SAMPLING_RATE_SENSORS` permission in `AndroidManifest.xml`.
+The Driving Coach Android app crashed immediately when a user attempted to start a telemetry recording session on Android 12+ devices. The crash occurred because `TelemetryForegroundService` attempted to register accelerometer and gyroscope sensor listeners using `SENSOR_DELAY_FASTEST` without declaring the required `HIGH_SAMPLING_RATE_SENSORS` permission in `AndroidManifest.xml`.
 
 ---
 
@@ -52,8 +52,8 @@ EFFECT
 | File | Change Type | Description |
 |------|-------------|-------------|
 | `app/src/main/AndroidManifest.xml` | Modified | Added `HIGH_SAMPLING_RATE_SENSORS` permission declaration |
-| `app/src/main/java/com/bmw/drivingcoach/service/TelemetryForegroundService.kt` | Modified | Added try-catch with fallback around sensor registration |
-| `SkunkOps/atlas/failure-patterns.md` | Modified | Added new failure pattern for future RCA acceleration |
+| `app/src/main/java/com/drivingcoach/service/TelemetryForegroundService.kt` | Modified | Added try-catch with fallback around sensor registration |
+| `atlas/failure-patterns.md` | Modified | Added new failure pattern for future RCA acceleration |
 
 ---
 

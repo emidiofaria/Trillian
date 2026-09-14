@@ -1,0 +1,30 @@
+{
+  "exportedAtMs": 1788811326628,
+  "app": {
+    "versionName": "2.8",
+    "versionCode": 208
+  },
+  "device": {
+    "model": "ZTE ZTE Blade A53+",
+    "sdkInt": 31
+  },
+  "session": {
+    "id": 5,
+    "trackName": "teste. 3",
+    "startedAt": 1788805155177,
+    "endedAt": 1788805516938,
+    "uploadStatus": "FAILED",
+    "processingStatus": "PENDING",
+    "startLine": {
+      "lat1": 41.20052719116211,
+      "lng1": -8.610971450805664,
+      "lat2": 41.20054244995117,
+      "lng2": -8.611054420471191
+    }
+  },
+  "telemetry": {
+    "fileName": "session_5.jsonl",
+    "sizeBytes": 86952
+  },
+  "laps": []
+}

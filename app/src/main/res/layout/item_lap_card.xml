@@ -31,7 +31,7 @@
         <!-- Lap number -->
         <TextView
             android:id="@+id/lapNumber"
-            style="@style/TextAppearance.BMW.LapNumber"
+            style="@style/TextAppearance.DrivingCoach.LapNumber"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_sm"
@@ -61,7 +61,7 @@
         <!-- Lap time -->
         <TextView
             android:id="@+id/lapTime"
-            style="@style/TextAppearance.BMW.LapTime.Small"
+            style="@style/TextAppearance.DrivingCoach.LapTime.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/spacing_sm"
@@ -72,7 +72,7 @@
         <!-- Delta vs best -->
         <TextView
             android:id="@+id/deltaTime"
-            style="@style/TextAppearance.BMW.Delta"
+            style="@style/TextAppearance.DrivingCoach.Delta"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintBottom_toBottomOf="@id/lapTime"
@@ -101,7 +101,7 @@
                 android:orientation="vertical">
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="S1"
@@ -109,7 +109,7 @@
 
                 <TextView
                     android:id="@+id/sector1Time"
-                    style="@style/TextAppearance.BMW.Delta"
+                    style="@style/TextAppearance.DrivingCoach.Delta"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="12sp"
@@ -124,7 +124,7 @@
                 android:orientation="vertical">
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="S2"
@@ -132,7 +132,7 @@
 
                 <TextView
                     android:id="@+id/sector2Time"
-                    style="@style/TextAppearance.BMW.Delta"
+                    style="@style/TextAppearance.DrivingCoach.Delta"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="12sp"
@@ -147,7 +147,7 @@
                 android:orientation="vertical">
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="S3"
@@ -155,7 +155,7 @@
 
                 <TextView
                     android:id="@+id/sector3Time"
-                    style="@style/TextAppearance.BMW.Delta"
+                    style="@style/TextAppearance.DrivingCoach.Delta"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="12sp"

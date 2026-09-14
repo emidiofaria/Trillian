@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:paddingVertical="@dimen/spacing_xs">
+
+    <View
+        android:layout_width="3dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="@dimen/spacing_sm"
+        android:background="@color/colorError"
+        android:minHeight="32dp" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/brakingSpeeds"
+            style="@style/TextAppearance.DrivingCoach.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorOnSurface"
+            tools:text="118.4 → 62.1 km/h" />
+
+        <TextView
+            android:id="@+id/brakingDetail"
+            style="@style/TextAppearance.DrivingCoach.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorOnSurfaceVariant"
+            tools:text="−56.3 km/h · 0.82 g peak · 2.4 s" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/brakingCorner"
+        style="@style/TextAppearance.DrivingCoach.Body"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:textColor="@color/colorPrimary"
+        tools:text="→ T3" />
+</LinearLayout>

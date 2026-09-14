@@ -5,17 +5,142 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorBackground"
+    android:fitsSystemWindows="true"
     tools:context=".ui.home.HomeFragment">
+
+    <!-- Collapsing brand hero (SRS UI-06) -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/hero_expanded_height"
+        android:background="@color/colorBackground"
+        android:fitsSystemWindows="true"
+        app:elevation="0dp"
+        app:liftOnScroll="false">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:id="@+id/collapsingToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fitsSystemWindows="true"
+            app:contentScrim="@color/colorBackground"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:statusBarScrim="@color/colorBackground"
+            app:titleEnabled="false">
+
+            <!-- Expanded hero content: parallaxes away as the user scrolls -->
+            <LinearLayout
+                android:id="@+id/heroContent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingBottom="@dimen/spacing_md"
+                app:layout_collapseMode="parallax"
+                app:layout_collapseParallaxMultiplier="0.6">
+
+                <FrameLayout
+                    android:layout_width="@dimen/hero_emblem_home"
+                    android:layout_height="@dimen/hero_emblem_home"
+                    android:background="@drawable/bg_hero_ring">
+
+                    <ImageView
+                        android:layout_width="88dp"
+                        android:layout_height="88dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@string/hero_emblem_description"
+                        android:src="@drawable/ic_helmet_emblem" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/heroWordmark"
+                    style="@style/TextAppearance.DrivingCoach.Wordmark"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:text="@string/hero_wordmark" />
+
+                <TextView
+                    android:id="@+id/heroKicker"
+                    style="@style/TextAppearance.DrivingCoach.Kicker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:text="@string/hero_kicker" />
+
+                <!--
+                    GPS readiness (SRS TS-16). Hidden until the warm-up reports something,
+                    so a user without location permission sees the hero exactly as before.
+                -->
+                <TextView
+                    android:id="@+id/gpsReadinessChip"
+                    style="@style/TextAppearance.DrivingCoach.Kicker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:drawablePadding="@dimen/spacing_xs"
+                    android:drawableStart="@drawable/ic_dot"
+                    android:visibility="gone"
+                    tools:text="GPS ready ±4 m"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <!-- Pinned bar: stays visible once the hero has collapsed -->
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/heroToolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@android:color/transparent"
+                app:contentInsetStart="@dimen/spacing_md"
+                app:layout_collapseMode="pin">
+
+                <LinearLayout
+                    android:id="@+id/collapsedBrand"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:alpha="0"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="@dimen/hero_emblem_collapsed"
+                        android:layout_height="@dimen/hero_emblem_collapsed"
+                        android:contentDescription="@string/hero_emblem_description"
+                        android:src="@drawable/ic_helmet_emblem" />
+
+                    <TextView
+                        style="@style/TextAppearance.DrivingCoach.Wordmark.Collapsed"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/spacing_sm"
+                        android:layout_weight="1"
+                        android:text="@string/hero_wordmark" />
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/profileButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:layout_marginEnd="@dimen/spacing_sm"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Profile"
+                    android:src="@drawable/ic_profile"
+                    app:tint="@color/colorOnSurface" />
+            </androidx.appcompat.widget.Toolbar>
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="80dp">
+            android:paddingBottom="96dp">
 
             <!-- Upload Pending Banner -->
             <com.google.android.material.card.MaterialCardView
@@ -43,13 +168,13 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
+                        android:contentDescription="Upload pending"
                         android:src="@drawable/ic_cloud_upload"
-                        app:tint="@color/colorOnSurfaceVariant"
-                        android:contentDescription="Upload pending" />
+                        app:tint="@color/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/uploadBannerText"
-                        style="@style/TextAppearance.BMW.Caption"
+                        style="@style/TextAppearance.DrivingCoach.Caption"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="@dimen/spacing_sm"
@@ -62,47 +187,11 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Dismiss"
                         android:src="@drawable/ic_close"
-                        app:tint="@color/colorOnSurfaceVariant"
-                        android:contentDescription="Dismiss" />
+                        app:tint="@color/colorOnSurfaceVariant" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-            <!-- Header Row: BMW Logo + Profile -->
-            <ImageView
-                android:id="@+id/bmwLogo"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="@dimen/spacing_md"
-                android:layout_marginTop="@dimen/spacing_md"
-                android:background="@drawable/bg_bmw_logo_placeholder"
-                android:contentDescription="BMW Logo"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/uploadBanner" />
-
-            <TextView
-                android:id="@+id/title"
-                style="@style/TextAppearance.BMW.H2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/spacing_sm"
-                android:text="Driving Coach"
-                app:layout_constraintBottom_toBottomOf="@id/bmwLogo"
-                app:layout_constraintStart_toEndOf="@id/bmwLogo"
-                app:layout_constraintTop_toTopOf="@id/bmwLogo" />
-
-            <ImageButton
-                android:id="@+id/profileButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginEnd="@dimen/spacing_sm"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Profile"
-                android:src="@drawable/ic_profile"
-                app:layout_constraintBottom_toBottomOf="@id/bmwLogo"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/bmwLogo"
-                app:tint="@color/colorOnSurface" />
 
             <!-- Hero Card: Best Lap -->
             <com.google.android.material.card.MaterialCardView
@@ -110,13 +199,13 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/spacing_md"
-                android:layout_marginTop="@dimen/spacing_lg"
+                android:layout_marginTop="@dimen/spacing_md"
                 app:cardBackgroundColor="@color/colorSurface"
                 app:cardCornerRadius="@dimen/card_corner_radius"
                 app:cardElevation="0dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/bmwLogo"
+                app:layout_constraintTop_toBottomOf="@id/uploadBanner"
                 app:strokeColor="@color/colorPrimary"
                 app:strokeWidth="2dp">
 
@@ -128,7 +217,7 @@
                     android:padding="@dimen/spacing_lg">
 
                     <TextView
-                        style="@style/TextAppearance.BMW.Caption"
+                        style="@style/TextAppearance.DrivingCoach.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="YOUR BEST LAP"
@@ -136,7 +225,7 @@
 
                     <TextView
                         android:id="@+id/bestLapTime"
-                        style="@style/TextAppearance.BMW.LapTime"
+                        style="@style/TextAppearance.DrivingCoach.LapTime"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_xs"
@@ -145,7 +234,7 @@
 
                     <TextView
                         android:id="@+id/bestLapInfo"
-                        style="@style/TextAppearance.BMW.Caption"
+                        style="@style/TextAppearance.DrivingCoach.Caption"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_xs"
@@ -156,7 +245,7 @@
             <!-- Recent Sessions Header -->
             <TextView
                 android:id="@+id/recentSessionsTitle"
-                style="@style/TextAppearance.BMW.LapNumber"
+                style="@style/TextAppearance.DrivingCoach.LapNumber"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/spacing_md"
@@ -194,23 +283,15 @@
                 app:layout_constraintTop_toBottomOf="@id/recentSessionsTitle"
                 tools:visibility="visible">
 
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:contentDescription="No sessions"
-                    android:src="@drawable/ic_sessions"
-                    app:tint="@color/colorOnSurfaceVariant" />
-
                 <TextView
-                    style="@style/TextAppearance.BMW.Body"
+                    style="@style/TextAppearance.DrivingCoach.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_md"
-                    android:text="No sessions yet"
+                    android:text="@string/no_sessions"
                     android:textColor="@color/colorOnSurfaceVariant" />
 
                 <TextView
-                    style="@style/TextAppearance.BMW.Caption"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_xs"
@@ -220,17 +301,23 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- FAB: Start New Session -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/startSessionFab"
+    <!-- Start Session: pinned so it stays reachable at any scroll position (SRS UI-06) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/startSessionButton"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/cta_pill_height"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="@dimen/spacing_lg"
-        android:backgroundTint="@color/colorPrimary"
-        android:text="Start Session"
+        android:paddingHorizontal="@dimen/spacing_xl"
+        android:text="@string/start_session"
+        android:textAllCaps="true"
         android:textColor="@color/colorOnPrimary"
-        app:icon="@drawable/ic_record"
+        android:textStyle="bold"
+        app:backgroundTint="@color/colorPrimary"
+        app:cornerRadius="@dimen/cta_pill_radius"
+        app:icon="@drawable/ic_dot"
+        app:iconGravity="textStart"
+        app:iconSize="12dp"
         app:iconTint="@color/colorOnPrimary" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,4 +1,4 @@
--- BMW Driving Coach Database Schema
+-- Driving Coach Database Schema
 -- PostgreSQL
 
 -- Enable UUID extension
@@ -23,6 +23,11 @@ CREATE TABLE IF NOT EXISTS sessions (
   ended_at TIMESTAMPTZ,
   raw_file_path TEXT,
   processing_status VARCHAR(30) DEFAULT 'PENDING',
+  -- Start/finish line GPS coordinates (two points defining the line)
+  start_line_lat1 DOUBLE PRECISION,
+  start_line_lng1 DOUBLE PRECISION,
+  start_line_lat2 DOUBLE PRECISION,
+  start_line_lng2 DOUBLE PRECISION,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

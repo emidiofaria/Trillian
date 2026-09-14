@@ -1,0 +1,163 @@
+package com.drivingcoach.ui.session.tabs
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.drivingcoach.data.db.entity.CoachingInsightEntity
+import com.drivingcoach.data.db.entity.CoachingPreference
+import com.drivingcoach.databinding.FragmentCoachBinding
+import com.drivingcoach.databinding.ItemCoachingInsightBinding
+import com.drivingcoach.ui.session.SessionResultViewModel
+import com.drivingcoach.ui.session.SessionUiState
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+
+@AndroidEntryPoint
+class CoachFragment : Fragment() {
+
+    private var _binding: FragmentCoachBinding? = null
+    private val binding get() = _binding!!
+
+    private val parentViewModel: SessionResultViewModel by viewModels(
+        ownerProducer = { requireParentFragment() }
+    )
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentCoachBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupClickListeners()
+        observeViewModel()
+    }
+
+    private fun setupClickListeners() {
+        binding.btnKeepLocal.setOnClickListener {
+            parentViewModel.setCoachingPreference(CoachingPreference.LOCAL)
+        }
+        
+        binding.btnViewAI.setOnClickListener {
+            parentViewModel.setCoachingPreference(CoachingPreference.AI)
+        }
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                parentViewModel.uiState.collect { state ->
+                    updateUI(state)
+                }
+            }
+        }
+    }
+
+    private fun updateUI(state: SessionUiState) {
+        // Update consistency score
+        binding.consistencyScore.text = String.format("%.1f%%", state.consistencyScore)
+        
+        // Update session summary
+        val lapCount = state.laps.size
+        val bestLapTime = state.bestLap?.let { formatLapTime(it.durationMs) } ?: "N/A"
+        binding.sessionSummary.text = "$lapCount laps completed\nBest lap: $bestLapTime"
+
+        // Determine which insights to show based on preference
+        val hasLocalInsights = state.insights.any { it.isLocalOnly }
+        val hasAiInsights = state.insights.any { !it.isLocalOnly }
+        val showingLocal = state.coachingPreference == CoachingPreference.LOCAL || !hasAiInsights
+        
+        // Update coaching type badge
+        binding.coachingTypeBadge.text = if (showingLocal && hasLocalInsights) "OFFLINE INSIGHTS" else "AI COACHING"
+        
+        // Show AI available banner when:
+        // - User is viewing local insights AND AI insights exist AND preference is LOCAL
+        val showAiBanner = hasLocalInsights && hasAiInsights && state.coachingPreference == CoachingPreference.LOCAL
+        binding.aiAvailableBanner.visibility = if (showAiBanner) View.VISIBLE else View.GONE
+        
+        // Show upsell card when:
+        // - Only local insights exist (no AI yet) AND session is offline/pending upload
+        val showUpsell = hasLocalInsights && !hasAiInsights && !state.isLoading
+        binding.upsellCard.visibility = if (showUpsell) View.VISIBLE else View.GONE
+
+        // Filter insights based on preference
+        val insightsToShow = when {
+            showingLocal -> state.insights.filter { it.isLocalOnly }
+            else -> state.insights.filter { !it.isLocalOnly }
+        }
+
+        // Handle loading/empty states
+        when {
+            state.isLoading -> {
+                binding.loadingContainer.visibility = View.VISIBLE
+                binding.insightsContainer.visibility = View.GONE
+                binding.emptyStateText.visibility = View.GONE
+                binding.headerCard.visibility = View.GONE
+                binding.upsellCard.visibility = View.GONE
+            }
+            insightsToShow.isEmpty() && state.insights.isEmpty() -> {
+                binding.loadingContainer.visibility = View.GONE
+                binding.insightsContainer.visibility = View.GONE
+                binding.emptyStateText.visibility = View.VISIBLE
+                binding.headerCard.visibility = View.VISIBLE
+            }
+            else -> {
+                binding.loadingContainer.visibility = View.GONE
+                binding.insightsContainer.visibility = View.VISIBLE
+                binding.emptyStateText.visibility = View.GONE
+                binding.headerCard.visibility = View.VISIBLE
+                populateInsights(insightsToShow)
+            }
+        }
+    }
+
+    private fun populateInsights(insights: List<CoachingInsightEntity>) {
+        binding.insightsContainer.removeAllViews()
+        
+        insights.forEach { insight ->
+            val insightBinding = ItemCoachingInsightBinding.inflate(
+                layoutInflater,
+                binding.insightsContainer,
+                false
+            )
+            insightBinding.headline.text = insight.headline
+            insightBinding.detail.text = insight.detail
+            binding.insightsContainer.addView(insightBinding.root)
+        }
+    }
+
+    private fun formatLapTime(durationMs: Long): String {
+        val totalSeconds = durationMs / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        val millis = durationMs % 1000
+        return String.format("%d:%02d.%03d", minutes, seconds, millis)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    companion object {
+        private const val ARG_SESSION_ID = "sessionId"
+
+        fun newInstance(sessionId: Long): CoachFragment {
+            return CoachFragment().apply {
+                arguments = Bundle().apply {
+                    putLong(ARG_SESSION_ID, sessionId)
+                }
+            }
+        }
+    }
+}

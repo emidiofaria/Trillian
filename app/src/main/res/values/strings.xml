@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">BMW Driving Coach</string>
+    <string name="app_name">Driving Coach</string>
     
     <!-- Navigation -->
     <string name="nav_dashboard">Dashboard</string>
@@ -32,6 +32,43 @@
     <string name="tab_laps">Laps</string>
     <string name="tab_coach">Coach</string>
     <string name="tab_chart">Chart</string>
+    <string name="tab_analysis">Analysis</string>
+
+    <!-- Analysis tab -->
+    <string name="analysis_stats_title">Session</string>
+    <string name="analysis_stat_distance">Total distance</string>
+    <string name="analysis_stat_duration">Session duration</string>
+    <string name="analysis_stat_max_speed">Max speed</string>
+    <string name="analysis_stat_avg_speed">Average speed</string>
+    <string name="analysis_stat_best_lap">Best lap</string>
+    <string name="analysis_avg_speed_note">Average speed is the mean over the whole recording, standing time included.</string>
+    <string name="analysis_map_title">Track</string>
+    <string name="analysis_map_legend">Colour shows speed (slow → fast). Braking zones are red.</string>
+    <string name="analysis_map_content_description">Recorded track outline with %1$d corners marked</string>
+    <string name="analysis_map_empty">No track outline for this session</string>
+    <string name="analysis_laps_title">Laps</string>
+    <string name="analysis_laps_hint">Pick a lap to analyse</string>
+    <string name="analysis_lap_chip">L%1$d · %2$s</string>
+    <string name="analysis_corners_title">Corners</string>
+    <string name="analysis_corners_note">Corners are detected from how the car\'s direction changes, and numbered in the order you pass them. They do not necessarily match the circuit\'s own numbering.</string>
+    <string name="analysis_corner_apex">%1$s km/h apex</string>
+    <string name="analysis_corner_detail">%1$s · %2$s° · t+%3$s</string>
+    <string name="analysis_braking_title">Braking zones</string>
+    <string name="analysis_braking_note">Braking is measured from how quickly GPS speed falls. The phone accelerometer is not used: its axes depend on how the phone is mounted, so they do not reliably track real longitudinal g.</string>
+    <string name="analysis_braking_speeds">%1$s → %2$s km/h</string>
+    <string name="analysis_braking_detail">−%1$s km/h · %2$s g peak · %3$s s</string>
+    <string name="analysis_braking_into">→ %1$s</string>
+    <string name="analysis_speed_title">Speed over the session</string>
+    <string name="analysis_speed_axis">Time (s)</string>
+    <string name="analysis_reference_lap">Reference: %1$s</string>
+    <string name="analysis_reference_whole_session">Reference: whole session (no laps detected)</string>
+    <string name="analysis_turn_left">Left</string>
+    <string name="analysis_turn_right">Right</string>
+    <string name="analysis_empty_no_telemetry">The telemetry file for this session is no longer on this device, so it cannot be analysed.</string>
+    <string name="analysis_empty_too_short">This session has too little telemetry to analyse.</string>
+    <string name="analysis_no_corners">No corners detected on this lap.</string>
+    <string name="analysis_no_braking">No braking zones detected on this lap.</string>
+
     
     <!-- Common -->
     <string name="loading">Loading…</string>
@@ -40,4 +77,74 @@
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="back">Back</string>
+
+    <!-- Brand Hero / Splash -->
+    <string name="hero_wordmark">TRILLIAN</string>
+    <string name="hero_kicker">Driving Coach</string>
+    <string name="hero_tagline">Track-day lap coaching</string>
+    <string name="manifesto_title">Rule #1: Don\'t Touch the Code!!</string>
+    <string name="manifesto_body">V-Model Engineered by Specs,\nExtensively Proven by Tests.</string>
+    <string name="hero_footer_metrics">Tests - 147 ; 0 lines Human Code; SRS - 220 Requirements ; SDLC - AI first</string>
+    <string name="hero_emblem_description">Trillian racing helmet emblem</string>
+    <string name="splash_skip_hint">Tap to skip</string>
+    <string name="splash_hint_skip">Tap to skip</string>
+    <string name="splash_hint_continue">Tap to continue</string>
+    <string name="splash_progress_format">%1$d%%</string>
+
+    <!-- Driver profile (SRS DR-01 … DR-08) -->
+    <string name="driver_name_title">Who\'s driving?</string>
+    <string name="driver_name_subtitle">Your name appears on your profile and your share cards.</string>
+    <string name="driver_name_hint">Driver name</string>
+    <string name="driver_name_cta">LET\'S RACE!!</string>
+    <string name="driver_name_rename_hint">You can change this later in Profile.</string>
+    <string name="driver_name_sign_in_coming_soon">Accounts and cloud sync — coming in a future version</string>
+    <string name="driver_name_error_short">Enter at least 2 characters</string>
+    <string name="driver_name_error_long">Maximum 100 characters</string>
+    <string name="driver_name_error_save">Could not save your name. Please try again.</string>
+    <string name="driver_name_edit_title">Driver name</string>
+    <string name="driver_name_edit_save">Save</string>
+    <string name="driver_name_edit_cancel">Cancel</string>
+    <string name="driver_name_edit_success">Name updated</string>
+
+    <!-- Clear user data (SRS DR-07) -->
+    <string name="clear_data_button">Clear User Data</string>
+    <string name="clear_data_title">Clear all data?</string>
+    <string name="clear_data_message">This permanently deletes your driver name, every recorded session, all lap times and coaching notes, and the telemetry files on this device.\n\nThis cannot be undone, and nothing is backed up anywhere else.</string>
+    <string name="clear_data_confirm">Delete everything</string>
+    <string name="clear_data_cancel">Cancel</string>
+    <string name="clear_data_failed">Could not clear data: %1$s</string>
+
+    <!-- About -->
+    <string name="about_title">ABOUT</string>
+    <string name="about_button">About Trillian</string>
+    <string name="about_version_label">Version</string>
+    <string name="about_version_format">%1$s (%2$d)</string>
+    <string name="about_gps_label">Last GPS acquisition</string>
+    <string name="about_gps_never">Not measured yet</string>
+    <string name="about_gps_format">%1$s to first fix · %2$s to ±10 m</string>
+    <string name="about_gps_seconds_format">%1$.1f s</string>
+    <string name="about_gps_pending">not reached</string>
+
+    <!-- GPS readiness (Home hero) -->
+    <string name="gps_chip_acquiring">GPS · acquiring…</string>
+    <string name="gps_chip_ready">GPS ready · ±%1$.0f m</string>
+    <string name="gps_chip_acquiring_description">Satellite fix in progress. Wait for GPS ready before setting the start line.</string>
+    <string name="gps_chip_ready_description">Satellite fix ready to %1$.0f metres. You can set the start line now.</string>
+
+    <!-- Splash initialisation steps -->
+    <string name="splash_step_preferences">Loading preferences…</string>
+    <string name="splash_step_database">Opening session database…</string>
+    <string name="splash_step_uploads">Checking pending uploads…</string>
+    <string name="splash_step_ready">Ready</string>
+
+    <!-- Session sharing -->
+    <string name="share_card_text">Check out my lap time at %1$s! 🏎️</string>
+    <string name="share_card_chooser_title">Share your achievement</string>
+    <string name="share_export_preparing">Preparing telemetry export…</string>
+    <string name="share_export_chooser_title">Export telemetry bundle</string>
+    <string name="share_export_text">Driving Coach telemetry export — %1$s. Contains GPS location data for this session.</string>
+    <string name="share_error_generic">Couldn\'t share this session. Please try again.</string>
+    <string name="share_error_session_unavailable">Session details aren\'t loaded yet.</string>
+    <string name="share_error_telemetry_missing">Telemetry file is no longer available for this session.</string>
+    <string name="share_error_export_failed">Couldn\'t build the telemetry export.</string>
 </resources>

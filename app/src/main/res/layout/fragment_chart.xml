@@ -35,7 +35,7 @@
             android:indeterminateTint="@color/colorPrimary" />
 
         <TextView
-            style="@style/TextAppearance.BMW.Body"
+            style="@style/TextAppearance.DrivingCoach.Body"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_md"
@@ -46,7 +46,7 @@
     <!-- Empty state -->
     <TextView
         android:id="@+id/emptyStateText"
-        style="@style/TextAppearance.BMW.Body"
+        style="@style/TextAppearance.DrivingCoach.Body"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center"

@@ -1,5 +1,4 @@
 import { TelemetrySample } from '../../src/types';
-import { haversineMetres } from '../../src/lap/lapDetector';
 
 /**
  * Generates synthetic telemetry data simulating laps on a circular track.

@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/splashRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:fitsSystemWindows="true"
+    android:clickable="true"
+    android:focusable="true"
+    android:contentDescription="@string/splash_skip_hint"
+    tools:context=".ui.splash.SplashFragment">
+
+    <!-- Brand emblem -->
+    <FrameLayout
+        android:id="@+id/emblemContainer"
+        android:layout_width="@dimen/hero_emblem_size"
+        android:layout_height="@dimen/hero_emblem_size"
+        android:background="@drawable/bg_hero_ring"
+        app:layout_constraintBottom_toTopOf="@id/wordmark"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed">
+
+        <ImageView
+            android:layout_width="132dp"
+            android:layout_height="132dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/hero_emblem_description"
+            android:src="@drawable/ic_helmet_emblem" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/wordmark"
+        style="@style/TextAppearance.DrivingCoach.Wordmark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_lg"
+        android:text="@string/hero_wordmark"
+        app:layout_constraintBottom_toTopOf="@id/kicker"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/emblemContainer" />
+
+    <TextView
+        android:id="@+id/kicker"
+        style="@style/TextAppearance.DrivingCoach.Kicker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_sm"
+        android:text="@string/hero_kicker"
+        app:layout_constraintBottom_toTopOf="@id/tagline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/wordmark" />
+
+    <TextView
+        android:id="@+id/tagline"
+        style="@style/TextAppearance.DrivingCoach.Tagline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_xl"
+        android:text="@string/hero_tagline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/kicker" />
+
+    <!-- Engineering manifesto -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/manifestoCard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_lg"
+        android:layout_marginTop="@dimen/spacing_xl"
+        android:layout_marginBottom="@dimen/spacing_xl"
+        app:cardBackgroundColor="@color/manifesto_surface"
+        app:cardCornerRadius="@dimen/card_corner_radius"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toTopOf="@id/progressIndicator"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tagline"
+        app:layout_constraintVertical_bias="1.0">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/spacing_lg"
+            android:paddingVertical="@dimen/spacing_md">
+
+            <TextView
+                android:id="@+id/manifestoTitle"
+                style="@style/TextAppearance.DrivingCoach.Manifesto.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/manifesto_title" />
+
+            <TextView
+                android:id="@+id/manifestoBody"
+                style="@style/TextAppearance.DrivingCoach.Manifesto.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:gravity="center"
+                android:text="@string/manifesto_body" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Real initialisation progress (SRS UI-01) -->
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progressIndicator"
+        android:layout_width="@dimen/splash_progress_width"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_sm"
+        android:max="100"
+        app:indicatorColor="@color/colorPrimary"
+        app:layout_constraintBottom_toTopOf="@id/progressLabel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:trackColor="@color/progress_track"
+        app:trackCornerRadius="2dp"
+        app:trackThickness="@dimen/splash_progress_height"
+        tools:progress="45" />
+
+    <TextView
+        android:id="@+id/progressLabel"
+        style="@style/TextAppearance.DrivingCoach.Footer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_sm"
+        app:layout_constraintBottom_toTopOf="@id/splashHint"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:text="45%" />
+
+    <!-- Visible tap affordance (SRS UI-02). Previously this hint existed only as a
+         contentDescription on the root, so sighted users had no indication the screen
+         could be tapped at all. -->
+    <TextView
+        android:id="@+id/splashHint"
+        style="@style/TextAppearance.DrivingCoach.Footer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_lg"
+        android:alpha="0.7"
+        android:importantForAccessibility="no"
+        app:layout_constraintBottom_toTopOf="@id/footerMetrics"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:text="Tap to continue" />
+
+    <TextView
+        android:id="@+id/footerMetrics"
+        style="@style/TextAppearance.DrivingCoach.Footer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_lg"
+        android:layout_marginBottom="@dimen/spacing_lg"
+        android:gravity="center"
+        android:text="@string/hero_footer_metrics"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Typography - BMW Design System -->
+    <!-- Typography - DrivingCoach Design System -->
     
     <!-- Headlines -->
-    <style name="TextAppearance.BMW.H1" parent="TextAppearance.MaterialComponents.Headline4">
+    <style name="TextAppearance.DrivingCoach.H1" parent="TextAppearance.MaterialComponents.Headline4">
         <item name="android:textSize">28sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif-medium</item>
@@ -11,14 +11,14 @@
         <item name="android:letterSpacing">-0.01</item>
     </style>
 
-    <style name="TextAppearance.BMW.H2" parent="TextAppearance.MaterialComponents.Headline5">
+    <style name="TextAppearance.DrivingCoach.H2" parent="TextAppearance.MaterialComponents.Headline5">
         <item name="android:textSize">22sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="fontFamily">sans-serif-medium</item>
     </style>
 
-    <style name="TextAppearance.BMW.H3" parent="TextAppearance.MaterialComponents.Headline6">
+    <style name="TextAppearance.DrivingCoach.H3" parent="TextAppearance.MaterialComponents.Headline6">
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif-medium</item>
@@ -26,7 +26,7 @@
     </style>
 
     <!-- Body Text -->
-    <style name="TextAppearance.BMW.Body" parent="TextAppearance.MaterialComponents.Body1">
+    <style name="TextAppearance.DrivingCoach.Body" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif</item>
@@ -34,12 +34,12 @@
         <item name="android:lineSpacingMultiplier">1.4</item>
     </style>
 
-    <style name="TextAppearance.BMW.Body.Secondary">
+    <style name="TextAppearance.DrivingCoach.Body.Secondary">
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 
     <!-- Caption -->
-    <style name="TextAppearance.BMW.Caption" parent="TextAppearance.MaterialComponents.Caption">
+    <style name="TextAppearance.DrivingCoach.Caption" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/colorOnSurfaceVariant</item>
         <item name="android:fontFamily">sans-serif</item>
@@ -47,7 +47,7 @@
     </style>
 
     <!-- Lap Time Display (Large, Monospace) -->
-    <style name="TextAppearance.BMW.LapTime" parent="TextAppearance.MaterialComponents.Headline3">
+    <style name="TextAppearance.DrivingCoach.LapTime" parent="TextAppearance.MaterialComponents.Headline3">
         <item name="android:textSize">48sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">monospace</item>
@@ -56,16 +56,16 @@
         <item name="android:letterSpacing">0.02</item>
     </style>
 
-    <style name="TextAppearance.BMW.LapTime.Medium">
+    <style name="TextAppearance.DrivingCoach.LapTime.Medium">
         <item name="android:textSize">32sp</item>
     </style>
 
-    <style name="TextAppearance.BMW.LapTime.Small">
+    <style name="TextAppearance.DrivingCoach.LapTime.Small">
         <item name="android:textSize">24sp</item>
     </style>
 
     <!-- Delta Time Display -->
-    <style name="TextAppearance.BMW.Delta" parent="TextAppearance.MaterialComponents.Body2">
+    <style name="TextAppearance.DrivingCoach.Delta" parent="TextAppearance.MaterialComponents.Body2">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">monospace</item>
@@ -74,16 +74,16 @@
         <item name="android:fontWeight" tools:targetApi="o">500</item>
     </style>
 
-    <style name="TextAppearance.BMW.Delta.Positive">
+    <style name="TextAppearance.DrivingCoach.Delta.Positive">
         <item name="android:textColor">@color/colorDeltaPositive</item>
     </style>
 
-    <style name="TextAppearance.BMW.Delta.Negative">
+    <style name="TextAppearance.DrivingCoach.Delta.Negative">
         <item name="android:textColor">@color/colorDeltaNegative</item>
     </style>
 
     <!-- Lap Number -->
-    <style name="TextAppearance.BMW.LapNumber" parent="TextAppearance.MaterialComponents.Subtitle1">
+    <style name="TextAppearance.DrivingCoach.LapNumber" parent="TextAppearance.MaterialComponents.Subtitle1">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/colorOnSurfaceVariant</item>
         <item name="android:fontFamily">sans-serif-medium</item>
@@ -93,7 +93,7 @@
     </style>
 
     <!-- Button Text -->
-    <style name="TextAppearance.BMW.Button" parent="TextAppearance.MaterialComponents.Button">
+    <style name="TextAppearance.DrivingCoach.Button" parent="TextAppearance.MaterialComponents.Button">
         <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="fontFamily">sans-serif-medium</item>
@@ -101,11 +101,68 @@
     </style>
 
     <!-- Tab Text -->
-    <style name="TextAppearance.BMW.Tab" parent="TextAppearance.MaterialComponents.Button">
+    <style name="TextAppearance.DrivingCoach.Tab" parent="TextAppearance.MaterialComponents.Button">
         <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="fontFamily">sans-serif-medium</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:letterSpacing">0.05</item>
+    </style>
+
+    <!-- Brand Hero / Splash -->
+    <style name="TextAppearance.DrivingCoach.Wordmark" parent="TextAppearance.MaterialComponents.Headline2">
+        <item name="android:textSize">48sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.12</item>
+    </style>
+
+    <style name="TextAppearance.DrivingCoach.Wordmark.Collapsed">
+        <item name="android:textSize">18sp</item>
+        <item name="android:letterSpacing">0.10</item>
+    </style>
+
+    <style name="TextAppearance.DrivingCoach.Kicker" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.28</item>
+    </style>
+
+    <style name="TextAppearance.DrivingCoach.Tagline" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <style name="TextAppearance.DrivingCoach.Manifesto.Title" parent="TextAppearance.MaterialComponents.Subtitle2">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.DrivingCoach.Manifesto.Body" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:lineSpacingMultiplier">1.3</item>
+    </style>
+
+    <style name="TextAppearance.DrivingCoach.Footer" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">@color/footer_text</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:lineSpacingMultiplier">1.3</item>
     </style>
 </resources>
