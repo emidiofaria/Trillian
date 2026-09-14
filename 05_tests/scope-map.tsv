@@ -1,0 +1,112 @@
+# =============================================================================
+# scope-map.tsv — which requirements V1 deliberately does not implement
+# =============================================================================
+#
+# Read by 05_tests/infra/scripts/generate-html-report.py.
+#
+# WHY THIS FILE EXISTS
+#
+# Without it the report says "177 of 245 requirements have no automated test"
+# and lists them flat. That is true and misleading: it puts BE-01 (a route on a
+# server V1 never builds) next to LD-02 (lap detection, shipped, running on
+# phones today, genuinely untested). A reader cannot tell a scope decision from
+# neglect, so they assume the worst about everything — including the parts that
+# are done well.
+#
+# This file separates the two. It does not excuse anything: requirements listed
+# here stay in the document, keep their own count, and are printed in full.
+#
+# FORMAT
+#
+#   scope <TAB> target <TAB> reason
+#
+#   scope   V2-BACKEND  Cannot be built or tested in V1: it needs a server,
+#                       Firebase, or a hosted model, none of which V1 has.
+#           V1          An explicit override. Beats a section line above it.
+#
+#   target  @Section    Every requirement in that SRS section (exact heading
+#                       text, minus the leading number).
+#           XX-01       One requirement. Always wins over a section line.
+#
+#   reason  Free text, shown verbatim in the report. Say why, not what.
+#
+# THE RULE FOR DECIDING
+#
+# Look at the subject of the sentence.
+#
+#   "The backend shall ..."  -> V2-BACKEND. Nothing to run it on.
+#   "The app shall ..."      -> V1, even when the sentence mentions upload.
+#
+# The client half of a network feature is testable against a fake server, and
+# some of it already is: TU-04, TU-06 and TU-07 pass today against MockWebServer.
+# Marking them deferred would be hiding work that is done.
+#
+# GUARDS
+#
+# The report refuses to let this file be used as a rug:
+#
+#   * A requirement marked V2-BACKEND that has a PASSING test is an error.
+#     Either this note is stale, or we built something we said we had not.
+#   * A target that names no section or requirement in the SRS is an error.
+#   * V2-BACKEND requirements are never removed from the document. Both
+#     denominators — all requirements, and V1 requirements — are always printed
+#     side by side.
+#
+# Out-of-scope items (OOS-*) are not listed here. "We will never build this" is
+# already handled by excluding that SRS section entirely; this file is only for
+# "not yet".
+#
+# =============================================================================
+
+# --- User management: Firebase authentication ------------------------------
+# SRS §2 states the whole section is deferred; V1 runs single-user and offline
+# with a local driver profile (§2a) instead.
+V2-BACKEND	@User management	No authentication provider in V1 (SRS AD-04); the app is single-user and offline-first
+V1	UM-18	The Profile screen ships in V1, reading counts from Room. The SRS already amends this requirement to drop the email address.
+V1	UM-19	The avatar is drawn locally from the driver profile name; no account required.
+
+# --- Backend API -----------------------------------------------------------
+# Every requirement in this section has "the backend" as its subject.
+V2-BACKEND	@Backend API	Describes a server that V1 does not deploy
+
+# --- Telemetry upload ------------------------------------------------------
+# Only the two requirements that describe server behaviour. The client worker
+# is V1 and is tested against a mock server.
+V2-BACKEND	TU-10	Azure Blob Storage layout is a server concern
+V2-BACKEND	TU-11	Server-side upload size limit
+
+# --- AI coaching -----------------------------------------------------------
+# AI-01 to AI-10 run on the server and call Anthropic. AI-11 to AI-14 are the
+# COACH tab, which ships in V1 and is fed by the offline coaching engine.
+V2-BACKEND	AI-01	Backend triggers the coaching job
+V2-BACKEND	AI-02	Server-side Anthropic API call
+V2-BACKEND	AI-03	Server-side prompt construction
+V2-BACKEND	AI-04	Server-side system prompt
+V2-BACKEND	AI-05	Constrains the hosted model's response
+V2-BACKEND	AI-06	Constrains the hosted model's response
+V2-BACKEND	AI-07	Server-side response cleaning
+V2-BACKEND	AI-08	Server-side response validation
+V2-BACKEND	AI-09	Writes to a backend table
+V2-BACKEND	AI-10	Server-side failure handling for the Anthropic call
+
+# --- Offline coaching ------------------------------------------------------
+# OC-01 to OC-09 are the V1 engine and are fully covered. Only the handover
+# from backend coaching is deferred.
+V2-BACKEND	OC-10	Nothing can arrive from a backend that does not exist
+
+# --- Non-functional --------------------------------------------------------
+V2-BACKEND	NF-04	Measures an upload to a server
+V2-BACKEND	NF-05	Measures the server-side processing pipeline
+V2-BACKEND	NF-10	Concurrency across users of a backend
+V2-BACKEND	NF-13	Backend Docker image build time
+
+# --- Security --------------------------------------------------------------
+# Only the requirements about traffic and server-side secrets. Repository
+# hygiene (SEC-05), client build configuration (SEC-08) and release shrinking
+# rules (SEC-09) apply to V1 today and stay in the V1 count, untested.
+V2-BACKEND	SEC-01	V1 sends no network traffic
+V2-BACKEND	SEC-02	Server-side token verification
+V2-BACKEND	SEC-03	Secret stored in Azure App Settings
+V2-BACKEND	SEC-04	Secret stored in Azure App Settings
+V2-BACKEND	SEC-06	Azure Blob Storage container access level
+V2-BACKEND	SEC-07	Server-side authorisation between users

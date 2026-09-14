@@ -71,6 +71,62 @@ class LocalLapDetector @Inject constructor() {
 
         /** Segments shorter than this carry no reliable direction (car stationary). */
         private const val MIN_SEGMENT_LENGTH_M = 0.5
+
+        /**
+         * How far the start point may be moved onto the driven path before the
+         * correction is refused, in metres.
+         *
+         * Incident 14 established that this device's position is biased while the
+         * phone is held still and correct once the car is moving: over the two
+         * seconds in which the kart accelerated away, the reported position moved
+         * 11 m sideways onto the racing line and stayed there. The start line,
+         * captured minutes earlier while the tester stood at the track edge, was
+         * left 16 m to the side of a track the car never drove within 15 m of.
+         *
+         * Correcting that is worth doing. Relocating a line that was genuinely
+         * captured somewhere else is not, and the two are indistinguishable beyond
+         * a certain distance, so the correction is bounded rather than trusted.
+         * Incident 14 needed 16.1 m of the 20 m allowed: the bound is deliberately
+         * close to the one real measurement rather than comfortably clear of it,
+         * because a session past the bound fails loudly and explains itself, which
+         * is a better outcome than a start line silently moved somewhere plausible.
+         */
+        const val MAX_ANCHOR_PROJECTION_M = 20.0
+
+        /**
+         * Speed below which a sample's position is not trusted to place the anchor.
+         *
+         * The whole basis of the correction is that GPS is reliable under motion
+         * and not at rest, so the path it is projected onto must be made only of
+         * moving samples. Incident 14's three racing laps lay within 4.5 m of each
+         * other; its stationary phase wandered 11 m while reporting 7.7 m accuracy.
+         */
+        const val MIN_ANCHOR_SPEED_MS = 4.0
+
+        /**
+         * How close a discarded pass must come to the start point to be worth
+         * reporting, in metres.
+         *
+         * Every lap crosses the perpendicular plane somewhere out on the far side
+         * of the circuit. Those are geometry, not near misses, and recording them
+         * would bury the ones that matter.
+         */
+        private const val REJECTION_REPORTING_RADIUS_M = 60.0
+
+        /** Lag range searched when asking whether the driven path repeats, in seconds. */
+        private const val MIN_REPEAT_LAG_S = 25
+        private const val MAX_REPEAT_LAG_S = 180
+
+        /**
+         * How much better than a typical lag the best lag must be before the path
+         * is called repeating.
+         *
+         * Measured on the two real sessions: a genuine circuit scores 0.15 and
+         * 0.21, while the same samples shuffled into a path that repeats nothing
+         * score 0.87 and 0.88. Any threshold in the wide gap between those would
+         * do; 0.5 sits in the middle of it.
+         */
+        private const val REPEAT_RATIO_THRESHOLD = 0.5
     }
 
     /**
@@ -134,7 +190,13 @@ class LocalLapDetector @Inject constructor() {
     data class RejectedCrossing(
         val timestampMs: Long,
         val reason: RejectionReason,
-        val detail: String
+        val detail: String,
+        /**
+         * How far to the side of the start point this pass went, in metres, when
+         * that is what disqualified it. Kept as a number as well as prose so the
+         * app can tell the driver how close they came without parsing a sentence.
+         */
+        val lateralOffsetM: Double? = null
     )
 
     /**
@@ -181,7 +243,32 @@ class LocalLapDetector @Inject constructor() {
         val angleBetweenLineAndTravelDeg: Double?,
         val acceptedCrossings: List<Crossing>,
         val rejectedCrossings: List<RejectedCrossing>,
-        val lapCount: Int
+        val lapCount: Int,
+        val anchor: AnchorSource = AnchorSource.CAPTURED,
+        val anchorProjectionM: Double? = null,
+        val captureWindowSpeedMs: Double? = null,
+        val captureWindowScatterM: Double? = null,
+        val pathRepeats: Boolean? = null
+    )
+
+    /** Which start point the reported laps were measured against. */
+    enum class AnchorSource {
+        /** The midpoint of the line the driver captured, used as given. */
+        CAPTURED,
+
+        /**
+         * That midpoint moved onto the path the car actually drove, because the
+         * captured one yielded no laps. See [MAX_ANCHOR_PROJECTION_M].
+         */
+        PROJECTED_ONTO_PATH
+    }
+
+    /** A start point to measure crossings against, and where it came from. */
+    private data class Anchor(
+        val latitude: Double,
+        val longitude: Double,
+        val source: AnchorSource,
+        val projectionM: Double? = null
     )
 
     /** A detection result together with the reasoning that produced it. */
@@ -245,17 +332,54 @@ class LocalLapDetector @Inject constructor() {
         val maxLng = samples.maxOf { it.longitude }
         Log.d(TAG, "GPS bounds: lat[$minLat to $maxLat], lng[$minLng to $maxLng]")
 
-        // Detect crossings of the start/finish point
-        val rejections = mutableListOf<RejectedCrossing>()
-        val crossings = detectCrossings(samples, startLine, rejections)
+        // Detect crossings of the start/finish point as the driver captured it.
+        val (capturedLat, capturedLng) = startLine.midpoint()
+        val captured = Anchor(capturedLat, capturedLng, AnchorSource.CAPTURED)
+        var anchor = captured
+        var rejections = mutableListOf<RejectedCrossing>()
+        var crossings = detectCrossings(samples, captured, rejections)
+        var laps = buildLaps(crossings)
         Log.d(TAG, "Detected ${crossings.size} crossings, rejected ${rejections.size} candidates")
-        rejections.forEach { Log.d(TAG, "  rejected at ${it.timestampMs}: ${it.reason} - ${it.detail}") }
-        
-        // Build laps from crossings
-        val laps = buildLaps(crossings)
-        Log.d(TAG, "Built ${laps.size} laps from crossings")
 
-        val diagnostics = buildDiagnostics(samples, startLine, crossings, rejections, laps.size)
+        // A session with no laps against the captured line may be a session whose
+        // line was captured while the phone was stationary and therefore several
+        // metres off the track - incident 14. Retry against the path the car
+        // actually drove, and keep that answer only if it is a better one.
+        if (laps.size < 2) {
+            val projected = projectOntoDrivenPath(samples, capturedLat, capturedLng)
+            val distance = projected?.projectionM
+            if (projected != null && distance != null && distance <= MAX_ANCHOR_PROJECTION_M) {
+                val retryRejections = mutableListOf<RejectedCrossing>()
+                val retryCrossings = detectCrossings(samples, projected, retryRejections)
+                val retryLaps = buildLaps(retryCrossings)
+                Log.d(
+                    TAG,
+                    "Captured start point found ${laps.size} laps; %.1fm onto the driven path finds ${retryLaps.size}"
+                        .format(distance)
+                )
+                if (retryLaps.size >= 2) {
+                    anchor = projected
+                    rejections = retryRejections
+                    crossings = retryCrossings
+                    laps = retryLaps
+                }
+            } else {
+                Log.d(
+                    TAG,
+                    "Start point is %s to correct onto the driven path"
+                        .format(
+                            distance?.let { "%.1fm off, too far".format(it) }
+                                ?: "not correctable: no moving path"
+                        )
+                )
+            }
+        }
+        rejections.forEach { Log.d(TAG, "  rejected at ${it.timestampMs}: ${it.reason} - ${it.detail}") }
+        Log.d(TAG, "Built ${laps.size} laps from crossings using ${anchor.source}")
+
+        val diagnostics = buildDiagnostics(
+            samples, startLine, anchor, crossings, rejections, laps.size
+        )
         Log.d(
             TAG,
             "Start line: %.2fm long, bearing %.1f, %s to the direction of travel".format(
@@ -277,6 +401,7 @@ class LocalLapDetector @Inject constructor() {
     private fun buildDiagnostics(
         samples: List<TelemetrySample>,
         startLine: StartLine,
+        anchor: Anchor,
         crossings: List<Crossing>,
         rejections: List<RejectedCrossing>,
         lapCount: Int
@@ -305,6 +430,23 @@ class LocalLapDetector @Inject constructor() {
             if (difference > 90.0) 180.0 - difference else difference
         }
 
+        // How the session opened, because a start line is captured moments before
+        // it. Incident 14's opening was a walk to the kart and then a wait in it,
+        // all of it reported 11-18 m to one side of the track the car went on to
+        // drive. Recording the conditions makes that visible instead of inferred.
+        val opening = samples.filter { it.timestampMs - samples.first().timestampMs <= 30_000L }
+        val openingSpeed = opening.takeIf { it.isNotEmpty() }?.map { it.speedMs }?.average()
+        val stationary = opening.filter { it.speedMs < MIN_ANCHOR_SPEED_MS }
+        val openingScatter = if (stationary.size >= 3) {
+            val meanLat = stationary.map { it.latitude }.average()
+            val meanLng = stationary.map { it.longitude }.average()
+            stationary.maxOf {
+                GeoUtils.haversineDistance(it.latitude, it.longitude, meanLat, meanLng)
+            }
+        } else {
+            null
+        }
+
         return DetectionDiagnostics(
             sampleCount = samples.size,
             durationMs = durationMs,
@@ -314,7 +456,13 @@ class LocalLapDetector @Inject constructor() {
             angleBetweenLineAndTravelDeg = angleToTravel,
             acceptedCrossings = crossings,
             rejectedCrossings = rejections,
-            lapCount = lapCount
+            lapCount = lapCount,
+            anchor = anchor.source,
+            anchorProjectionM = anchor.projectionM,
+            captureWindowSpeedMs = openingSpeed,
+            captureWindowScatterM = openingScatter,
+            // Only asked when it can change what the driver is told.
+            pathRepeats = if (lapCount < 2) pathRepeats(samples) else null
         )
     }
 
@@ -325,6 +473,110 @@ class LocalLapDetector @Inject constructor() {
      * accepted at all. Returns null only if no segment in the session was long
      * enough to yield a meaningful bearing.
      */
+    /**
+     * The captured start point moved onto the path the car actually drove.
+     *
+     * Only segments travelled at [MIN_ANCHOR_SPEED_MS] or more are considered. That
+     * restriction is the whole point rather than an optimisation: incident 14
+     * showed this device reporting a position 11-18 m to one side while the phone
+     * was walked and then held still, and reporting it correctly the moment the
+     * car was moving. Projecting onto the stationary part of the session would
+     * reproduce the error instead of correcting it.
+     *
+     * Returns null when no segment was driven fast enough to define a path.
+     */
+    private fun projectOntoDrivenPath(
+        samples: List<TelemetrySample>,
+        fromLat: Double,
+        fromLng: Double
+    ): Anchor? {
+        var bestDistance = Double.MAX_VALUE
+        var bestX = 0.0
+        var bestY = 0.0
+        var found = false
+
+        for (i in 1 until samples.size) {
+            val previous = samples[i - 1]
+            val current = samples[i]
+            if (previous.speedMs < MIN_ANCHOR_SPEED_MS || current.speedMs < MIN_ANCHOR_SPEED_MS) {
+                continue
+            }
+
+            val (px, py) = GeoUtils.toLocalMetres(
+                previous.latitude, previous.longitude, fromLat, fromLng
+            )
+            val (qx, qy) = GeoUtils.toLocalMetres(
+                current.latitude, current.longitude, fromLat, fromLng
+            )
+            val dx = qx - px
+            val dy = qy - py
+            val squaredLength = dx * dx + dy * dy
+            if (squaredLength < MIN_SEGMENT_LENGTH_M * MIN_SEGMENT_LENGTH_M) continue
+
+            // Foot of the perpendicular from the start point, clamped to the segment.
+            val along = (-(px * dx + py * dy) / squaredLength).coerceIn(0.0, 1.0)
+            val footX = px + dx * along
+            val footY = py + dy * along
+            val distance = hypot(footX, footY)
+            if (distance < bestDistance) {
+                bestDistance = distance
+                bestX = footX
+                bestY = footY
+                found = true
+            }
+        }
+        if (!found) return null
+
+        val (latitude, longitude) = GeoUtils.fromLocalMetres(bestX, bestY, fromLat, fromLng)
+        return Anchor(latitude, longitude, AnchorSource.PROJECTED_ONTO_PATH, bestDistance)
+    }
+
+    /**
+     * Whether the car drove the same path more than once.
+     *
+     * Reports only *that* the path repeats, never how often or how long a lap took.
+     * The obvious extension - report the lag itself as the lap time - is wrong: on
+     * the incident 13 session the strongest lag is 157 s, exactly twice its real
+     * 79 s lap, because a path that repeats every lap also repeats every two laps.
+     * Resolving that ambiguity is a detector in its own right. Until it exists,
+     * this answers the one question a driver with no laps actually has - "are my
+     * laps in there at all?" - and says nothing it cannot support.
+     *
+     * Returns null when the session is too short to judge.
+     */
+    private fun pathRepeats(samples: List<TelemetrySample>): Boolean? {
+        val moving = samples.filter { it.speedMs >= MIN_ANCHOR_SPEED_MS }
+        if (moving.isEmpty()) return null
+        val origin = moving.first()
+        val bySecond = LinkedHashMap<Int, Pair<Double, Double>>()
+        for (sample in moving) {
+            val second = ((sample.timestampMs - origin.timestampMs) / 1000L).toInt()
+            bySecond.getOrPut(second) {
+                GeoUtils.toLocalMetres(
+                    sample.latitude, sample.longitude, origin.latitude, origin.longitude
+                )
+            }
+        }
+
+        val separations = mutableListOf<Double>()
+        for (lag in MIN_REPEAT_LAG_S..MAX_REPEAT_LAG_S) {
+            var total = 0.0
+            var pairs = 0
+            for ((second, point) in bySecond) {
+                val later = bySecond[second + lag] ?: continue
+                total += hypot(point.first - later.first, point.second - later.second)
+                pairs++
+            }
+            if (pairs >= 30) separations.add(total / pairs)
+        }
+        if (separations.size < 10) return null
+
+        val sorted = separations.sorted()
+        val median = sorted[sorted.size / 2]
+        if (median <= 0.0) return null
+        return sorted.first() / median <= REPEAT_RATIO_THRESHOLD
+    }
+
     private fun headingAtClosestApproach(
         samples: List<TelemetrySample>,
         startLine: StartLine
@@ -477,13 +729,14 @@ class LocalLapDetector @Inject constructor() {
      */
     private fun detectCrossings(
         samples: List<TelemetrySample>,
-        startLine: StartLine,
+        anchor: Anchor,
         rejections: MutableList<RejectedCrossing> = mutableListOf()
     ): List<Crossing> {
         if (samples.size < 2) return emptyList()
 
         val crossings = mutableListOf<Crossing>()
-        val (anchorLat, anchorLng) = startLine.midpoint()
+        val anchorLat = anchor.latitude
+        val anchorLng = anchor.longitude
 
         var lastCrossingTs: Long? = null
         var referenceHeadingDeg: Double? = null
@@ -530,9 +783,23 @@ class LocalLapDetector @Inject constructor() {
             )
 
             if (lateralOffset > DETECTION_HALF_WIDTH_M) {
-                // Not near enough to be this track's start/finish. Not noteworthy:
-                // every lap passes this plane somewhere out on the far side of the
-                // circuit, so these are not recorded as rejections.
+                // Every lap passes this plane somewhere out on the far side of the
+                // circuit. Those are geometry rather than near misses, so only
+                // passes close enough to have been meant for the start/finish are
+                // recorded - but they are recorded. Incident 14 was four passes of
+                // the start straight discarded here in silence, leaving diagnostics
+                // reporting no crossings and no rejections for a session in which
+                // the driver completed three laps.
+                if (lateralOffset <= REJECTION_REPORTING_RADIUS_M) {
+                    rejections.add(
+                        RejectedCrossing(
+                            crossingTs, RejectionReason.TOO_FAR_TO_THE_SIDE,
+                            "passed %.1fm to the side of the start point, limit is %.1fm"
+                                .format(lateralOffset, DETECTION_HALF_WIDTH_M),
+                            lateralOffsetM = lateralOffset
+                        )
+                    )
+                }
                 continue
             }
 

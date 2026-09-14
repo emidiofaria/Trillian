@@ -236,7 +236,9 @@ Detects laps locally (offline) from a JSONL telemetry file using start/finish li
    than `MAX_HEADING_DIFFERENCE_DEG` from the session's first accepted crossing.
 5. **Interpolate** the crossing instant between the two samples either side of it.
 6. Build laps from accepted crossings, mark the best lap, save to Room.
-7. Write the reasoning to a diagnostics sidecar via `LapDiagnosticsWriter`.
+7. **If fewer than 2 laps resulted**, retry once against the midpoint projected onto the driven
+   path (see below), and keep that answer only if it produces 2 or more laps.
+8. Write the reasoning to a diagnostics sidecar via `LapDiagnosticsWriter`.
 
 ### Why the captured line's *direction* is ignored
 
@@ -250,6 +252,27 @@ metres, replaces it. See `FP-DEGENERATE-BASELINE` in `failure-patterns.md`.
 captured — a single point gives identical lap times to two (`OneTapStartFinishCaptureTest`), so
 PLAN-003 is a UI change with no algorithm work behind it.
 
+### Why the start point may be moved onto the driven path
+
+The app requires the line to be captured **standing still** (TS-05, TS-07) — the one condition in
+which a consumer GPS receiver is least able to place itself, because it has no Doppler velocity to
+constrain the solution. In the Incident 14 session the captured midpoint landed **15.9 m
+perpendicular** to the track while the racing laps themselves overlaid within 4.5 m. Both endpoints
+were captured seconds apart and so shared the same bias: the line's length and bearing came out
+perfect, and only its absolute position was wrong. Every internal check passed.
+
+The driven path is the only thing in the session recorded *under velocity aiding*, so it is the only
+evidence the stationary fix can be corrected against. The fallback projects the midpoint
+perpendicularly onto it, considering only stretches driven at `MIN_ANCHOR_SPEED_MS` or more.
+
+The filter on speed is load-bearing, not an optimisation: projecting onto the *whole* path lands on
+the out-lap, a stretch visited once, and yields **0 laps at every corridor width**.
+
+Three gates keep this a correction rather than a search — it runs only when detection already
+failed, only within `MAX_ANCHOR_PROJECTION_M`, and its answer is kept only if it yields 2+ laps.
+On Incident 13, captured while moving, the projection would move the point **0.8 m**, so the
+fallback is never reached. See `FP-STATIONARY-POSITION-BIAS` in `failure-patterns.md`.
+
 ### Configuration Constants
 
 | Constant | Value | Purpose |
@@ -258,6 +281,11 @@ PLAN-003 is a UI change with no algorithm work behind it.
 | `MIN_DISTANCE_FROM_START_M` | 50 | Ensures driver traveled around track (kart-track compatible) |
 | `MIN_SAMPLES` | 50 | Minimum telemetry samples for valid detection |
 | `DETECTION_HALF_WIDTH_M` | 15 | How far to the side of the start point a pass still counts. Results are identical across 10–25 m on the Incident 13 replay, so this is not a tuned value |
+| `MAX_ANCHOR_PROJECTION_M` | 20 | Furthest the start point may be moved onto the driven path. Incident 14 needed 16.1 m, so 80% of the budget is spent; beyond this a session fails loudly rather than guessing |
+| `MIN_ANCHOR_SPEED_MS` | 4 | Only path driven at this speed or above is a projection target, and below it a capture is treated as stationary |
+| `REJECTION_REPORTING_RADIUS_M` | 60 | A pass wider than the corridor but within this radius is recorded as `TOO_FAR_TO_THE_SIDE` rather than dropped silently |
+| `MIN_REPEAT_LAG_S` / `MAX_REPEAT_LAG_S` | 25 / 180 | Lag window searched when asking whether the driver was lapping a circuit at all |
+| `REPEAT_RATIO_THRESHOLD` | 0.5 | Separation ratio below which a path counts as repeating. Real sessions measure 0.15 and 0.21; the same samples shuffled measure 0.87 and 0.88 |
 | `MAX_HEADING_DIFFERENCE_DEG` | 60 | Rejects passes in a materially different direction. 60 rather than 90 because at a corner start/finish arriving and leaving differ by *exactly* 90°, which made a real case turn on floating-point rounding |
 | `MIN_SEGMENT_LENGTH_M` | 0.5 | Below this, the bearing between two samples is meaningless |
 
@@ -1581,6 +1609,7 @@ hand-authored vector with a raster emblem derived from owner-supplied artwork.
 | PNG decoder for the gate | `app/src/test/java/com/drivingcoach/brand/ArgbBitmap.kt` |
 | Geometry master | `app/src/test/resources/brand/ic_helmet_emblem_master.png` |
 | Negative fixture | `app/src/test/resources/brand/legacy_deformed_emblem.png` |
+| Report emblem | `05_tests/infra/assets/helmet.png` (144x144 derivative of the master, embedded in every HTML test report) |
 
 ### Render Sites
 
@@ -1759,6 +1788,230 @@ silent failure is disproportionately expensive.
 
 ---
 
+## Component: Session Analysis Engine (`SessionAnalysisProcessor`)
+
+### Purpose
+
+Turns a recorded telemetry file into the track-engineer report shown on the ANALYSIS
+tab: session statistics, corner detection, braking-zone detection, a drawable track
+outline and a session-wide speed trace. Everything is derived; nothing is stored.
+
+### Key Code Areas
+
+- `ui/session/tabs/analysis/SessionAnalysisProcessor.kt` — all maths, a pure `object`
+- `ui/session/tabs/analysis/SessionAnalysisModels.kt` — `SessionAnalysis`, `Corner`,
+  `BrakingZone`, `TrackPath`, `TrackPoint`, `TrackMarker`, `SpeedTimePoint`, `LapOption`
+- `ui/session/tabs/analysis/AnalysisViewModel.kt` — caching, reference-lap selection
+- `ui/session/tabs/analysis/AnalysisFragment.kt` — binding of all six sections
+
+### Dependencies
+
+- `TelemetryFileReader` — reads the whole JSONL file
+- `GeoUtils` — haversine distance and equirectangular local projection
+- `LapDao` (via `SessionResultViewModel`) — lap windows produced by `LocalLapDetector`
+
+### Inputs
+
+- Telemetry file path (`SessionEntity.rawFilePath`)
+- Laps with `startTs`/`endTs` — **never** re-derived here
+- Optional reference lap id (defaults to the best lap)
+- Optional start/finish line midpoint, for the S/F marker
+
+### Outputs
+
+- `SessionAnalysis` — stats, corners, braking zones, `TrackPath`, speed trace, lap options
+
+### Algorithm
+
+1. `prepare()` — drop the header line (it deserialises to an all-zero sample) and any
+   null-island fix, then sort by timestamp
+2. Statistics over the whole session: haversine distance, wall-clock duration, max and
+   mean speed, best lap from the lap table
+3. Corner detection over the reference window: bearing sampled across a 1 s window (only
+   when the car actually travelled ≥ 2 m), unwrapped, smoothed over 3 s, then segmented
+   where |yaw rate| > 6 °/s for ≥ 1.5 s; segments whose max speed is < 10 km/h are dropped
+4. Braking detection: speed smoothed over 0.6 s, longitudinal acceleration over a 0.6 s
+   window, segments where a < −0.8 m/s² merged across 1 s gaps, kept when they last
+   ≥ 0.5 s and shed ≥ 4 km/h; peak g = |a|/9.81; each zone is associated with the next
+   corner within tolerance
+5. Track path: equirectangular projection to metres, normalised 0..1 by the larger extent,
+   y flipped for screen coordinates, decimated to a point budget
+
+### Configuration Constants
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `BEARING_WINDOW_S` | 1.0 | Window the heading change is measured over |
+| `MIN_BEARING_TRAVEL_M` | 2.0 | Below this the bearing is GPS scatter, not a turn |
+| `YAW_SMOOTHING_S` | 3.0 | Yaw-rate smoothing width |
+| `YAW_RATE_THRESHOLD_DPS` | 6.0 | Cornering threshold |
+| `MIN_CORNER_DURATION_S` | 1.5 | Rejects transient wobble |
+| `MIN_CORNERING_SPEED_KMH` | 10.0 | Rejects corners "driven" while parked |
+| `DECEL_THRESHOLD_MS2` | −0.8 | Braking threshold |
+| `MIN_BRAKING_DURATION_S` | 0.5 | Rejects single-sample dropouts |
+| `MIN_SPEED_DROP_KMH` | 4.0 | Rejects lift-off as braking |
+| `TRACK_PATH_POINT_BUDGET` | 600 | Points drawn on the map |
+| `SPEED_TRACE_POINT_BUDGET` | 500 | Points in the speed chart |
+
+**All thresholds are expressed per second, not per sample.** The recorder runs at 10 Hz
+but archived sessions exist at 1 Hz, and per-sample thresholds would silently change
+meaning between them.
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| Empty analysis | "…telemetry file … no longer on this device" | File deleted or unreadable |
+| Too-short analysis | "too little telemetry to analyse" | Fewer than 2 usable samples |
+| Whole-session fallback | "Reference: whole session" | No laps, or lap window outside the file |
+| No corners / no braking | Placeholder row in the table | Thresholds not met on that lap |
+
+### Observable Signals
+
+| Signal | Location |
+|--------|----------|
+| Loading spinner on the ANALYSIS tab | UI while computation runs |
+| Reference label above the map | Which window the tables describe |
+| Corner/braking placeholder text | Detector found nothing |
+
+### Criticality
+
+**LOW** — read-only post-session analysis. Failure costs insight, never data: it cannot
+affect recording, lap times, upload or coaching.
+
+---
+
+## Component: TrackMapView
+
+### Purpose
+
+Draws the recorded track outline offline, with no map SDK and no tiles. The app is
+expected to work in flight mode at a circuit, so the "map" is the driver's own GPS trace
+rather than anything fetched.
+
+### Key Code Areas
+
+- `ui/session/tabs/analysis/TrackMapView.kt` — custom `View`
+
+### Dependencies
+
+- `TrackPath` from `SessionAnalysisProcessor` (already normalised to 0..1)
+
+### Inputs
+
+- `TrackPath` (points with normalised x/y and speed, plus corner and start/finish markers)
+- `emptyText` for the no-data state
+
+### Outputs
+
+- Rendered canvas: speed-gradient polyline, red braking segments, numbered corner dots,
+  gold S/F marker
+
+### Algorithm
+
+1. Map normalised coordinates into the padded view rectangle
+2. Colour each segment by blending blue → amber → green across the session speed range
+3. Overdraw braking segments in red so they dominate the gradient
+4. Draw corner dots with `T1..Tn` labels and the start/finish marker last
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| Empty outline | Centred "No track outline" text | Path has fewer than 2 points |
+| Flat-looking trace | All one colour | Session had almost no speed variation |
+
+### Criticality
+
+**LOW** — presentation only.
+
+---
+
+## Component: Test Evidence Pipeline (`generate-html-report.py`)
+
+### Purpose
+
+Turns a test run into an artefact a stranger can trust: one self-contained HTML
+page stating what ran, what is declared but switched off, which requirements are
+claimed by which test, and which are not covered at all. Shipped inside the
+release directory next to the APK, so a build and the evidence for it cannot be
+separated.
+
+Build-time only. Nothing here runs on a phone and no product code depends on it.
+
+### Key Code Areas
+
+| Path | Role |
+|------|------|
+| `05_tests/infra/scripts/generate-html-report.py` | The generator |
+| `05_tests/infra/scripts/test_generate_html_report.py` | Its own unit tests (51) |
+| `05_tests/infra/assets/helmet.png` | The report's header emblem, 144x144, committed pre-scaled |
+| `05_tests/infra/assets/README.md` | Why it is a committed derivative and how to regenerate it |
+| `05_tests/infra/scripts/package-release.sh` | Groups APK + report + notes under `releases/v<ver>-<slug>/` |
+| `05_tests/infra/scripts/run-all-tests.sh` | Writes `05_tests/reports/RUN_<ts>/`, then offers a release |
+| `05_tests/coverage-map.tsv` | The claim ledger: `requirement<TAB>test<TAB>note` |
+| `05_tests/scope-map.tsv` | The scope ledger: what V1 deliberately does not build |
+
+### Dependencies
+
+Python 3 standard library only. No pip install, no network, no JavaScript in the
+output — the report must open from a USB stick in a paddock with no signal.
+
+### Inputs
+
+| Input | Supplies |
+|-------|----------|
+| `app/build/test-results/testDebugUnitTest/*.xml` | L1 outcomes |
+| `app/build/outputs/androidTest-results/connected/debug/*.xml` | L2 outcomes |
+| `app/src/{test,androidTest}/**/*.kt` | Declared `@Test` counts and class-level `@Ignore` |
+| `05_tests/coverage-map.tsv` | Requirement-to-test claims |
+| `01_requirements/DrivingCoach_SRS_v1.md` | The requirement denominator |
+| `05_tests/L4_SYS5_acceptance/*.md` | Manual checks, listed last |
+| `05_tests/scope-map.tsv` | V2-BACKEND deferrals, by section or requirement ID |
+
+### Algorithm
+
+1. Parse both JUnit result sets. A `<testcase name="null">` is the placeholder
+   Gradle emits for an `@Ignore`d class and is recorded as skipped, never as a test.
+2. Walk the Kotlin sources with a brace-depth stack to count `@Test` per class.
+   The stack matters: a private fake collaborator declared inside a test class
+   would otherwise absorb every test below it and the totals would quietly stop
+   matching the run.
+3. Resolve each claim against the results to `PASS` / `FAILED` / `SKIPPED` /
+   `MISSING` / `MANUAL`; a requirement inherits the worst mark of its claims.
+4. Render sorted, so two runs of the same inputs are byte-identical.
+
+### Failure Modes
+
+| Mode | Cause | Effect | Detection |
+|------|-------|--------|-----------|
+| Overstated coverage | A cited test is `@Ignore`d or renamed | The claim would look green | Resolved to `SKIPPED`/`MISSING` and listed in section 4 |
+| Hidden tests | Class-level `@Ignore` | 29 L2 tests do not run | Declared count from source ≠ executed count from XML |
+| Rotted claim | Test class deleted or renamed | Traceability silently breaks | `MISSING`, plus a `[WARN]` on stdout |
+| Unknown requirement ID | Typo in the TSV | Claim would vanish | Reported as an error in the report, never dropped |
+| Scope used as a rug | A built requirement marked `V2-BACKEND` | Coverage would look better than it is | Contradiction guard: deferred + passing test is an error |
+| Deferral hides work | A whole section swept when part of it ships | V1 gaps disappear from the count | Both denominators always printed; deferred items listed in full with reasons |
+| Stale results | Report generated without re-running tests | Report describes an older build | Header carries commit, branch and device |
+| Broken emblem in the release | Logo linked by path instead of embedded | Image renders broken only in `releases/`, where strangers read it | Test asserts a `data:` URI and rejects a relative `src` |
+| Deformed emblem | Non-uniform scale, as in Incident 11 | Brand damage on the document meant to show rigour | Tests assert the asset is square and the `<img>` width equals its height |
+| Report bloat | Someone copies the 528x528 master over the pre-scaled asset | Every report triples in size | Test fails if the asset exceeds 16 KB |
+
+### Observable Signals
+
+```
+[INFO] 322/351 tests executed, 322 passed, 0 failed, 29 never ran
+[WARN] 8 coverage claim(s) not backed by a passing test
+[WARN] N problem(s) in coverage-map.tsv
+```
+
+### Criticality
+
+**LOW** at runtime, **HIGH** for judgement. It cannot break the app, but if it
+lied about coverage every decision taken on top of it would be wrong. That is
+why it parses only structured inputs and never prose.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -1779,3 +2032,6 @@ silent failure is disproportionately expensive.
 | Home Brand Hero | LOW | Degraded presentation only |
 | Brand Asset Pipeline | LOW | Deformed or missing emblem on all branded surfaces |
 | About Screen | LOW | Version and manifesto unreachable in-app; bug reports lose build identity |
+| Session Analysis Engine | LOW | ANALYSIS tab shows an empty state; no effect on recorded data |
+| TrackMapView | LOW | Track outline missing from the ANALYSIS tab |
+| Test Evidence Pipeline | LOW (build-time) | No report ships with a release; coverage claims stop being verified |
