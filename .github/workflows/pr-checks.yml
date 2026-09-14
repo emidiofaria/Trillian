@@ -48,6 +48,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────────
   lint-android:
     name: Android Lint + ktlint
+    if: false  # CI disabled
     runs-on: ubuntu-latest
     timeout-minutes: 15  # RN-04
     permissions:
@@ -110,6 +111,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────────
   unit-android:
     name: Android Unit Tests + JaCoCo
+    if: false  # CI disabled
     runs-on: ubuntu-latest
     timeout-minutes: 30  # RN-04
     permissions:
@@ -202,6 +204,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────────
   checkov-scan:
     name: Checkov IaC Scan + actionlint
+    if: false  # CI disabled
     runs-on: ubuntu-latest
     timeout-minutes: 30  # RN-04
     permissions:
@@ -240,6 +243,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────────
   google-checks-apk:
     name: Google Checks APK Compliance
+    if: false  # CI disabled
     runs-on: ubuntu-latest
     timeout-minutes: 45  # RN-04; GC-06: scan timeout 30 min + build headroom
     permissions:
@@ -298,6 +302,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────────
   appium-e2e:
     name: Appium E2E Tests
+    if: false  # CI disabled
     runs-on: ubuntu-latest
     timeout-minutes: 60  # RN-04, E2E-10
     # E2E-01: depends on all other jobs

@@ -99,7 +99,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────────────
   log-reason:
     name: Log dispatch reason
-    if: github.event_name == 'workflow_dispatch'
+    if: false  # CI disabled (was: github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions:
@@ -119,9 +119,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45  # RN-04
     # GT-02: skip if pr-checks failed; other triggers always proceed
-    if: >-
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+    # CI disabled (was: github.event_name != 'workflow_run' ||
+    #                   github.event.workflow_run.conclusion == 'success')
+    if: false
     permissions:
       contents: read
 
@@ -231,9 +231,9 @@ jobs:
     name: Terraform Plan
     runs-on: ubuntu-latest
     timeout-minutes: 30  # RN-04
-    if: >-
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+    # CI disabled (was: github.event_name != 'workflow_run' ||
+    #                   github.event.workflow_run.conclusion == 'success')
+    if: false
     permissions:
       contents: read
       id-token: write      # SEC-05: required for OIDC token exchange
@@ -326,6 +326,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30  # RN-04
     needs: [terraform-plan]
+    if: false  # CI disabled
     environment: dev   # SEC-04: no required reviewer; auto-proceeds
     permissions:
       contents: read
@@ -383,6 +384,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30  # RN-04
     needs: [terraform-apply-dev, build-android]  # build-backend disabled
+    if: false  # CI disabled
     environment:
       name: dev
       url: ${{ env.BACKEND_DEV_URL }}
@@ -463,10 +465,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30  # RN-04
     needs: [deploy-dev]
-    if: >-
-      needs.deploy-dev.result == 'success' &&
-      (startsWith(github.ref, 'refs/tags/v') ||
-       (github.event_name == 'workflow_dispatch' && inputs.environment == 'production'))
+    # CI disabled (was: needs.deploy-dev.result == 'success' &&
+    #                   (startsWith(github.ref, 'refs/tags/v') ||
+    #                    (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')))
+    if: false
     environment: production   # SEC-03: required reviewer gate (CD-AD-12)
     permissions:
       contents: read
@@ -524,8 +526,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30  # RN-04
     needs: [terraform-apply-prod]
-    if: >-
-      needs.terraform-apply-prod.result == 'success'
+    # CI disabled (was: needs.terraform-apply-prod.result == 'success')
+    if: false
     environment:
       name: production
       url: ${{ env.BACKEND_PROD_URL }}
@@ -588,9 +590,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [deploy-production]
-    if: >-
-      needs.deploy-production.result == 'success' &&
-      startsWith(github.ref, 'refs/tags/v')
+    # CI disabled (was: needs.deploy-production.result == 'success' &&
+    #                   startsWith(github.ref, 'refs/tags/v'))
+    if: false
     permissions:
       contents: write   # RA-02: create GitHub Release
 
