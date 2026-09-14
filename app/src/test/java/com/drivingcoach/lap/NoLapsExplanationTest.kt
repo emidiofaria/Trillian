@@ -107,6 +107,34 @@ class NoLapsExplanationTest {
     }
 
     @Test
+    fun `the advice must be something the app lets you do`() {
+        // Track Setup captures both start-line points on foot, standing at the track
+        // edges -- "Walk to each edge of the track ... and capture two GPS points".
+        // There is no capture-while-moving control anywhere in the app.
+        //
+        // v2.96 shipped this message ending "Set the start line again while driving
+        // past it": a correct diagnosis followed by an instruction the driver cannot
+        // carry out, which leaves them with nothing to do. Diagnosing a problem and
+        // then misdirecting the fix is worse than saying nothing, because it spends
+        // the driver's trust.
+        val cases = listOf(
+            diagnostics(rejections = listOf(wide(16.1))),
+            diagnostics(rejections = listOf(wide(16.1)), captureSpeed = 0.1),
+            diagnostics(repeats = true)
+        )
+
+        cases.forEach { d ->
+            val message = NoLapsExplanation.of(d)
+            listOf("while driving", "as you drive", "driving past", "while moving").forEach { banned ->
+                assertFalse(
+                    "advice the UI offers no way to follow ($banned): $message",
+                    message.contains(banned, ignoreCase = true)
+                )
+            }
+        }
+    }
+
+    @Test
     fun `counts a single pass in the singular`() {
         val message = NoLapsExplanation.of(diagnostics(rejections = listOf(wide(18.0))))
 

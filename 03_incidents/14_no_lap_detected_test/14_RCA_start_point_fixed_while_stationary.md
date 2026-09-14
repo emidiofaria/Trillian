@@ -14,6 +14,11 @@
 | **Confidence** | **HIGH (>95 %)** — the cause is measured from the recorded session, not inferred |
 | **Fixed in** | v2.96 |
 
+**Companion documents:** [Explainer](14_EXPLAINER_why_no_laps_were_detected.md)
+(the reasoning, for a developer new to this area) ·
+[Provided Fix](14_Provided_Fix_start_point_projected_onto_driven_path.md)
+(the change record). This document remains authoritative for the evidence.
+
 ---
 
 ## Incident Summary
@@ -155,6 +160,18 @@ Three gates keep this a correction rather than a search:
 The empty-result message now reports how many passes were seen, how far to the
 side the nearest went, and whether the line was captured while stationary —
 each only when the evidence for it is present in that session. (LD-18)
+
+**Correction after release.** As shipped in v2.96 this message ended *"Set the
+start line again while driving past it."* Track Setup captures both points on
+foot — *"Walk to each edge of the track…"* — and the app has no
+capture-while-moving control, so the driver was given a correct diagnosis and an
+instruction he could not follow. Found while writing the companion documents and
+corrected in place. Guarded by
+`NoLapsExplanationTest.the advice must be something the app lets you do`.
+
+The same wording had already been caught and removed from `USER_MANUAL.md`
+during the docs sync, but was missed in the code — which is the copy a driver
+actually reads. **Advice the app gives must be advice the app lets you follow.**
 
 ---
 

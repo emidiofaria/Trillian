@@ -22,6 +22,12 @@ object NoLapsExplanation {
      *
      * This reports what was observed rather than guessing at a cause, and only
      * says a thing when the evidence for it is present.
+     *
+     * The remedy it offers is constrained by the shipped UI: Track Setup has the
+     * driver walk to each track edge and capture a point standing still. A first
+     * version of this message said "set the start line again while driving past
+     * it", which the app gives no way to do -- correct diagnosis, impossible
+     * instruction. `theAdviceMustBeSomethingTheAppLetsYouDo` guards that.
      */
     fun of(diagnostics: LocalLapDetector.DetectionDiagnostics?): String {
         diagnostics ?: return "No laps detected."
@@ -36,7 +42,7 @@ object NoLapsExplanation {
             return if (diagnostics.pathRepeats == true) {
                 "No laps detected. You drove a repeating circuit, but never passed " +
                     "close enough to the start point to time it. Set the start line " +
-                    "again on the part of the track you actually drive."
+                    "again at the part of the track you actually drive."
             } else {
                 "No laps detected."
             }
@@ -58,7 +64,13 @@ object NoLapsExplanation {
                     "least accurate, so it may be recorded off to one side of the track."
             )
         }
-        builder.append(" Set the start line again while driving past it.")
+        // Track Setup captures both points on foot, at the track edges. Advice the
+        // app gives must be advice the app lets you follow, so this must never
+        // suggest capturing on the move -- there is no such control.
+        builder.append(
+            " Set it again from the track edges, and wait for the GPS signal to " +
+                "settle before you capture each point."
+        )
         return builder.toString()
     }
 }

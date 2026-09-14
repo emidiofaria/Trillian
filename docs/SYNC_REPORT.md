@@ -4,6 +4,60 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-14] Incident 14 explainer and fix record, and a message that misdirected
+
+**Codebase Version:** v2.96
+**Trigger:** Request for an informative write-up of the Incident 14 RCA. Writing
+it surfaced a defect in the shipped user-facing copy.
+
+### Defect found while documenting
+
+The empty-result message introduced by LD-18 ended *"Set the start line again
+while driving past it."* Track Setup captures both start-line points on foot —
+the UI reads *"Walk to each edge of the track and capture two GPS points"* — and
+there is no capture-while-moving control in the app.
+
+The driver was handed a correct diagnosis followed by an instruction he could
+not carry out, which leaves him as stuck as the message it replaced.
+
+The same wording had already been caught and removed from `USER_MANUAL.md`
+during the Incident 14 docs sync. It was missed in `NoLapsExplanation.kt` — the
+copy a driver actually reads.
+
+**Fixed in place at the operator's decision, keeping v2.96.** Now reads: *"Set it
+again from the track edges, and wait for the GPS signal to settle before you
+capture each point."*
+
+Guarded by `NoLapsExplanationTest.the advice must be something the app lets you
+do`, which rejects "while driving", "as you drive", "driving past" and "while
+moving" across every message branch. The guard matters more than the wording:
+nothing had been comparing the remedy the app offers against the controls the
+app ships.
+
+### Artifacts
+
+| Artifact | Status | Notes |
+|----------|--------|-------|
+| `14_EXPLAINER_why_no_laps_were_detected.md` | ✅ New | The reasoning, for a developer new to lap detection. Owns no facts — cites the RCA |
+| `14_Provided_Fix_start_point_projected_onto_driven_path.md` | ✅ New | The change record, following the `01_Provided_Fix_*` precedent |
+| `14_RCA_start_point_fixed_while_stationary.md` | ✅ Updated | Cross-links added; records the post-release message correction |
+| `NoLapsExplanation.kt` | ✅ Fixed | Advice now matches the shipped capture workflow |
+| `NoLapsExplanationTest.kt` | ✅ Updated | +1 guard test |
+
+Division of responsibility, so the three incident documents do not drift:
+**report** = what was observed · **RCA** = the evidence · **explainer** = the
+reasoning · **provided fix** = the change. Only the RCA owns measurements.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4 unit) | ✅ 282/282 (281 before the new guard) |
+
+No production behaviour changed beyond the message text.
+
+---
+
 ## [2026-09-14] The release evidence described a different build
 
 **Codebase Version:** v2.96
