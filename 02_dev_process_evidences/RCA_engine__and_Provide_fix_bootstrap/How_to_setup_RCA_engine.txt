@@ -2,7 +2,7 @@
 - "ctw00173_Android_app_POC\00_prompts\Phone-only_Driving_Coach.md"
 
 # Propmt to generate RCA engine prompts
-"I'm operating an android app I have copilot Ghe on my machine with github models. the models have access to my source code : app code .Create me the ready to use prompts that produce with quality: RCA agent.md instructions.md SkunkOps/atlas/failure-patterns.md SkunkOps/atlas/components.md SkunkOps/atlas/flows.md SkunkOps/atlas/system.md"
+"I'm operating an android app I have copilot Ghe on my machine with github models. the models have access to my source code : app code .Create me the ready to use prompts that produce with quality: RCA agent.md instructions.md atlas/failure-patterns.md atlas/components.md atlas/flows.md atlas/system.md"
 
 Remark this will generate 6 prompts to Create
 - RCA agent, instructions and atlas

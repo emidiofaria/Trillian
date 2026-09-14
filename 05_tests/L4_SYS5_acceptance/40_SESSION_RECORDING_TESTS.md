@@ -151,8 +151,8 @@
 |------|--------|-----------------|-----------|
 | 1 | Start recording | Recording begins | ☐ |
 | 2 | Pull down notification shade | Notification visible | ☐ |
-| 3 | Notification title | "Driving Coach" | ☐ |
-| 4 | Notification content | "Recording — MM:SS" | ☐ |
+| 3 | Notification title | "Driving Coach — Recording" | ☐ |
+| 4 | Notification content | "MM:SS" | ☐ |
 | 5 | Observe notification | Time updates (~every second) | ☐ |
 | 6 | Notification icon | App icon visible | ☐ |
 | 7 | Cannot dismiss | Swipe doesn't remove it | ☐ |

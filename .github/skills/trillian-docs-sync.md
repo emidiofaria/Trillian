@@ -10,7 +10,7 @@ Synchronizes Trillian (Driving Coach) documentation artifacts with the current c
 
 When invoked, analyze the codebase and update these documentation artifacts **in detail**:
 
-### 1. Atlas Content (`SkunkOps/atlas/`)
+### 1. Atlas Content (`atlas/`)
 
 | File | Purpose | Update Triggers |
 |------|---------|-----------------|
@@ -215,8 +215,8 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ### Files Modified
 ```
-M  SkunkOps/atlas/components.md    (+55)
-M  SkunkOps/atlas/flows.md         (+85)
+M  atlas/components.md             (+55)
+M  atlas/flows.md                  (+85)
 M  01_requirements/SRS_v1.md       (+7, -2)
 M  docs/USER_MANUAL.md             (+22, -6)
 ```
@@ -260,7 +260,7 @@ This keeps a running history while maintaining the newest-first order for easy r
 
 ## Detailed Changes
 
-### 📁 SkunkOps/atlas/system.md
+### 📁 atlas/system.md
 
 **Added:**
 ```diff
@@ -274,7 +274,7 @@ This keeps a running history while maintaining the newest-first order for easy r
 + | Version Name | 1.1.0 |
 ```
 
-### 📁 SkunkOps/atlas/components.md
+### 📁 atlas/components.md
 
 **Added Section: PitStopDetector**
 ```markdown
@@ -325,8 +325,8 @@ A: Pit stops are detected when you're stationary for at least 30 seconds...
 ## Files Modified
 
 ```
-M  SkunkOps/atlas/system.md                          (+15, -3)
-M  SkunkOps/atlas/components.md                      (+47, -0)
+M  atlas/system.md                                   (+15, -3)
+M  atlas/components.md                               (+47, -0)
 M  01_requirements/DrivingCoach_SRS_v1.md            (+12, -0)
 M  docs/USER_MANUAL.md                               (+23, -0)
 M  05_tests/L4_SYS5_acceptance/40_SESSION_RECORDING_TESTS.md (+18, -0)
@@ -414,7 +414,7 @@ Trillian/
 │   └── DrivingCoach_SRS_v1.md # System Requirements
 ├── docs/
 │   └── USER_MANUAL.md         # End-user documentation
-├── SkunkOps/atlas/
+├── atlas/
 │   ├── system.md              # System overview
 │   ├── components.md          # Component details
 │   ├── flows.md               # Flow diagrams

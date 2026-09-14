@@ -667,7 +667,7 @@ Home*. Without it, this incident's core complaint remains unadjudicable.
 
 ### Atlas Updates
 
-**`SkunkOps/atlas/failure-patterns.md` — add a new pattern (novel; no existing pattern covers it):**
+**`atlas/failure-patterns.md` — add a new pattern (novel; no existing pattern covers it):**
 
 > **Pattern: Warm-Up Discarded at the Navigation Boundary It Was Built to Serve**
 > *Symptoms*: a readiness indicator reaches "ready" on screen A, then the destination screen B
@@ -683,13 +683,13 @@ Home*. Without it, this incident's core complaint remains unadjudicable.
 > *Regression guard*: assert subscription **continuity across navigation**, not subscription
 > *presence* after navigation.
 
-**`SkunkOps/atlas/flows.md:360-415` — extend the GPS Warm-Up flow** with a "Handover to Track
+**`atlas/flows.md:360-415` — extend the GPS Warm-Up flow** with a "Handover to Track
 Setup" section documenting: `stop()` at `HomeFragment.onStop()`, the independent
 `positionUpdates()` subscription, the readiness reset to `Idle`, and the fact that no state
 crosses the boundary. This transition is currently undocumented, which is why localisation had
 to be done from source.
 
-**`SkunkOps/atlas/components.md:161-167` — extend the GPS Warm-Up failure-mode table**:
+**`atlas/components.md:161-167` — extend the GPS Warm-Up failure-mode table**:
 
 | Mode to add | Symptom | Cause |
 |---|---|---|

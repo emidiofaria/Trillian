@@ -166,7 +166,7 @@ Atlas is the operational knowledge base for this application. You MUST consult i
 #### Atlas Location
 
 ```
-SkunkOps/atlas/
+atlas/
 ├── system.md           # Architecture, tech stack, runtime components
 ├── components.md       # Component inventory with failure modes & signals
 ├── flows.md            # Step-by-step execution paths with failure points
@@ -176,20 +176,20 @@ SkunkOps/atlas/
 
 #### Load Order (execute these view commands)
 
-1. **`view SkunkOps/atlas/failure-patterns.md`** — Check for known pattern match FIRST
+1. **`view atlas/failure-patterns.md`** — Check for known pattern match FIRST
    - If symptom matches a pattern → use pattern's evidence checklist and likely causes
    - If no match → continue to system/component localization
 
-2. **`view SkunkOps/atlas/system.md`** — Understand architecture
+2. **`view atlas/system.md`** — Understand architecture
    - Identify which layer is affected (UI, ViewModel, Service, Repository, API)
    - Map symptom to architectural component
 
-3. **`view SkunkOps/atlas/components.md`** — Find affected component
+3. **`view atlas/components.md`** — Find affected component
    - Identify affected component(s) by matching signals to observable signals table
    - Check component dependencies for cascade effects
    - Note component criticality level
 
-4. **`view SkunkOps/atlas/flows.md`** — Trace execution path
+4. **`view atlas/flows.md`** — Trace execution path
    - Identify which execution flow is affected
    - Locate the failure point in the step-by-step execution path
    - Identify async boundaries that may have delayed propagation

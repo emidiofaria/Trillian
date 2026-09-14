@@ -46,7 +46,7 @@ green while dozens of tests never run.
 So the report counts `@Test` in the Kotlin source as well as reading the JUnit
 XML, and shows both numbers. The gap between them is the point: it is how 29
 switched-off L2 tests were found. See `FP-TEST-BLINDSPOT` in
-`SkunkOps/atlas/failure-patterns.md`.
+`atlas/failure-patterns.md`.
 
 ## Inputs
 
