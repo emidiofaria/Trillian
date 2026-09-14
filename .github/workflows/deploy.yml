@@ -189,9 +189,7 @@ jobs:
     name: Build Backend
     runs-on: ubuntu-latest
     timeout-minutes: 15  # RN-04
-    if: >-
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+    if: false  # Backend CI disabled
     permissions:
       contents: read
 
@@ -384,7 +382,7 @@ jobs:
     name: Deploy to Dev
     runs-on: ubuntu-latest
     timeout-minutes: 30  # RN-04
-    needs: [terraform-apply-dev, build-android, build-backend]
+    needs: [terraform-apply-dev, build-android]  # build-backend disabled
     environment:
       name: dev
       url: ${{ env.BACKEND_DEV_URL }}
@@ -406,14 +404,17 @@ jobs:
         # DD-01, CD-AD-13
 
       - uses: ./.github/actions/setup-node-backend
+        if: false  # Backend CI disabled
 
       - name: Download backend dist
+        if: false  # Backend CI disabled
         uses: actions/download-artifact@v4
         with:
           name: backend-dist-${{ env.COMMIT_SHA }}
           path: backend/
 
       - name: Run database migrations
+        if: false  # Backend CI disabled
         working-directory: backend
         run: npm run db:migrate
         env:
@@ -421,12 +422,14 @@ jobs:
         # DD-03
 
       - name: Deploy backend to Azure App Service
+        if: false  # Backend CI disabled
         # TODO(infra): replace with azure/webapps-deploy@v3 once App Service is provisioned
         # Target: Azure App Service for the dev environment (CD-AD-02)
         run: echo "[PLACEHOLDER] Backend deployment to dev — infrastructure TBD"
         # DD-02
 
       - name: Health check
+        if: false  # Backend CI disabled
         # TODO(infra): replace placeholder with real check once App Service is live (DD-04)
         # Real implementation:
         #   for i in $(seq 1 5); do
@@ -544,14 +547,17 @@ jobs:
         # DP-02, CD-AD-13
 
       - uses: ./.github/actions/setup-node-backend
+        if: false  # Backend CI disabled
 
       - name: Download backend dist
+        if: false  # Backend CI disabled
         uses: actions/download-artifact@v4
         with:
           name: backend-dist-${{ env.COMMIT_SHA }}
           path: backend/
 
       - name: Run database migrations
+        if: false  # Backend CI disabled
         working-directory: backend
         run: npm run db:migrate
         env:
@@ -559,11 +565,13 @@ jobs:
         # DP-04
 
       - name: Deploy backend to Azure App Service (production)
+        if: false  # Backend CI disabled
         # TODO(infra): replace with azure/webapps-deploy@v3 once App Service is provisioned
         run: echo "[PLACEHOLDER] Backend deployment to production — infrastructure TBD"
         # DP-03
 
       - name: Health check
+        if: false  # Backend CI disabled
         # TODO(infra): replace placeholder with real check once App Service is live (DP-05)
         # Real implementation mirrors the dev health check using ${{ env.BACKEND_PROD_URL }}
         run: echo "[PLACEHOLDER] Health check ${{ env.BACKEND_PROD_URL }}/health — backend TBD"
@@ -608,6 +616,7 @@ jobs:
         continue-on-error: true
 
       - name: Download backend dist
+        if: false  # Backend CI disabled
         uses: actions/download-artifact@v4
         with:
           name: backend-dist-${{ env.COMMIT_SHA }}
@@ -623,6 +632,7 @@ jobs:
         # RA-05
 
       - name: Package backend dist
+        if: false  # Backend CI disabled
         run: |
           VERSION="${GITHUB_REF_NAME}"
           tar -czf "/tmp/release/backend-dist-${VERSION}.tar.gz" -C /tmp/backend-dist .
@@ -659,7 +669,6 @@ jobs:
         run: |
           gh release create "${GITHUB_REF_NAME}" \
             "/tmp/release/${APK_NAME}" \
-            "/tmp/release/${BACKEND_DIST_NAME}" \
             $(test -f /tmp/release/mapping.txt && echo "/tmp/release/mapping.txt" || true) \
             --title "${GITHUB_REF_NAME}" \
             --notes "${RELEASE_NOTES}" \
