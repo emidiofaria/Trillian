@@ -1,0 +1,33 @@
+# Checkov project-level configuration (CD-AD-05, CK-06)
+# Suppress false positives here with a documented justification.
+# Format: skip-check list of check IDs; each entry should include a comment
+# explaining WHY it is suppressed. Without a comment, suppressions will be
+# rejected in code review.
+#
+# Example:
+#   skip-check:
+#     - CKV_GITHUB_2  # public repo — branch protection via GitHub org policy, not workflow file
+
+framework:
+  - all
+
+compact: false
+output: sarif
+soft-fail: false
+
+# Paths to scan
+directory:
+  - .
+
+# Exclude generated/vendor paths from the scan
+skip-path:
+  - .gradle
+  - .kotlin
+  - app/build
+  - backend/node_modules
+  - backend/dist
+  - e2e/node_modules
+
+# Add suppressed checks below as they are discovered.
+# Each entry MUST have a comment with: check ID, rule description, and justification.
+skip-check: []

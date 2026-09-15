@@ -1,0 +1,19 @@
+# Composite action: decode FIREBASE_GOOGLE_SERVICES_JSON secret (GC-02, SEC-02, NFR-04)
+# The google-services.json file is required by the Firebase SDK at Gradle compile time.
+# It is NOT used to authenticate against Firebase at runtime in CI.
+name: Decode google-services.json
+description: Decode the base64-encoded google-services.json secret to app/google-services.json.
+
+inputs:
+  google-services-base64:
+    description: Base64-encoded contents of google-services.json (FIREBASE_GOOGLE_SERVICES_JSON secret).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Decode google-services.json
+      shell: bash
+      run: |
+        echo "${{ inputs.google-services-base64 }}" | base64 --decode > app/google-services.json
+        echo "::notice::google-services.json decoded to app/google-services.json"

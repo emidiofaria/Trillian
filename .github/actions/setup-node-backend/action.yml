@@ -1,0 +1,20 @@
+# Composite action: Node.js 24 + backend npm ci with cache (LB-03, UB-04, NFR-04)
+# Pins: actions/setup-node@v6, actions/cache@v5
+# Node 20 deprecated Sept 2025 / removed Sept 16 2026 — using Node 24 (CD-AD-16)
+name: Setup Node Backend
+description: Install Node.js 24 and run npm ci inside backend/ with cache.
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js 24
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install backend dependencies
+      shell: bash
+      working-directory: backend
+      run: npm ci
