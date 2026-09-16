@@ -1995,3 +1995,69 @@ the number.
 **HIGH** — `LapDetectionIncident14Test` replays the real session and asserts the recovered lap
 count and times; `LocalLapDetectorGuardsTest` asserts the bound refuses a displaced line and that
 incident 13 never reaches the fallback.
+
+---
+
+## Pattern: A Test That Cannot Fail (FP-HOLLOW-TEST) — ✅ RESOLVED (2026-09-16)
+
+### Symptoms
+
+The suite is green, the test count is reassuring, and the traceability matrix shows ✅ against
+requirements nobody has verified. `BUILD SUCCESSFUL` is reported for a run in which entire
+classes executed nothing. Coverage is quoted in meetings from a number that was never earned.
+
+### Signals
+
+Measured on the L2 suite as it stood on 2026-09-15:
+
+| Signal | Value | Reading |
+|--------|-------|---------|
+| L2 tests declared vs executed | **89 declared, 60 executed** | 29 existed but were switched off |
+| Classes carrying a class-level `@Ignore` | 4 | each with a different root cause |
+| Ignored tests asserting only `isDisplayed()` | **14 of 29** | cannot fail when the app is broken |
+| Coverage claims citing a non-running test | **8** | all 8 requirements had no second claim |
+| Claims that were false even if revived | **SR-05** | cited class had no such assertion at all |
+| Gradle exit code | **0** | reported success throughout |
+
+The signature is the gap between *declared* and *executed*. A skipped class is invisible in a
+pass/fail summary, so the deception is silent and survives indefinitely.
+
+### Root Cause
+
+Two distinct defects compounded:
+
+1. **Tests were written to the shape of the screen, not to the behaviour of the requirement.**
+   `capturePointAButton_isDisplayedAndClickable` was cited as evidence for TS-05, *"Point A shall
+   be captured by tapping CAPTURE"*. It asserts the button exists and is clickable. It never
+   captures a point. The assertion cannot fail while the defect is present, which is the
+   definition of a hollow test.
+
+2. **Disabling a test cost nothing.** `@Ignore` needs no approval, leaves the suite green, and
+   leaves the coverage claim standing. The claim ledger and the run results were never reconciled,
+   so a test could stop running without anything noticing.
+
+The four blockers themselves were ordinary — `HiltTestActivity` not resuming, a missing
+`launchFragmentInHiltContainer` migration, a service demanding real GPS, MockWebServer setup. None
+was hard. They persisted because nothing forced the issue.
+
+### Mitigation
+
+The 29 tests were **deleted rather than revived**, and the 8 claims removed. This cost zero
+assurance — none of them ran — while making the gap visible: V1 coverage fell from a reported 37%
+to an honest 33%.
+
+- **Prefer deletion to `@Ignore`.** A deleted test is visibly absent; an ignored one looks like
+  deferred work forever. Git preserves the body (here, `0216475`).
+- **Never claim a requirement from a test that cannot fail.** Ask: *if this behaviour broke, would
+  this assertion turn red?* If not, it is not coverage.
+- **Reconcile claims against results, not against source.** The HTML report already resolves every
+  `coverage-map.tsv` claim to `PASS`/`SKIPPED`/`MISSING`. Read that, never the exit code.
+- **Parse the JUnit XML.** `declared` vs `executed` is the only place a skipped class shows up.
+
+### Related
+
+- The service test was un-runnable because `TelemetryForegroundService` bypasses the
+  `LocationUpdates` seam (TS-15) and calls `LocationManager.GPS_PROVIDER` directly. Restoring
+  SR-09 coverage means putting it on that seam, as `StartLineFreshnessTest` already does.
+- Same family as **FP-ASSERTION-THAT-CANNOT-FAIL** — see the brand-asset falsification guard,
+  which exists precisely so a gate cannot be weakened into a no-op.

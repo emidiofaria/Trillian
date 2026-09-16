@@ -62,12 +62,7 @@ DR-07	ProfileViewModelTest	inOrder: paths read before clearAllTables()
 DR-08	DriverNameFlowTest.theDemoModeShortcutIsGone
 
 # --- Track Setup ---
-TS-02	TrackSetupFragmentTest	UI elements displayed
-TS-03	TrackSetupFragmentTest	GPS status indicator
-TS-05	TrackSetupFragmentTest	Point A capture
-TS-06	TrackSetupFragmentTest	Point B disabled initially
 TS-08	GeoUtilsTest	Haversine distance
-TS-12	TrackSetupFragmentTest	Start Recording disabled until valid
 TS-15	TrackSetupResubscribeTest	Resubscribe after stop/start
 TS-16	LocationWarmUpTest	Warm-up starts when Home becomes visible
 TS-16	HomeViewModelTest
@@ -81,9 +76,10 @@ TS-19	LocationWarmUpTest	Time-to-first-fix metrics recorded
 TS-20	LocationWarmUpTest	Exposes readiness only, never a position
 
 # --- Session Recording ---
-SR-04	TelemetryForegroundServiceTest	Elapsed time MM:SS.mmm
-SR-05	TelemetryForegroundServiceTest	GPS status indicator
-SR-09	TelemetryForegroundServiceTest	Foreground service lifecycle
+# SR-04, SR-05 and SR-09 previously claimed TelemetryForegroundServiceTest, which was
+# deleted on 2026-09-16 (it had been @Ignore'd and never ran). SR-09 — recording continues
+# when the app is backgrounded — now has no automated coverage at all. See the SR-09 remark
+# in the SRS. Do not re-add a claim here without a test that actually exercises it.
 
 # --- Telemetry Capture ---
 TC-06	TelemetryFileWriterTest	JSONL format

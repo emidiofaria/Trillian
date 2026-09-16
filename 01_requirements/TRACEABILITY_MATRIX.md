@@ -38,14 +38,17 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
 | **TOTAL** | **~218** | **~76** | **~35%** |
 
-> ⚠️ **Coverage caveat — `@Ignore`d L2 classes.** Eight rows below cite
-> `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or
-> `TelemetryForegroundServiceTest`. All four classes carry a class-level `@Ignore`, so those
-> rows are marked ✅ but execute **nothing**. Gradle still reports `BUILD SUCCESSFUL` for a
-> fully skipped class, which is how this went unnoticed — always parse
-> `app/build/outputs/androidTest-results/**/*.xml` rather than trusting the exit code.
-> Un-ignoring these classes is tracked as separate work; the Startup & Branding rows above
-> are unaffected because they are backed by new, executing tests.
+> ℹ️ **Resolved — the `@Ignore`d L2 classes were deleted (2026-09-16).** Eight rows used to
+> cite `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or
+> `TelemetryForegroundServiceTest`. All four carried a class-level `@Ignore`, so those rows
+> showed ✅ while executing **nothing**. Rather than revive them, the classes were deleted and
+> the eight claims removed, because 14 of their 29 tests were `isDisplayed()` assertions that
+> could not fail when the app was broken. **TS-02, TS-03, TS-05, TS-06, TS-12, SR-04, SR-05
+> and SR-09 now have no automated coverage** and are marked as such in the SRS — SR-09
+> (recording survives backgrounding) is core V1 behaviour and is the most significant gap.
+> The original lesson stands: Gradle reports `BUILD SUCCESSFUL` for a fully skipped class, so
+> always parse `app/build/outputs/androidTest-results/**/*.xml` rather than trusting the exit
+> code. Deleted tests are recoverable from git at `0216475`.
 
 ---
 
@@ -73,12 +76,12 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | DR-07 | Clear User Data — confirm, wipe Room + files + prefs, return to Onboarding | L1 | `ProfileViewModelTest` (`inOrder`: paths read before `clearAllTables()`) | ✅ |
 | DR-08 | No auth or demo-mode affordance; "LET'S RACE!!" CTA | L2 | `DriverNameFlowTest.theDemoModeShortcutIsGone` | ✅ |
 | **Track Setup** | | | | |
-| TS-02 | UI elements displayed | L2 | `TrackSetupFragmentTest` | ✅ |
-| TS-03 | GPS status indicator | L2 | `TrackSetupFragmentTest` | ✅ |
-| TS-05 | Point A capture | L2 | `TrackSetupFragmentTest` | ✅ |
-| TS-06 | Point B disabled initially | L2 | `TrackSetupFragmentTest` | ✅ |
+| TS-02 | UI elements displayed | — | *(none — test deleted 2026-09-16)* | ❌ |
+| TS-03 | GPS status indicator | — | *(none — test deleted 2026-09-16)* | ❌ |
+| TS-05 | Point A capture | — | *(none — test deleted 2026-09-16)* | ❌ |
+| TS-06 | Point B disabled initially | — | *(none — test deleted 2026-09-16)* | ❌ |
 | TS-08 | Haversine distance | L1 | `GeoUtilsTest` | ✅ |
-| TS-12 | Start Recording disabled | L2 | `TrackSetupFragmentTest` | ✅ |
+| TS-12 | Start Recording disabled | — | *(none — test deleted 2026-09-16)* | ❌ |
 | TS-15 | Fused updates; resubscribe after stop/start | L2 | `TrackSetupResubscribeTest` (executing, not `@Ignore`d) | ✅ |
 | TS-16 | Warm-up starts when Home becomes visible | L1 + L2 | `LocationWarmUpTest`, `HomeViewModelTest`, `HomeGpsChipTest` | ✅ |
 | TS-17 | Home GPS readiness chip states | L1 + L2 | `LocationWarmUpTest`, `HomeGpsChipTest` | ✅ |
@@ -86,9 +89,9 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | TS-19 | Time-to-first-fix metrics recorded and shown on About | L1 | `LocationWarmUpTest` | ✅ |
 | TS-20 | Warm-up exposes readiness only, never a position | L1 | `LocationWarmUpTest` | ✅ |
 | **Session Recording** | | | | |
-| SR-04 | Elapsed time MM:SS.mmm | L2 | `TelemetryForegroundServiceTest` | ✅ |
-| SR-05 | GPS status indicator | L2 | `TelemetryForegroundServiceTest` | ✅ |
-| SR-09 | Foreground service | L2 | `TelemetryForegroundServiceTest` | ✅ |
+| SR-04 | Elapsed time MM:SS.mmm | — | *(none — test deleted 2026-09-16)* | ❌ |
+| SR-05 | GPS status indicator | — | *(none — claim was unfounded)* | ❌ |
+| SR-09 | Foreground service | — | *(none — test deleted 2026-09-16)* | ❌ |
 | **Telemetry Capture** | | | | |
 | TC-06 | JSONL format | L1 | `TelemetryFileWriterTest` | ✅ |
 | TC-07 | Mutex protection | L1 | `TelemetryFileWriterTest` | ✅ |

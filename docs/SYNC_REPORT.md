@@ -4,6 +4,88 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-16] Deletion of all @Ignore'd tests
+
+**Codebase Version:** v2.96
+**Trigger:** Decision to delete every `@Ignore`'d test class after analysis showed the
+suite was reporting coverage for tests that had never executed.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `app/src/androidTest/**` | ✅ Deleted | 4 classes, 29 tests, 1,181 lines |
+| `05_tests/coverage-map.tsv` | ✅ Updated | −8 claims, +5-line explanatory note |
+| `01_requirements/TRACEABILITY_MATRIX.md` | ✅ Updated | 8 rows ✅→❌; obsolete caveat rewritten |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +2 coverage-status remarks (TS block, SR block) |
+| `05_tests/L2_SWE5_integration/README.md` | ✅ Updated | Tree entries removed; `@Ignore` narrative corrected |
+| `05_tests/Test_Strategy.md` | ✅ Updated | Stale example command + ledger example fixed |
+| `05_tests/test_strategy_execution_instructions.md` | ✅ Updated | 2 stale example commands fixed |
+| `atlas/failure-patterns.md` | ✅ Updated | +1 pattern: FP-HOLLOW-TEST |
+| `docs/USER_MANUAL.md` | ⏭️ No change | No user-facing behaviour affected |
+
+### Deleted
+
+| File | Tests | Lines | `@Ignore` reason |
+|------|-------|-------|------------------|
+| `EndToEndTest.kt` | 5 | 445 | MockWebServer init / app state |
+| `ui/tracksetup/TrackSetupFragmentTest.kt` | 11 | 269 | Needs `launchFragmentInHiltContainer` |
+| `service/TelemetryForegroundServiceTest.kt` | 6 | 263 | Requires real GPS hardware |
+| `ui/recording/RecordingFragmentTest.kt` | 7 | 204 | `HiltTestActivity` not resuming |
+
+**Recovery SHA:** `02164750ba14e3e60f2e03022a5bf5636b74b3db`
+
+### Deliberately kept
+
+- `HiltTestActivity.kt` / `HiltExt.kt` — four *passing* tests depend on them
+  (`StartupBackStackTest`, `SessionShareTest`, `AnalysisTabTest`, `AboutScreenTest`)
+- `di/TestNetworkModule.kt` + `mockwebserver` — `@TestInstallIn(replaces = [NetworkModule::class])`
+  redirects **all** L2 tests to `localhost:8080`; deleting it would have pushed the 60 passing
+  tests onto the production network module
+- Historical `05_tests/reports/TEST_REPORT_*.md` — dated evidence, not rewritten
+
+### Requirement Impact
+
+⚠️ **Eight requirements lost their only claim** and are now marked ❌ with dated remarks in
+the SRS: **TS-02, TS-03, TS-05, TS-06, TS-12, SR-04, SR-05, SR-09**.
+
+- **SR-09** (recording continues when backgrounded) is core V1 behaviour and is the most
+  significant gap. It was already unverified — the cited test never ran.
+- **SR-05**'s claim was **unfounded regardless**: `TelemetryForegroundServiceTest` contained
+  no GPS-status assertion at all. Removing it corrects a false claim.
+- **14 of the 29** deleted tests were `isDisplayed()` assertions that could not fail when the
+  app was broken.
+
+No new requirement IDs added; none removed.
+
+### Validation
+
+| Check | Before | After |
+|-------|--------|-------|
+| `@Ignore` in `app/src` | 4 classes | **0** |
+| L1 unit tests | 282/282 | **282/282** |
+| L2 integration | 60 exec / 89 declared, 4 skipped | **60/60, 0 skipped** |
+| Tests executed | 342/371, 29 never ran | **342/342, 0 never ran** |
+| Unbacked coverage claims | `[WARN] 8` | **none** |
+| V1 requirement coverage | 71/192 (37%) | **63/192 (33%)** |
+
+The coverage drop is a correction, not a regression: nothing that previously executed stopped
+executing. Report: `05_tests/reports/RUN_20260916_110333/`.
+
+### Recommendations
+
+- [ ] SR-09 is the gap worth closing. It needs `TelemetryForegroundService` moved onto the
+      `LocationUpdates` seam (TS-15) so fixes can be scripted, as `StartLineFreshnessTest`
+      already does — the service currently calls `LocationManager.GPS_PROVIDER` directly
+- [ ] Real drive telemetry exists for replay (`lapfixtures/`, Incidents 13 & 14) and is already
+      used at L1 by `LapReplayHarness`; emulator GPS cannot feed `SensorManager`, so the seam is
+      the only route that replays accel/gyro
+- [ ] Consider promoting the report's `[WARN] N coverage claim(s) not backed` to a non-zero exit
+      so a claim can never again outlive its test
+- [ ] Android Lint remains the only active build gate, still red on 3 real errors
+
+---
+
 ## [2026-09-15] Removal of the ktlint and JaCoCo quality gates
 
 **Codebase Version:** v2.96

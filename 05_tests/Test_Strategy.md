@@ -206,7 +206,7 @@ adb devices
 
 # Run specific test class
 ./gradlew connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.service.TelemetryForegroundServiceTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.ui.splash.SplashScreenTest
 ```
 
 **Output:** `app/build/reports/androidTests/connected/index.html`
@@ -374,7 +374,7 @@ declared and never run.
 ```
 requirement<TAB>test<TAB>note
 UI-01	SplashScreenTest	Brand introduction shows on cold start
-SR-04	TelemetryForegroundServiceTest	Foreground notification
+TC-06	TelemetryFileWriterTest	JSONL format
 LD-04	GeoUtilsTest	Line intersection
 AS-03	L4:ANA-02	Track map matches the real circuit
 ```

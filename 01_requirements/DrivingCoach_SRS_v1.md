@@ -188,6 +188,18 @@ authenticated account rather than the sole source of identity.
 | TS-18 | GPS warm-up shall be bounded by the user's task rather than by any one screen. It shall stop when the app leaves the foreground, when a recording starts, or after 30 minutes of continuous warm-up, so that the receiver is never held while the user cannot see that it is held, and never held indefinitely. It shall **not** stop merely because the Home screen is no longer visible. *(Amended after Incident 12: the previous wording made the Home screen the stop condition, which meant navigating Home → Track Setup — the single journey warm-up exists to serve — discarded the fix the user had just waited for.)* |
 | TS-19 | The app shall record the time-to-first-fix and the time-to-first-accurate-fix (≤10 m) of the most recent acquisition and display them on the About screen, so that GPS acquisition delays reported by users can be diagnosed with measured evidence. |
 | TS-20 | Warm-up shall expose readiness only and shall never supply a position to start/finish line capture; captured points shall always come from a live location update that independently satisfies the ≤10 m accuracy gate. |
+
+**Remark on TS-02, TS-03, TS-05, TS-06 and TS-12 — coverage status (2026-09-16).**
+These five requirements have **no automated test coverage**. They previously cited
+`TrackSetupFragmentTest`, which carried a class-level `@Ignore` and had never executed. Of
+its 11 tests, 8 were `isDisplayed()` assertions that could not have failed even with the
+screen badly broken, and the claims they backed were overstated in any case — TS-05 ("Point A
+shall be captured by tapping CAPTURE") was cited by a test that only checked the button
+existed and was clickable, never capturing a point. The class was deleted rather than revived.
+
+TS-15 through TS-20 are unaffected: they are backed by `TrackSetupResubscribeTest`,
+`LocationWarmUpTest`, `HomeGpsChipTest` and `HomeViewModelTest`, all of which execute.
+Deleted tests are recoverable from git at `0216475`.
 | TS-21 | Start/finish line capture shall reject any fix older than 3 seconds, measured on the monotonic clock (`elapsedRealtimeNanos`). Age shall be checked when a fix arrives, at the moment of capture, and bounded at the location request itself (`setMaxUpdateAgeMillis`). Where the age cannot be established — an unset or future timestamp — the fix shall be treated as current, since refusing capture outright is a worse failure than the one being prevented and the ≤10 m accuracy gate still applies. |
 | TS-22 | While only stale fixes are held, the Track Setup screen shall withdraw capture and display "Getting a current GPS fix…", distinct from "Acquiring GPS…". This state shall clear automatically on the next current fix and shall never require the user to leave and re-enter the screen. |
 | TS-23 | The Track Setup screen shall discard the position it is holding whenever its location collector restarts, because a fix retained across a screen-off or app switch describes where the user was rather than where they are. |
@@ -209,6 +221,26 @@ authenticated account rather than the sole source of identity.
 | SR-09 | Recording shall continue when the app is sent to the background via a foreground service with `foregroundServiceType=location`. |
 | SR-10 | The foreground service notification shall display: title 'Driving Coach — Recording', content text 'MM:SS', updating every second. |
 | SR-11 | If GPS hardware is not available on the device, the foreground service shall stop itself and post a state indicating GPS is unavailable. |
+
+**Remark on SR-04, SR-05 and SR-09 — coverage status (2026-09-16).**
+These three requirements have **no automated test coverage**. They previously cited
+`TelemetryForegroundServiceTest`, which carried a class-level `@Ignore` ("requires real GPS
+hardware") and had therefore never executed. The class was deleted rather than revived, and
+the three claims removed from `coverage-map.tsv`.
+
+Two points worth keeping visible:
+
+- The **SR-05 claim was unfounded regardless** — that class contained no assertion about a
+  GPS status indicator at all. Removing it corrects a false claim, not a real loss.
+- **SR-09 is the significant gap.** Recording continuing when the app is backgrounded is
+  core V1 behaviour, and nothing now verifies it — nor did anything before, since the test
+  never ran. The requirement stands; the evidence does not exist.
+
+The test was un-runnable because `TelemetryForegroundService` takes its location stream from
+`LocationManager.GPS_PROVIDER` directly instead of the injectable `LocationUpdates` seam the
+rest of the app uses (see TS-15). Restoring coverage means putting the service on that seam
+so fixes can be scripted, as `StartLineFreshnessTest` already does. Deleted tests are
+recoverable from git at `0216475`.
 
 ---
 

@@ -292,13 +292,13 @@ cd /home/ctw00173_ubuntu/05_AI_DIY/Trillian
 **Run specific test class:**
 ```bash
 ./gradlew connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.service.TelemetryForegroundServiceTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.ui.splash.SplashScreenTest
 ```
 
 **Run specific test method:**
 ```bash
 ./gradlew connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.service.TelemetryForegroundServiceTest#elapsedMsUpdatesAtHighFrequency
+  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.ui.splash.SplashScreenTest#brandIntroductionShowsOnColdStart
 ```
 
 ### 4.3 Verify Results
