@@ -186,10 +186,12 @@ Trillian/
 
 # Run specific test class
 ./gradlew testDebugUnitTest --tests "com.drivingcoach.lap.LocalLapDetectorTest"
-
-# Run with coverage report
-./gradlew testDebugUnitTestCoverage
 ```
+
+> **Coverage reporting was removed on 2026-09-15.** The JaCoCo gate and
+> `enableUnitTestCoverage` were deliberately dropped, so `testDebugUnitTestCoverage`
+> no longer exists. SRS requirement NF-11 (≥ 70% line coverage) is currently
+> unmeasured — see the NF-11 remark in the SRS.
 
 **Output:** `app/build/reports/tests/testDebugUnitTest/index.html`
 

@@ -508,12 +508,22 @@ no network connection of any kind.
 | NF-08 | Room database queries shall respond within 100 ms for session lists of up to 100 sessions. |
 | NF-09 | The app shall display a loading state for any operation expected to take longer than 300 ms. |
 | NF-10 | The backend shall process requests from multiple concurrent users without session data cross-contamination. |
-| NF-11 | Unit test line coverage shall be ≥ 70% across domain and data layers. |
+| NF-11 | Unit test line coverage shall be ≥ 70% across domain and data layers. ⚠️ **Not automatically enforced** — see note below. |
 | NF-12 | `./gradlew assembleRelease` shall succeed with R8/ProGuard enabled. |
 | NF-13 | The backend Docker image shall build and start within 60 seconds. |
 | NF-14 | High-accuracy location shall not be held while the app is not in the foreground, outside an active recording, which runs under a visible foreground-service notification. This is a privacy bound before it is a battery one: the user shall always be able to see that the receiver is in use. |
 | NF-15 | Start-line capture shall be reachable within 1 second of arriving at the Track Setup screen when GPS readiness was already reported on Home, so that the warm-up the user waited for is not spent twice. |
 | NF-16 | Lap timing shall not be quantised to the GPS sample interval. On a device delivering fixes at 1 Hz, the error introduced by sampling shall not exceed 100 ms per lap boundary. |
+
+**Remark on NF-11 — enforcement status (2026-09-15).**
+NF-11 has **no automated enforcement**. The JaCoCo coverage gate that nominally
+backed it was removed on 2026-09-15, together with ktlint, by explicit decision.
+That gate had been declaring a 95% line/branch threshold while never being
+attached to Gradle's `check` task, so it had in fact never executed — the
+requirement was already unenforced, and the removal makes that visible rather
+than changing it. The ≥ 70% target stands as a requirement; it is currently
+unmeasured. Re-establishing it means adding a coverage plugin **and** wiring the
+verification task into `check`. Android Lint remains the one active build gate.
 
 **Remark on NF-16 — why this matters more than it looks.**
 The app requests location updates at 10 Hz, but the rate actually delivered is set by the device's GNSS hardware, not by the app. The reference phone (ZTE Blade A53+) delivers roughly 1 Hz. At 15–20 m/s, taking the timestamp of the nearest sample instead of the true crossing instant costs up to 1 second, which on a 77 s kart lap is about 1.3% — larger than the differences between laps that the coaching is meant to explain. Interpolating between the two samples either side of the crossing removes almost all of this, and costs nothing.

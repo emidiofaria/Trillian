@@ -4,9 +4,26 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("androidx.navigation.safeargs.kotlin")
-    id("org.jlleitschuh.gradle.ktlint")  // LA-02: Kotlin style enforcement
-    jacoco                                // UA-02: coverage enforcement
 }
+
+// Quality gates — deliberate configuration, 2026-09-15.
+//
+// ktlint and JaCoCo were both removed on purpose.
+//
+//   ktlint  was permanently failing (accumulated style debt plus an upstream
+//           crash in the argument-list-wrapping rule). A gate that can never go
+//           green trains everyone to pass -x flags, which is how genuine Android
+//           Lint errors went unnoticed. Formatting is now an IDE concern.
+//
+//   JaCoCo  declared a 95% line/branch threshold that was never wired into
+//           `check`, so it never ran. It was an assurance claim with no evidence
+//           behind it. SRS requirement NF-11 (>= 70% line coverage on domain and
+//           data layers) consequently has NO automated enforcement — this is
+//           recorded in the SRS rather than left implied.
+//
+// Android Lint remains active and is the one real gate. Do not re-add a coverage
+// threshold without also attaching it to `check`; an unattached gate is worse
+// than none.
 
 // Single source of truth for the app version. Release APKs in releases/ are named
 // from this value, so the filename can never disagree with what the app reports.
@@ -31,9 +48,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            enableUnitTestCoverage = true  // UA-02: collect .exec data for JaCoCo
-        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -76,78 +90,6 @@ kapt {
         arg("room.schemaLocation", "$projectDir/schemas")
     }
     correctErrorTypes = true
-}
-
-// ─── JaCoCo configuration (UA-02, UA-03) ─────────────────────────────────────
-
-val jacocoExcludes = listOf(
-    "**/R.class", "**/R\$*.class", "**/BuildConfig.*", "**/Manifest*.*",
-    "**/*Test*.*", "android/**/*.*",
-    // Hilt/Dagger generated code
-    "**/Hilt_*.*", "**/*_HiltModules*.*", "**/*_Factory*.*",
-    "**/*_MembersInjector*.*", "**/DaggerHilt*.*",
-    // Room generated code
-    "**/*_Impl.class", "**/*_Impl\$*.class",
-    // Navigation SafeArgs generated code
-    "**/*Directions*.*", "**/*Args*.*"
-)
-
-tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("testDebugUnitTest")
-    group = "verification"
-    description = "Generate JaCoCo HTML and XML coverage reports for debug unit tests."
-
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-    }
-
-    val classTree = fileTree("${layout.buildDirectory.get().asFile}/tmp/kotlin-classes/debug") {
-        exclude(jacocoExcludes)
-    }
-
-    sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
-    classDirectories.setFrom(files(classTree))
-    executionData.setFrom(
-        fileTree(layout.buildDirectory.get().asFile) {
-            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-        }
-    )
-
-    // UA-02: run coverage verification immediately after the report is generated
-    finalizedBy("jacocoTestCoverageVerification")
-}
-
-tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-    group = "verification"
-    description = "Fail the build if coverage drops below 95% line or branch (UA-02)."
-
-    dependsOn("jacocoTestReport")
-
-    violationRules {
-        rule {
-            limit {
-                counter = "LINE"
-                minimum = "0.95".toBigDecimal()
-            }
-            limit {
-                counter = "BRANCH"
-                minimum = "0.95".toBigDecimal()
-            }
-        }
-    }
-
-    val classTree = fileTree("${layout.buildDirectory.get().asFile}/tmp/kotlin-classes/debug") {
-        exclude(jacocoExcludes)
-    }
-
-    sourceDirectories.setFrom(files("${project.projectDir}/src/main/java"))
-    classDirectories.setFrom(files(classTree))
-    executionData.setFrom(
-        fileTree(layout.buildDirectory.get().asFile) {
-            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-        }
-    )
 }
 
 // ─── Dependencies ─────────────────────────────────────────────────────────────

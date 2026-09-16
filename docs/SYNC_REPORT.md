@@ -4,6 +4,78 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-15] Removal of the ktlint and JaCoCo quality gates
+
+**Codebase Version:** v2.96
+**Trigger:** Decision to disable two build quality gates after a full build and
+L1+L2 test run exposed that neither was providing real assurance.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `build.gradle.kts` | ✅ Updated | −2 lines (ktlint plugin declaration) |
+| `app/build.gradle.kts` | ✅ Updated | −81 net (both plugins, `enableUnitTestCoverage`, JaCoCo task block); +19 decision comment |
+| `DrivingCoach_SRS_v1.md` | ✅ Updated | NF-11 annotated; enforcement remark added |
+| `05_tests/Test_Strategy.md` | ✅ Updated | Stale `testDebugUnitTestCoverage` command removed |
+| `atlas/*.md` | ⏭️ No change | No Atlas file documented either gate |
+| `docs/USER_MANUAL.md` | ⏭️ No change | No user-facing behaviour affected |
+
+### Rationale
+
+**ktlint** was permanently red: accumulated style debt plus an upstream crash in
+the `argument-list-wrapping` rule on `OfflineCoachingEngineTest.kt:141`. A gate
+that can never go green trains everyone to pass `-x` flags, which is how three
+genuine Android Lint errors went unaddressed.
+
+**JaCoCo** declared a 95% line/branch threshold that was never attached to
+Gradle's `check` task, so it had never executed. It was an assurance claim with
+no evidence behind it.
+
+### Requirement Impact
+
+⚠️ **NF-11** ("Unit test line coverage shall be ≥ 70% across domain and data
+layers") loses its only nominal automated enforcement. Because the JaCoCo
+verification task never ran, NF-11 was already unenforced in practice; this
+change makes the gap visible rather than creating it. Approved explicitly by the
+operator. No new requirement IDs were added and none were removed.
+
+The requirement IDs cited in the removed build comments — `LA-02`, `UA-02`,
+`UA-03`, `CD-AD-06` — were found to exist **nowhere** in the SRS, `coverage-map.tsv`
+or `scope-map.tsv`. They were rotted traceability and have been deleted with the
+code that cited them.
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| `./gradlew tasks --all \| grep -iE 'ktlint\|jacoco\|coverage'` | Empty — both gates gone |
+| L1 unit tests | 282/282 passed, 0 failures, 0 skipped |
+| `./gradlew build` | Now fails on `lintDebug` **only** (4 errors, 290 warnings) |
+
+### Files Modified
+
+```
+M  build.gradle.kts                        (+0,  -2)
+M  app/build.gradle.kts                    (+19, -96)
+M  01_requirements/DrivingCoach_SRS_v1.md  (+11, -1)
+M  05_tests/Test_Strategy.md               (+6,  -2)
+```
+
+### Recommendations
+
+- [ ] Android Lint is now the only active gate — fix its 3 real errors
+      (`POST_NOTIFICATIONS` ×2 in `TelemetryForegroundService.kt`, `android:tint`
+      in `fragment_session_result.xml`) and baseline the 290 warnings
+- [ ] The `HiltTestActivity [MissingClass]` lint error is a false positive
+      (class lives in `androidTest`, invisible to debug-variant lint)
+- [ ] 29 L2 tests remain `@Ignore`d, leaving SR-04/05/09 and TS-02/03/05/06/12
+      unbacked — higher value than either removed gate
+- [ ] If coverage enforcement is ever restored, wire it into `check`; an
+      unattached gate is worse than none
+
+---
+
 ## [2026-09-14] Incident 14 explainer and fix record, and a message that misdirected
 
 **Codebase Version:** v2.96
