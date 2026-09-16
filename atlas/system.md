@@ -9,8 +9,9 @@
 
 | Attribute | Value |
 |-----------|-------|
-| **Application Name** | Driving Coach |
-| **Package ID** | `com.drivingcoach` |
+| **Application Name** | Trillian - Driving coach |
+| **Package ID** (`applicationId`) | `io.github.emidiofaria.trillian` — the Play identity, permanent from first upload |
+| **Kotlin namespace** | `com.drivingcoach` — deliberately not renamed; affects only generated code, never seen by Play |
 | **Type** | Native Android Application (POC) |
 | **Architecture** | Single-module MVVM with Clean Architecture layers |
 | **Target SDK** | 35 (Android 15) |
@@ -466,26 +467,42 @@ a version the binary does not actually report.
 
 ### Release layout
 
-Releases are **directories**, not loose APKs:
+There are **two** release targets, chosen by `package-release.sh --target` or by
+its interactive prompt. They are separate pipelines, not variants: the dev target
+builds a *debug* APK signed with the debug key, which can never be uploaded to
+Play.
 
 ```
-releases/v2.95-session-analysis/
+releases/v2.95-session-analysis/        target: dev
 ├── DrivingCoach-v2.95-session-analysis.apk
 ├── TEST_REPORT.html      Evidence for this exact build
 ├── TEST_REPORT.md
 └── RELEASE_NOTES.md      Generated from git log since the previous release
+
+releases/v2.96-play/                    target: play
+├── Trillian-v2.96.aab    Signed bundle for Google Play
+├── TEST_REPORT.html
+├── RELEASE_NOTES.md
+└── PLAY_SUBMISSION.md    Console declarations still outstanding
 ```
 
 Written by `05_tests/infra/scripts/package-release.sh`, which reads
 `appVersionName` from `app/build.gradle.kts` and derives the slug from the
 branch name unless `--slug` is given. `run-all-tests.sh` offers to invoke it at
-the end of a run.
+the end of a run. Full process in `docs/RELEASE.md`.
 
 **Why a directory:** an APK on its own asserts nothing about whether it was
 tested. Shipping the test report inside the same directory means a build and the
 evidence for it cannot be separated, mislaid, or quietly regenerated later
 against a different commit — the report header carries the commit, branch and
 test device.
+
+**Why the Play target refuses more (NF-17).** A dev build may be unverified so
+long as it is honestly labelled — hence `TEST_REPORT_MISSING.txt`. A public
+release may not: the Play path aborts on unconfigured signing, an unclean working
+tree, a non-increasing `versionCode`, a failing `lintVitalRelease`, or a test
+report belonging to a different version or commit. All five run *before* the
+build, so a refusal costs seconds and leaves the tree untouched.
 
 Loose `DrivingCoach-v*.apk` files at the top of `releases/` predate this
 convention and are kept for history.
@@ -497,7 +514,7 @@ convention and are kept for history.
 rendered as `2.8 (208)`. This required enabling `buildFeatures { buildConfig = true }` —
 AGP 8 does not generate `BuildConfig` by default, and nothing in the app had referenced it
 before, so its absence was invisible until the About screen needed it. The version remains
-observable externally via `aapt2 dump badging` and `adb shell dumpsys package com.drivingcoach`.
+observable externally via `aapt2 dump badging` and `adb shell dumpsys package io.github.emidiofaria.trillian`.
 
 ### Build Types
 

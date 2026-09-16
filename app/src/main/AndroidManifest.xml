@@ -19,6 +19,14 @@
     <!-- High-frequency sensor access (required for SENSOR_DELAY_FASTEST on Android 12+) -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
 
+    <!--
+        NF-14: the driver must always be able to see that the receiver is in use.
+        On Android 13+ that guarantee depends on this permission. Without it
+        declared here it can never be granted, so every notify() call - including
+        the "GPS signal lost" warning - is dropped silently by the system.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".DrivingCoachApp"
         android:allowBackup="true"

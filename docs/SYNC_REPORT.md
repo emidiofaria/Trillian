@@ -4,7 +4,71 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
-## [2026-09-16] Deletion of all @Ignore'd tests
+## [2026-09-16] Play release preparation: package rename, notification fix, signed AAB pipeline
+
+**Codebase Version:** v2.96
+**Trigger:** First Google Play upload. `applicationId` is permanent from the first
+upload onward, so the rename had to happen before it — and preparing the upload
+surfaced three defects that would have blocked or degraded the release.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `app/build.gradle.kts` | ✅ Updated | `applicationId` → `io.github.emidiofaria.trillian`; `signingConfigs`; keystore loading |
+| `app/src/main/AndroidManifest.xml` | ✅ Updated | `POST_NOTIFICATIONS` declared |
+| `ui/onboarding/OnboardingFragment.kt` | ✅ Updated | Optional-permission set; denial of an optional permission no longer blocks onboarding |
+| `service/TelemetryForegroundService.kt` | ✅ Updated | `notify()` guarded + logged; action strings renamed; title reads `app_name` |
+| `res/values/strings.xml` | ✅ Updated | Label → "Trillian - Driving coach" |
+| `05_tests/infra/scripts/package-release.sh` | ✅ Updated | `--target dev\|play`; 5 Play preflight gates; `PLAY_SUBMISSION.md` |
+| `05_tests/infra/scripts/run-all-tests.sh` | ✅ Updated | Release prompt now reflects the two targets |
+| `docs/RELEASE.md` | ✅ Created | Release process, signing, keystore backup, identity, versioning |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +NF-17, +NF-18; NF-12 and NF-14 remarks |
+| `atlas/failure-patterns.md` | ✅ Updated | +1 pattern: FP-UNDECLARED-PERMISSION |
+| `docs/USER_MANUAL.md` | ✅ Updated | Title; permission table corrected; "Allow all the time" advice removed |
+
+### Defects found while preparing the release
+
+**1. `POST_NOTIFICATIONS` was never declared** (`FP-UNDECLARED-PERMISSION`).
+A runtime permission absent from the manifest can never be granted, so Android 13+
+silently discarded every `notify()` call. Recording worked; the driver just could
+not see it happening, and never received the "GPS signal lost" warning. This
+silently broke **NF-14**, a privacy requirement. Android Lint had been reporting it
+at two call sites; the report went unread behind a permanently-red ktlint gate —
+the exact cost predicted when those gates were removed on 2026-09-15.
+
+**2. The User Manual documented behaviour the code did not have.** Its permission
+table already listed "Notifications". The documentation described the intended
+design; nothing ever checked that the code matched it.
+
+**3. "Allow all the time" was the documented advice for location** — directly
+contradicting NF-14 and the app's actual design, which never requests background
+location. Corrected to "While using the app".
+
+### Requirement changes
+
+| ID | Change |
+|----|--------|
+| NF-12 | Annotated **not met** — `isMinifyEnabled = false`, so R8 is off. Deliberately not changed for this release. |
+| NF-14 | Annotated with the Android 13+ gap and its fix |
+| NF-17 | **New** — release signing and the Play packaging refusals |
+| NF-18 | **New** — Play identity is `io.github.emidiofaria.trillian`, permanent |
+
+### Decisions recorded
+
+- **`namespace` deliberately left as `com.drivingcoach.`** Play never sees it;
+  renaming touches every source file for no external benefit.
+- **`POST_NOTIFICATIONS` requested as optional, not required.** Adding it to
+  `requiredPermissions` would gate `areAllPermissionsGranted()` and trap anyone who
+  declined on the onboarding screen permanently — a functional lock-out shipped to
+  fix a cosmetic failure.
+- **R8 left off for the first release.** Enabling it hours before publishing risks
+  a Gson/Room reflection failure visible only in the shipped build.
+- **Keystore stored outside the repository.** `keystore.properties` is gitignored,
+  and the `.jks` lives in `~/keystores/` so no `git add -A` can stage it. Absence
+  degrades the build (unsigned release, Play path refuses) rather than breaking it.
+
+
 
 **Codebase Version:** v2.96
 **Trigger:** Decision to delete every `@Ignore`'d test class after analysis showed the

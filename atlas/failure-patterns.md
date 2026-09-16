@@ -524,7 +524,7 @@ empirically falsified (proven to fail when the defect is reintroduced).
 ### Evidence To Check
 
 1. **Room DB**: `SELECT rawFilePath FROM sessions WHERE id = X`
-2. **File system**: `adb shell ls -la /data/data/com.drivingcoach/files/telemetry/`
+2. **File system**: `adb shell ls -la /data/data/io.github.emidiofaria.trillian/files/telemetry/`
 3. **Upload worker logs**: Look for "Telemetry file not found" with session ID
 4. **Storage settings**: Was "Clear Data" used?
 5. **Session creation**: Was `rawFilePath` set correctly?
@@ -2061,3 +2061,97 @@ to an honest 33%.
   SR-09 coverage means putting it on that seam, as `StartLineFreshnessTest` already does.
 - Same family as **FP-ASSERTION-THAT-CANNOT-FAIL** — see the brand-asset falsification guard,
   which exists precisely so a gate cannot be weakened into a no-op.
+
+---
+
+## Pattern: A Permission the App Can Never Be Granted (FP-UNDECLARED-PERMISSION) — ✅ FIXED (2026-09-16)
+
+### Symptom
+
+The recording notification never appears on Android 13+ devices. Recording itself works: the
+session is captured, laps are detected, the JSONL is written. Only the notification is missing —
+including the `GPS signal lost — move to open sky` warning, which is the one notification that is
+supposed to change what the driver does.
+
+Nothing fails. No exception, no log line, no crash. `notify()` returns normally.
+
+### Root cause
+
+`POST_NOTIFICATIONS` was **never declared in `AndroidManifest.xml`**.
+
+A runtime permission that is not declared in the manifest cannot be granted — not by the user, not
+from Settings, not by anything. There is no state in which the app has it. From Android 13
+(`targetSdk 35` here, so every modern device), the platform silently discards `notify()` calls from
+an app without it.
+
+The failure therefore has no symptom at the call site. Code that looked correct —
+
+```kotlin
+val notificationManager = getSystemService(NotificationManager::class.java)
+notificationManager.notify(NOTIFICATION_ID, notification)   // returns; does nothing
+```
+
+— had been dead on arrival on every device sold since 2022.
+
+### Why it survived so long
+
+Three things hid it:
+
+1. **The service still worked.** The visible feature (recording) was unaffected, so the defect
+   looked cosmetic even when noticed.
+2. **Android Lint *did* report it,** at `TelemetryForegroundService.kt:387` and `:554`. The report
+   was drowned out by a permanently red ktlint gate; everyone had learned to build with `-x`
+   flags. A gate that is always failing is indistinguishable from one that is failing for a
+   reason. See the quality-gate note at the top of `app/build.gradle.kts`.
+3. **No test could catch it.** The only test of the service was `@Ignore`d (FP-HOLLOW-TEST), and
+   it never asserted on notifications anyway.
+
+### Requirement impact
+
+This silently broke **NF-14** — *"the user shall always be able to see that the receiver is in
+use."* That is a **privacy** guarantee, not a convenience one. An app sampling high-accuracy
+location with no visible indicator is precisely the behaviour NF-14 exists to forbid, and
+precisely what Play reviewers look for in a location app.
+
+The requirement was never changed. It had simply stopped being true, and nothing said so.
+
+### Fix
+
+1. Declare `POST_NOTIFICATIONS` in the manifest.
+2. Request it during onboarding — **as optional, not required**.
+3. Guard the `notify()` calls and log when the permission is absent, so the outcome is visible in
+   logcat instead of invisible.
+
+### The trap inside the fix
+
+The obvious fix is to add the permission to `OnboardingFragment.requiredPermissions`. **Do not.**
+
+Onboarding completes only when `areAllPermissionsGranted()` is true over that array. Recording
+works fine without notification permission, so making it required would trap any driver who
+declined behind an onboarding screen they could never pass — a hard lock-out, shipped to fix a
+missing notification. The permission is requested alongside the required set but excluded from the
+completion gate.
+
+**A fix for a cosmetic failure must not be able to cause a functional one.**
+
+### Detection
+
+```bash
+# Every runtime permission the code checks or requests must appear in the manifest.
+grep -rhoE "Manifest\.permission\.[A-Z_]+" app/src/main/java | sort -u \
+  | sed 's/Manifest.permission.//' \
+  | while read -r p; do
+      grep -q "android.permission.$p" app/src/main/AndroidManifest.xml \
+        || echo "NOT DECLARED: $p"
+    done
+```
+
+### Generalisation
+
+The same shape appears wherever a capability is *used* in one place and *declared* in another, and
+only the declaration is authoritative: manifest permissions, `foregroundServiceType`, queryable
+package visibility, exported components. The using side compiles, runs, and stays quiet. Only the
+platform knows, and it does not say.
+
+**When a platform call can fail silently, check the precondition explicitly and log the refusal.**
+A log line costs nothing and turns an invisible failure into a searchable one.

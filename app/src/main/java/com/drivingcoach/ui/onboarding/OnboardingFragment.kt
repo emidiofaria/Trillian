@@ -43,6 +43,21 @@ class OnboardingFragment : Fragment() {
             }
         }.toTypedArray()
 
+    /**
+     * Asked for alongside the required set, but deliberately not part of it.
+     *
+     * NF-14 wants the recording notification visible, which on Android 13+ needs
+     * POST_NOTIFICATIONS. Recording still works when it is denied, so treating it
+     * as required would strand the driver on this screen forever: onboarding only
+     * completes when every required permission is granted.
+     */
+    private val optionalPermissions: Array<String>
+        get() = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }.toTypedArray()
+
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -85,12 +100,18 @@ class OnboardingFragment : Fragment() {
     }
 
     private fun requestPermissions() {
-        permissionLauncher.launch(requiredPermissions)
+        permissionLauncher.launch(requiredPermissions + optionalPermissions)
     }
 
     private fun handlePermissionResults(permissions: Map<String, Boolean>) {
-        val deniedPermissions = permissions.filterValues { !it }.keys
-        
+        // Only a denied *required* permission blocks onboarding. An optional one
+        // being refused costs a notification, not the ability to record.
+        val deniedPermissions = permissions
+            .filterValues { !it }
+            .keys
+            .filter { it in requiredPermissions }
+            .toSet()
+
         if (deniedPermissions.isEmpty()) {
             // All permissions granted
             completeOnboarding()

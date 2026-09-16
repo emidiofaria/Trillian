@@ -541,9 +541,11 @@ no network connection of any kind.
 | NF-09 | The app shall display a loading state for any operation expected to take longer than 300 ms. |
 | NF-10 | The backend shall process requests from multiple concurrent users without session data cross-contamination. |
 | NF-11 | Unit test line coverage shall be ≥ 70% across domain and data layers. ⚠️ **Not automatically enforced** — see note below. |
-| NF-12 | `./gradlew assembleRelease` shall succeed with R8/ProGuard enabled. |
+| NF-12 | `./gradlew assembleRelease` shall succeed with R8/ProGuard enabled. ⚠️ **Not currently met** — see note below. |
 | NF-13 | The backend Docker image shall build and start within 60 seconds. |
 | NF-14 | High-accuracy location shall not be held while the app is not in the foreground, outside an active recording, which runs under a visible foreground-service notification. This is a privacy bound before it is a battery one: the user shall always be able to see that the receiver is in use. |
+| NF-17 | The release build shall be signed with the Play upload key, and the release-packaging script shall refuse to produce a Play artifact that is unsigned, built from an unclean working tree, carries a duplicate `versionCode`, fails `lintVitalRelease`, or has no test report for its own commit. |
+| NF-18 | The app's Play identity shall be `io.github.emidiofaria.trillian`. This is fixed permanently by the first upload and shall not be changed thereafter. |
 | NF-15 | Start-line capture shall be reachable within 1 second of arriving at the Track Setup screen when GPS readiness was already reported on Home, so that the warm-up the user waited for is not spent twice. |
 | NF-16 | Lap timing shall not be quantised to the GPS sample interval. On a device delivering fixes at 1 Hz, the error introduced by sampling shall not exceed 100 ms per lap boundary. |
 
@@ -557,7 +559,29 @@ than changing it. The ≥ 70% target stands as a requirement; it is currently
 unmeasured. Re-establishing it means adding a coverage plugin **and** wiring the
 verification task into `check`. Android Lint remains the one active build gate.
 
-**Remark on NF-16 — why this matters more than it looks.**
+**Remark on NF-12 — enforcement status (2026-09-16).**
+NF-12 is **not currently met**. `isMinifyEnabled = false` on the release build
+type, so `assembleRelease` succeeds *without* R8 rather than with it. The
+requirement was written as though R8 were on, and nothing ever checked. This was
+found while preparing the first Play upload and deliberately left as-is for that
+release: turning R8 on for the first time hours before publishing risks a
+reflection failure in Gson or Room that would only appear in the shipped build.
+Meeting NF-12 means enabling minification, writing the keep rules, and testing a
+minified build end-to-end — planned work, not a flag flip.
+
+**Remark on NF-14 — the Android 13+ gap (2026-09-16).**
+NF-14's guarantee that "the user shall always be able to see that the receiver is
+in use" was **silently broken on Android 13 and above**. `POST_NOTIFICATIONS` was
+never declared in the manifest, so it could not be granted, and the platform
+discards `notify()` calls from an app that lacks it. The foreground service still
+ran and still recorded; what the driver lost was any sight of it — including the
+"GPS signal lost — move to open sky" warning, which is the notification that
+actually changes behaviour at the track. The permission is now declared and
+requested during onboarding. It is requested as **optional**: recording works
+without it, so treating it as required would have stranded anyone who declined on
+the onboarding screen, which is a worse failure than the one being fixed.
+
+
 The app requests location updates at 10 Hz, but the rate actually delivered is set by the device's GNSS hardware, not by the app. The reference phone (ZTE Blade A53+) delivers roughly 1 Hz. At 15–20 m/s, taking the timestamp of the nearest sample instead of the true crossing instant costs up to 1 second, which on a 77 s kart lap is about 1.3% — larger than the differences between laps that the coaching is meant to explain. Interpolating between the two samples either side of the crossing removes almost all of this, and costs nothing.
 
 ---

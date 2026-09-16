@@ -1,10 +1,10 @@
-# Driving Coach — User Manual
+# Trillian - Driving coach — User Manual
 
 > **Version:** 1.0  
-> **Last Updated:** 2026-07-13  
+> **Last Updated:** 2026-09-16  
 > **Platform:** Android 8.0+
 
-Welcome to Driving Coach! This app helps you become a faster, smoother driver by analyzing your track sessions and providing personalized AI coaching feedback.
+Welcome to Trillian! This app helps you become a faster, smoother driver by analyzing your track sessions and providing personalized AI coaching feedback.
 
 ---
 
@@ -87,15 +87,22 @@ to the loading screen.
 
 ### 2.3 First Launch & Permissions
 
-When you first open Driving Coach, you'll be asked to grant permissions:
+When you first open Trillian, you'll be asked to grant permissions:
 
-| Permission | Why It's Needed |
-|------------|-----------------|
-| **Location** | To record your position on track |
-| **Physical Activity** | To detect when you're driving vs. walking |
-| **Notifications** | To show recording status in your notification bar |
+| Permission | Why It's Needed | Required? |
+|------------|-----------------|-----------|
+| **Location** | To record your position on track | Yes |
+| **Physical Activity** | To detect when you're driving vs. walking | Yes |
+| **Notifications** | To show recording status — including the "GPS signal lost" warning | Optional |
 
-**Important:** Choose **"Allow all the time"** for location when prompted. This ensures accurate recording even if the screen turns off.
+Choose **"While using the app"** for location. Trillian never tracks you in the
+background: location is only ever sampled during a session you started yourself,
+and a notification stays visible the whole time it is. You do not need to grant
+"Allow all the time", and Trillian will not ask for it.
+
+If you decline **Notifications**, recording still works normally — you just won't
+see the status bar entry or the warning when GPS drops out. You can turn it on
+later in Android Settings → Apps → Trillian → Notifications.
 
 ### 2.4 Telling Trillian Your Name
 
@@ -518,7 +525,7 @@ Use it when handing the phone to someone else, or to start completely fresh.
 **Symptoms:** GPS accuracy stays above 10m, or shows "No GPS"
 
 **Solutions:**
-1. Make sure Location permission is set to "Allow all the time"
+1. Make sure Location permission is granted, and set to **precise** rather than approximate
 2. Go outside with clear sky view
 3. Restart the app
 4. Toggle Location off/on in your phone settings

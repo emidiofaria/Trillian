@@ -1,3 +1,7 @@
+import java.io.File
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -33,12 +37,35 @@ val appVersionName = "2.96"
 // (1.0 -> 100, 2.8 -> 208) and leaves room for 99 minor releases per major.
 val appVersionCode = appVersionName.split(".").let { it[0].toInt() * 100 + it[1].toInt() }
 
+// Release signing. Google Play rejects unsigned uploads, so `bundleRelease` needs
+// a real key -- but the credentials must never enter the repository. They live in
+// keystore.properties (gitignored) and point at a keystore stored outside the
+// project tree entirely, so it cannot be added by an over-broad `git add`.
+//
+// When the file is absent (CI, a fresh clone, anyone who is not the publisher)
+// the build still works: release simply stays unsigned and the release-packaging
+// script refuses to produce a Play artifact. A missing key degrades the build; it
+// must never break it.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    val stream = FileInputStream(keystorePropertiesFile)
+    stream.use { input -> keystoreProperties.load(input) }
+}
+val keystoreStorePath: String? = keystoreProperties.getProperty("storeFile")
+val hasSigningConfig = keystoreStorePath != null && File(keystoreStorePath).exists()
+
 android {
     namespace = "com.drivingcoach"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.drivingcoach"
+        // The identity Google Play binds to this app. Permanent from the first
+        // upload onward: it can never be changed without shipping a new listing
+        // that existing installs will not upgrade to. The Kotlin namespace below
+        // is deliberately left as com.drivingcoach -- Play never sees it, and
+        // renaming it touches every source file for no external benefit.
+        applicationId = "io.github.emidiofaria.trillian"
         minSdk = 26
         targetSdk = 35
         versionCode = appVersionCode
@@ -47,8 +74,22 @@ android {
         testInstrumentationRunner = "com.drivingcoach.HiltTestRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasSigningConfig) {
+                storeFile = File(keystoreStorePath!!)
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

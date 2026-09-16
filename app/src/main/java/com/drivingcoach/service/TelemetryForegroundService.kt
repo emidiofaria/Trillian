@@ -18,6 +18,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Binder
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -51,8 +52,8 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         private const val CHANNEL_ID = "drivingcoach_recording"
         private const val CHANNEL_NAME = "Recording"
         
-        const val ACTION_START_RECORDING = "com.drivingcoach.ACTION_START_RECORDING"
-        const val ACTION_STOP_RECORDING = "com.drivingcoach.ACTION_STOP_RECORDING"
+        const val ACTION_START_RECORDING = "io.github.emidiofaria.trillian.ACTION_START_RECORDING"
+        const val ACTION_STOP_RECORDING = "io.github.emidiofaria.trillian.ACTION_STOP_RECORDING"
         const val EXTRA_SESSION_ID = "session_id"
         
         private const val GPS_MIN_TIME_MS = 100L // 10 Hz
@@ -379,6 +380,10 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
     }
     
     private fun updateNotificationGpsLost() {
+        if (!hasNotificationPermission()) {
+            Log.w(TAG, "GPS-lost warning not shown: POST_NOTIFICATIONS denied")
+            return
+        }
         val notification = createNotification(
             "Recording",
             "GPS signal lost — move to open sky"
@@ -504,6 +509,18 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    /**
+     * Android 13+ drops notify() silently when POST_NOTIFICATIONS is not granted.
+     * Checking first keeps that outcome explicit in the log instead of invisible.
+     */
+    private fun hasNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
@@ -527,7 +544,7 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Driving Coach — $title")
+            .setContentTitle("${getString(R.string.app_name)} — $title")
             .setContentText(content)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
@@ -537,6 +554,7 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
     }
     
     private fun updateNotification() {
+        if (!hasNotificationPermission()) return
         val elapsed = System.currentTimeMillis() - recordingStartTime
         val minutes = (elapsed / 60000).toInt()
         val seconds = ((elapsed % 60000) / 1000).toInt()

@@ -282,7 +282,7 @@ adb install -r app/build/outputs/apk/debug/DrivingCoach-v*-debug.apk
 adb install -r app/build/outputs/apk/release/DrivingCoach-v*-release.apk
 
 # Confirm the installed version matches what you expect
-adb shell dumpsys package com.drivingcoach | grep -E "versionCode|versionName"
+adb shell dumpsys package io.github.emidiofaria.trillian | grep -E "versionCode|versionName"
 ```
 
 **Via Android Studio:**

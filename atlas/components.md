@@ -757,7 +757,7 @@ SQLite database via Room for offline-first session storage. Single source of tru
 
 - `driving_coach.db` in `databases/`
 - Android Studio Database Inspector
-- `adb shell run-as com.drivingcoach ls databases/`
+- `adb shell run-as io.github.emidiofaria.trillian ls databases/`
 
 ### Recovery/Mitigation
 
@@ -946,7 +946,7 @@ Local file storage for raw telemetry JSONL files. Each session writes to `files/
 
 ### Evidence Sources
 
-- `adb shell run-as com.drivingcoach ls -la files/telemetry/`
+- `adb shell run-as io.github.emidiofaria.trillian ls -la files/telemetry/`
 - `adb pull` to inspect JSONL content
 - Line count = sample count
 
@@ -1081,7 +1081,7 @@ Encrypted key-value storage for auth tokens and user profile data. Replaces Shar
 
 ### Evidence Sources
 
-- `adb shell run-as com.drivingcoach ls files/datastore/`
+- `adb shell run-as io.github.emidiofaria.trillian ls files/datastore/`
 - Flow emission observation
 
 ### Recovery/Mitigation

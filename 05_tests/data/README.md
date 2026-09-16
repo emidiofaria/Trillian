@@ -47,7 +47,7 @@ Test data files use the same JSONL format as production telemetry.
 1. Record a session on track
 2. Copy telemetry file from device:
    ```bash
-   adb pull /data/data/com.drivingcoach/files/telemetry/session_X.jsonl
+   adb pull /data/data/io.github.emidiofaria.trillian/files/telemetry/session_X.jsonl
    ```
 3. Anonymize if needed (remove user identifiers)
 4. Place in appropriate folder
