@@ -31,7 +31,7 @@ plugins {
 
 // Single source of truth for the app version. Release APKs in releases/ are named
 // from this value, so the filename can never disagree with what the app reports.
-val appVersionName = "2.96"
+val appVersionName = "2.97"
 
 // major*100 + minor keeps codes monotonic across the whole v1.0 -> v2.8 history
 // (1.0 -> 100, 2.8 -> 208) and leaves room for 99 minor releases per major.
@@ -57,7 +57,7 @@ val hasSigningConfig = keystoreStorePath != null && File(keystoreStorePath).exis
 
 android {
     namespace = "com.drivingcoach"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         // The identity Google Play binds to this app. Permanent from the first
@@ -67,7 +67,7 @@ android {
         // renaming it touches every source file for no external benefit.
         applicationId = "io.github.emidiofaria.trillian"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
 

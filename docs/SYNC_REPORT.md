@@ -4,7 +4,67 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
-## [2026-09-16] Play release preparation: package rename, notification fix, signed AAB pipeline
+## [2026-09-16] Target API 36 after Play rejection
+
+**Codebase Version:** v2.97
+**Trigger:** Google Play rejected the first submission — *"your app targets API level 35
+and must target at least API level 36"*. New apps must target Android 16.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `gradle/wrapper/gradle-wrapper.properties` | ✅ Updated | Gradle 8.7 → 8.11.1 |
+| `build.gradle.kts` | ✅ Updated | AGP 8.5.0 → 8.9.1 |
+| `app/build.gradle.kts` | ✅ Updated | `compileSdk`/`targetSdk` 35 → 36; version 2.96 → 2.97 |
+| `ui/MainActivity.kt` | ✅ Updated | Immersive mode ported off deprecated `systemUiVisibility` |
+| `05_tests/infra/scripts/start-emulator.sh` | ✅ Updated | `AVD_NAME` now overridable |
+| `atlas/system.md` | ✅ Updated | Toolchain table; why the chain moved together |
+| `atlas/failure-patterns.md` | ✅ Updated | +1 pattern: FP-SILENT-NOOP-API |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +NF-19 |
+| `05_tests/test_strategy_execution_instructions.md` | ✅ Updated | AVD selection table |
+| `docs/RELEASE.md` | ✅ Updated | API 36 requirement noted |
+
+### The defect the bump exposed
+
+**The Recording screen would have stopped going full-screen on Android 16**
+(`FP-SILENT-NOOP-API`). `MainActivity.hideSystemUI()` used
+`window.decorView.systemUiVisibility` with `SYSTEM_UI_FLAG_*`. Deprecated since API 30,
+those flags are **ignored outright** once edge-to-edge became mandatory at `targetSdk 36`.
+The call compiled, ran, returned — and did nothing. Ported to
+`WindowInsetsControllerCompat`, which works down to `minSdk 26`.
+
+**All 342 tests passed before and after the bump.** Nothing was broken in the code; the
+platform removed the behaviour. The only emulator available was API 30, where the
+deprecated flags still work. The signal came from the compiler: raising `compileSdk`
+produced eleven deprecation warnings, which on an SDK bump are the primary output rather
+than noise.
+
+### Toolchain
+
+`compileSdk 36` is unsupported on AGP 8.5, and AGP 8.9.1 needs Gradle 8.11.1, so the chain
+moved together. Forcing it with `android.suppressUnsupportedCompileSdk` was considered and
+**rejected**: an unsupported compile SDK is how subtle resource and R8 defects reach
+production, which is not a foundation for a first public release.
+
+### Test evidence
+
+New AVD `Trillian_API36` (Android 16, `google_apis`, x86_64). L2 re-run there: **60/60,
+0 skipped**. L1: 282/282. Release APK installs and launches on Android 16 with
+`targetSdk=36 versionCode=297`, no crash.
+
+### Verified, not assumed
+
+- **16 KB page alignment** — `libdatastore_shared_counter.so` ships in the bundle; its
+  ELF `LOAD` alignment is `0x4000`, so Play's 16 KB requirement is already met.
+- **Edge-to-edge** — already handled via `enableEdgeToEdge()` and an insets listener.
+- **Orientation** — no `screenOrientation` in the manifest, so Android 16's large-screen
+  orientation changes do not apply.
+- **`android:statusBarColor` / `navigationBarColor`** in `themes.xml` are no-ops from
+  Android 15 on, but were **deliberately kept**: `minSdk` is 26 and they still work on
+  Android 8–14.
+
+
 
 **Codebase Version:** v2.96
 **Trigger:** First Google Play upload. `applicationId` is permanent from the first

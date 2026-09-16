@@ -546,6 +546,7 @@ no network connection of any kind.
 | NF-14 | High-accuracy location shall not be held while the app is not in the foreground, outside an active recording, which runs under a visible foreground-service notification. This is a privacy bound before it is a battery one: the user shall always be able to see that the receiver is in use. |
 | NF-17 | The release build shall be signed with the Play upload key, and the release-packaging script shall refuse to produce a Play artifact that is unsigned, built from an unclean working tree, carries a duplicate `versionCode`, fails `lintVitalRelease`, or has no test report for its own commit. |
 | NF-18 | The app's Play identity shall be `io.github.emidiofaria.trillian`. This is fixed permanently by the first upload and shall not be changed thereafter. |
+| NF-19 | The app shall target the minimum API level Google Play accepts for new submissions — currently API 36 (Android 16). Raising `targetSdk` shall be treated as a behavioural change: every deprecation warning it produces shall be reviewed, and L2 evidence shall come from an emulator at that API level. |
 | NF-15 | Start-line capture shall be reachable within 1 second of arriving at the Track Setup screen when GPS readiness was already reported on Home, so that the warm-up the user waited for is not spent twice. |
 | NF-16 | Lap timing shall not be quantised to the GPS sample interval. On a device delivering fixes at 1 Hz, the error introduced by sampling shall not exceed 100 ms per lap boundary. |
 

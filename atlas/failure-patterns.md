@@ -2081,7 +2081,7 @@ Nothing fails. No exception, no log line, no crash. `notify()` returns normally.
 
 A runtime permission that is not declared in the manifest cannot be granted — not by the user, not
 from Settings, not by anything. There is no state in which the app has it. From Android 13
-(`targetSdk 35` here, so every modern device), the platform silently discards `notify()` calls from
+(`targetSdk 36` here, so every modern device), the platform silently discards `notify()` calls from
 an app without it.
 
 The failure therefore has no symptom at the call site. Code that looked correct —
@@ -2155,3 +2155,89 @@ platform knows, and it does not say.
 
 **When a platform call can fail silently, check the precondition explicitly and log the refusal.**
 A log line costs nothing and turns an invisible failure into a searchable one.
+
+---
+
+## Pattern: A Deprecated API That Still Compiles, Still Runs, and Does Nothing (FP-SILENT-NOOP-API) — ✅ FIXED (2026-09-16)
+
+### Symptom
+
+After raising `targetSdk` from 35 to 36, the Recording screen would no longer go full-screen on
+Android 16. The status and navigation bars stayed visible on the one screen that is read at
+speed, on track.
+
+No crash, no exception, no log line. The code that hides them still ran, and still returned.
+
+### Root cause
+
+`MainActivity.hideSystemUI()` set `window.decorView.systemUiVisibility` using `SYSTEM_UI_FLAG_*`:
+
+```kotlin
+window.decorView.systemUiVisibility = (
+    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+    or View.SYSTEM_UI_FLAG_FULLSCREEN
+    or ...
+)
+```
+
+Those flags were deprecated in API 30. Deprecation is only a warning, so the code kept compiling
+and kept executing. What changed at `targetSdk 36` is that Android 16 makes edge-to-edge
+mandatory and **ignores the flags entirely**. The setter succeeds; the window manager discards
+the request.
+
+The fix is the `WindowInsetsController` equivalent, via the compat wrapper so it still works down
+to `minSdk 26`:
+
+```kotlin
+WindowCompat.getInsetsController(window, binding.root).apply {
+    systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    hide(WindowInsetsCompat.Type.systemBars())
+}
+```
+
+### Why a test suite cannot catch this
+
+342 tests passed before and after the `targetSdk` bump, including 60 instrumented tests. None of
+them failed, because nothing was broken in the code — the behaviour was removed by the platform.
+An assertion would have to inspect actual window insets on an Android 16 device to notice, and
+the only emulator available was **API 30**, where the deprecated flags still work perfectly.
+
+**A green suite on the wrong API level is evidence about the wrong platform.** This is why an
+API 36 AVD (`Trillian_API36`) was added alongside the API 30 one: release evidence should come
+from the API level the app actually targets.
+
+### How it was actually found
+
+The compiler. Raising `compileSdk` to 36 turned eleven deprecation warnings into the only visible
+signal that anything had changed:
+
+```
+w: MainActivity.kt:126:26 'var systemUiVisibility: Int' is deprecated.
+```
+
+Deprecation warnings are routinely scrolled past. On an SDK bump they are the **primary output**:
+each one is the platform saying *this call is on a path to doing nothing*, and a `targetSdk`
+raise is exactly the event that completes that path.
+
+### Detection
+
+```bash
+# Legacy window/system-UI APIs that are no-ops once edge-to-edge is enforced.
+grep -rn "systemUiVisibility\|SYSTEM_UI_FLAG_\|setStatusBarColor\|setNavigationBarColor" \
+  app/src/main --include=*.kt
+```
+
+Note the theme attributes `android:statusBarColor` and `android:navigationBarColor` in
+`themes.xml` are the same family — no-ops from Android 15 onward. They are **deliberately kept**,
+because `minSdk` is 26 and they still work on Android 8 through 14. Dead on new devices is not
+the same as dead everywhere.
+
+### Generalisation
+
+Same shape as **FP-UNDECLARED-PERMISSION**: a call that the platform accepts and then discards.
+The common signature is *the failure is invisible at the call site* — no return value to check,
+no exception to catch.
+
+**Treat a `targetSdk` bump as a behavioural change, not a configuration change.** The number
+selects which platform behaviours apply to you. Read every deprecation warning it produces, and
+test on an emulator at that API level — not the one you happen to have.

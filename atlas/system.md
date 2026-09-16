@@ -14,7 +14,7 @@
 | **Kotlin namespace** | `com.drivingcoach` — deliberately not renamed; affects only generated code, never seen by Play |
 | **Type** | Native Android Application (POC) |
 | **Architecture** | Single-module MVVM with Clean Architecture layers |
-| **Target SDK** | 35 (Android 15) |
+| **Target SDK** | 36 (Android 16) — the minimum Google Play accepts for new apps |
 | **Min SDK** | 26 (Android 8.0) |
 
 ### Purpose
@@ -433,14 +433,22 @@ while (processingStatus in [PENDING, UPLOADING, DETECTING_LAPS, GENERATING_COACH
 
 | Property | Value |
 |----------|-------|
-| Gradle Plugin | 8.5.0 |
+| Gradle | 8.11.1 |
+| Gradle Plugin | 8.9.1 |
 | Kotlin | 1.9.24 |
 | Java Compatibility | 17 |
 | ProGuard/R8 | Disabled (`isMinifyEnabled = false`) |
-| Compile SDK | 35 |
-| Target SDK | 35 |
-| Version Code | 295 (derived: `major*100 + minor`) |
-| Version Name | 2.95 (single source of truth in `app/build.gradle.kts`) |
+| Compile SDK | 36 |
+| Target SDK | 36 |
+| Version Code | 297 (derived: `major*100 + minor`) |
+| Version Name | 2.97 (single source of truth in `app/build.gradle.kts`) |
+
+**Why the toolchain moved (2026-09-16).** Google Play rejected the first
+submission: new apps must target API 36. `compileSdk 36` is not supported by
+AGP 8.5, and AGP 8.9.1 requires Gradle 8.11.1, so the whole chain moved
+together. Forcing 36 onto AGP 8.5 with `suppressUnsupportedCompileSdk` was
+rejected as an option — an unsupported compile SDK is how subtle resource and
+R8 defects reach production.
 
 ### Versioning Scheme
 

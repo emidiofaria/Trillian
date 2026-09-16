@@ -137,6 +137,11 @@ before building and refuses rather than letting you discover it at upload time.
 
 ## Known state
 
+Google Play requires new apps to target **API 36** (Android 16). `targetSdk` and
+`compileSdk` are both 36, which required Gradle 8.11.1 and AGP 8.9.1 — AGP 8.5
+does not support compiling against 36. L2 evidence for a Play release must come
+from the `Trillian_API36` emulator (**NF-19**).
+
 R8/minification is **off** (`isMinifyEnabled = false`), so **NF-12 is not met** —
 see the remark in the SRS. This is permitted by Play; the bundle is simply larger
 and unobfuscated. Enabling R8 requires keep rules for Gson, Room and Hilt and a
