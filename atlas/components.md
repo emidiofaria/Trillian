@@ -22,7 +22,7 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 - `FusedLocationProviderClient` (Google Play Services Location)
 - `SensorManager` (accelerometer, gyroscope)
 - `SessionDao` — updates session end time
-- `WorkManager` — enqueues upload on stop
+- `WorkManager` — upload enqueue site, gated off by `BuildConfig.UPLOAD_ENABLED` (NF-20)
 - Android foreground service runtime
 
 ### Inputs
@@ -35,7 +35,7 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 
 - JSONL telemetry file at `files/telemetry/session_{id}.jsonl`
 - StateFlow of `RecordingState` (observed by `RecordingViewModel`)
-- Enqueued `TelemetryUploadWorker` on session end
+- ~~Enqueued `TelemetryUploadWorker` on session end~~ — suppressed by `UPLOAD_ENABLED` (NF-20). The session ends fully local; nothing is scheduled.
 
 ### Data Persistence
 

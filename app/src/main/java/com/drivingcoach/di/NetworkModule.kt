@@ -1,6 +1,7 @@
 package com.drivingcoach.di
 
 import android.content.Context
+import com.drivingcoach.BuildConfig
 import androidx.work.WorkManager
 import com.drivingcoach.data.api.ApiService
 import com.drivingcoach.data.api.AuthInterceptor
@@ -26,8 +27,14 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            // Always use BODY level for now - in production, use BuildConfig.DEBUG check
-            level = HttpLoggingInterceptor.Level.BODY
+            // BODY logs every request payload -- for this app that means the
+            // driver's full GPS trace -- into logcat. Fine while developing
+            // against a local server, not something a shipped build should do.
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
     }
 

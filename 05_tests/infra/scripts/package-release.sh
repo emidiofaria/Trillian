@@ -206,6 +206,35 @@ if [ "$TARGET" = "play" ]; then
         exit 1
     fi
     log_info "lintVitalRelease: passed"
+
+    # 5. Data Safety guarantee. The Play listing declares that this app collects
+    #    no user data. It records precise location continuously, so that claim
+    #    rests entirely on nothing being transmitted — and the strongest form of
+    #    that is a release build with no network permission at all (NF-20).
+    #
+    #    This cannot be asserted from a unit or instrumentation test: those run
+    #    against the debug variant, which deliberately does hold INTERNET so
+    #    MockWebServer works. So it is checked here, against the actual merged
+    #    manifest that is about to be packaged.
+    log_info "Checking release manifest for network permissions…"
+    ./gradlew processReleaseMainManifest --quiet || {
+        log_error "Could not build the release manifest."
+        exit 1
+    }
+    RELEASE_MANIFEST="app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml"
+    if [ ! -f "$RELEASE_MANIFEST" ]; then
+        log_error "Release manifest not found at $RELEASE_MANIFEST — cannot verify the Data Safety claim."
+        exit 1
+    fi
+    for FORBIDDEN in "android.permission.INTERNET" "android.permission.ACTIVITY_RECOGNITION"; do
+        if grep -q "\"$FORBIDDEN\"" "$RELEASE_MANIFEST"; then
+            log_error "Release manifest declares $FORBIDDEN."
+            log_error "The Play listing says this app collects no user data. Either remove"
+            log_error "the permission, or update the Data Safety declaration and this gate."
+            exit 1
+        fi
+    done
+    log_info "Release manifest: no network permission (Data Safety claim holds)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -415,14 +444,58 @@ if [ "$TARGET" = "play" ]; then
 These follow from the permissions in the manifest, not from preference.
 
 - [ ] **Privacy policy URL** — mandatory, because the app requests location.
-- [ ] **Data safety form** — declare location and telemetry collection, what is
-      uploaded, and whether it is linked to the driver's identity.
+      Publish \`docs/privacy-policy.md\` and paste the URL. See
+      \`docs/RELEASE.md\` for the GitHub Pages steps.
+- [ ] **Data safety form** — exact answers below.
 - [ ] **Foreground service declaration** — required for
-      \`FOREGROUND_SERVICE_LOCATION\`. Explain that location is sampled only
-      while a session is actively recording.
-- [ ] **Prominent disclosure** — an in-app notice before location is first used.
-- [ ] **Content rating questionnaire**
+      \`FOREGROUND_SERVICE_LOCATION\`. Suggested text:
+      *"Trillian is a track-day lap timer. When the driver starts a session it
+      records GPS continuously to measure lap times, speed and track shape. A
+      foreground service is required because recording must survive the screen
+      turning off during a lap. A persistent notification is shown for the
+      entire duration. Location is never sent off the device."*
+- [ ] **Prominent disclosure** — satisfied in-app: the onboarding screen states
+      what is recorded and that it stays on the device, before the runtime
+      permission prompt is shown.
+- [ ] **Content rating questionnaire** — no user content, no ads, no purchases,
+      no data sharing.
 - [ ] **Target audience** — not directed at children.
+- [ ] **Ads** — declare **no ads**.
+
+## Data safety — exact answers
+
+The answer to the top-level question is **"No"**: this app does not collect or
+share any user data.
+
+| Question | Answer |
+|---|---|
+| Does your app collect or share any of the required user data types? | **No** |
+| Is all of the user data encrypted in transit? | n/a — nothing is transmitted |
+| Do you provide a way for users to request data deletion? | n/a — data never leaves the device; uninstalling removes it |
+
+**Why "No" is correct here.** Google's definition of *collection* is data
+transmitted off the device. Trillian records precise location and inertial data,
+but writes them only to app-private storage. There is no server, no account, no
+analytics, no ad SDK and no crash reporting.
+
+This is enforced, not merely intended (**NF-20**):
+
+1. \`BuildConfig.UPLOAD_ENABLED\` is \`false\`, so no upload is ever enqueued —
+   asserted by \`DataSafetyPolicyTest\`.
+2. The release manifest declares **no \`INTERNET\` permission**, so the process
+   cannot open a socket at all — asserted by a preflight gate in
+   \`package-release.sh\` that reads the merged release manifest.
+
+⚠️ If a future release adds a backend, this answer must change to **Yes** in the
+same release that adds it, along with the privacy policy. Both automated gates
+above will fail first, by design.
+
+### If a reviewer asks about location anyway
+
+Requesting \`ACCESS_FINE_LOCATION\` often triggers a question even when nothing
+is collected. The answer: location is used solely to measure the driver's own
+lap times, is written to app-private storage, is never transmitted, and the
+release build has no network permission with which to transmit it.
 
 ## What helps this pass review
 
@@ -431,8 +504,13 @@ only by a foreground service the driver starts, with a persistent notification
 visible the whole time (SRS NF-14). Background location is the single largest
 cause of rejection for driving apps; say plainly that this app does not use it.
 
+The app also does not request \`ACTIVITY_RECOGNITION\`. It was declared and
+prompted for in earlier builds but never used by any code, which is exactly the
+kind of unused sensitive permission that draws review scrutiny.
+
 ## Known state of this build
 
+- Targets **API 36** (Android 16), the minimum Play accepts for new apps.
 - R8/minification is **off** (see NF-12 in the SRS). Permitted, but the bundle
   is larger and not obfuscated.
 - Test evidence for this exact commit is in \`TEST_REPORT.html\` beside this file.

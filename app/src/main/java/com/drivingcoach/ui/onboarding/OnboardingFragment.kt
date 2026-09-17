@@ -34,14 +34,21 @@ class OnboardingFragment : Fragment() {
     private var _binding: FragmentOnboardingBinding? = null
     private val binding get() = _binding!!
 
+    /**
+     * Location only.
+     *
+     * ACTIVITY_RECOGNITION used to be required here, and onboarding refused to
+     * complete without it, but nothing in the app ever called the Activity
+     * Recognition API. Drivers were being made to grant a sensitive permission
+     * for a feature that does not exist, and the disclosure card claimed it
+     * "detects when you are in a vehicle" -- a false statement about a sensitive
+     * permission, which is its own review risk.
+     */
     private val requiredPermissions: Array<String>
-        get() = buildList {
-            add(Manifest.permission.ACCESS_FINE_LOCATION)
-            add(Manifest.permission.ACCESS_COARSE_LOCATION)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                add(Manifest.permission.ACTIVITY_RECOGNITION)
-            }
-        }.toTypedArray()
+        get() = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
 
     /**
      * Asked for alongside the required set, but deliberately not part of it.
@@ -130,8 +137,8 @@ class OnboardingFragment : Fragment() {
         val deniedNames = deniedPermissions.map { permission ->
             when (permission) {
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION -> "Location"
-                Manifest.permission.ACTIVITY_RECOGNITION -> "Activity Recognition"
+                Manifest.permission.ACCESS_COARSE_LOCATION ->
+                    getString(R.string.onboarding_permission_location)
                 else -> permission.substringAfterLast(".")
             }
         }.distinct()
@@ -141,20 +148,10 @@ class OnboardingFragment : Fragment() {
 
     private fun updatePermissionStatus() {
         val locationGranted = isPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION)
-        val activityGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            isPermissionGranted(Manifest.permission.ACTIVITY_RECOGNITION)
-        } else {
-            true
-        }
 
         binding.locationStatus.apply {
             visibility = View.VISIBLE
             setImageResource(if (locationGranted) R.drawable.ic_check else R.drawable.ic_close)
-        }
-
-        binding.activityStatus.apply {
-            visibility = View.VISIBLE
-            setImageResource(if (activityGranted) R.drawable.ic_check else R.drawable.ic_close)
         }
 
         // Storage doesn't need runtime permission on modern Android (using app-specific storage)

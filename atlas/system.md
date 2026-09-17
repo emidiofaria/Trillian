@@ -79,9 +79,53 @@ docs/brand/helmet_source.png  # Source illustration.
 | Telemetry file persistence | `TelemetryFileWriter` (JSONL with header) |
 | Local (offline) lap detection | `LocalLapDetector` |
 | Session state management | Room database + `SessionRepository` |
-| Background telemetry upload | `TelemetryUploadWorker` (WorkManager) |
-| Authentication flow | `AuthRepository` + `AuthInterceptor` |
+| Background telemetry upload | `TelemetryUploadWorker` (WorkManager) — **disabled, see Data Egress below** |
+| Authentication flow | `AuthRepository` + `AuthInterceptor` — **unreachable, no UI calls it** |
 | UI state management | Hilt ViewModels with StateFlow |
+
+---
+
+## Data Egress — nothing leaves the device
+
+**The release build has no network permission.** `INTERNET` is declared only in
+`app/src/debug/AndroidManifest.xml`, so it exists for MockWebServer-backed
+instrumentation tests and never ships.
+
+This is load-bearing. The Play listing declares *"does not collect any user
+data"*, and the app records precise location continuously — that declaration is
+true only because nothing is transmitted. **NF-20** makes it true by
+construction rather than by circumstance, with two independent guards:
+
+| Guard | Enforced by |
+|---|---|
+| `BuildConfig.UPLOAD_ENABLED = false` — nothing is ever enqueued | `DataSafetyPolicyTest` (L1) |
+| Release manifest declares no `INTERNET` | preflight gate in `package-release.sh --target play` |
+
+The second guard cannot be a test: instrumentation runs against the debug
+variant, which deliberately *does* hold `INTERNET`. It is therefore checked at
+packaging time against the real merged release manifest.
+
+### What this means when reading the rest of this document
+
+A substantial amount of networking machinery is described below and still exists
+in the codebase — `TelemetryUploadWorker`, `ApiService`, `TelemetryApiService`,
+`AuthRepository`, `AuthInterceptor`, the `uploadStatus` column, the upload
+banners. **None of it runs.** It is retained deliberately, with its tests, for a
+backend that is planned but does not exist yet.
+
+Before this change it was worse than dormant: the worker was enqueued on every
+session stop and pointed at `http://10.0.2.2:3000/`, the *emulator's* alias for
+a developer machine. It could only fail — but `10.0.2.2` is a routable private
+address, so on a 10.x network the failure mode was not "no connection" but
+"POST the driver's GPS trace to whatever answers". The only thing preventing it
+was the platform's cleartext-HTTP default.
+
+### Re-enabling upload
+
+Restore `INTERNET` to the main manifest, set `UPLOAD_ENABLED`, update both
+guards, rewrite `docs/privacy-policy.md`, and change the Play Data Safety answer
+to declare location collection — **in the same commit**. Both guards fail first,
+by design, so this cannot happen silently.
 
 ---
 

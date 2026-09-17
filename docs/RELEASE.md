@@ -135,6 +135,65 @@ before building and refuses rather than letting you discover it at upload time.
 
 ---
 
+## Privacy policy
+
+Play requires a publicly reachable privacy policy URL for any app that requests
+location. The policy text lives in `docs/privacy-policy.md` and is versioned with
+the code, so it can never drift from what the app actually does.
+
+To publish it with GitHub Pages:
+
+1. **Settings → Pages** on `emidiofaria/Trillian`
+2. Source: *Deploy from a branch*; branch `main`, folder `/docs`
+3. Save, then wait a minute for the first build
+4. The URL is
+   `https://emidiofaria.github.io/Trillian/privacy-policy`
+5. **Open it in a browser before pasting it into the Console.** Play rejects
+   policy URLs that 404, and a private repo will not serve Pages on a free plan.
+
+If the repo is private and you would rather not make it public, a Gist or any
+static host works equally well — paste the same Markdown. The requirement is
+only that the URL is public, stable, and describes this app.
+
+⚠️ The policy states that nothing is transmitted. That must stay true. If a
+backend is ever added, update the policy **and** the Data Safety form in the same
+release — see NF-20.
+
+---
+
+## Data safety declaration
+
+Trillian declares **"does not collect or share any user data"**.
+
+That is accurate: the app records precise location and inertial data, but writes
+them only to app-private storage. Google defines *collection* as data sent off
+the device, and nothing is.
+
+Two independent mechanisms keep the declaration true (**NF-20**), so that it
+cannot quietly become false through an unrelated change:
+
+| Guard | Enforced by |
+|---|---|
+| `BuildConfig.UPLOAD_ENABLED = false` — no upload is ever enqueued | `DataSafetyPolicyTest` (L1) |
+| Release manifest declares no `INTERNET` permission | preflight gate in `package-release.sh --target play` |
+
+The second is the stronger one: without the permission the process cannot open a
+socket, so telemetry stays local even if upload code were re-enabled by mistake.
+It is checked against the real merged release manifest rather than a unit test,
+because the debug variant deliberately *does* hold `INTERNET` so that
+MockWebServer-backed instrumentation tests can run.
+
+This costs nothing in accuracy. Positioning is done by Google Play services in
+its own process under its own permissions; the app makes no network request for
+location, and SRS section 8 requires operation in flight mode regardless.
+
+**When a backend is added**, all of the following change in the same commit:
+restore `INTERNET` to the main manifest, set `UPLOAD_ENABLED`, update both gates,
+rewrite `docs/privacy-policy.md`, and change the Data Safety answers to declare
+location collection. Both gates fail first, by design.
+
+---
+
 ## Known state
 
 Google Play requires new apps to target **API 36** (Android 16). `targetSdk` and

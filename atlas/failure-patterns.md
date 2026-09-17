@@ -2241,3 +2241,107 @@ no exception to catch.
 **Treat a `targetSdk` bump as a behavioural change, not a configuration change.** The number
 selects which platform behaviours apply to you. Read every deprecation warning it produces, and
 test on an emulator at that API level — not the one you happen to have.
+
+---
+
+## Pattern: Code That Cannot Work, Wired Into a Path That Always Runs (FP-DORMANT-EGRESS) — ✅ FIXED (2026-09-17)
+
+### Symptom
+
+None. Nothing crashed, no test failed, no user complained. The defect was found
+only because a Play Data Safety question forced the question *"does anything in
+this app send data anywhere?"* to be answered from evidence rather than memory.
+
+### What was actually there
+
+`TelemetryForegroundService` enqueued `TelemetryUploadWorker` on **every session
+stop**. The worker POSTs the complete GPS telemetry file — the driver's precise
+movements — as multipart to a remote endpoint. This was not dead code behind a
+feature flag; it was on the main recording path.
+
+The endpoint was `http://10.0.2.2:3000/`.
+
+That address is the Android emulator's alias for the host development machine.
+On a physical phone it is meaningless — but it is **not** unroutable. `10.x.x.x`
+is a private range, so on a corporate or home 10.x network it may well resolve to
+a real machine.
+
+The upload never actually happened, for exactly one reason: `targetSdk >= 28`
+blocks cleartext HTTP by default, and no `usesCleartextTraffic` or network
+security config was set. The request died in OkHttp before reaching the network.
+
+**The app's privacy posture rested on a manifest attribute nobody had set.**
+Anyone adding `usesCleartextTraffic="true"` to debug something, or switching the
+URL to `https://`, would have silently begun exfiltrating location traces — and
+turned a filed Play declaration into a false statement.
+
+### Contributing factor: the UI agreed with the code, not with reality
+
+Onboarding said *"Telemetry is saved locally until uploaded."* Home showed
+*"Session upload pending — connect to Wi-Fi."* The session screen offered
+*"Offline • Tap to upload for AI coaching."*
+
+A reviewer reading those strings would reasonably conclude the app uploads
+location data. The app described a feature it did not have, in the one place
+users and reviewers look for the truth about data handling.
+
+### Fix
+
+Two independent guards (**NF-20**), because one is a single point of failure:
+
+1. `BuildConfig.UPLOAD_ENABLED = false` — both enqueue sites gated, upload UI
+   hidden. Asserted by `DataSafetyPolicyTest`.
+2. `INTERNET` moved to `src/debug/AndroidManifest.xml` — **the release build
+   holds no network permission at all**, so the process cannot open a socket.
+   Asserted by a preflight gate in `package-release.sh` that reads the merged
+   release manifest.
+
+The worker, its API surface and its tests were kept. The feature is planned; it
+just does not exist yet, and unbuilt features should be inert, not merely
+failing.
+
+### Related: unused sensitive permissions (NF-21)
+
+The same review found `ACTIVITY_RECOGNITION` declared, requested at onboarding as
+a **required** permission, and gating completion of the onboarding screen — with
+no call to the Activity Recognition API anywhere in the codebase. The disclosure
+card justified it as *"Detects when you are in a vehicle for smarter
+recording."*
+
+Drivers were being made to grant a sensitive permission, and told a false reason,
+for a feature that did not exist.
+
+### Detection
+
+```bash
+# Enqueue sites that fire automatically
+grep -rn "enqueue(" app/src/main --include=*.kt
+
+# Endpoints that are not real
+grep -rn "10.0.2.2\|localhost\|127.0.0.1\|http://" app/src/main --include=*.kt
+
+# Declared permissions with no corresponding API call
+for P in $(grep -oP 'android.permission.\K[A-Z_]+' app/src/main/AndroidManifest.xml); do
+  echo "$P: $(grep -rl "$P" app/src/main/java | wc -l) source refs"
+done
+
+# What the release build can actually do
+grep -oE 'uses-permission android:name="[^"]+"' \
+  app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml
+```
+
+### Generalisation
+
+**"It doesn't work" is not a privacy control.** Code that attempts egress and
+fails is one config change away from code that succeeds, and nothing in the build
+will warn you when that day comes. If a capability is not wanted in this release,
+remove the *capability* — the permission — not just the working-ness.
+
+Corollary: **the manifest is the contract, so make the guarantee structural.**
+A permission the process does not hold cannot be used by any code path, present
+or future, correct or buggy. That is a far stronger claim than any amount of
+careful coding, and it is the one worth filing with Google.
+
+Corollary: **UI strings are part of the privacy surface.** They are read by
+users, by reviewers, and by future maintainers deciding what the app does. Text
+describing an unbuilt feature is a defect, not a placeholder.

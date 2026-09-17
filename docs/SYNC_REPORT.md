@@ -4,6 +4,99 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-17] Make "collects no user data" true by construction
+
+**Codebase Version:** v2.98
+**Trigger:** Before answering the Play Data Safety form, the question *"does
+anything in this app send data anywhere?"* was answered from evidence rather
+than from memory.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `AndroidManifest.xml` (main) | ✅ Updated | `INTERNET` and `ACTIVITY_RECOGNITION` removed |
+| `AndroidManifest.xml` (debug) | ✅ Updated | `INTERNET` declared here only, for MockWebServer |
+| `app/build.gradle.kts` | ✅ Updated | `UPLOAD_ENABLED=false`; version 2.97 → 2.98 |
+| `TelemetryForegroundService.kt` | ✅ Updated | Upload enqueue gated |
+| `SessionResultViewModel.kt` | ✅ Updated | Retry enqueue gated |
+| `SessionResultFragment.kt` | ✅ Updated | Upload-specific status states hidden |
+| `HomeFragment.kt` | ✅ Updated | Upload banner gated |
+| `OnboardingFragment.kt` | ✅ Updated | `ACTIVITY_RECOGNITION` removed from required set |
+| `fragment_onboarding.xml` | ✅ Updated | Activity Recognition card removed; strings externalised |
+| `strings.xml` | ✅ Updated | +9 accurate disclosure strings |
+| `di/NetworkModule.kt` | ✅ Updated | Body logging gated on `BuildConfig.DEBUG` |
+| `DataSafetyPolicyTest.kt` | ✅ Created | Tripwire on `UPLOAD_ENABLED` |
+| `package-release.sh` | ✅ Updated | Manifest gate; Data Safety answer pack |
+| `docs/privacy-policy.md` | ✅ Created | Play-required policy |
+| `docs/RELEASE.md` | ✅ Updated | Pages publishing + Data Safety sections |
+| `atlas/system.md` | ✅ Updated | New "Data Egress" section |
+| `atlas/components.md` | ✅ Updated | Enqueue site annotated |
+| `atlas/failure-patterns.md` | ✅ Updated | +1 pattern: FP-DORMANT-EGRESS |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +NF-20, +NF-21; ON-03 amended |
+| `docs/USER_MANUAL.md` | ✅ Updated | Upload sections rewritten; privacy FAQ added |
+
+### What was found
+
+**The app auto-uploaded full GPS telemetry after every session.** Not dead code
+behind a flag — `TelemetryForegroundService` enqueued `TelemetryUploadWorker` on
+every session stop, and the worker POSTs the driver's complete position trace.
+
+The endpoint was `http://10.0.2.2:3000/`, the emulator's alias for a developer
+machine. It never succeeded, for exactly one reason: `targetSdk >= 28` blocks
+cleartext HTTP by default. But `10.x` is a *routable private range*, so the
+failure mode on a 10.x network was not "no connection" — it was "POST the GPS
+trace to whatever answers". The privacy posture rested on an unset manifest
+attribute.
+
+**`ACTIVITY_RECOGNITION` was requested but never used.** It was in the *required*
+set, blocking onboarding completion, justified to the user as *"Detects when you
+are in a vehicle for smarter recording."* No code anywhere calls the Activity
+Recognition API. A sensitive permission, demanded with a false reason, for a
+feature that does not exist (NF-21).
+
+**The UI described a feature the app did not have.** *"Telemetry is saved locally
+until uploaded"*, *"Session upload pending — connect to Wi-Fi"*, *"Offline • Tap
+to upload for AI coaching"*. A reviewer reading those strings would conclude the
+app uploads location data, contradicting the declaration being filed.
+
+### Fix: two independent guards (NF-20)
+
+1. `BuildConfig.UPLOAD_ENABLED = false` — both enqueue sites gated, upload UI
+   hidden. Asserted by `DataSafetyPolicyTest`.
+2. **`INTERNET` removed from the release build** — moved to `src/debug` for
+   MockWebServer. The release process cannot open a socket. Asserted by a
+   packaging gate reading the real merged release manifest, because
+   instrumentation runs on the debug variant which deliberately holds `INTERNET`
+   and so cannot assert its absence.
+
+"It doesn't work" is not a privacy control. Code that attempts egress and fails
+is one config change from code that succeeds. The capability was removed, not
+just its working-ness.
+
+The upload worker, API surface and their tests were **kept** — a backend is
+planned, and unbuilt features should be inert rather than failing.
+
+### Precision: no cost
+
+Keeping `INTERNET` was considered for GPS accuracy and rejected on evidence.
+Positioning is a Play Services IPC call; A-GPS assistance is fetched by GMS in
+its own process under its own permissions. Removing the app's socket permission
+does not affect time-to-first-fix or accuracy. `TrackMapView` already draws from
+GPS with no tiles, and SRS §8 requires flight-mode operation regardless.
+
+### Test evidence
+
+L1 283/283 (+1 new), L2 60/60 on `Trillian_API36`. **343/343.**
+
+One run showed 29 L2 failures with `has-window-focus=false`; the cause was a
+`com.android.systemui` ANR dialog holding focus on the emulator, unrelated to
+these changes. A clean emulator restart passed everything. Worth recording: a
+broad, uniform UI failure across unrelated screens usually indicates
+environment, not code.
+
+---
+
 ## [2026-09-16] Target API 36 after Play rejection
 
 **Codebase Version:** v2.97

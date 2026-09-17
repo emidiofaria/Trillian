@@ -31,7 +31,7 @@ plugins {
 
 // Single source of truth for the app version. Release APKs in releases/ are named
 // from this value, so the filename can never disagree with what the app reports.
-val appVersionName = "2.97"
+val appVersionName = "2.98"
 
 // major*100 + minor keeps codes monotonic across the whole v1.0 -> v2.8 history
 // (1.0 -> 100, 2.8 -> 208) and leaves room for 99 minor releases per major.
@@ -72,6 +72,19 @@ android {
         versionName = appVersionName
 
         testInstrumentationRunner = "com.drivingcoach.HiltTestRunner"
+
+        // NF-20: telemetry upload is off in every build.
+        //
+        // The upload worker, its API surface and its tests are all kept intact,
+        // because a backend is planned -- but until one exists the feature can
+        // only fail, and its UI told the driver that sessions were being
+        // uploaded, which contradicted the Play data-safety declaration.
+        //
+        // The release build additionally ships no INTERNET permission, so this
+        // flag is defence in depth rather than the sole guarantee. Turning it
+        // back on means restoring that permission and updating Data Safety in
+        // the same commit.
+        buildConfigField("boolean", "UPLOAD_ENABLED", "false")
     }
 
     signingConfigs {

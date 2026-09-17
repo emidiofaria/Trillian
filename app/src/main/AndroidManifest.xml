@@ -5,13 +5,27 @@
     <!-- Location permissions for GPS tracking -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    
-    <!-- Activity recognition for motion detection -->
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    
-    <!-- Network access -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    
+
+    <!--
+        INTERNET is deliberately NOT declared here. It is declared in
+        src/debug/AndroidManifest.xml only, so it exists for MockWebServer-backed
+        instrumentation tests and never ships.
+
+        NF-20: the release build has no network permission at all, which is what
+        makes the Play "does not collect any user data" declaration true by
+        construction rather than by luck. Telemetry never leaves the device
+        because the process cannot open a socket, not merely because the upload
+        endpoint happens to be unreachable.
+
+        This costs nothing in accuracy. Positioning is done by Google Play
+        services in its own process under its own permissions; the app never
+        makes a network request for location, and SRS section 8 requires the app
+        to work in flight mode anyway. TrackMapView draws from GPS, not tiles.
+
+        Re-adding this is a one-line change when a real backend exists — but the
+        Data Safety declaration has to be updated in the same commit.
+    -->
+
     <!-- Foreground service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />

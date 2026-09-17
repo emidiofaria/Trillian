@@ -29,6 +29,7 @@ import com.drivingcoach.R
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.location.LocationWarmUp
 import com.drivingcoach.data.telemetry.TelemetryFileWriter
+import com.drivingcoach.BuildConfig
 import com.drivingcoach.data.telemetry.TelemetrySample
 import com.drivingcoach.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -346,10 +347,15 @@ class TelemetryForegroundService : Service(), LocationListener, SensorEventListe
                 
                 // Update session end time
                 sessionDao.updateSessionEndTime(currentSessionId, System.currentTimeMillis())
-                
-                // Enqueue TelemetryUploadWorker
-                androidx.work.WorkManager.getInstance(this@TelemetryForegroundService)
-                    .enqueue(com.drivingcoach.data.worker.TelemetryUploadWorker.buildRequest(currentSessionId))
+
+                // NF-20: no backend exists, and the release build has no INTERNET
+                // permission, so enqueuing here would only schedule work that is
+                // guaranteed to fail -- while leaving the session marked as
+                // "upload pending" to the driver.
+                if (BuildConfig.UPLOAD_ENABLED) {
+                    androidx.work.WorkManager.getInstance(this@TelemetryForegroundService)
+                        .enqueue(com.drivingcoach.data.worker.TelemetryUploadWorker.buildRequest(currentSessionId))
+                }
                 
                 Log.i(TAG, "Recording stopped and saved for session: $currentSessionId")
             } catch (e: Exception) {

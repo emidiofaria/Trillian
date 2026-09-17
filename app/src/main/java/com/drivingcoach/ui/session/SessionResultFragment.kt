@@ -15,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.drivingcoach.BuildConfig
 import com.drivingcoach.R
 import com.drivingcoach.data.db.entity.ProcessingStatus
 import com.drivingcoach.databinding.FragmentSessionResultBinding
@@ -281,6 +282,19 @@ class SessionResultFragment : Fragment() {
         when {
             // Hide when complete
             status == ProcessingStatus.COMPLETE -> {
+                binding.uploadStatusBar.visibility = View.GONE
+            }
+            // NF-20: with upload disabled there is nothing pending, nothing to
+            // retry and nothing to tap. Showing "Offline - tap to upload" or
+            // "Uploading session..." would promise a transfer that cannot happen
+            // and contradict the Play data-safety declaration. The local
+            // processing states below are unaffected -- they never involved the
+            // network.
+            !BuildConfig.UPLOAD_ENABLED &&
+                (state.hasLocalOnlyLaps ||
+                    status == ProcessingStatus.FAILED ||
+                    status == ProcessingStatus.UPLOADING ||
+                    status == ProcessingStatus.PENDING) -> {
                 binding.uploadStatusBar.visibility = View.GONE
             }
             // Show local-only message when offline with local laps

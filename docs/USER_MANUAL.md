@@ -61,7 +61,6 @@ The progress bar underneath is **not decoration**. It tracks the app actually ge
 |-----|------------------|
 | Preparing your garage | Reading your settings |
 | Warming up the telemetry | Opening your local session database |
-| Checking pending uploads | Looking for sessions still waiting to sync |
 | Ready to roll | Taking you to the right screen |
 
 **How long does it take?** Usually one to three seconds. If your phone is busy or storage is
@@ -92,8 +91,10 @@ When you first open Trillian, you'll be asked to grant permissions:
 | Permission | Why It's Needed | Required? |
 |------------|-----------------|-----------|
 | **Location** | To record your position on track | Yes |
-| **Physical Activity** | To detect when you're driving vs. walking | Yes |
 | **Notifications** | To show recording status — including the "GPS signal lost" warning | Optional |
+
+**Trillian does not ask for Physical Activity.** Earlier versions did, but
+nothing in the app ever used it, so it has been removed.
 
 Choose **"While using the app"** for location. Trillian never tracks you in the
 background: location is only ever sampled during a session you started yourself,
@@ -225,7 +226,6 @@ back up and it expands again. Your profile button stays reachable in that bar th
 
 Below the hero you'll find:
 
-- Any **pending upload** notice, if sessions are still waiting to sync
 - Your **best lap** card
 - **Recent sessions**, newest first
 - A **START SESSION** button — your way into a new run
@@ -257,30 +257,26 @@ After setting up your start/finish line:
 - Speed and heading
 - Phone motion (accelerometer and gyroscope)
 
-### 4.3 Stopping & Uploading
+### 4.3 Stopping a Session
 
 When your session is done:
 
 1. Open the app and tap **Stop Recording**
 2. **Lap times appear immediately** — the app detects laps locally from your GPS trace
-3. If you have network connection, telemetry uploads for AI coaching analysis
-4. Once complete, you'll see coaching insights on the Coach tab!
+3. Open the session to see your lap breakdown, speed trace and track map
 
-**Offline Mode (📶 Offline indicator):**
-- Lap times are available immediately, even without internet
-- If you're offline, you'll see "📶 Offline • Tap to upload" at the top
-- Your session data is saved locally and will upload when you reconnect
-- Tap the status bar to retry uploading, or dismiss it with the × button
+**Everything happens on your phone.** Trillian has no server and no account.
+Lap detection, the speed trace, the track map and the session stats are all
+computed on the device from your own GPS recording.
 
-**Upload Status:**
-- **Uploading...** — Session is being sent to server
-- **📶 Offline** — Offline, tap to upload when connected
-- **⚠️ Upload failed** — Error occurred, tap to retry
+That is why the app works perfectly in **flight mode**, which is often how track
+days go: no signal at the circuit, no problem. There is nothing to wait for, no
+"pending upload", and no feature that only works once you get bars again.
 
-**If you lose network connection:**
-- Lap times still show (detected locally on your phone)
-- Upload will retry automatically when you have signal
-- AI coaching requires upload to complete
+**Where your data lives:** in Trillian's private storage on this phone. It is
+never uploaded. The app does not even have permission to use the internet — see
+the FAQ (§8) and the privacy policy. If you want a session somewhere else, export or share
+it yourself from the session screen (§6).
 
 ---
 
@@ -307,7 +303,6 @@ The **Laps** tab shows all detected laps:
 
 **Local vs Server Detection:**
 - Local detection shows lap times immediately after stopping
-- Server detection runs after upload and may produce slightly different results
 - Server results are authoritative and replace local results when available
 
 ### 5.2 AI Coaching Feedback
@@ -433,7 +428,7 @@ You can rename or delete sessions from the Home screen:
 - This removes all lap data, coaching insights, and the telemetry file
 - **Warning:** Deletion cannot be undone
 
-**Note:** Delete and rename are local operations only. If you've uploaded the session, data may still exist on the server.
+**Note:** Delete and rename are local operations — and since nothing is ever uploaded, deleting here deletes the only copy. There is no server copy and no undo.
 
 ---
 
@@ -572,13 +567,15 @@ please report it with your app version from *About Trillian*.
 
 ### Session Stuck on "Processing"
 
-**Symptoms:** Results never appear after upload
+**Symptoms:** Results never appear
+
+Processing is entirely local, so this is not a connection problem — do not bother
+checking your signal.
 
 **Solutions:**
-1. Check your internet connection
-2. Pull down to refresh on the session screen
-3. Wait a few minutes — large sessions take longer
-4. If stuck over 10 minutes, tap "Retry" if available
+1. Go back to Home and reopen the session
+2. Wait a few moments — a long session has more samples to work through
+3. If it persists, report it with your app version from *About Trillian*
 
 ### No Laps Detected
 
@@ -639,16 +636,6 @@ straight will do.
 If your track really does cross over itself and there is nowhere that works, please send a
 diagnostic file (see 6.1.1) — we'd like to see a real recording of a layout like that.
 
-### Upload Keeps Failing
-
-**Symptoms:** "Upload Failed" message, sessions stuck pending
-
-**Solutions:**
-1. Check Wi-Fi or cellular data is working
-2. Move to an area with better signal
-3. The app will retry automatically — check back later
-4. If persistent, try signing out and back in
-
 ### App Crashes When Recording
 
 **Solutions:**
@@ -665,7 +652,22 @@ diagnostic file (see 6.1.1) — we'd like to see a real recording of a layout li
 A: Roughly 10-15% per hour depending on your phone. We recommend keeping the phone plugged in for long sessions.
 
 **Q: Can I record without an internet connection?**  
-A: Yes! Data is stored locally and uploaded when you have a connection.
+A: Yes — and it makes no difference whatsoever. Trillian works fully in flight
+mode. Every feature, including lap detection, the speed trace and the track map,
+runs on your phone. The app has no server to reach and does not hold the Android
+internet permission at all.
+
+**Q: Does Trillian send my location anywhere?**  
+A: No. Your GPS recordings stay in the app's private storage on your phone.
+There is no account, no server, no analytics and no tracking. The release build
+does not have permission to use the internet, so it could not send your data
+even if it tried. The only way anything leaves your phone is if you export or
+share it yourself (§6).
+
+**Q: How do I delete my data?**  
+A: Delete individual sessions in the app, or uninstall Trillian / clear its
+storage in Android Settings to remove everything. Since nothing is uploaded,
+there is no server copy to worry about.
 
 **Q: How accurate is lap timing?**  
 A: Typically within ±0.2 seconds using GPS-based start/finish line detection. Professional timing systems are more accurate, but this is great for tracking improvement.

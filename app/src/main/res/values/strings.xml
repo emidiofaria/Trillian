@@ -147,4 +147,20 @@
     <string name="share_error_session_unavailable">Session details aren\'t loaded yet.</string>
     <string name="share_error_telemetry_missing">Telemetry file is no longer available for this session.</string>
     <string name="share_error_export_failed">Couldn\'t build the telemetry export.</string>
+
+    <!-- Onboarding permission disclosure.
+         These are the prominent disclosure shown before the runtime permission
+         prompt, so they must describe what actually happens. Play reviews this
+         text against the Data Safety declaration: the app records location to
+         app-private storage and never transmits it. -->
+    <string name="onboarding_title">PERMISSIONS REQUIRED</string>
+    <string name="onboarding_location_title">Location</string>
+    <string name="onboarding_location_body">Trillian records your GPS position while you drive, so it can measure lap times, speed and track shape. Location is saved only on this phone and is never uploaded or shared.</string>
+    <string name="onboarding_storage_title">On-device storage</string>
+    <string name="onboarding_storage_body">Every session is written to this phone\'s private storage. Nothing leaves the device unless you export or share it yourself.</string>
+    <string name="onboarding_notification_title">Notifications</string>
+    <string name="onboarding_notification_body">Shows the recording notification so you can see a session is running. Optional — recording works without it.</string>
+    <string name="onboarding_denied_label">Some permissions were denied:</string>
+    <string name="onboarding_grant_button">GRANT PERMISSIONS</string>
+    <string name="onboarding_permission_location">Location</string>
 </resources>

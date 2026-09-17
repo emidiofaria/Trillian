@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    
+
+    <!--
+        Debug-only network permission.
+
+        The instrumentation suite points Retrofit at a MockWebServer on
+        localhost, which needs a real socket. The release build deliberately has
+        no INTERNET permission (see the note in the main manifest, NF-20), so
+        this must never move out of src/debug.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application>
         <!-- Test activity for Hilt fragment testing -->
         <activity
