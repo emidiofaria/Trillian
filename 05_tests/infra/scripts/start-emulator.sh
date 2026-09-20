@@ -27,7 +27,12 @@
 set -e
 
 # Configuration
-AVD_NAME="DrivingCoach_Test"
+# Overridable so the same scripts can drive more than one device. The app targets
+# API 36, so that is where release evidence should come from; the API 30 AVD is
+# still useful for checking the minSdk end of the range.
+#
+#   AVD_NAME=Trillian_API36 ./start-emulator.sh
+AVD_NAME="${AVD_NAME:-DrivingCoach_Test}"
 BOOT_TIMEOUT=120
 
 # Parse arguments

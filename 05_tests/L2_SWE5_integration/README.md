@@ -21,8 +21,6 @@ app/src/androidTest/java/com/drivingcoach/
 ├── data/
 │   └── local/
 │       └── dao/          # Room DAO tests
-├── service/
-│   └── TelemetryForegroundServiceTest.kt      (@Ignore)
 ├── testing/                                    # Shared L2 fixtures
 │   ├── FakePreferencesDataStores.kt            # Stalling / seeded DataStore fakes
 │   ├── NavigationTestExtensions.kt             # awaitUntil, currentDestinationId
@@ -43,8 +41,7 @@ app/src/androidTest/java/com/drivingcoach/
 │   │   └── HomeGpsChipTest.kt                  # TS-16, TS-17, TS-18
 │   └── session/
 │       └── SessionShareTest.kt                 # SH-07, SH-08, SH-10, SH-11
-├── StartupBackStackTest.kt                     # UI-05
-└── EndToEndTest.kt                             (@Ignore)
+└── StartupBackStackTest.kt                     # UI-05
 ```
 
 ---
@@ -89,8 +86,10 @@ Anything that overrides `LocationModule` must also provide `WarmUpTimings` and t
 
 Gradle reports success for a suite in which **every class is `@Ignore`d**. Four legacy
 classes (`EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest`,
-`TelemetryForegroundServiceTest`) are currently in that state, so the exit code alone proves
-nothing.
+`TelemetryForegroundServiceTest`) were in exactly that state until 2026-09-16, when they were
+deleted rather than revived. No `@Ignore` remains in `app/src` today, but the warning stands:
+the exit code alone still proves nothing, because the next skipped class will be just as
+invisible.
 
 Always parse the JUnit XML after a run:
 

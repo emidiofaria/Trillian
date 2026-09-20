@@ -277,6 +277,24 @@ $SDK_PATH/platform-tools/adb devices | grep -E "device$|emulator"
 ./05_tests/infra/scripts/start-emulator.sh
 ```
 
+### Which AVD to use
+
+Two exist. `AVD_NAME` selects one; the default is the API 30 device.
+
+| AVD | API | Use for |
+|-----|-----|---------|
+| `Trillian_API36` | 36 (Android 16) | **Release evidence.** This is the level the app targets, so it is the only one that exercises edge-to-edge enforcement, predictive back, and the current foreground-service rules. |
+| `DrivingCoach_Test` | 30 (Android 11) | The `minSdk` end of the supported range |
+
+```bash
+AVD_NAME=Trillian_API36 ./05_tests/infra/scripts/start-emulator.sh
+```
+
+⚠️ Per **NF-19**, L2 results supporting a Play release must come from the API 36
+device. A green run on API 30 says nothing about behaviour the platform only
+changes at the targeted level — see `FP-SILENT-NOOP-API` for a case where
+exactly that gap hid a broken screen.
+
 ### 4.2 Run Command
 
 ```bash
@@ -292,13 +310,13 @@ cd /home/ctw00173_ubuntu/05_AI_DIY/Trillian
 **Run specific test class:**
 ```bash
 ./gradlew connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.service.TelemetryForegroundServiceTest
+  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.ui.splash.SplashScreenTest
 ```
 
 **Run specific test method:**
 ```bash
 ./gradlew connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.service.TelemetryForegroundServiceTest#elapsedMsUpdatesAtHighFrequency
+  -Pandroid.testInstrumentationRunnerArguments.class=com.drivingcoach.ui.splash.SplashScreenTest#brandIntroductionShowsOnColdStart
 ```
 
 ### 4.3 Verify Results

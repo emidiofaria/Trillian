@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkManager
+import com.drivingcoach.BuildConfig
 import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
@@ -167,9 +168,11 @@ class SessionResultViewModel @Inject constructor(
             try {
                 // Reset processing status to PENDING
                 sessionDao.updateProcessingStatus(sessionId, ProcessingStatus.PENDING.name)
-                
-                // Re-enqueue the upload worker
-                workManager.enqueue(TelemetryUploadWorker.buildRequest(sessionId))
+
+                // NF-20: upload is disabled, so there is nothing to re-enqueue.
+                if (BuildConfig.UPLOAD_ENABLED) {
+                    workManager.enqueue(TelemetryUploadWorker.buildRequest(sessionId))
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = "Failed to retry: ${e.message}"

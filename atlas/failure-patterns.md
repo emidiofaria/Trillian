@@ -524,7 +524,7 @@ empirically falsified (proven to fail when the defect is reintroduced).
 ### Evidence To Check
 
 1. **Room DB**: `SELECT rawFilePath FROM sessions WHERE id = X`
-2. **File system**: `adb shell ls -la /data/data/com.drivingcoach/files/telemetry/`
+2. **File system**: `adb shell ls -la /data/data/io.github.emidiofaria.trillian/files/telemetry/`
 3. **Upload worker logs**: Look for "Telemetry file not found" with session ID
 4. **Storage settings**: Was "Clear Data" used?
 5. **Session creation**: Was `rawFilePath` set correctly?
@@ -1995,3 +1995,353 @@ the number.
 **HIGH** — `LapDetectionIncident14Test` replays the real session and asserts the recovered lap
 count and times; `LocalLapDetectorGuardsTest` asserts the bound refuses a displaced line and that
 incident 13 never reaches the fallback.
+
+---
+
+## Pattern: A Test That Cannot Fail (FP-HOLLOW-TEST) — ✅ RESOLVED (2026-09-16)
+
+### Symptoms
+
+The suite is green, the test count is reassuring, and the traceability matrix shows ✅ against
+requirements nobody has verified. `BUILD SUCCESSFUL` is reported for a run in which entire
+classes executed nothing. Coverage is quoted in meetings from a number that was never earned.
+
+### Signals
+
+Measured on the L2 suite as it stood on 2026-09-15:
+
+| Signal | Value | Reading |
+|--------|-------|---------|
+| L2 tests declared vs executed | **89 declared, 60 executed** | 29 existed but were switched off |
+| Classes carrying a class-level `@Ignore` | 4 | each with a different root cause |
+| Ignored tests asserting only `isDisplayed()` | **14 of 29** | cannot fail when the app is broken |
+| Coverage claims citing a non-running test | **8** | all 8 requirements had no second claim |
+| Claims that were false even if revived | **SR-05** | cited class had no such assertion at all |
+| Gradle exit code | **0** | reported success throughout |
+
+The signature is the gap between *declared* and *executed*. A skipped class is invisible in a
+pass/fail summary, so the deception is silent and survives indefinitely.
+
+### Root Cause
+
+Two distinct defects compounded:
+
+1. **Tests were written to the shape of the screen, not to the behaviour of the requirement.**
+   `capturePointAButton_isDisplayedAndClickable` was cited as evidence for TS-05, *"Point A shall
+   be captured by tapping CAPTURE"*. It asserts the button exists and is clickable. It never
+   captures a point. The assertion cannot fail while the defect is present, which is the
+   definition of a hollow test.
+
+2. **Disabling a test cost nothing.** `@Ignore` needs no approval, leaves the suite green, and
+   leaves the coverage claim standing. The claim ledger and the run results were never reconciled,
+   so a test could stop running without anything noticing.
+
+The four blockers themselves were ordinary — `HiltTestActivity` not resuming, a missing
+`launchFragmentInHiltContainer` migration, a service demanding real GPS, MockWebServer setup. None
+was hard. They persisted because nothing forced the issue.
+
+### Mitigation
+
+The 29 tests were **deleted rather than revived**, and the 8 claims removed. This cost zero
+assurance — none of them ran — while making the gap visible: V1 coverage fell from a reported 37%
+to an honest 33%.
+
+- **Prefer deletion to `@Ignore`.** A deleted test is visibly absent; an ignored one looks like
+  deferred work forever. Git preserves the body (here, `0216475`).
+- **Never claim a requirement from a test that cannot fail.** Ask: *if this behaviour broke, would
+  this assertion turn red?* If not, it is not coverage.
+- **Reconcile claims against results, not against source.** The HTML report already resolves every
+  `coverage-map.tsv` claim to `PASS`/`SKIPPED`/`MISSING`. Read that, never the exit code.
+- **Parse the JUnit XML.** `declared` vs `executed` is the only place a skipped class shows up.
+
+### Related
+
+- The service test was un-runnable because `TelemetryForegroundService` bypasses the
+  `LocationUpdates` seam (TS-15) and calls `LocationManager.GPS_PROVIDER` directly. Restoring
+  SR-09 coverage means putting it on that seam, as `StartLineFreshnessTest` already does.
+- Same family as **FP-ASSERTION-THAT-CANNOT-FAIL** — see the brand-asset falsification guard,
+  which exists precisely so a gate cannot be weakened into a no-op.
+
+---
+
+## Pattern: A Permission the App Can Never Be Granted (FP-UNDECLARED-PERMISSION) — ✅ FIXED (2026-09-16)
+
+### Symptom
+
+The recording notification never appears on Android 13+ devices. Recording itself works: the
+session is captured, laps are detected, the JSONL is written. Only the notification is missing —
+including the `GPS signal lost — move to open sky` warning, which is the one notification that is
+supposed to change what the driver does.
+
+Nothing fails. No exception, no log line, no crash. `notify()` returns normally.
+
+### Root cause
+
+`POST_NOTIFICATIONS` was **never declared in `AndroidManifest.xml`**.
+
+A runtime permission that is not declared in the manifest cannot be granted — not by the user, not
+from Settings, not by anything. There is no state in which the app has it. From Android 13
+(`targetSdk 36` here, so every modern device), the platform silently discards `notify()` calls from
+an app without it.
+
+The failure therefore has no symptom at the call site. Code that looked correct —
+
+```kotlin
+val notificationManager = getSystemService(NotificationManager::class.java)
+notificationManager.notify(NOTIFICATION_ID, notification)   // returns; does nothing
+```
+
+— had been dead on arrival on every device sold since 2022.
+
+### Why it survived so long
+
+Three things hid it:
+
+1. **The service still worked.** The visible feature (recording) was unaffected, so the defect
+   looked cosmetic even when noticed.
+2. **Android Lint *did* report it,** at `TelemetryForegroundService.kt:387` and `:554`. The report
+   was drowned out by a permanently red ktlint gate; everyone had learned to build with `-x`
+   flags. A gate that is always failing is indistinguishable from one that is failing for a
+   reason. See the quality-gate note at the top of `app/build.gradle.kts`.
+3. **No test could catch it.** The only test of the service was `@Ignore`d (FP-HOLLOW-TEST), and
+   it never asserted on notifications anyway.
+
+### Requirement impact
+
+This silently broke **NF-14** — *"the user shall always be able to see that the receiver is in
+use."* That is a **privacy** guarantee, not a convenience one. An app sampling high-accuracy
+location with no visible indicator is precisely the behaviour NF-14 exists to forbid, and
+precisely what Play reviewers look for in a location app.
+
+The requirement was never changed. It had simply stopped being true, and nothing said so.
+
+### Fix
+
+1. Declare `POST_NOTIFICATIONS` in the manifest.
+2. Request it during onboarding — **as optional, not required**.
+3. Guard the `notify()` calls and log when the permission is absent, so the outcome is visible in
+   logcat instead of invisible.
+
+### The trap inside the fix
+
+The obvious fix is to add the permission to `OnboardingFragment.requiredPermissions`. **Do not.**
+
+Onboarding completes only when `areAllPermissionsGranted()` is true over that array. Recording
+works fine without notification permission, so making it required would trap any driver who
+declined behind an onboarding screen they could never pass — a hard lock-out, shipped to fix a
+missing notification. The permission is requested alongside the required set but excluded from the
+completion gate.
+
+**A fix for a cosmetic failure must not be able to cause a functional one.**
+
+### Detection
+
+```bash
+# Every runtime permission the code checks or requests must appear in the manifest.
+grep -rhoE "Manifest\.permission\.[A-Z_]+" app/src/main/java | sort -u \
+  | sed 's/Manifest.permission.//' \
+  | while read -r p; do
+      grep -q "android.permission.$p" app/src/main/AndroidManifest.xml \
+        || echo "NOT DECLARED: $p"
+    done
+```
+
+### Generalisation
+
+The same shape appears wherever a capability is *used* in one place and *declared* in another, and
+only the declaration is authoritative: manifest permissions, `foregroundServiceType`, queryable
+package visibility, exported components. The using side compiles, runs, and stays quiet. Only the
+platform knows, and it does not say.
+
+**When a platform call can fail silently, check the precondition explicitly and log the refusal.**
+A log line costs nothing and turns an invisible failure into a searchable one.
+
+---
+
+## Pattern: A Deprecated API That Still Compiles, Still Runs, and Does Nothing (FP-SILENT-NOOP-API) — ✅ FIXED (2026-09-16)
+
+### Symptom
+
+After raising `targetSdk` from 35 to 36, the Recording screen would no longer go full-screen on
+Android 16. The status and navigation bars stayed visible on the one screen that is read at
+speed, on track.
+
+No crash, no exception, no log line. The code that hides them still ran, and still returned.
+
+### Root cause
+
+`MainActivity.hideSystemUI()` set `window.decorView.systemUiVisibility` using `SYSTEM_UI_FLAG_*`:
+
+```kotlin
+window.decorView.systemUiVisibility = (
+    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+    or View.SYSTEM_UI_FLAG_FULLSCREEN
+    or ...
+)
+```
+
+Those flags were deprecated in API 30. Deprecation is only a warning, so the code kept compiling
+and kept executing. What changed at `targetSdk 36` is that Android 16 makes edge-to-edge
+mandatory and **ignores the flags entirely**. The setter succeeds; the window manager discards
+the request.
+
+The fix is the `WindowInsetsController` equivalent, via the compat wrapper so it still works down
+to `minSdk 26`:
+
+```kotlin
+WindowCompat.getInsetsController(window, binding.root).apply {
+    systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    hide(WindowInsetsCompat.Type.systemBars())
+}
+```
+
+### Why a test suite cannot catch this
+
+342 tests passed before and after the `targetSdk` bump, including 60 instrumented tests. None of
+them failed, because nothing was broken in the code — the behaviour was removed by the platform.
+An assertion would have to inspect actual window insets on an Android 16 device to notice, and
+the only emulator available was **API 30**, where the deprecated flags still work perfectly.
+
+**A green suite on the wrong API level is evidence about the wrong platform.** This is why an
+API 36 AVD (`Trillian_API36`) was added alongside the API 30 one: release evidence should come
+from the API level the app actually targets.
+
+### How it was actually found
+
+The compiler. Raising `compileSdk` to 36 turned eleven deprecation warnings into the only visible
+signal that anything had changed:
+
+```
+w: MainActivity.kt:126:26 'var systemUiVisibility: Int' is deprecated.
+```
+
+Deprecation warnings are routinely scrolled past. On an SDK bump they are the **primary output**:
+each one is the platform saying *this call is on a path to doing nothing*, and a `targetSdk`
+raise is exactly the event that completes that path.
+
+### Detection
+
+```bash
+# Legacy window/system-UI APIs that are no-ops once edge-to-edge is enforced.
+grep -rn "systemUiVisibility\|SYSTEM_UI_FLAG_\|setStatusBarColor\|setNavigationBarColor" \
+  app/src/main --include=*.kt
+```
+
+Note the theme attributes `android:statusBarColor` and `android:navigationBarColor` in
+`themes.xml` are the same family — no-ops from Android 15 onward. They are **deliberately kept**,
+because `minSdk` is 26 and they still work on Android 8 through 14. Dead on new devices is not
+the same as dead everywhere.
+
+### Generalisation
+
+Same shape as **FP-UNDECLARED-PERMISSION**: a call that the platform accepts and then discards.
+The common signature is *the failure is invisible at the call site* — no return value to check,
+no exception to catch.
+
+**Treat a `targetSdk` bump as a behavioural change, not a configuration change.** The number
+selects which platform behaviours apply to you. Read every deprecation warning it produces, and
+test on an emulator at that API level — not the one you happen to have.
+
+---
+
+## Pattern: Code That Cannot Work, Wired Into a Path That Always Runs (FP-DORMANT-EGRESS) — ✅ FIXED (2026-09-17)
+
+### Symptom
+
+None. Nothing crashed, no test failed, no user complained. The defect was found
+only because a Play Data Safety question forced the question *"does anything in
+this app send data anywhere?"* to be answered from evidence rather than memory.
+
+### What was actually there
+
+`TelemetryForegroundService` enqueued `TelemetryUploadWorker` on **every session
+stop**. The worker POSTs the complete GPS telemetry file — the driver's precise
+movements — as multipart to a remote endpoint. This was not dead code behind a
+feature flag; it was on the main recording path.
+
+The endpoint was `http://10.0.2.2:3000/`.
+
+That address is the Android emulator's alias for the host development machine.
+On a physical phone it is meaningless — but it is **not** unroutable. `10.x.x.x`
+is a private range, so on a corporate or home 10.x network it may well resolve to
+a real machine.
+
+The upload never actually happened, for exactly one reason: `targetSdk >= 28`
+blocks cleartext HTTP by default, and no `usesCleartextTraffic` or network
+security config was set. The request died in OkHttp before reaching the network.
+
+**The app's privacy posture rested on a manifest attribute nobody had set.**
+Anyone adding `usesCleartextTraffic="true"` to debug something, or switching the
+URL to `https://`, would have silently begun exfiltrating location traces — and
+turned a filed Play declaration into a false statement.
+
+### Contributing factor: the UI agreed with the code, not with reality
+
+Onboarding said *"Telemetry is saved locally until uploaded."* Home showed
+*"Session upload pending — connect to Wi-Fi."* The session screen offered
+*"Offline • Tap to upload for AI coaching."*
+
+A reviewer reading those strings would reasonably conclude the app uploads
+location data. The app described a feature it did not have, in the one place
+users and reviewers look for the truth about data handling.
+
+### Fix
+
+Two independent guards (**NF-20**), because one is a single point of failure:
+
+1. `BuildConfig.UPLOAD_ENABLED = false` — both enqueue sites gated, upload UI
+   hidden. Asserted by `DataSafetyPolicyTest`.
+2. `INTERNET` moved to `src/debug/AndroidManifest.xml` — **the release build
+   holds no network permission at all**, so the process cannot open a socket.
+   Asserted by a preflight gate in `package-release.sh` that reads the merged
+   release manifest.
+
+The worker, its API surface and its tests were kept. The feature is planned; it
+just does not exist yet, and unbuilt features should be inert, not merely
+failing.
+
+### Related: unused sensitive permissions (NF-21)
+
+The same review found `ACTIVITY_RECOGNITION` declared, requested at onboarding as
+a **required** permission, and gating completion of the onboarding screen — with
+no call to the Activity Recognition API anywhere in the codebase. The disclosure
+card justified it as *"Detects when you are in a vehicle for smarter
+recording."*
+
+Drivers were being made to grant a sensitive permission, and told a false reason,
+for a feature that did not exist.
+
+### Detection
+
+```bash
+# Enqueue sites that fire automatically
+grep -rn "enqueue(" app/src/main --include=*.kt
+
+# Endpoints that are not real
+grep -rn "10.0.2.2\|localhost\|127.0.0.1\|http://" app/src/main --include=*.kt
+
+# Declared permissions with no corresponding API call
+for P in $(grep -oP 'android.permission.\K[A-Z_]+' app/src/main/AndroidManifest.xml); do
+  echo "$P: $(grep -rl "$P" app/src/main/java | wc -l) source refs"
+done
+
+# What the release build can actually do
+grep -oE 'uses-permission android:name="[^"]+"' \
+  app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml
+```
+
+### Generalisation
+
+**"It doesn't work" is not a privacy control.** Code that attempts egress and
+fails is one config change away from code that succeeds, and nothing in the build
+will warn you when that day comes. If a capability is not wanted in this release,
+remove the *capability* — the permission — not just the working-ness.
+
+Corollary: **the manifest is the contract, so make the guarantee structural.**
+A permission the process does not hold cannot be used by any code path, present
+or future, correct or buggy. That is a far stronger claim than any amount of
+careful coding, and it is the one worth filing with Google.
+
+Corollary: **UI strings are part of the privacy surface.** They are read by
+users, by reviewers, and by future maintainers deciding what the app does. Text
+describing an unbuilt feature is a defect, not a placeholder.

@@ -4,6 +4,377 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-17] Make "collects no user data" true by construction
+
+**Codebase Version:** v2.98
+**Trigger:** Before answering the Play Data Safety form, the question *"does
+anything in this app send data anywhere?"* was answered from evidence rather
+than from memory.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `AndroidManifest.xml` (main) | ✅ Updated | `INTERNET` and `ACTIVITY_RECOGNITION` removed |
+| `AndroidManifest.xml` (debug) | ✅ Updated | `INTERNET` declared here only, for MockWebServer |
+| `app/build.gradle.kts` | ✅ Updated | `UPLOAD_ENABLED=false`; version 2.97 → 2.98 |
+| `TelemetryForegroundService.kt` | ✅ Updated | Upload enqueue gated |
+| `SessionResultViewModel.kt` | ✅ Updated | Retry enqueue gated |
+| `SessionResultFragment.kt` | ✅ Updated | Upload-specific status states hidden |
+| `HomeFragment.kt` | ✅ Updated | Upload banner gated |
+| `OnboardingFragment.kt` | ✅ Updated | `ACTIVITY_RECOGNITION` removed from required set |
+| `fragment_onboarding.xml` | ✅ Updated | Activity Recognition card removed; strings externalised |
+| `strings.xml` | ✅ Updated | +9 accurate disclosure strings |
+| `di/NetworkModule.kt` | ✅ Updated | Body logging gated on `BuildConfig.DEBUG` |
+| `DataSafetyPolicyTest.kt` | ✅ Created | Tripwire on `UPLOAD_ENABLED` |
+| `package-release.sh` | ✅ Updated | Manifest gate; Data Safety answer pack |
+| `docs/privacy-policy.md` | ✅ Created | Play-required policy |
+| `docs/RELEASE.md` | ✅ Updated | Pages publishing + Data Safety sections |
+| `atlas/system.md` | ✅ Updated | New "Data Egress" section |
+| `atlas/components.md` | ✅ Updated | Enqueue site annotated |
+| `atlas/failure-patterns.md` | ✅ Updated | +1 pattern: FP-DORMANT-EGRESS |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +NF-20, +NF-21; ON-03 amended |
+| `docs/USER_MANUAL.md` | ✅ Updated | Upload sections rewritten; privacy FAQ added |
+
+### What was found
+
+**The app auto-uploaded full GPS telemetry after every session.** Not dead code
+behind a flag — `TelemetryForegroundService` enqueued `TelemetryUploadWorker` on
+every session stop, and the worker POSTs the driver's complete position trace.
+
+The endpoint was `http://10.0.2.2:3000/`, the emulator's alias for a developer
+machine. It never succeeded, for exactly one reason: `targetSdk >= 28` blocks
+cleartext HTTP by default. But `10.x` is a *routable private range*, so the
+failure mode on a 10.x network was not "no connection" — it was "POST the GPS
+trace to whatever answers". The privacy posture rested on an unset manifest
+attribute.
+
+**`ACTIVITY_RECOGNITION` was requested but never used.** It was in the *required*
+set, blocking onboarding completion, justified to the user as *"Detects when you
+are in a vehicle for smarter recording."* No code anywhere calls the Activity
+Recognition API. A sensitive permission, demanded with a false reason, for a
+feature that does not exist (NF-21).
+
+**The UI described a feature the app did not have.** *"Telemetry is saved locally
+until uploaded"*, *"Session upload pending — connect to Wi-Fi"*, *"Offline • Tap
+to upload for AI coaching"*. A reviewer reading those strings would conclude the
+app uploads location data, contradicting the declaration being filed.
+
+### Fix: two independent guards (NF-20)
+
+1. `BuildConfig.UPLOAD_ENABLED = false` — both enqueue sites gated, upload UI
+   hidden. Asserted by `DataSafetyPolicyTest`.
+2. **`INTERNET` removed from the release build** — moved to `src/debug` for
+   MockWebServer. The release process cannot open a socket. Asserted by a
+   packaging gate reading the real merged release manifest, because
+   instrumentation runs on the debug variant which deliberately holds `INTERNET`
+   and so cannot assert its absence.
+
+"It doesn't work" is not a privacy control. Code that attempts egress and fails
+is one config change from code that succeeds. The capability was removed, not
+just its working-ness.
+
+The upload worker, API surface and their tests were **kept** — a backend is
+planned, and unbuilt features should be inert rather than failing.
+
+### Precision: no cost
+
+Keeping `INTERNET` was considered for GPS accuracy and rejected on evidence.
+Positioning is a Play Services IPC call; A-GPS assistance is fetched by GMS in
+its own process under its own permissions. Removing the app's socket permission
+does not affect time-to-first-fix or accuracy. `TrackMapView` already draws from
+GPS with no tiles, and SRS §8 requires flight-mode operation regardless.
+
+### Test evidence
+
+L1 283/283 (+1 new), L2 60/60 on `Trillian_API36`. **343/343.**
+
+One run showed 29 L2 failures with `has-window-focus=false`; the cause was a
+`com.android.systemui` ANR dialog holding focus on the emulator, unrelated to
+these changes. A clean emulator restart passed everything. Worth recording: a
+broad, uniform UI failure across unrelated screens usually indicates
+environment, not code.
+
+---
+
+## [2026-09-16] Target API 36 after Play rejection
+
+**Codebase Version:** v2.97
+**Trigger:** Google Play rejected the first submission — *"your app targets API level 35
+and must target at least API level 36"*. New apps must target Android 16.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `gradle/wrapper/gradle-wrapper.properties` | ✅ Updated | Gradle 8.7 → 8.11.1 |
+| `build.gradle.kts` | ✅ Updated | AGP 8.5.0 → 8.9.1 |
+| `app/build.gradle.kts` | ✅ Updated | `compileSdk`/`targetSdk` 35 → 36; version 2.96 → 2.97 |
+| `ui/MainActivity.kt` | ✅ Updated | Immersive mode ported off deprecated `systemUiVisibility` |
+| `05_tests/infra/scripts/start-emulator.sh` | ✅ Updated | `AVD_NAME` now overridable |
+| `atlas/system.md` | ✅ Updated | Toolchain table; why the chain moved together |
+| `atlas/failure-patterns.md` | ✅ Updated | +1 pattern: FP-SILENT-NOOP-API |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +NF-19 |
+| `05_tests/test_strategy_execution_instructions.md` | ✅ Updated | AVD selection table |
+| `docs/RELEASE.md` | ✅ Updated | API 36 requirement noted |
+
+### The defect the bump exposed
+
+**The Recording screen would have stopped going full-screen on Android 16**
+(`FP-SILENT-NOOP-API`). `MainActivity.hideSystemUI()` used
+`window.decorView.systemUiVisibility` with `SYSTEM_UI_FLAG_*`. Deprecated since API 30,
+those flags are **ignored outright** once edge-to-edge became mandatory at `targetSdk 36`.
+The call compiled, ran, returned — and did nothing. Ported to
+`WindowInsetsControllerCompat`, which works down to `minSdk 26`.
+
+**All 342 tests passed before and after the bump.** Nothing was broken in the code; the
+platform removed the behaviour. The only emulator available was API 30, where the
+deprecated flags still work. The signal came from the compiler: raising `compileSdk`
+produced eleven deprecation warnings, which on an SDK bump are the primary output rather
+than noise.
+
+### Toolchain
+
+`compileSdk 36` is unsupported on AGP 8.5, and AGP 8.9.1 needs Gradle 8.11.1, so the chain
+moved together. Forcing it with `android.suppressUnsupportedCompileSdk` was considered and
+**rejected**: an unsupported compile SDK is how subtle resource and R8 defects reach
+production, which is not a foundation for a first public release.
+
+### Test evidence
+
+New AVD `Trillian_API36` (Android 16, `google_apis`, x86_64). L2 re-run there: **60/60,
+0 skipped**. L1: 282/282. Release APK installs and launches on Android 16 with
+`targetSdk=36 versionCode=297`, no crash.
+
+### Verified, not assumed
+
+- **16 KB page alignment** — `libdatastore_shared_counter.so` ships in the bundle; its
+  ELF `LOAD` alignment is `0x4000`, so Play's 16 KB requirement is already met.
+- **Edge-to-edge** — already handled via `enableEdgeToEdge()` and an insets listener.
+- **Orientation** — no `screenOrientation` in the manifest, so Android 16's large-screen
+  orientation changes do not apply.
+- **`android:statusBarColor` / `navigationBarColor`** in `themes.xml` are no-ops from
+  Android 15 on, but were **deliberately kept**: `minSdk` is 26 and they still work on
+  Android 8–14.
+
+
+
+**Codebase Version:** v2.96
+**Trigger:** First Google Play upload. `applicationId` is permanent from the first
+upload onward, so the rename had to happen before it — and preparing the upload
+surfaced three defects that would have blocked or degraded the release.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `app/build.gradle.kts` | ✅ Updated | `applicationId` → `io.github.emidiofaria.trillian`; `signingConfigs`; keystore loading |
+| `app/src/main/AndroidManifest.xml` | ✅ Updated | `POST_NOTIFICATIONS` declared |
+| `ui/onboarding/OnboardingFragment.kt` | ✅ Updated | Optional-permission set; denial of an optional permission no longer blocks onboarding |
+| `service/TelemetryForegroundService.kt` | ✅ Updated | `notify()` guarded + logged; action strings renamed; title reads `app_name` |
+| `res/values/strings.xml` | ✅ Updated | Label → "Trillian - Driving coach" |
+| `05_tests/infra/scripts/package-release.sh` | ✅ Updated | `--target dev\|play`; 5 Play preflight gates; `PLAY_SUBMISSION.md` |
+| `05_tests/infra/scripts/run-all-tests.sh` | ✅ Updated | Release prompt now reflects the two targets |
+| `docs/RELEASE.md` | ✅ Created | Release process, signing, keystore backup, identity, versioning |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +NF-17, +NF-18; NF-12 and NF-14 remarks |
+| `atlas/failure-patterns.md` | ✅ Updated | +1 pattern: FP-UNDECLARED-PERMISSION |
+| `docs/USER_MANUAL.md` | ✅ Updated | Title; permission table corrected; "Allow all the time" advice removed |
+
+### Defects found while preparing the release
+
+**1. `POST_NOTIFICATIONS` was never declared** (`FP-UNDECLARED-PERMISSION`).
+A runtime permission absent from the manifest can never be granted, so Android 13+
+silently discarded every `notify()` call. Recording worked; the driver just could
+not see it happening, and never received the "GPS signal lost" warning. This
+silently broke **NF-14**, a privacy requirement. Android Lint had been reporting it
+at two call sites; the report went unread behind a permanently-red ktlint gate —
+the exact cost predicted when those gates were removed on 2026-09-15.
+
+**2. The User Manual documented behaviour the code did not have.** Its permission
+table already listed "Notifications". The documentation described the intended
+design; nothing ever checked that the code matched it.
+
+**3. "Allow all the time" was the documented advice for location** — directly
+contradicting NF-14 and the app's actual design, which never requests background
+location. Corrected to "While using the app".
+
+### Requirement changes
+
+| ID | Change |
+|----|--------|
+| NF-12 | Annotated **not met** — `isMinifyEnabled = false`, so R8 is off. Deliberately not changed for this release. |
+| NF-14 | Annotated with the Android 13+ gap and its fix |
+| NF-17 | **New** — release signing and the Play packaging refusals |
+| NF-18 | **New** — Play identity is `io.github.emidiofaria.trillian`, permanent |
+
+### Decisions recorded
+
+- **`namespace` deliberately left as `com.drivingcoach.`** Play never sees it;
+  renaming touches every source file for no external benefit.
+- **`POST_NOTIFICATIONS` requested as optional, not required.** Adding it to
+  `requiredPermissions` would gate `areAllPermissionsGranted()` and trap anyone who
+  declined on the onboarding screen permanently — a functional lock-out shipped to
+  fix a cosmetic failure.
+- **R8 left off for the first release.** Enabling it hours before publishing risks
+  a Gson/Room reflection failure visible only in the shipped build.
+- **Keystore stored outside the repository.** `keystore.properties` is gitignored,
+  and the `.jks` lives in `~/keystores/` so no `git add -A` can stage it. Absence
+  degrades the build (unsigned release, Play path refuses) rather than breaking it.
+
+
+
+**Codebase Version:** v2.96
+**Trigger:** Decision to delete every `@Ignore`'d test class after analysis showed the
+suite was reporting coverage for tests that had never executed.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `app/src/androidTest/**` | ✅ Deleted | 4 classes, 29 tests, 1,181 lines |
+| `05_tests/coverage-map.tsv` | ✅ Updated | −8 claims, +5-line explanatory note |
+| `01_requirements/TRACEABILITY_MATRIX.md` | ✅ Updated | 8 rows ✅→❌; obsolete caveat rewritten |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +2 coverage-status remarks (TS block, SR block) |
+| `05_tests/L2_SWE5_integration/README.md` | ✅ Updated | Tree entries removed; `@Ignore` narrative corrected |
+| `05_tests/Test_Strategy.md` | ✅ Updated | Stale example command + ledger example fixed |
+| `05_tests/test_strategy_execution_instructions.md` | ✅ Updated | 2 stale example commands fixed |
+| `atlas/failure-patterns.md` | ✅ Updated | +1 pattern: FP-HOLLOW-TEST |
+| `docs/USER_MANUAL.md` | ⏭️ No change | No user-facing behaviour affected |
+
+### Deleted
+
+| File | Tests | Lines | `@Ignore` reason |
+|------|-------|-------|------------------|
+| `EndToEndTest.kt` | 5 | 445 | MockWebServer init / app state |
+| `ui/tracksetup/TrackSetupFragmentTest.kt` | 11 | 269 | Needs `launchFragmentInHiltContainer` |
+| `service/TelemetryForegroundServiceTest.kt` | 6 | 263 | Requires real GPS hardware |
+| `ui/recording/RecordingFragmentTest.kt` | 7 | 204 | `HiltTestActivity` not resuming |
+
+**Recovery SHA:** `02164750ba14e3e60f2e03022a5bf5636b74b3db`
+
+### Deliberately kept
+
+- `HiltTestActivity.kt` / `HiltExt.kt` — four *passing* tests depend on them
+  (`StartupBackStackTest`, `SessionShareTest`, `AnalysisTabTest`, `AboutScreenTest`)
+- `di/TestNetworkModule.kt` + `mockwebserver` — `@TestInstallIn(replaces = [NetworkModule::class])`
+  redirects **all** L2 tests to `localhost:8080`; deleting it would have pushed the 60 passing
+  tests onto the production network module
+- Historical `05_tests/reports/TEST_REPORT_*.md` — dated evidence, not rewritten
+
+### Requirement Impact
+
+⚠️ **Eight requirements lost their only claim** and are now marked ❌ with dated remarks in
+the SRS: **TS-02, TS-03, TS-05, TS-06, TS-12, SR-04, SR-05, SR-09**.
+
+- **SR-09** (recording continues when backgrounded) is core V1 behaviour and is the most
+  significant gap. It was already unverified — the cited test never ran.
+- **SR-05**'s claim was **unfounded regardless**: `TelemetryForegroundServiceTest` contained
+  no GPS-status assertion at all. Removing it corrects a false claim.
+- **14 of the 29** deleted tests were `isDisplayed()` assertions that could not fail when the
+  app was broken.
+
+No new requirement IDs added; none removed.
+
+### Validation
+
+| Check | Before | After |
+|-------|--------|-------|
+| `@Ignore` in `app/src` | 4 classes | **0** |
+| L1 unit tests | 282/282 | **282/282** |
+| L2 integration | 60 exec / 89 declared, 4 skipped | **60/60, 0 skipped** |
+| Tests executed | 342/371, 29 never ran | **342/342, 0 never ran** |
+| Unbacked coverage claims | `[WARN] 8` | **none** |
+| V1 requirement coverage | 71/192 (37%) | **63/192 (33%)** |
+
+The coverage drop is a correction, not a regression: nothing that previously executed stopped
+executing. Report: `05_tests/reports/RUN_20260916_110333/`.
+
+### Recommendations
+
+- [ ] SR-09 is the gap worth closing. It needs `TelemetryForegroundService` moved onto the
+      `LocationUpdates` seam (TS-15) so fixes can be scripted, as `StartLineFreshnessTest`
+      already does — the service currently calls `LocationManager.GPS_PROVIDER` directly
+- [ ] Real drive telemetry exists for replay (`lapfixtures/`, Incidents 13 & 14) and is already
+      used at L1 by `LapReplayHarness`; emulator GPS cannot feed `SensorManager`, so the seam is
+      the only route that replays accel/gyro
+- [ ] Consider promoting the report's `[WARN] N coverage claim(s) not backed` to a non-zero exit
+      so a claim can never again outlive its test
+- [ ] Android Lint remains the only active build gate, still red on 3 real errors
+
+---
+
+## [2026-09-15] Removal of the ktlint and JaCoCo quality gates
+
+**Codebase Version:** v2.96
+**Trigger:** Decision to disable two build quality gates after a full build and
+L1+L2 test run exposed that neither was providing real assurance.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `build.gradle.kts` | ✅ Updated | −2 lines (ktlint plugin declaration) |
+| `app/build.gradle.kts` | ✅ Updated | −81 net (both plugins, `enableUnitTestCoverage`, JaCoCo task block); +19 decision comment |
+| `DrivingCoach_SRS_v1.md` | ✅ Updated | NF-11 annotated; enforcement remark added |
+| `05_tests/Test_Strategy.md` | ✅ Updated | Stale `testDebugUnitTestCoverage` command removed |
+| `atlas/*.md` | ⏭️ No change | No Atlas file documented either gate |
+| `docs/USER_MANUAL.md` | ⏭️ No change | No user-facing behaviour affected |
+
+### Rationale
+
+**ktlint** was permanently red: accumulated style debt plus an upstream crash in
+the `argument-list-wrapping` rule on `OfflineCoachingEngineTest.kt:141`. A gate
+that can never go green trains everyone to pass `-x` flags, which is how three
+genuine Android Lint errors went unaddressed.
+
+**JaCoCo** declared a 95% line/branch threshold that was never attached to
+Gradle's `check` task, so it had never executed. It was an assurance claim with
+no evidence behind it.
+
+### Requirement Impact
+
+⚠️ **NF-11** ("Unit test line coverage shall be ≥ 70% across domain and data
+layers") loses its only nominal automated enforcement. Because the JaCoCo
+verification task never ran, NF-11 was already unenforced in practice; this
+change makes the gap visible rather than creating it. Approved explicitly by the
+operator. No new requirement IDs were added and none were removed.
+
+The requirement IDs cited in the removed build comments — `LA-02`, `UA-02`,
+`UA-03`, `CD-AD-06` — were found to exist **nowhere** in the SRS, `coverage-map.tsv`
+or `scope-map.tsv`. They were rotted traceability and have been deleted with the
+code that cited them.
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| `./gradlew tasks --all \| grep -iE 'ktlint\|jacoco\|coverage'` | Empty — both gates gone |
+| L1 unit tests | 282/282 passed, 0 failures, 0 skipped |
+| `./gradlew build` | Now fails on `lintDebug` **only** (4 errors, 290 warnings) |
+
+### Files Modified
+
+```
+M  build.gradle.kts                        (+0,  -2)
+M  app/build.gradle.kts                    (+19, -96)
+M  01_requirements/DrivingCoach_SRS_v1.md  (+11, -1)
+M  05_tests/Test_Strategy.md               (+6,  -2)
+```
+
+### Recommendations
+
+- [ ] Android Lint is now the only active gate — fix its 3 real errors
+      (`POST_NOTIFICATIONS` ×2 in `TelemetryForegroundService.kt`, `android:tint`
+      in `fragment_session_result.xml`) and baseline the 290 warnings
+- [ ] The `HiltTestActivity [MissingClass]` lint error is a false positive
+      (class lives in `androidTest`, invisible to debug-variant lint)
+- [ ] 29 L2 tests remain `@Ignore`d, leaving SR-04/05/09 and TS-02/03/05/06/12
+      unbacked — higher value than either removed gate
+- [ ] If coverage enforcement is ever restored, wire it into `check`; an
+      unattached gate is worse than none
+
+---
+
 ## [2026-09-14] Incident 14 explainer and fix record, and a message that misdirected
 
 **Codebase Version:** v2.96

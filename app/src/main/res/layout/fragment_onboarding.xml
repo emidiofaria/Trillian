@@ -25,7 +25,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_lg"
-        android:text="PERMISSIONS REQUIRED"
+        android:text="@string/onboarding_title"
         android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
         android:textColor="@color/colorOnBackground"
         app:layout_constraintEnd_toEndOf="parent"
@@ -84,7 +84,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Location"
+                            android:text="@string/onboarding_location_title"
                             android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
                             android:textColor="@color/colorOnSurface" />
 
@@ -92,7 +92,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_xs"
-                            android:text="We use GPS to track your lap times precisely. No data is shared without your consent."
+                            android:text="@string/onboarding_location_body"
                             android:textAppearance="@style/TextAppearance.DrivingCoach.Body"
                             android:textColor="@color/colorOnSurfaceVariant" />
                     </LinearLayout>
@@ -108,65 +108,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Activity Recognition Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/activityCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/spacing_md"
-                app:cardBackgroundColor="@color/colorSurface"
-                app:cardCornerRadius="@dimen/card_corner_radius"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/colorSurfaceVariant"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="@dimen/spacing_md">
-
-                    <ImageView
-                        android:id="@+id/activityIcon"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_activity"
-                        android:contentDescription="Activity"
-                        app:tint="@color/colorPrimary" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="@dimen/spacing_md"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Activity Recognition"
-                            android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
-                            android:textColor="@color/colorOnSurface" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/spacing_xs"
-                            android:text="Detects when you are in a vehicle for smarter recording."
-                            android:textAppearance="@style/TextAppearance.DrivingCoach.Body"
-                            android:textColor="@color/colorOnSurfaceVariant" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/activityStatus"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center_vertical"
-                        android:visibility="gone"
-                        tools:visibility="visible"
-                        tools:src="@drawable/ic_check" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- Storage Card (for background location explanation) -->
             <com.google.android.material.card.MaterialCardView
@@ -203,7 +144,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Local Storage"
+                            android:text="@string/onboarding_storage_title"
                             android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
                             android:textColor="@color/colorOnSurface" />
 
@@ -211,7 +152,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/spacing_xs"
-                            android:text="Telemetry is saved locally until uploaded."
+                            android:text="@string/onboarding_storage_body"
                             android:textAppearance="@style/TextAppearance.DrivingCoach.Body"
                             android:textColor="@color/colorOnSurfaceVariant" />
                     </LinearLayout>
@@ -247,7 +188,7 @@
             android:id="@+id/deniedText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Some permissions were denied:"
+            android:text="@string/onboarding_denied_label"
             android:textAppearance="@style/TextAppearance.DrivingCoach.Body"
             android:textColor="@color/colorError"
             android:gravity="center" />
@@ -260,7 +201,7 @@
             android:textAppearance="@style/TextAppearance.DrivingCoach.Caption"
             android:textColor="@color/colorOnSurfaceVariant"
             android:gravity="center"
-            tools:text="Location, Activity Recognition" />
+            tools:text="Location" />
     </LinearLayout>
 
     <!-- Grant Permissions Button -->
@@ -268,7 +209,7 @@
         android:id="@+id/grantButton"
         android:layout_width="0dp"
         android:layout_height="56dp"
-        android:text="GRANT PERMISSIONS"
+        android:text="@string/onboarding_grant_button"
         android:textAppearance="@style/TextAppearance.DrivingCoach.H3"
         app:backgroundTint="@color/colorPrimary"
         app:cornerRadius="@dimen/button_corner_radius"

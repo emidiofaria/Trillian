@@ -2,18 +2,31 @@
 # =============================================================================
 # package-release.sh — build a local release and ship its evidence with it
 # =============================================================================
-# Produces:
+# Two kinds of release, chosen with --target (or interactively):
 #
-#   releases/v<version>-<slug>/
-#     DrivingCoach-v<version>-<slug>.apk   the build
-#     TEST_REPORT.html                     the tests that were run against it
-#     RELEASE_NOTES.md                     the commits since the last release
+#   dev   releases/v<version>-<slug>/
+#           DrivingCoach-v<version>-<slug>.apk   debug build, for your own phone
+#           TEST_REPORT.html                     the tests run against it
+#           RELEASE_NOTES.md                     commits since the last release
 #
-# The point of the directory is that an APK and the evidence for it cannot be
-# separated. A build with no report next to it is a build nobody has checked.
+#   play  releases/v<version>-play/
+#           Trillian-v<version>.aab              SIGNED bundle for Google Play
+#           TEST_REPORT.html                     the tests run against it
+#           RELEASE_NOTES.md                     commits since the last release
+#           PLAY_SUBMISSION.md                   what the Console still needs
+#
+# The dev path builds a *debug* APK signed with the debug key. It can never be
+# uploaded to Play, which is why the Play path is a separate pipeline rather than
+# a flag on the same one.
+#
+# The point of the directory is that an artifact and the evidence for it cannot
+# be separated. A build with no report next to it is a build nobody has checked.
+# The Play path goes further and refuses outright: an unverified build can sit on
+# your own phone, but it should not reach strangers.
 #
 # Usage:
-#   package-release.sh [--slug NAME] [--report FILE] [--no-build] [--yes]
+#   package-release.sh [--target dev|play] [--slug NAME] [--report FILE]
+#                      [--no-build] [--yes]
 # =============================================================================
 
 set -euo pipefail
@@ -32,19 +45,52 @@ SLUG=""
 REPORT=""
 DO_BUILD=true
 ASSUME_YES=false
+TARGET=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --target)   TARGET="$2"; shift 2 ;;
         --slug)     SLUG="$2"; shift 2 ;;
         --report)   REPORT="$2"; shift 2 ;;
         --no-build) DO_BUILD=false; shift ;;
         --yes|-y)   ASSUME_YES=true; shift ;;
-        --help)     sed -n '2,20p' "$0"; exit 0 ;;
+        --help)     sed -n '2,30p' "$0"; exit 0 ;;
         *)          log_error "Unknown option: $1"; exit 2 ;;
     esac
 done
 
 cd "$PROJECT_ROOT"
+
+# ---------------------------------------------------------------------------
+# Which kind of release?
+# ---------------------------------------------------------------------------
+# Asked before anything is built, because the two targets build different things
+# from different build types with different keys.
+if [ -z "$TARGET" ]; then
+    if [ -t 0 ] && [ "$ASSUME_YES" != true ]; then
+        echo ""
+        echo "What kind of release?"
+        echo ""
+        echo "  1) Dev build     debug APK + test report, for your phone   (as before)"
+        echo "  2) Play release  signed AAB + submission checklist         (Google Play)"
+        echo ""
+        read -r -p "Choose [1/2]: " choice
+        case "$choice" in
+            1) TARGET="dev" ;;
+            2) TARGET="play" ;;
+            *) log_error "Not a valid choice."; exit 2 ;;
+        esac
+    else
+        # Non-interactive defaults to dev: publishing to the world should never
+        # be something a script does because nobody was there to say otherwise.
+        TARGET="dev"
+    fi
+fi
+
+case "$TARGET" in
+    dev|play) ;;
+    *) log_error "--target must be 'dev' or 'play' (got: $TARGET)"; exit 2 ;;
+esac
 
 # ---------------------------------------------------------------------------
 # Version and slug
@@ -56,22 +102,36 @@ if [ -z "$VERSION" ]; then
 fi
 
 if [ -z "$SLUG" ]; then
+    if [ "$TARGET" = "play" ]; then
+        # A Play release is identified by its version, not by whatever branch it
+        # happened to be cut from.
+        SLUG="play"
+    else
     # A branch named FT_Add_Advanced_racing_coach becomes advanced-racing-coach.
     BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo release)"
     SLUG="$(echo "$BRANCH" | sed -E 's/^(FT|FIX|FEAT)_//I; s/_/-/g; s/[^a-zA-Z0-9-]//g' \
             | tr '[:upper:]' '[:lower:]' | cut -c1-40)"
     [ -z "$SLUG" ] && SLUG="release"
+    fi
 fi
 
 RELEASE_NAME="v${VERSION}-${SLUG}"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_NAME"
-APK_NAME="DrivingCoach-${RELEASE_NAME}.apk"
+if [ "$TARGET" = "play" ]; then
+    ARTIFACT_NAME="Trillian-v${VERSION}.aab"
+    ARTIFACT_LABEL="AAB"
+else
+    ARTIFACT_NAME="DrivingCoach-${RELEASE_NAME}.apk"
+    ARTIFACT_LABEL="APK"
+fi
+# Kept for anything downstream that still reads the old name.
+APK_NAME="$ARTIFACT_NAME"
 
 echo ""
-log_step "Release: $RELEASE_NAME"
+log_step "Release: $RELEASE_NAME  (target: $TARGET)"
 echo "  Version:   $VERSION"
 echo "  Directory: releases/$RELEASE_NAME/"
-echo "  APK:       $APK_NAME"
+echo "  $ARTIFACT_LABEL:       $ARTIFACT_NAME"
 echo ""
 
 if [ -d "$RELEASE_DIR" ] && [ "$ASSUME_YES" != true ]; then
@@ -88,15 +148,128 @@ fi
 # ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
-if [ "$DO_BUILD" = true ]; then
-    log_step "Building debug APK"
-    ./gradlew assembleDebug --quiet || { log_error "Build failed"; exit 1; }
+# ---------------------------------------------------------------------------
+# Play preflight — every reason to refuse, before anything is built
+# ---------------------------------------------------------------------------
+# These run first so a refusal costs seconds rather than a full release build,
+# and so the tree is left exactly as it was found.
+if [ "$TARGET" = "play" ]; then
+    log_step "Play preflight"
+
+    # 1. Signing. Without a key the bundle is unsigned and Play rejects it.
+    KEYSTORE_PROPS="$PROJECT_ROOT/keystore.properties"
+    if [ ! -f "$KEYSTORE_PROPS" ]; then
+        log_error "No keystore.properties — release signing is not configured."
+        log_error "  Play rejects unsigned uploads. See docs/RELEASE.md."
+        exit 1
+    fi
+    KS_PATH="$(grep -oP '^storeFile=\K.*' "$KEYSTORE_PROPS" | head -1)"
+    if [ -z "$KS_PATH" ] || [ ! -f "$KS_PATH" ]; then
+        log_error "keystore.properties points at a keystore that is not there:"
+        log_error "  ${KS_PATH:-<storeFile unset>}"
+        exit 1
+    fi
+    log_info "Signing key: present"
+
+    # 2. A clean tree. You must be able to say exactly what you shipped, and an
+    #    uncommitted edit makes the recorded commit a lie.
+    if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+        log_error "Working tree is not clean."
+        log_error "  A Play release records a commit hash as its provenance. With"
+        log_error "  uncommitted changes that hash does not describe what you built."
+        git status --short | head -10 | sed 's/^/    /'
+        exit 1
+    fi
+    log_info "Working tree: clean"
+
+    # 3. versionCode must not repeat. Play rejects a duplicate outright, and
+    #    finding that out at upload time wastes the whole build.
+    VERSION_CODE="$(( $(echo "$VERSION" | cut -d. -f1) * 100 + $(echo "$VERSION" | cut -d. -f2) ))"
+    PREV_PLAY="$(ls -d "$RELEASES_DIR"/v*-play/ 2>/dev/null | grep -v "/$RELEASE_NAME/$" || true)"
+    for prev in $PREV_PLAY; do
+        prev_v="$(basename "$prev" | sed -E 's/^v(.*)-play$/\1/')"
+        prev_code="$(( $(echo "$prev_v" | cut -d. -f1) * 100 + $(echo "$prev_v" | cut -d. -f2) ))"
+        if [ "$VERSION_CODE" -le "$prev_code" ]; then
+            log_error "versionCode $VERSION_CODE is not above already-packaged v$prev_v ($prev_code)."
+            log_error "  Play only accepts a strictly increasing versionCode."
+            log_error "  Raise appVersionName in app/build.gradle.kts."
+            exit 1
+        fi
+    done
+    log_info "versionCode: $VERSION_CODE (clear of previous Play releases)"
+
+    # 4. Release-blocking lint. lintVitalRelease is the subset Google considers
+    #    fatal; it is cheap next to the cost of a rejected submission.
+    log_info "Running lintVitalRelease…"
+    if ! ./gradlew lintVitalRelease --quiet; then
+        log_error "lintVitalRelease failed — fix before submitting to Play."
+        exit 1
+    fi
+    log_info "lintVitalRelease: passed"
+
+    # 5. Data Safety guarantee. The Play listing declares that this app collects
+    #    no user data. It records precise location continuously, so that claim
+    #    rests entirely on nothing being transmitted — and the strongest form of
+    #    that is a release build with no network permission at all (NF-20).
+    #
+    #    This cannot be asserted from a unit or instrumentation test: those run
+    #    against the debug variant, which deliberately does hold INTERNET so
+    #    MockWebServer works. So it is checked here, against the actual merged
+    #    manifest that is about to be packaged.
+    log_info "Checking release manifest for network permissions…"
+    ./gradlew processReleaseMainManifest --quiet || {
+        log_error "Could not build the release manifest."
+        exit 1
+    }
+    RELEASE_MANIFEST="app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml"
+    if [ ! -f "$RELEASE_MANIFEST" ]; then
+        log_error "Release manifest not found at $RELEASE_MANIFEST — cannot verify the Data Safety claim."
+        exit 1
+    fi
+    for FORBIDDEN in "android.permission.INTERNET" "android.permission.ACTIVITY_RECOGNITION"; do
+        if grep -q "\"$FORBIDDEN\"" "$RELEASE_MANIFEST"; then
+            log_error "Release manifest declares $FORBIDDEN."
+            log_error "The Play listing says this app collects no user data. Either remove"
+            log_error "the permission, or update the Data Safety declaration and this gate."
+            exit 1
+        fi
+    done
+    log_info "Release manifest: no network permission (Data Safety claim holds)"
 fi
-# The build names the APK itself, so find it rather than assume it.
-APK_SOURCE="$(ls -t app/build/outputs/apk/debug/*.apk 2>/dev/null | head -1 || true)"
-if [ -z "$APK_SOURCE" ] || [ ! -f "$APK_SOURCE" ]; then
-    log_error "No APK in app/build/outputs/apk/debug/ (drop --no-build to build one)"
-    exit 1
+
+# ---------------------------------------------------------------------------
+# Build
+# ---------------------------------------------------------------------------
+if [ "$TARGET" = "play" ]; then
+    if [ "$DO_BUILD" = true ]; then
+        log_step "Building signed release bundle"
+        ./gradlew bundleRelease --quiet || { log_error "Build failed"; exit 1; }
+    fi
+    APK_SOURCE="$(ls -t app/build/outputs/bundle/release/*.aab 2>/dev/null | head -1 || true)"
+    if [ -z "$APK_SOURCE" ] || [ ! -f "$APK_SOURCE" ]; then
+        log_error "No AAB in app/build/outputs/bundle/release/ (drop --no-build to build one)"
+        exit 1
+    fi
+
+    # An unsigned bundle is indistinguishable from a signed one by size or name,
+    # so check rather than assume. This is the last point at which a silent
+    # signing misconfiguration can still be caught locally.
+    if ! jarsigner -verify "$APK_SOURCE" >/dev/null 2>&1; then
+        log_error "The bundle is NOT signed. Play will reject it."
+        exit 1
+    fi
+    log_info "Bundle signature: verified"
+else
+    if [ "$DO_BUILD" = true ]; then
+        log_step "Building debug APK"
+        ./gradlew assembleDebug --quiet || { log_error "Build failed"; exit 1; }
+    fi
+    # The build names the APK itself, so find it rather than assume it.
+    APK_SOURCE="$(ls -t app/build/outputs/apk/debug/*.apk 2>/dev/null | head -1 || true)"
+    if [ -z "$APK_SOURCE" ] || [ ! -f "$APK_SOURCE" ]; then
+        log_error "No APK in app/build/outputs/apk/debug/ (drop --no-build to build one)"
+        exit 1
+    fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -139,9 +312,19 @@ if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
     fi
 fi
 
+# A dev build may ship without evidence, loudly. A Play release may not: once it
+# is public, "we never checked" stops being a private problem.
+if [ "$TARGET" = "play" ] && { [ -z "$REPORT" ] || [ ! -f "$REPORT" ]; }; then
+    log_error "Refusing to package a Play release with no test report."
+    log_error ""
+    log_error "  Run the tests against this build first:"
+    log_error "    ./05_tests/infra/scripts/run-all-tests.sh --start-emulator --stop-emulator"
+    exit 1
+fi
+
 mkdir -p "$RELEASE_DIR"
-cp "$APK_SOURCE" "$RELEASE_DIR/$APK_NAME"
-log_info "APK: $(du -h "$RELEASE_DIR/$APK_NAME" | cut -f1)"
+cp "$APK_SOURCE" "$RELEASE_DIR/$ARTIFACT_NAME"
+log_info "$ARTIFACT_LABEL: $(du -h "$RELEASE_DIR/$ARTIFACT_NAME" | cut -f1)"
 
 # ---------------------------------------------------------------------------
 # Test report -- already resolved and verified above
@@ -197,7 +380,7 @@ fi
     echo "| Built | $(date '+%Y-%m-%d %H:%M') |"
     echo "| Commit | \`$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\` |"
     echo "| Branch | $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown) |"
-    echo "| APK | \`$APK_NAME\` |"
+    echo "| $ARTIFACT_LABEL | \`$ARTIFACT_NAME\` |"
     echo ""
     echo "## What changed"
     echo ""
@@ -222,6 +405,118 @@ fi
     echo "automated results."
 } > "$RELEASE_DIR/RELEASE_NOTES.md"
 log_info "Release notes: RELEASE_NOTES.md"
+
+# ---------------------------------------------------------------------------
+# Play submission checklist
+# ---------------------------------------------------------------------------
+# The build is only half of a release. The other half is a set of Console
+# declarations that have nothing to do with Gradle and are easy to get wrong
+# under time pressure, so they are written down next to the artifact they
+# belong to rather than remembered.
+if [ "$TARGET" = "play" ]; then
+    log_step "Writing Play submission checklist"
+    CERT_SHA="$(keytool -list -v -keystore "$KS_PATH" \
+        -storepass "$(grep -oP '^storePassword=\K.*' "$KEYSTORE_PROPS" | head -1)" 2>/dev/null \
+        | grep -m1 'SHA256:' | sed 's/.*SHA256: //')"
+
+    cat > "$RELEASE_DIR/PLAY_SUBMISSION.md" << EOF
+# Play submission — Trillian v$VERSION
+
+| | |
+|---|---|
+| Package | \`io.github.emidiofaria.trillian\` |
+| versionCode | $VERSION_CODE |
+| versionName | $VERSION |
+| Bundle | \`$ARTIFACT_NAME\` |
+| Upload key SHA-256 | \`$CERT_SHA\` |
+| Commit | \`$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\` |
+
+## Before uploading
+
+- [ ] **Back up the upload keystore.** Losing it means this app can never be
+      updated again. Enable Play App Signing so Google holds the app key and
+      this one is only the upload key — that makes loss recoverable.
+- [ ] Confirm the package name above is what you want. **It is permanent from
+      the first upload onward and cannot be changed afterwards.**
+
+## Console declarations this app needs
+
+These follow from the permissions in the manifest, not from preference.
+
+- [ ] **Privacy policy URL** — mandatory, because the app requests location.
+      Publish \`docs/privacy-policy.md\` and paste the URL. See
+      \`docs/RELEASE.md\` for the GitHub Pages steps.
+- [ ] **Data safety form** — exact answers below.
+- [ ] **Foreground service declaration** — required for
+      \`FOREGROUND_SERVICE_LOCATION\`. Suggested text:
+      *"Trillian is a track-day lap timer. When the driver starts a session it
+      records GPS continuously to measure lap times, speed and track shape. A
+      foreground service is required because recording must survive the screen
+      turning off during a lap. A persistent notification is shown for the
+      entire duration. Location is never sent off the device."*
+- [ ] **Prominent disclosure** — satisfied in-app: the onboarding screen states
+      what is recorded and that it stays on the device, before the runtime
+      permission prompt is shown.
+- [ ] **Content rating questionnaire** — no user content, no ads, no purchases,
+      no data sharing.
+- [ ] **Target audience** — not directed at children.
+- [ ] **Ads** — declare **no ads**.
+
+## Data safety — exact answers
+
+The answer to the top-level question is **"No"**: this app does not collect or
+share any user data.
+
+| Question | Answer |
+|---|---|
+| Does your app collect or share any of the required user data types? | **No** |
+| Is all of the user data encrypted in transit? | n/a — nothing is transmitted |
+| Do you provide a way for users to request data deletion? | n/a — data never leaves the device; uninstalling removes it |
+
+**Why "No" is correct here.** Google's definition of *collection* is data
+transmitted off the device. Trillian records precise location and inertial data,
+but writes them only to app-private storage. There is no server, no account, no
+analytics, no ad SDK and no crash reporting.
+
+This is enforced, not merely intended (**NF-20**):
+
+1. \`BuildConfig.UPLOAD_ENABLED\` is \`false\`, so no upload is ever enqueued —
+   asserted by \`DataSafetyPolicyTest\`.
+2. The release manifest declares **no \`INTERNET\` permission**, so the process
+   cannot open a socket at all — asserted by a preflight gate in
+   \`package-release.sh\` that reads the merged release manifest.
+
+⚠️ If a future release adds a backend, this answer must change to **Yes** in the
+same release that adds it, along with the privacy policy. Both automated gates
+above will fail first, by design.
+
+### If a reviewer asks about location anyway
+
+Requesting \`ACCESS_FINE_LOCATION\` often triggers a question even when nothing
+is collected. The answer: location is used solely to measure the driver's own
+lap times, is written to app-private storage, is never transmitted, and the
+release build has no network permission with which to transmit it.
+
+## What helps this pass review
+
+The app does **not** request \`ACCESS_BACKGROUND_LOCATION\`. Location is sampled
+only by a foreground service the driver starts, with a persistent notification
+visible the whole time (SRS NF-14). Background location is the single largest
+cause of rejection for driving apps; say plainly that this app does not use it.
+
+The app also does not request \`ACTIVITY_RECOGNITION\`. It was declared and
+prompted for in earlier builds but never used by any code, which is exactly the
+kind of unused sensitive permission that draws review scrutiny.
+
+## Known state of this build
+
+- Targets **API 36** (Android 16), the minimum Play accepts for new apps.
+- R8/minification is **off** (see NF-12 in the SRS). Permitted, but the bundle
+  is larger and not obfuscated.
+- Test evidence for this exact commit is in \`TEST_REPORT.html\` beside this file.
+EOF
+    log_info "Play checklist: PLAY_SUBMISSION.md"
+fi
 
 echo ""
 log_step "Done — releases/$RELEASE_NAME/"

@@ -320,11 +320,12 @@ echo ""
 # is a report to ship. A release that carries a report from a failed run would
 # be worse than no report at all.
 if [ "$NO_PROMPT" != true ] && [ -t 0 ] && [ $OVERALL_EXIT_CODE -eq 0 ] && [ -n "$RUN_DIR" ]; then
-    log_header "Local Release"
-    echo "All executed tests passed. A local release would build the APK and place it"
-    echo "next to this run's HTML test report under releases/."
+    log_header "Release"
+    echo "All executed tests passed, so this run's report can be shipped alongside"
+    echo "a build. You will be asked which kind: a dev APK for your own phone, or"
+    echo "a signed AAB for Google Play."
     echo ""
-    read -r -p "Create a local release now? [y/N] " REPLY
+    read -r -p "Create a release now? [y/N] " REPLY
     case "$REPLY" in
         [yY]|[yY][eE][sS])
             "$SCRIPT_DIR/package-release.sh" --report "$RUN_DIR/TEST_REPORT.html" || {

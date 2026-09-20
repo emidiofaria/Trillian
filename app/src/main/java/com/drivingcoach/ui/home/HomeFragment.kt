@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.drivingcoach.BuildConfig
 import com.drivingcoach.R
 import com.drivingcoach.data.location.GpsReadiness
 import com.drivingcoach.databinding.FragmentHomeBinding
@@ -276,8 +277,12 @@ class HomeFragment : Fragment() {
         binding.emptyStateContainer.visibility = if (isEmpty) View.VISIBLE else View.GONE
         binding.sessionsRecyclerView.visibility = if (isEmpty) View.GONE else View.VISIBLE
         
-        // Show/hide upload pending banner
-        binding.uploadBanner.visibility = if (state.hasStaleUploads) View.VISIBLE else View.GONE
+        // Show/hide upload pending banner. NF-20: nothing is ever enqueued while
+        // upload is disabled, but a session recorded by an older build could
+        // still be sitting at PENDING in the database, so the banner is gated
+        // on the flag rather than trusted to stay empty.
+        binding.uploadBanner.visibility =
+            if (BuildConfig.UPLOAD_ENABLED && state.hasStaleUploads) View.VISIBLE else View.GONE
     }
 
     private fun handleEvent(event: HomeEvent) {

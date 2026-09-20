@@ -1,12 +1,13 @@
 package com.drivingcoach.ui
 
 import android.os.Bundle
-import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -122,23 +123,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Recording runs full-screen: at a circuit the driver needs the largest
+    // possible readout and no accidental taps on system bars.
+    //
+    // This used to set window.decorView.systemUiVisibility with SYSTEM_UI_FLAG_*.
+    // Those flags are deprecated since API 30 and, once edge-to-edge became
+    // mandatory in Android 16 (targetSdk 36), the platform ignores them outright.
+    // The call still compiled and still ran; it simply stopped doing anything,
+    // which would have taken the Recording screen out of full-screen on exactly
+    // the devices the app is being published for.
     private fun hideSystemUI() {
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            or View.SYSTEM_UI_FLAG_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-            or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        )
+        WindowCompat.getInsetsController(window, binding.root).apply {
+            systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
     }
 
     private fun showSystemUI() {
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        )
+        WindowCompat.getInsetsController(window, binding.root)
+            .show(WindowInsetsCompat.Type.systemBars())
     }
 
     override fun onSupportNavigateUp(): Boolean {

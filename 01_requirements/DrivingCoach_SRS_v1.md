@@ -136,7 +136,7 @@ authenticated account rather than the sole source of identity.
 |---|---|
 | ON-01 | On first launch, the app shall display the branded loading screen, followed by the onboarding screen before any other functional screen. |
 | ON-02 | Onboarding shall consist of three information pages presented in a ViewPager2: Location tracking, Motion analysis, Data privacy. |
-| ON-03 | The onboarding screen shall have a single 'GRANT PERMISSIONS & START' button that requests the following permissions: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACTIVITY_RECOGNITION`. |
+| ON-03 | The onboarding screen shall have a single 'GRANT PERMISSIONS & START' button that requests the following required permissions: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, and alongside them the optional `POST_NOTIFICATIONS` (NF-14). *(Amended 2026-09-17: `ACTIVITY_RECOGNITION` removed. It was requested as a required permission and blocked onboarding until granted, but no code ever called the Activity Recognition API, and the disclosure card claimed it "detects when you are in a vehicle" — a false statement about a sensitive permission. See NF-21.)* |
 | ON-04 | If all permissions are granted, the app shall mark onboarding as complete in DataStore and navigate to the Driver Name screen (DR-01). *(Amended in V1: previously the Login screen.)* |
 | ON-05 | If any permission is denied, the app shall display a dialog listing the denied permissions and offer an 'OPEN SETTINGS' button that deeplinks to the app's system settings. |
 | ON-06 | If the user taps 'SKIP' after a denial, the app shall still mark onboarding as complete and navigate to the Driver Name screen. The missing permission will be re-requested when recording starts. |
@@ -188,6 +188,18 @@ authenticated account rather than the sole source of identity.
 | TS-18 | GPS warm-up shall be bounded by the user's task rather than by any one screen. It shall stop when the app leaves the foreground, when a recording starts, or after 30 minutes of continuous warm-up, so that the receiver is never held while the user cannot see that it is held, and never held indefinitely. It shall **not** stop merely because the Home screen is no longer visible. *(Amended after Incident 12: the previous wording made the Home screen the stop condition, which meant navigating Home → Track Setup — the single journey warm-up exists to serve — discarded the fix the user had just waited for.)* |
 | TS-19 | The app shall record the time-to-first-fix and the time-to-first-accurate-fix (≤10 m) of the most recent acquisition and display them on the About screen, so that GPS acquisition delays reported by users can be diagnosed with measured evidence. |
 | TS-20 | Warm-up shall expose readiness only and shall never supply a position to start/finish line capture; captured points shall always come from a live location update that independently satisfies the ≤10 m accuracy gate. |
+
+**Remark on TS-02, TS-03, TS-05, TS-06 and TS-12 — coverage status (2026-09-16).**
+These five requirements have **no automated test coverage**. They previously cited
+`TrackSetupFragmentTest`, which carried a class-level `@Ignore` and had never executed. Of
+its 11 tests, 8 were `isDisplayed()` assertions that could not have failed even with the
+screen badly broken, and the claims they backed were overstated in any case — TS-05 ("Point A
+shall be captured by tapping CAPTURE") was cited by a test that only checked the button
+existed and was clickable, never capturing a point. The class was deleted rather than revived.
+
+TS-15 through TS-20 are unaffected: they are backed by `TrackSetupResubscribeTest`,
+`LocationWarmUpTest`, `HomeGpsChipTest` and `HomeViewModelTest`, all of which execute.
+Deleted tests are recoverable from git at `0216475`.
 | TS-21 | Start/finish line capture shall reject any fix older than 3 seconds, measured on the monotonic clock (`elapsedRealtimeNanos`). Age shall be checked when a fix arrives, at the moment of capture, and bounded at the location request itself (`setMaxUpdateAgeMillis`). Where the age cannot be established — an unset or future timestamp — the fix shall be treated as current, since refusing capture outright is a worse failure than the one being prevented and the ≤10 m accuracy gate still applies. |
 | TS-22 | While only stale fixes are held, the Track Setup screen shall withdraw capture and display "Getting a current GPS fix…", distinct from "Acquiring GPS…". This state shall clear automatically on the next current fix and shall never require the user to leave and re-enter the screen. |
 | TS-23 | The Track Setup screen shall discard the position it is holding whenever its location collector restarts, because a fix retained across a screen-off or app switch describes where the user was rather than where they are. |
@@ -209,6 +221,26 @@ authenticated account rather than the sole source of identity.
 | SR-09 | Recording shall continue when the app is sent to the background via a foreground service with `foregroundServiceType=location`. |
 | SR-10 | The foreground service notification shall display: title 'Driving Coach — Recording', content text 'MM:SS', updating every second. |
 | SR-11 | If GPS hardware is not available on the device, the foreground service shall stop itself and post a state indicating GPS is unavailable. |
+
+**Remark on SR-04, SR-05 and SR-09 — coverage status (2026-09-16).**
+These three requirements have **no automated test coverage**. They previously cited
+`TelemetryForegroundServiceTest`, which carried a class-level `@Ignore` ("requires real GPS
+hardware") and had therefore never executed. The class was deleted rather than revived, and
+the three claims removed from `coverage-map.tsv`.
+
+Two points worth keeping visible:
+
+- The **SR-05 claim was unfounded regardless** — that class contained no assertion about a
+  GPS status indicator at all. Removing it corrects a false claim, not a real loss.
+- **SR-09 is the significant gap.** Recording continuing when the app is backgrounded is
+  core V1 behaviour, and nothing now verifies it — nor did anything before, since the test
+  never ran. The requirement stands; the evidence does not exist.
+
+The test was un-runnable because `TelemetryForegroundService` takes its location stream from
+`LocationManager.GPS_PROVIDER` directly instead of the injectable `LocationUpdates` seam the
+rest of the app uses (see TS-15). Restoring coverage means putting the service on that seam
+so fixes can be scripted, as `StartLineFreshnessTest` already does. Deleted tests are
+recoverable from git at `0216475`.
 
 ---
 
@@ -508,14 +540,51 @@ no network connection of any kind.
 | NF-08 | Room database queries shall respond within 100 ms for session lists of up to 100 sessions. |
 | NF-09 | The app shall display a loading state for any operation expected to take longer than 300 ms. |
 | NF-10 | The backend shall process requests from multiple concurrent users without session data cross-contamination. |
-| NF-11 | Unit test line coverage shall be ≥ 70% across domain and data layers. |
-| NF-12 | `./gradlew assembleRelease` shall succeed with R8/ProGuard enabled. |
+| NF-11 | Unit test line coverage shall be ≥ 70% across domain and data layers. ⚠️ **Not automatically enforced** — see note below. |
+| NF-12 | `./gradlew assembleRelease` shall succeed with R8/ProGuard enabled. ⚠️ **Not currently met** — see note below. |
 | NF-13 | The backend Docker image shall build and start within 60 seconds. |
 | NF-14 | High-accuracy location shall not be held while the app is not in the foreground, outside an active recording, which runs under a visible foreground-service notification. This is a privacy bound before it is a battery one: the user shall always be able to see that the receiver is in use. |
+| NF-17 | The release build shall be signed with the Play upload key, and the release-packaging script shall refuse to produce a Play artifact that is unsigned, built from an unclean working tree, carries a duplicate `versionCode`, fails `lintVitalRelease`, or has no test report for its own commit. |
+| NF-18 | The app's Play identity shall be `io.github.emidiofaria.trillian`. This is fixed permanently by the first upload and shall not be changed thereafter. |
+| NF-19 | The app shall target the minimum API level Google Play accepts for new submissions — currently API 36 (Android 16). Raising `targetSdk` shall be treated as a behavioural change: every deprecation warning it produces shall be reviewed, and L2 evidence shall come from an emulator at that API level. |
+| NF-20 | The release build shall not transmit any recorded data off the device, and shall not declare the `INTERNET` permission. This shall be enforced by two independent mechanisms: `BuildConfig.UPLOAD_ENABLED` set to false (asserted by `DataSafetyPolicyTest`), and a release-packaging gate that inspects the merged release manifest. The Google Play Data Safety declaration of "does not collect any user data" depends on this requirement, so any change to it shall update that declaration and `docs/privacy-policy.md` in the same commit. |
+| NF-21 | The app shall not declare or request any permission it does not use. A permission that is requested but never exercised misleads the user, misrepresents the app to Play review, and cannot be justified in a Data Safety declaration. |
 | NF-15 | Start-line capture shall be reachable within 1 second of arriving at the Track Setup screen when GPS readiness was already reported on Home, so that the warm-up the user waited for is not spent twice. |
 | NF-16 | Lap timing shall not be quantised to the GPS sample interval. On a device delivering fixes at 1 Hz, the error introduced by sampling shall not exceed 100 ms per lap boundary. |
 
-**Remark on NF-16 — why this matters more than it looks.**
+**Remark on NF-11 — enforcement status (2026-09-15).**
+NF-11 has **no automated enforcement**. The JaCoCo coverage gate that nominally
+backed it was removed on 2026-09-15, together with ktlint, by explicit decision.
+That gate had been declaring a 95% line/branch threshold while never being
+attached to Gradle's `check` task, so it had in fact never executed — the
+requirement was already unenforced, and the removal makes that visible rather
+than changing it. The ≥ 70% target stands as a requirement; it is currently
+unmeasured. Re-establishing it means adding a coverage plugin **and** wiring the
+verification task into `check`. Android Lint remains the one active build gate.
+
+**Remark on NF-12 — enforcement status (2026-09-16).**
+NF-12 is **not currently met**. `isMinifyEnabled = false` on the release build
+type, so `assembleRelease` succeeds *without* R8 rather than with it. The
+requirement was written as though R8 were on, and nothing ever checked. This was
+found while preparing the first Play upload and deliberately left as-is for that
+release: turning R8 on for the first time hours before publishing risks a
+reflection failure in Gson or Room that would only appear in the shipped build.
+Meeting NF-12 means enabling minification, writing the keep rules, and testing a
+minified build end-to-end — planned work, not a flag flip.
+
+**Remark on NF-14 — the Android 13+ gap (2026-09-16).**
+NF-14's guarantee that "the user shall always be able to see that the receiver is
+in use" was **silently broken on Android 13 and above**. `POST_NOTIFICATIONS` was
+never declared in the manifest, so it could not be granted, and the platform
+discards `notify()` calls from an app that lacks it. The foreground service still
+ran and still recorded; what the driver lost was any sight of it — including the
+"GPS signal lost — move to open sky" warning, which is the notification that
+actually changes behaviour at the track. The permission is now declared and
+requested during onboarding. It is requested as **optional**: recording works
+without it, so treating it as required would have stranded anyone who declined on
+the onboarding screen, which is a worse failure than the one being fixed.
+
+
 The app requests location updates at 10 Hz, but the rate actually delivered is set by the device's GNSS hardware, not by the app. The reference phone (ZTE Blade A53+) delivers roughly 1 Hz. At 15–20 m/s, taking the timestamp of the nearest sample instead of the true crossing instant costs up to 1 second, which on a 77 s kart lap is about 1.3% — larger than the differences between laps that the coaching is meant to explain. Interpolating between the two samples either side of the crossing removes almost all of this, and costs nothing.
 
 ---
