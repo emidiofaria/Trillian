@@ -104,6 +104,71 @@ class LocalLapDetector @Inject constructor() {
         const val MIN_ANCHOR_SPEED_MS = 4.0
 
         /**
+         * Speed below which a pass of the start point is not a lap boundary.
+         *
+         * Incident 15: the driver started recording, put the phone in a pocket and
+         * queued for a kart for sixteen minutes. The queue stood beside the start
+         * straight, so the very first segment of the session - a walking pace 2.9
+         * m/s drift across the start point - was accepted as a crossing. Being the
+         * first accepted crossing it also became the session's reference heading,
+         * at 272 degrees. Every one of the twelve racing crossings that followed
+         * arrived between 331 and 343 degrees, so ten of them were rejected as
+         * heading mismatches and the two that squeaked past the 60 degree guard
+         * produced laps of 15m54s and 6m44s.
+         *
+         * A lap boundary is crossed under racing speed by definition. Sharing the
+         * value with [MIN_ANCHOR_SPEED_MS] is deliberate rather than coincidental:
+         * both encode the same judgement, that below 4 m/s this app is looking at
+         * a pedestrian rather than a vehicle. On the incident 15 session the two
+         * populations are separated by a factor of four - the queue never exceeded
+         * 3 m/s, the racing crossings never fell below 5.9 m/s - so the threshold
+         * is not a tuned value.
+         *
+         * The cost is a lap boundary genuinely crossed below 14 km/h, under a
+         * caution or behind traffic, which merges two laps into one. That is a
+         * worse-but-rarer failure than the one it prevents, and unlike the queue
+         * crossing it is recorded as [RejectionReason.TOO_SLOW] rather than
+         * happening in silence.
+         */
+        const val MIN_CROSSING_SPEED_MS = 4.0
+
+        /**
+         * How much quicker than a track's known best lap a crossing may still be
+         * accepted, as a fraction of that lap.
+         *
+         * A catalogue lap time is what the circuit has been seen to produce, not a
+         * floor, so a driver quicker than everyone before them must not have their
+         * lap thrown away. 0.8 admits a lap 20% under the known range - at Baltar,
+         * 56 s against a 70 s range and a 72.5 s measured best - while still being
+         * far stronger than the generic 20 s guard.
+         */
+        private const val LAP_TIME_PRIOR_GRACE = 0.8
+
+        /**
+         * Slowest average speed, in m/s, at which a whole lap is still credible.
+         *
+         * This replaces a test against the circuit's declared slowest lap, for two
+         * reasons found while reviewing what that test does to a slow driver.
+         *
+         * The first is evidential. A lap envelope is a figure somebody typed in;
+         * the lap length is surveyed. Deriving the guard from the measured quantity
+         * rather than the estimated one means a badly guessed envelope can no
+         * longer erase a session.
+         *
+         * The second is the failure it caused. Against Baltar's original 90 s upper
+         * bound the old rule discarded anything over 135 s, so a timid driver
+         * lapping in 150 s would have had every lap thrown away and been shown
+         * nothing at all - the guard meant to protect them deleting their session
+         * in silence. At 1020 m this floor admits laps out to 204 s.
+         *
+         * 5 m/s is the same judgement as [MIN_CROSSING_SPEED_MS], averaged over a
+         * lap instead of sampled at a point: below 18 km/h sustained for an entire
+         * lap, this is not a vehicle on a circuit. Incident 15's two false laps
+         * average 1.07 and 2.52 m/s, so they remain comfortably caught.
+         */
+        const val MIN_PLAUSIBLE_LAP_SPEED_MS = 5.0
+
+        /**
          * How close a discarded pass must come to the start point to be worth
          * reporting, in metres.
          *
@@ -161,6 +226,83 @@ class LocalLapDetector @Inject constructor() {
     }
 
     /**
+     * What a known circuit tells the detector before it looks at the telemetry.
+     *
+     * Supplied by the track catalogue when the driver picked a circuit rather than
+     * capturing a line. Every field is optional and [NONE] reproduces the previous
+     * behaviour exactly, because the detector must remain a single code path: a
+     * session on a known track and a session on an unknown one differ in how well
+     * informed the detector is, not in which algorithm runs.
+     *
+     * @param travelHeadingDeg direction the circuit is driven through the
+     *   start/finish. This replaces the first accepted crossing as the reference
+     *   for [MAX_HEADING_DIFFERENCE_DEG], which is what incident 15 poisoned. At
+     *   Baltar it is load-bearing rather than merely helpful: the nearest other
+     *   part of that circuit passes 24.7 m from the start/finish, against a 15 m
+     *   detection half width and a device reporting +/-6 m, so the heading guard
+     *   is the margin.
+     * @param fastestLapMs quickest lap the circuit is known to produce.
+     * @param slowestLapMs slowest lap the circuit is known to produce. Advisory
+     *   only: it is shown to the driver as the expected lap window, and is
+     *   deliberately *not* used to discard laps - see [lapsArePlausible].
+     * @param lengthM surveyed lap length. This, not [slowestLapMs], is what
+     *   decides whether a detected lap could have been driven.
+     */
+    data class TrackPriors(
+        val travelHeadingDeg: Double? = null,
+        val fastestLapMs: Long? = null,
+        val slowestLapMs: Long? = null,
+        val lengthM: Int? = null
+    ) {
+        companion object {
+            /** No prior knowledge: the detector behaves as it does for any captured line. */
+            val NONE = TrackPriors()
+        }
+
+        /**
+         * Minimum time between crossings, tightened by the circuit's known best lap
+         * where one is available.
+         */
+        fun minLapTimeMs(): Long {
+            val fromTrack = fastestLapMs?.let { (it * LAP_TIME_PRIOR_GRACE).toLong() } ?: 0L
+            return maxOf(MIN_LAP_TIME_MS, fromTrack)
+        }
+
+        /**
+         * Whether [laps] could have been driven on this circuit.
+         *
+         * Measured against the surveyed [lengthM] rather than the declared lap
+         * envelope: a lap is incredible when its *average speed* falls below
+         * [MIN_PLAUSIBLE_LAP_SPEED_MS], which means the boundaries either side of
+         * it are far enough apart that a whole lap went missing between them.
+         *
+         * Two deliberate choices here, both of which protect a slow driver:
+         *
+         * The envelope is not the yardstick. `slowestLapMs` is a figure somebody
+         * typed into the catalogue, and an envelope guessed too tight would erase
+         * real sessions. The lap length was surveyed, so it is the better evidence.
+         *
+         * The set is discarded only when *every* lap fails. A single long lap among
+         * normal ones is a real lap - a spin, an off, a slow kart ahead - and
+         * throwing it away would be editing the driver's session to make it tidy.
+         * What incident 15 produced was different in kind: every "lap" in the set
+         * was nonsense, because none of them were laps. That is the shape this
+         * looks for.
+         *
+         * Always true when the circuit's length is unknown, since then there is
+         * nothing to measure against.
+         */
+        fun lapsArePlausible(laps: List<DetectedLap>): Boolean {
+            val length = lengthM?.toDouble()?.takeIf { it > 0 } ?: return true
+            if (laps.isEmpty()) return true
+            return laps.any { lap ->
+                lap.durationMs > 0 &&
+                    length / (lap.durationMs / 1000.0) >= MIN_PLAUSIBLE_LAP_SPEED_MS
+            }
+        }
+    }
+
+    /**
      * A crossing of the start/finish that was accepted.
      *
      * @param timestampMs interpolated instant of the crossing, not the timestamp of
@@ -183,7 +325,10 @@ class LocalLapDetector @Inject constructor() {
         /** Direction of travel differed from the first crossing by too much. */
         HEADING_MISMATCH,
         /** Passed the start point further to the side than [DETECTION_HALF_WIDTH_M]. */
-        TOO_FAR_TO_THE_SIDE
+        TOO_FAR_TO_THE_SIDE,
+
+        /** Crossed the start point below [MIN_CROSSING_SPEED_MS], so not under power. */
+        TOO_SLOW
     }
 
     /** A candidate crossing that was discarded, recorded so failures can be diagnosed. */
@@ -248,7 +393,16 @@ class LocalLapDetector @Inject constructor() {
         val anchorProjectionM: Double? = null,
         val captureWindowSpeedMs: Double? = null,
         val captureWindowScatterM: Double? = null,
-        val pathRepeats: Boolean? = null
+        val pathRepeats: Boolean? = null,
+        /**
+         * Where the reference direction came from. [HeadingReference.FIRST_CROSSING]
+         * on a session whose opening minutes were spent stationary is the signature
+         * of incident 15.
+         */
+        val headingReference: HeadingReference = HeadingReference.FIRST_CROSSING,
+        val referenceHeadingDeg: Double? = null,
+        /** Minimum gap enforced between crossings, tightened by the circuit if known. */
+        val minLapTimeMs: Long = MIN_LAP_TIME_MS
     )
 
     /** Which start point the reported laps were measured against. */
@@ -271,6 +425,24 @@ class LocalLapDetector @Inject constructor() {
         val projectionM: Double? = null
     )
 
+    /** Where the direction a lap boundary is crossed in was taken from. */
+    enum class HeadingReference {
+        /** The first crossing the session produced, as it has always been. */
+        FIRST_CROSSING,
+
+        /** The direction the circuit is driven, supplied by the track catalogue. */
+        TRACK_CATALOGUE
+    }
+
+    /** One complete pass of a session against a given start point and reference. */
+    private data class Attempt(
+        val anchor: Anchor,
+        val seedHeadingDeg: Double?,
+        val crossings: List<Crossing>,
+        val rejections: List<RejectedCrossing>,
+        val laps: List<DetectedLap>
+    )
+
     /** A detection result together with the reasoning that produced it. */
     data class DetectionOutcome(
         val result: DetectionResult,
@@ -282,10 +454,15 @@ class LocalLapDetector @Inject constructor() {
      *
      * @param jsonlFile The telemetry file to process
      * @param startLine The start/finish line coordinates
+     * @param priors what a known circuit already tells us, or [TrackPriors.NONE]
      * @return DetectionResult containing detected laps or error information
      */
-    fun detectLaps(jsonlFile: File, startLine: StartLine): DetectionResult =
-        detectLapsWithDiagnostics(jsonlFile, startLine).result
+    @JvmOverloads
+    fun detectLaps(
+        jsonlFile: File,
+        startLine: StartLine,
+        priors: TrackPriors = TrackPriors.NONE
+    ): DetectionResult = detectLapsWithDiagnostics(jsonlFile, startLine, priors).result
 
     /**
      * As [detectLaps], but also returns what the detector observed and why it
@@ -294,7 +471,12 @@ class LocalLapDetector @Inject constructor() {
      * Diagnostics are null when detection could not run at all (no start line, no
      * file, too few samples) - in those cases the result itself is the explanation.
      */
-    fun detectLapsWithDiagnostics(jsonlFile: File, startLine: StartLine): DetectionOutcome {
+    @JvmOverloads
+    fun detectLapsWithDiagnostics(
+        jsonlFile: File,
+        startLine: StartLine,
+        priors: TrackPriors = TrackPriors.NONE
+    ): DetectionOutcome {
         Log.d(TAG, "=== LAP DETECTION START ===")
         Log.d(TAG, "Start line: (${startLine.lat1}, ${startLine.lng1}) to (${startLine.lat2}, ${startLine.lng2})")
         Log.d(TAG, "Start line valid: ${startLine.isValid()}")
@@ -335,34 +517,60 @@ class LocalLapDetector @Inject constructor() {
         // Detect crossings of the start/finish point as the driver captured it.
         val (capturedLat, capturedLng) = startLine.midpoint()
         val captured = Anchor(capturedLat, capturedLng, AnchorSource.CAPTURED)
-        var anchor = captured
-        var rejections = mutableListOf<RejectedCrossing>()
-        var crossings = detectCrossings(samples, captured, rejections)
-        var laps = buildLaps(crossings)
-        Log.d(TAG, "Detected ${crossings.size} crossings, rejected ${rejections.size} candidates")
+        val minLapTimeMs = priors.minLapTimeMs()
+
+        /** One complete pass of the session against a given start point and reference. */
+        fun attempt(against: Anchor, seedHeadingDeg: Double?): Attempt {
+            val found = mutableListOf<RejectedCrossing>()
+            val accepted = detectCrossings(samples, against, found, seedHeadingDeg, minLapTimeMs)
+            return Attempt(against, seedHeadingDeg, accepted, found, buildLaps(accepted))
+        }
+
+        /**
+         * An attempt is only worth keeping if it produced laps that could have been
+         * driven. Incident 15 returned two laps of 954 s and 404 s around a 1020 m
+         * circuit - walking pace - and because they were laps at all every later
+         * correction was skipped and the driver was shown them as fact.
+         */
+        fun Attempt.isSatisfactory(): Boolean =
+            laps.size >= 2 && priors.lapsArePlausible(laps)
+
+        var best = attempt(captured, priors.travelHeadingDeg)
+        Log.d(
+            TAG,
+            "Detected ${best.crossings.size} crossings, rejected ${best.rejections.size} candidates" +
+                (priors.travelHeadingDeg?.let { " using the track's %.1f degree reference".format(it) } ?: "")
+        )
+
+        // A catalogue heading that does not match the session is worse than none at
+        // all, because it rejects everything. The circuit may have been driven the
+        // other way round, or the entry may simply be wrong. Fall back to reading
+        // the reference off the session itself rather than reporting no laps.
+        if (!best.isSatisfactory() && priors.travelHeadingDeg != null) {
+            val unseeded = attempt(captured, null)
+            Log.d(
+                TAG,
+                "Track heading yielded ${best.laps.size} laps; reading the reference from the " +
+                    "session itself yields ${unseeded.laps.size}"
+            )
+            if (unseeded.isSatisfactory()) best = unseeded
+        }
 
         // A session with no laps against the captured line may be a session whose
         // line was captured while the phone was stationary and therefore several
         // metres off the track - incident 14. Retry against the path the car
         // actually drove, and keep that answer only if it is a better one.
-        if (laps.size < 2) {
+        if (!best.isSatisfactory()) {
             val projected = projectOntoDrivenPath(samples, capturedLat, capturedLng)
             val distance = projected?.projectionM
             if (projected != null && distance != null && distance <= MAX_ANCHOR_PROJECTION_M) {
-                val retryRejections = mutableListOf<RejectedCrossing>()
-                val retryCrossings = detectCrossings(samples, projected, retryRejections)
-                val retryLaps = buildLaps(retryCrossings)
+                val retry = attempt(projected, priors.travelHeadingDeg)
                 Log.d(
                     TAG,
-                    "Captured start point found ${laps.size} laps; %.1fm onto the driven path finds ${retryLaps.size}"
+                    "Captured start point found ${best.laps.size} laps; %.1fm onto the driven path finds ${retry.laps.size}"
                         .format(distance)
                 )
-                if (retryLaps.size >= 2) {
-                    anchor = projected
-                    rejections = retryRejections
-                    crossings = retryCrossings
-                    laps = retryLaps
-                }
+                if (retry.isSatisfactory()) best = retry
             } else {
                 Log.d(
                     TAG,
@@ -374,11 +582,39 @@ class LocalLapDetector @Inject constructor() {
                 )
             }
         }
+
+        val anchor = best.anchor
+        val crossings = best.crossings
+        val rejections = best.rejections
+
+        // Where the circuit's length is known and nothing in the answer could have
+        // been driven at speed, nothing has been detected. Incident 15 showed a
+        // driver two laps of 15m54s and 6m44s on a 1020 m kart track; reporting them
+        // as laps was a worse failure than reporting none, because it looked like an
+        // answer.
+        val plausible = priors.lapsArePlausible(best.laps)
+        if (!plausible) {
+            val slowest = best.laps.maxOf { it.durationMs }
+            val impliedSpeed = (priors.lengthM ?: 0) / (slowest / 1000.0)
+            Log.w(
+                TAG,
+                "Discarding ${best.laps.size} laps: none could have been driven. Slowest is " +
+                    "${slowest}ms, which is %.2f m/s over ${priors.lengthM} m".format(impliedSpeed)
+            )
+        }
+        val laps = if (plausible) best.laps else emptyList()
         rejections.forEach { Log.d(TAG, "  rejected at ${it.timestampMs}: ${it.reason} - ${it.detail}") }
         Log.d(TAG, "Built ${laps.size} laps from crossings using ${anchor.source}")
 
         val diagnostics = buildDiagnostics(
-            samples, startLine, anchor, crossings, rejections, laps.size
+            samples, startLine, anchor, crossings, rejections, laps.size,
+            headingReference = if (best.seedHeadingDeg != null) {
+                HeadingReference.TRACK_CATALOGUE
+            } else {
+                HeadingReference.FIRST_CROSSING
+            },
+            referenceHeadingDeg = best.seedHeadingDeg ?: crossings.firstOrNull()?.headingDeg,
+            minLapTimeMs = minLapTimeMs
         )
         Log.d(
             TAG,
@@ -404,7 +640,10 @@ class LocalLapDetector @Inject constructor() {
         anchor: Anchor,
         crossings: List<Crossing>,
         rejections: List<RejectedCrossing>,
-        lapCount: Int
+        lapCount: Int,
+        headingReference: HeadingReference = HeadingReference.FIRST_CROSSING,
+        referenceHeadingDeg: Double? = null,
+        minLapTimeMs: Long = MIN_LAP_TIME_MS
     ): DetectionDiagnostics {
         val durationMs = samples.last().timestampMs - samples.first().timestampMs
         val rateHz = if (durationMs > 0) (samples.size - 1) * 1000.0 / durationMs else 0.0
@@ -462,7 +701,10 @@ class LocalLapDetector @Inject constructor() {
             captureWindowSpeedMs = openingSpeed,
             captureWindowScatterM = openingScatter,
             // Only asked when it can change what the driver is told.
-            pathRepeats = if (lapCount < 2) pathRepeats(samples) else null
+            pathRepeats = if (lapCount < 2) pathRepeats(samples) else null,
+            headingReference = headingReference,
+            referenceHeadingDeg = referenceHeadingDeg,
+            minLapTimeMs = minLapTimeMs
         )
     }
 
@@ -730,7 +972,9 @@ class LocalLapDetector @Inject constructor() {
     private fun detectCrossings(
         samples: List<TelemetrySample>,
         anchor: Anchor,
-        rejections: MutableList<RejectedCrossing> = mutableListOf()
+        rejections: MutableList<RejectedCrossing> = mutableListOf(),
+        seedHeadingDeg: Double? = null,
+        minLapTimeMs: Long = MIN_LAP_TIME_MS
     ): List<Crossing> {
         if (samples.size < 2) return emptyList()
 
@@ -739,7 +983,10 @@ class LocalLapDetector @Inject constructor() {
         val anchorLng = anchor.longitude
 
         var lastCrossingTs: Long? = null
-        var referenceHeadingDeg: Double? = null
+        // A catalogue heading is a reference before the session starts, so unlike a
+        // reference read off the first crossing it also guards that first crossing.
+        // That is what keeps a pedestrian from opening the session.
+        var referenceHeadingDeg: Double? = seedHeadingDeg
         var maxDistanceFromStart = 0.0
 
         for (i in 1 until samples.size) {
@@ -803,21 +1050,57 @@ class LocalLapDetector @Inject constructor() {
                 continue
             }
 
+            // A lap boundary is crossed under power. Anything slower than a jog
+            // across the start point is the driver walking to the kart, pushing it,
+            // or standing in a queue beside the start straight with the phone in a
+            // pocket - incident 15, where that pass was accepted, became the
+            // session's heading reference, and cost the driver ten of twelve laps.
+            val crossingSpeedMs = maxOf(prev.speedMs, curr.speedMs).toDouble()
+            if (crossingSpeedMs < MIN_CROSSING_SPEED_MS) {
+                rejections.add(
+                    RejectedCrossing(
+                        crossingTs, RejectionReason.TOO_SLOW,
+                        "crossed at %.1fm/s, minimum is %.1fm/s"
+                            .format(crossingSpeedMs, MIN_CROSSING_SPEED_MS),
+                        lateralOffsetM = lateralOffset
+                    )
+                )
+                continue
+            }
+
             if (lastCrossingTs == null) {
+                // A reference supplied by the catalogue exists before the session
+                // does, so it can guard the opening crossing - which a reference
+                // read from that same crossing obviously cannot. Incident 15 turned
+                // on exactly this: the first thing the session saw was a pedestrian.
+                val seeded = referenceHeadingDeg
+                if (seeded != null) {
+                    val difference = GeoUtils.angularDifferenceDegrees(headingDeg, seeded)
+                    if (difference > MAX_HEADING_DIFFERENCE_DEG) {
+                        rejections.add(
+                            RejectedCrossing(
+                                crossingTs, RejectionReason.HEADING_MISMATCH,
+                                "travelling %.0f degrees, %.0f from the circuit's %.0f"
+                                    .format(headingDeg, difference, seeded)
+                            )
+                        )
+                        continue
+                    }
+                }
                 crossings.add(Crossing(crossingTs, lateralOffset, headingDeg))
                 lastCrossingTs = crossingTs
-                referenceHeadingDeg = headingDeg
+                if (referenceHeadingDeg == null) referenceHeadingDeg = headingDeg
                 maxDistanceFromStart = 0.0
                 continue
             }
 
             val timeSinceLastCrossing = crossingTs - lastCrossingTs
 
-            if (timeSinceLastCrossing < MIN_LAP_TIME_MS) {
+            if (timeSinceLastCrossing < minLapTimeMs) {
                 rejections.add(
                     RejectedCrossing(
                         crossingTs, RejectionReason.TOO_SOON,
-                        "${timeSinceLastCrossing}ms since the previous crossing, minimum is $MIN_LAP_TIME_MS"
+                        "${timeSinceLastCrossing}ms since the previous crossing, minimum is $minLapTimeMs"
                     )
                 )
                 continue

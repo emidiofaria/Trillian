@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_background"
+    android:fitsSystemWindows="true"
+    tools:context=".ui.tracklist.TrackConfirmFragment">
+
+    <ImageView
+        android:id="@+id/appLogo"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginTop="@dimen/spacing_xl"
+        android:contentDescription="@string/app_name"
+        android:src="@mipmap/ic_launcher"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/trackName"
+        style="@style/TextAppearance.DrivingCoach.H2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_lg"
+        android:layout_marginTop="@dimen/spacing_lg"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/appLogo"
+        tools:text="KARTÓDROMO DE BALTAR" />
+
+    <TextView
+        android:id="@+id/trackLocation"
+        style="@style/TextAppearance.DrivingCoach.Body"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_lg"
+        android:layout_marginTop="@dimen/spacing_xs"
+        android:gravity="center"
+        android:textColor="@color/text_secondary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/trackName"
+        tools:text="Baltar, Paredes, Portugal" />
+
+    <!-- What the app already knows about this circuit. Shown rather than hidden so the
+         driver can tell at a glance whether they picked the right one. -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/detailsCard"
+        style="@style/Widget.DrivingCoach.Card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_lg"
+        android:layout_marginTop="@dimen/spacing_lg"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/trackLocation">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_md">
+
+            <TextView
+                style="@style/TextAppearance.DrivingCoach.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="START/FINISH LINE"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/startLineSummary"
+                style="@style/TextAppearance.DrivingCoach.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                tools:text="Already set · 11.0 m wide" />
+
+            <TextView
+                android:id="@+id/trackFacts"
+                style="@style/TextAppearance.DrivingCoach.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:textColor="@color/text_secondary"
+                tools:text="1020 m · 13 corners · best laps around 1:10–1:30" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- GPS readiness. Selecting a saved circuit skips Track Setup, and with it the gate
+         that used to stop a session starting on a cold receiver (SRS TS-04/TS-21/TS-22).
+         The gate moves here rather than disappearing. -->
+    <LinearLayout
+        android:id="@+id/gpsStatusContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_lg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/detailsCard">
+
+        <View
+            android:id="@+id/gpsIndicator"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:background="@drawable/bg_gps_indicator" />
+
+        <TextView
+            android:id="@+id/gpsStatusText"
+            style="@style/TextAppearance.DrivingCoach.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_sm"
+            tools:text="GPS: 8 satellites, ±3m" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/startHint"
+        style="@style/TextAppearance.DrivingCoach.Caption"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_lg"
+        android:layout_marginBottom="@dimen/spacing_sm"
+        android:gravity="center"
+        android:text="Start recording once you are rolling — a lap counted while you queue is not a lap."
+        android:textColor="@color/text_secondary"
+        app:layout_constraintBottom_toTopOf="@id/startRecordingButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/startRecordingButton"
+        style="@style/Widget.DrivingCoach.Button.Primary"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_lg"
+        android:layout_marginBottom="@dimen/spacing_lg"
+        android:enabled="false"
+        android:text="START RECORDING"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

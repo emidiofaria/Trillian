@@ -298,6 +298,73 @@ produced zero laps in v2.8.
 
 ---
 
+### LD-CROSS-08: Walking Across the Start/Finish Is Not a Lap (Incident 15 Regression)
+
+**Objective:** Verify a pass made on foot is refused, and cannot set the session's reference
+heading (LD-19).
+
+**Setup:** Do this deliberately — it reproduces the incident exactly.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Start recording while still in the queue or paddock, near the start straight | Recording active | ☐ |
+| 2 | Walk across the start/finish line at least once before driving | Nothing visible happens | ☐ |
+| 3 | Drive a normal session of at least 4 laps | — | ☐ |
+| 4 | Stop recording and open the session | **All** driven laps are reported | ☐ |
+| 5 | Confirm the lap times are in the range you actually drove | No lap of several minutes appears | ☐ |
+| 6 | Retrieve the `.lapdiag.json` sidecar (see 6.1.1) | The walking pass appears as a `TOO_SLOW` rejection | ☐ |
+
+---
+
+### LD-CAT-01: Recording Against a Catalogued Circuit
+
+**Objective:** Verify SELECT TRACK produces laps without capturing a line (TL-02, TL-06, LD-20).
+
+**Venue:** Kartódromo de Baltar, or any circuit previously saved on this device.
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Tap START SESSION, name the session, choose **SELECT TRACK** | Circuit list appears | ☐ |
+| 2 | Confirm the circuit you are at is listed with its name and location | Entry present | ☐ |
+| 3 | Select it | Confirm screen shows name, line length, lap length, corner count, expected lap window | ☐ |
+| 4 | Observe START RECORDING **before** GPS is ready | Button disabled — the gate is not bypassed | ☐ |
+| 5 | Wait for GPS readiness, then start and drive 4+ laps | Recording proceeds with no line capture at any point | ☐ |
+| 6 | Stop and open the session | All laps reported, times consistent with the circuit | ☐ |
+| 7 | Retrieve the `.lapdiag.json` sidecar | `headingReference` reads `TRACK_CATALOGUE` | ☐ |
+
+---
+
+### LD-CAT-02: Saving a Captured Circuit and Reusing It
+
+**Objective:** Verify a captured circuit can be saved and selected on a later session (TL-09, TL-11).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Start a session, choose **NEW CIRCUIT**, capture points A and B as usual | Line valid | ☐ |
+| 2 | Tap START RECORDING | "Save this circuit?" is offered | ☐ |
+| 3 | Tap **SAVE & START** | Recording starts normally | ☐ |
+| 4 | Complete the session and return Home | — | ☐ |
+| 5 | Start a second session and choose **SELECT TRACK** | The circuit saved in step 3 is in the list | ☐ |
+| 6 | Long-press / open it and rename it | Rename succeeds | ☐ |
+| 7 | Attempt to delete a circuit that shipped with the app | Not offered — bundled circuits are not user data | ☐ |
+
+---
+
+### LD-CAT-03: Queue Time Excluded From Session Statistics
+
+**Objective:** Verify the centreline corridor filter (AS-18).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Using SELECT TRACK on a circuit **with** a centreline, start recording several minutes before driving | Recording active | ☐ |
+| 2 | Remain in the paddock / queue, then drive 4+ laps | — | ☐ |
+| 3 | Open the session's ANALYSIS tab | Total distance reflects the driving, not the walking | ☐ |
+| 4 | Check average speed | Not dragged towards zero by the standing time | ☐ |
+| 5 | Check the track map and corner table | **Unchanged** by the filter — full trace still drawn | ☐ |
+| 6 | Check lap times against the Laps tab | Identical — the filter does not touch lap detection | ☐ |
+
+---
+
 ## Lap Detection Tests Summary
 
 | Test ID | Test Name | Status |
@@ -319,6 +386,10 @@ produced zero laps in v2.8.
 | LD-CROSS-05 | Capture Order Does Not Matter | ☐ Pass ☐ Fail |
 | LD-CROSS-06 | Start/Finish Captured Along the Track (Incident 13 Regression) | ☐ Pass ☐ Fail |
 | LD-CROSS-07 | Lap Boundary Timing Precision | ☐ Pass ☐ Fail |
+| LD-CROSS-08 | Walking Across the Start/Finish Is Not a Lap (Incident 15 Regression) | ☐ Pass ☐ Fail |
+| LD-CAT-01 | Recording Against a Catalogued Circuit | ☐ Pass ☐ Fail |
+| LD-CAT-02 | Saving a Captured Circuit and Reusing It | ☐ Pass ☐ Fail |
+| LD-CAT-03 | Queue Time Excluded From Session Statistics | ☐ Pass ☐ Fail |
 
 ---
 
@@ -338,4 +409,6 @@ produced zero laps in v2.8.
 
 ---
 
-*Document ID: SAT-LD-001 | Version: 1.1 | Date: 2026-09-08*
+*Document ID: SAT-LD-001 | Version: 1.2 | Date: 2026-09-21*
+*Updated: Added LD-CROSS-08 (Incident 15 regression — a walked pass is not a lap) and
+LD-CAT-01…03 (track library: catalogued circuit, save and reuse, corridor filter).*

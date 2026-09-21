@@ -27,7 +27,7 @@ class TrackSetupViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = TrackSetupViewModel()
+        viewModel = TrackSetupViewModel(mock(com.drivingcoach.data.track.TrackRepository::class.java))
     }
 
     @After

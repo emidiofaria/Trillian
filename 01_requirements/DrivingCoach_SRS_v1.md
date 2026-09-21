@@ -15,6 +15,7 @@
 3. [Onboarding and permissions](#3-onboarding-and-permissions)
 4. [Application startup and branding](#3a-application-startup-and-branding)
 4. [Track setup — start/finish line](#4-track-setup--startfinish-line)
+4a. [Track library — pre-defined and saved circuits](#4a-track-library--pre-defined-and-saved-circuits)
 5. [Session recording](#5-session-recording)
 6. [Telemetry capture](#6-telemetry-capture)
 7. [Telemetry storage and upload](#7-telemetry-storage-and-upload)
@@ -184,7 +185,7 @@ authenticated account rather than the sole source of identity.
 | TS-14 | The instruction text shall read: "Walk to each edge of the track at the start/finish line and capture two GPS points." |
 | TS-15 | The app shall request location updates through `FusedLocationProviderClient` at `PRIORITY_HIGH_ACCURACY` with a 1-second interval, behind the `LocationUpdates` abstraction. Track Setup shall subscribe whenever its view is at least STARTED and unsubscribe when it is not, so that location updates resume after a screen-off, app switch or any other stop/start cycle. |
 | TS-16 | The app shall begin acquiring a GPS fix as soon as the Home screen becomes visible, so that the time-to-first-fix elapses while the user is still preparing rather than while standing at the start/finish line. |
-| TS-17 | The Home screen shall display a GPS readiness chip reflecting acquisition state: hidden when idle, "Acquiring GPS…" (amber) while no fix of ≤10 m accuracy has been received, and "GPS ready" (green) once one has. Readiness shall persist across the navigation from Home to Track Setup, so that the state the chip reported remains true on arrival at the start line. |
+| TS-17 | GPS warm-up shall run without reporting its progress on the Home screen. Readiness shall persist across the navigation from Home to Track Setup, so that the state reached during warm-up remains true on arrival at the start line. *(Amended 2026-09-20: Home previously displayed a readiness chip — amber "Acquiring GPS…", green "GPS ready". It was removed because it reported a wait the user could not act on or shorten, on the one screen where there is nothing to do about it. Acquisition behaviour is unchanged; Track Setup, where readiness does gate an action, still reports it.)* |
 | TS-18 | GPS warm-up shall be bounded by the user's task rather than by any one screen. It shall stop when the app leaves the foreground, when a recording starts, or after 30 minutes of continuous warm-up, so that the receiver is never held while the user cannot see that it is held, and never held indefinitely. It shall **not** stop merely because the Home screen is no longer visible. *(Amended after Incident 12: the previous wording made the Home screen the stop condition, which meant navigating Home → Track Setup — the single journey warm-up exists to serve — discarded the fix the user had just waited for.)* |
 | TS-19 | The app shall record the time-to-first-fix and the time-to-first-accurate-fix (≤10 m) of the most recent acquisition and display them on the About screen, so that GPS acquisition delays reported by users can be diagnosed with measured evidence. |
 | TS-20 | Warm-up shall expose readiness only and shall never supply a position to start/finish line capture; captured points shall always come from a live location update that independently satisfies the ≤10 m accuracy gate. |
@@ -198,11 +199,68 @@ shall be captured by tapping CAPTURE") was cited by a test that only checked the
 existed and was clickable, never capturing a point. The class was deleted rather than revived.
 
 TS-15 through TS-20 are unaffected: they are backed by `TrackSetupResubscribeTest`,
-`LocationWarmUpTest`, `HomeGpsChipTest` and `HomeViewModelTest`, all of which execute.
+`LocationWarmUpTest`, `HomeGpsWarmUpTest` and `HomeViewModelTest`, all of which execute.
 Deleted tests are recoverable from git at `0216475`.
 | TS-21 | Start/finish line capture shall reject any fix older than 3 seconds, measured on the monotonic clock (`elapsedRealtimeNanos`). Age shall be checked when a fix arrives, at the moment of capture, and bounded at the location request itself (`setMaxUpdateAgeMillis`). Where the age cannot be established — an unset or future timestamp — the fix shall be treated as current, since refusing capture outright is a worse failure than the one being prevented and the ≤10 m accuracy gate still applies. |
 | TS-22 | While only stale fixes are held, the Track Setup screen shall withdraw capture and display "Getting a current GPS fix…", distinct from "Acquiring GPS…". This state shall clear automatically on the next current fix and shall never require the user to leave and re-enter the screen. |
 | TS-23 | The Track Setup screen shall discard the position it is holding whenever its location collector restarts, because a fix retained across a screen-off or app switch describes where the user was rather than where they are. |
+
+---
+
+## 4a. Track library — pre-defined and saved circuits
+
+§4 describes capturing a start/finish line at the track edge, which remains the path for any
+circuit the app has never seen. This section adds the other path: a circuit the app already
+knows, either because it ships with the app or because the driver saved one they captured.
+
+The motivation is measured, not cosmetic. A phone fixes its own position worst while standing
+still (see FP-STATIONARY-POSITION-BIAS), which is exactly the posture §4 mandates. A circuit
+whose geometry was surveyed once, carefully, is better evidence than a line captured in ten
+seconds before a session — and it carries information a captured line cannot: which way the
+driver travels through the start/finish, and how long a lap there should take.
+
+| ID | Requirement |
+|---|---|
+| TL-01 | The app shall ship a read-only catalogue of pre-defined circuits as a bundled asset (`assets/tracks/tracks.json`). The catalogue shall be available with no network connection and shall never be fetched, updated or synchronised at runtime. |
+| TL-02 | After the driver names a session, the app shall offer a choice between **SELECT TRACK** and **NEW CIRCUIT**. Choosing NEW CIRCUIT shall lead to the Track Setup screen (§4) with its behaviour unchanged. |
+| TL-03 | SELECT TRACK shall present a single list containing both bundled circuits and circuits the driver has saved, each showing its name, location and start/finish line length. |
+| TL-04 | A catalogue entry shall carry: a stable identifier, a display name, a location, a start/finish line as two coordinate pairs, the direction of travel through that line in degrees, the lap length in metres, the corner count, a fastest/slowest plausible lap time envelope, and an ordered closed centreline. The slowest lap figure is advisory: it is shown to the driver as the expected lap window (TL-06) and is not used to discard laps — see LD-22. |
+| TL-05 | Provenance shall be recorded **per dataset, not per circuit**. The start/finish line and the centreline of the same circuit may have been obtained by different means, and the catalogue shall say which for each. A circuit shall never carry a single blanket provenance claim that is untrue of one of its datasets. |
+| TL-06 | Selecting a circuit shall present a confirmation screen stating the circuit's name, start/finish line length, lap length and expected lap window, and shall apply the same GPS readiness gate as Track Setup (TS-04, TS-21, TS-22) before recording may start. Selecting a known circuit shall not become a way to bypass the readiness checks that capturing one enforces. |
+| TL-07 | The start/finish line of a selected circuit shall be resolved from the repository by identifier at the moment recording starts. It shall not be passed between screens as a coordinate, because navigation arguments are 32-bit floats and would quantise a surveyed coordinate to roughly half a metre — discarding the precision that is the entire reason for having surveyed it. |
+| TL-08 | A session recorded against a catalogue circuit shall persist that circuit's identifier alongside the start/finish line it used. A session recorded against a captured line shall persist no identifier. |
+| TL-09 | After a driver captures a new start/finish line, the app shall offer to save it as a reusable circuit before recording begins. Declining shall start the recording exactly as before. |
+| TL-10 | A circuit shall not be saved with a start/finish line shorter than 3 metres, consistent with TS-09. |
+| TL-11 | Saved circuits shall be renameable and deletable. Bundled circuits shall be neither, because they are an asset of the build rather than user data. |
+| TL-12 | V1 shall present the circuit list as a plain manual list. It shall not filter or reorder by the device's current position, and shall not require a location fix to be browsed. |
+| TL-13 | Recording a session shall never modify a circuit's geometry. The only field a recording may update is the circuit's last-used timestamp. |
+| TL-14 | If the bundled catalogue asset is missing or cannot be parsed, the app shall behave as though the catalogue were empty and shall log the failure. It shall not crash, and NEW CIRCUIT shall remain fully usable. |
+
+**Remark on TL-05 — why provenance is split.**
+The first shipped circuit, Kartódromo de Baltar, has a start/finish line derived from map
+imagery and a centreline of 140 points walked on foot by the driver. Those are different
+kinds of evidence with different error characteristics, and a reader deciding whether to
+trust a number needs to know which one it came from. Where the surveyor's identity is not
+known to the app, the field shall be left empty rather than filled with a plausible guess —
+an invented provenance is worse than an absent one.
+
+**Remark on TL-04 — the priors are corroborated against a recorded session.**
+Two fields in a catalogue entry are load-bearing for lap detection and were, until this
+point, supported only by the survey that produced them: `travelHeadingDeg` (which LD-19 and
+LD-20 depend on) and `lengthM` (which LD-22 depends on). A wrong value in either is silent —
+a wrong heading rejects laps that happened, a wrong length either discards real sessions or
+stops catching the incident it was written for.
+
+Baltar's are therefore cross-checked against the incident 15 recording, which was made
+before the catalogue existed and so cannot have been fitted to it. Measured against the
+**catalogued** start/finish line: every crossing runs within 10° of the declared 137.8°, and
+the karts cover a median 1094 m between crossings against a surveyed 1020 m. The excess is
+expected — summing distances between consecutive 1 Hz fixes over-reads, because each fix
+carries its own error and the sum accumulates a random walk on top of the true path.
+
+This is why the shipped provenance stays `SURVEYED_ON_FOOT`. The honest claim is not that
+the data was gathered from a kart; it is that data gathered on foot **agrees with** a kart.
+That is the stronger statement, and it is the one the tests make.
 
 ---
 
@@ -307,6 +365,10 @@ recoverable from git at `0216475`.
 | LD-16 | For each detection run the app shall record, alongside the session's telemetry file, what it observed and why each candidate crossing was accepted or rejected. Failure to record this shall not affect the outcome presented to the user. |
 | LD-17 | Where detection against the captured midpoint yields fewer than 2 laps, the app shall retry once against that midpoint projected perpendicularly onto the path the car actually drove, considering only stretches driven at 4 m/s or more. The projected point shall be used only if it lies within **20 m** of the captured midpoint and only if the retry yields at least 2 laps; otherwise the captured midpoint stands and no laps are reported. The start point actually used, and the distance it moved, shall be recorded under LD-16. |
 | LD-18 | Where no laps are detected, the message shown to the driver shall describe what the session contained — how many passes were seen, how far to the side they went, and whether the line was captured while stationary — rather than instructing the driver to complete laps they may already have completed. |
+| LD-19 | A candidate crossing made below 4 m/s shall be rejected and recorded as `TOO_SLOW`. A person walking across the start/finish — while queueing, pushing a kart, or carrying the phone back to the paddock — is not a lap, and the app shall not treat it as one. |
+| LD-20 | Where the session was recorded against a circuit from the track library (§4a), the circuit's direction of travel shall be used as the reference heading for the guard in LD-14, in place of the heading of the session's first accepted crossing. |
+| LD-21 | Where the circuit declares a fastest plausible lap time, the minimum lap time guard of LD-05 shall be raised to 80 % of that value. The 20 % grace exists so that a driver who beats the catalogue's figure is not refused their own lap. |
+| LD-22 | Where the circuit declares a surveyed lap length, a set of detected laps in which **every** lap implies an average speed below 5 m/s (18 km/h) shall be discarded in its entirety rather than presented. A whole set of laps none of which could have been driven is evidence that the crossings were not laps, and reporting them as laps is worse than reporting nothing. A set containing at least one credible lap shall be presented unaltered, including any individual long lap within it. |
 
 **Remark on LD-02 and LD-04 — why the *orientation* of the captured line is ignored.**
 Track Setup asks the user to capture a point at each edge of the start/finish, typically 5–10 m apart. GPS accuracy on a phone is of the same order (4.8 m mean, 15.0 m worst, measured in incident 13). The *direction* of a line drawn between two points that close together is therefore dominated by measurement noise rather than by where the user stood, and can come out pointing along the track instead of across it. In incident 13 it did exactly that — within 0.1°–5.1° of the direction of travel — and no lap could be detected, because a car driving along a line never crosses it. The app therefore uses the captured points only for their midpoint, which is a *position* and is measurable, and derives the crossing direction from the car's own motion, which is measured over hundreds of metres. See `03_incidents/13_no_laps_detected_start_line_parallel_to_travel/`.
@@ -317,7 +379,51 @@ Because the crossing plane follows the car's direction of travel rather than a f
 **Remark on LD-06 — why 50 m and not more.**
 The value must be smaller than the shortest lap the app is expected to support. Kart circuits used for testing are around 800 m, so 50 m is comfortably below a lap while still being far enough to clear the manoeuvring that happens around the start/finish before a session begins. An earlier value of 200 m was specified but never implemented; the shipped value has always been 50 m.
 
-**Remark on LD-16 — why this is a requirement at all.**
+**Remark on LD-19 — why 4 m/s, and why this is not a tuned number.**
+In the incident 15 session the two populations are separated by a factor of four: the driver's
+16-minute wait in the queue beside the start straight never exceeded 3 m/s, and no racing
+crossing fell below 5.9 m/s. Any threshold between those two recovers all 12 laps. The value
+chosen is the one the detector already uses for `MIN_ANCHOR_SPEED_MS` (LD-17), because both
+encode the same judgement — below 4 m/s this is a pedestrian, not a vehicle — and a second
+number expressing the same idea would be a number to keep in step for no benefit.
+
+**Remark on LD-20 — why a *catalogued* heading is worth more than a measured one.**
+LD-14 takes its reference from the first accepted crossing, which means the first crossing is
+the one thing it cannot guard. In incident 15 that crossing was a 2.9 m/s walk across the start
+point at 272°; the 12 racing crossings arrived at 331–343°, and ten of them were then rejected
+for disagreeing with a pedestrian. A heading that comes from the circuit rather than from the
+session is fixed before the first sample is read, so it guards every crossing including the
+first. At Baltar this matters more than usual: the nearest other part of the circuit passes
+24.7 m from the start/finish against a 15 m corridor on a device reporting ±6 m, so the heading
+guard is the whole margin between 12 laps and a double count (FP-LAP-DOUBLE-COUNT).
+
+**Remark on LD-22 — why the guard is derived from the surveyed length and not from the declared envelope.**
+A catalogue entry carries two kinds of number. The lap length was *measured* — at Baltar, walked
+as 140 waypoints. The lap time envelope was *typed in* from what somebody remembers of the
+circuit. An earlier version of LD-22 measured detected laps against the envelope, which put a
+human estimate in a position to delete real data: Baltar shipped with an upper bound of 90 s, so
+anything over 135 s was discarded, and a timid weekend driver lapping in 150 s would have had
+every lap thrown away and been shown nothing at all — the guard meant to protect them erasing
+their session in silence. Deriving the test from the surveyed length removes the estimate from
+the decision. The 5 m/s floor is the same judgement as LD-19's 4 m/s, averaged over a lap rather
+than sampled at a point, and it admits laps out to 204 s at Baltar.
+
+**Remark on LD-22 — why the whole set must fail before anything is discarded.**
+A single long lap among normal ones is a *real* lap: a spin, an off, or a slow kart ahead.
+Discarding it would be editing the driver's session to make the chart tidy, and losing the one
+lap they most want to look at. What incident 15 produced was different in kind — two "laps" of
+954 s and 404 s, averaging 1.07 and 2.52 m/s over 1020 m, with nothing credible among them.
+That is the shape LD-22 looks for: not an implausible lap, but a set in which no lap at all
+could have been driven. A circuit with no surveyed length carries no such guard, so an
+uncatalogued session behaves exactly as it did before.
+
+**Remark on the relationship between LD-19 and §4a — the fix is not conditional on the library.**
+LD-19 is deliberately specified independently of the track library, and is verified
+independently: on the incident 15 telemetry the speed gate alone recovers all 12 laps *against
+the driver's own mis-captured start line*, 164.6 m from the real one. The library improves
+detection; it is not required for it. A circuit the app has never seen gets the same correction.
+
+
 Incident 09 reported "no laps detected" and was closed without a cause, at 55% confidence, because nothing survived the run except the message shown to the user. Incident 13 had the same symptom two versions later and was only explicable because its raw telemetry happened to be kept by hand. Recording the detector's reasoning makes the next occurrence answerable from the session itself.
 
 ---
@@ -369,6 +475,7 @@ no network connection of any kind.
 | AS-15 | A heading shall not be derived from GPS positions less than 2 m apart, and a detected corner whose maximum speed is below 10 km/h shall be discarded, so that GPS scatter recorded while the vehicle is stationary cannot be reported as cornering. |
 | AS-16 | When the session's telemetry file is missing or unreadable, the tab shall say so explicitly and shall not attribute the failure to the driving. When fewer than two usable samples exist, the tab shall say the session is too short to analyse. |
 | AS-17 | When no lap is usable as a reference — no laps detected, or the lap's time window does not overlap the telemetry — the analysis shall fall back to the whole session and shall label itself as such, rather than presenting whole-session figures under a lap's name. |
+| AS-18 | Where the session was recorded against a circuit that declares a centreline (§4a), session statistics (AS-02) and the speed-versus-time graph (AS-13) shall be computed only from samples lying within 15 m of that centreline, so that time spent in the paddock or the queue does not enter the session's distance, duration or average speed. The filter shall stand down and use all samples if it would retain fewer than 30 % of them, since a centreline that excludes most of a session is more likely to be describing a different session than a driver who never went on track. The filter shall **not** be applied to lap detection, the track map or corner detection: laps are decided by crossings, and filtering samples near the start/finish would change lap times in order to tidy a chart. |
 
 ---
 
@@ -499,7 +606,8 @@ no network connection of any kind.
 
 | Entity | Fields |
 |---|---|
-| `SessionEntity` | `id` (Long, PK), `firebaseUid` (String), `trackName` (String), `startedAt` (Long), `endedAt` (Long?), `rawFilePath` (String), `uploadStatus` (String: PENDING/UPLOADING/DONE/FAILED), `remoteSessionId` (String?), `processingStatus` (String: PENDING/PROCESSING/LAPS_DONE/COMPLETE/FAILED), `startLineLat1` (Double), `startLineLng1` (Double), `startLineLat2` (Double), `startLineLng2` (Double) |
+| `SessionEntity` | `id` (Long, PK), `firebaseUid` (String), `trackName` (String), `startedAt` (Long), `endedAt` (Long?), `rawFilePath` (String), `uploadStatus` (String: PENDING/UPLOADING/DONE/FAILED), `remoteSessionId` (String?), `processingStatus` (String: PENDING/PROCESSING/LAPS_DONE/COMPLETE/FAILED), `startLineLat1` (Double), `startLineLng1` (Double), `startLineLat2` (Double), `startLineLng2` (Double), `trackId` (String?, TL-08 — null for a captured line) |
+| `TrackEntity` | `id` (String, PK), `name` (String), `location` (String?), `startLineLat1/Lng1/Lat2/Lng2` (Double), `startLineSource` (String), `startLineRecordedAt` (String?), `travelHeadingDeg` (Double?), `lengthM` (Int?), `cornerCount` (Int?), `fastestLapMs` (Long?), `slowestLapMs` (Long?), `centrelineSource` (String?), `centrelineMethod` (String?), `centrelineSurveyedAt` (String?), `centrelineSurveyedBy` (String?), `centrelineJson` (String?, JSON array of `[lat, lng]`), `createdAt` (Long), `lastUsedAt` (Long?) — saved circuits only; bundled circuits are read from `assets/tracks/tracks.json` and are never written to Room, so a corrected circuit ships with a build instead of needing a migration |
 | `LapEntity` | `id` (Long, PK), `sessionId` (Long, FK→Session CASCADE), `lapNumber` (Int), `startTs` (Long), `endTs` (Long), `durationMs` (Long), `sector1Ms` (Long), `sector2Ms` (Long), `sector3Ms` (Long), `isBestLap` (Boolean) |
 | `CoachingInsightEntity` | `id` (Long, PK), `sessionId` (Long, FK→Session CASCADE), `headline` (String), `detail` (String), `generatedAt` (Long) |
 
@@ -613,7 +721,7 @@ The app requests location updates at 10 Hz, but the rate actually delivered is s
 | OOS-02 | External OBD / CAN bus sensor integration |
 | OOS-03 | Social feed, follows, leaderboards, or social network backend |
 | OOS-04 | iOS application |
-| OOS-05 | Track map library or pre-loaded track database |
+| ~~OOS-05~~ | ~~Track map library or pre-loaded track database~~ — **delivered**, see [§4a Track library](#4a-track-library--pre-defined-and-saved-circuits). Scoped down from the original exclusion: the app ships a small catalogue of circuits it has measured data for, not a general track database, and there is still no map SDK or tile service (AS-04 stands). |
 | OOS-06 | Video overlay or external camera synchronisation |
 | OOS-07 | Google / Apple sign-in (Firebase infrastructure is ready for V2 addition) |
 | OOS-08 | In-app purchase or subscription management |
@@ -621,4 +729,4 @@ The app requests location updates at 10 Hz, but the rate actually delivered is s
 
 ---
 
-*End of document. Requirements count: 117. All IDs are unique and stable for traceability.*
+*End of document. Requirements count: 136. All IDs are unique and stable for traceability.*

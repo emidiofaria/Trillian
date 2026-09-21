@@ -17,6 +17,7 @@ import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.SessionEntity
 import com.drivingcoach.data.repository.SessionRepository
 import com.drivingcoach.data.telemetry.TelemetryFileWriter
+import com.drivingcoach.data.track.TrackRepository
 import com.drivingcoach.lap.LapDiagnosticsWriter
 import com.drivingcoach.lap.LocalLapDetector
 import com.drivingcoach.lap.NoLapsExplanation
@@ -68,7 +69,8 @@ class RecordingViewModel @Inject constructor(
     private val lapDao: LapDao,
     private val coachingInsightDao: CoachingInsightDao,
     private val localLapDetector: LocalLapDetector,
-    private val lapDiagnosticsWriter: LapDiagnosticsWriter
+    private val lapDiagnosticsWriter: LapDiagnosticsWriter,
+    private val trackRepository: TrackRepository
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -124,11 +126,18 @@ class RecordingViewModel @Inject constructor(
 
     /**
      * Creates a new session with the given start line coordinates and starts recording.
-     * Used when navigating from TrackSetupFragment.
+     * Used when navigating from TrackSetupFragment or after picking a catalogue circuit.
+     *
+     * When [trackId] names a circuit, its stored line replaces whatever was passed in.
+     * Navigation arguments carry coordinates as 32-bit floats, which quantises a latitude
+     * near 41 degrees to about half a metre; harmless for a line the driver captured on a
+     * phone accurate to six, but there is no reason to round a surveyed line at all when
+     * the exact one is a lookup away.
      */
     fun createSessionAndStartRecording(
         trackName: String,
-        startLine: StartLineCoords?
+        startLine: StartLineCoords?,
+        trackId: String? = null
     ) {
         viewModelScope.launch {
             try {
@@ -138,18 +147,26 @@ class RecordingViewModel @Inject constructor(
                 // Will be updated after session is created with correct session ID
                 val rawFilePath = "" // Placeholder, updated below
 
+                val track = trackId?.let { trackRepository.getTrack(it) }
+                val line = track?.startLine?.let {
+                    StartLineCoords(it.lat1, it.lng1, it.lat2, it.lng2)
+                } ?: startLine
+
                 val session = SessionEntity(
                     userId = "default_user", // TODO: Get from auth/preferences
                     trackName = trackName,
                     startedAt = timestamp,
                     rawFilePath = rawFilePath,
-                    startLineLat1 = startLine?.lat1,
-                    startLineLng1 = startLine?.lng1,
-                    startLineLat2 = startLine?.lat2,
-                    startLineLng2 = startLine?.lng2
+                    trackId = track?.id,
+                    startLineLat1 = line?.lat1,
+                    startLineLng1 = line?.lng1,
+                    startLineLat2 = line?.lat2,
+                    startLineLng2 = line?.lng2
                 )
 
                 val newSessionId = sessionRepository.createSession(session)
+
+                track?.let { trackRepository.markUsed(it.id) }
                 
                 // Update rawFilePath to match TelemetryFileWriter's naming convention
                 val actualFilePath = TelemetryFileWriter.getFilePathForSession(context, newSessionId)
@@ -305,10 +322,18 @@ class RecordingViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Detect laps
+                // Detect laps, informed by the circuit if we know which one this was.
+                // The priors are inputs to the same detection every session gets, not a
+                // second algorithm: a session with no track resolves to TrackPriors.NONE
+                // and behaves exactly as it did before the catalogue existed.
+                val priors = session.trackId
+                    ?.let { trackRepository.getTrack(it) }
+                    ?.priors()
+                    ?: LocalLapDetector.TrackPriors.NONE
+
                 val jsonlFile = File(session.rawFilePath)
                 val outcome = withContext(Dispatchers.IO) {
-                    val detected = localLapDetector.detectLapsWithDiagnostics(jsonlFile, startLine)
+                    val detected = localLapDetector.detectLapsWithDiagnostics(jsonlFile, startLine, priors)
                     // Recorded whatever the result: a session that produced no laps is
                     // the one whose reasoning is most worth keeping.
                     lapDiagnosticsWriter.write(jsonlFile, sessionId, detected)

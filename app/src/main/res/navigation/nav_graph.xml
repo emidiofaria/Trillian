@@ -124,6 +124,15 @@
         </action>
 
         <action
+            android:id="@+id/action_home_to_track_list"
+            app:destination="@id/trackListFragment">
+            <argument
+                android:name="sessionName"
+                app:argType="string"
+                android:defaultValue="Unknown Track" />
+        </action>
+
+        <action
             android:id="@+id/action_home_to_recording"
             app:destination="@id/recordingFragment">
             <argument
@@ -183,6 +192,80 @@
                 android:name="startLineLng2"
                 app:argType="float"
                 android:defaultValue="0" />
+            <argument
+                android:name="trackId"
+                app:argType="string"
+                android:defaultValue="" />
+        </action>
+    </fragment>
+
+    <!-- Track Library -->
+    <fragment
+        android:id="@+id/trackListFragment"
+        android:name="com.drivingcoach.ui.tracklist.TrackListFragment"
+        android:label="Select Track"
+        tools:layout="@layout/fragment_track_list">
+
+        <argument
+            android:name="sessionName"
+            app:argType="string"
+            android:defaultValue="Unknown Track" />
+
+        <action
+            android:id="@+id/action_track_list_to_track_confirm"
+            app:destination="@id/trackConfirmFragment">
+            <argument
+                android:name="sessionName"
+                app:argType="string"
+                android:defaultValue="Unknown Track" />
+            <argument
+                android:name="trackId"
+                app:argType="string" />
+        </action>
+
+        <!-- The empty list has to lead somewhere: a driver who has saved nothing yet
+             should be able to capture a line without walking back to Home. -->
+        <action
+            android:id="@+id/action_track_list_to_track_setup"
+            app:destination="@id/trackSetupFragment">
+            <argument
+                android:name="trackName"
+                app:argType="string"
+                android:defaultValue="Unknown Track" />
+        </action>
+    </fragment>
+
+    <fragment
+        android:id="@+id/trackConfirmFragment"
+        android:name="com.drivingcoach.ui.tracklist.TrackConfirmFragment"
+        android:label="Confirm Track"
+        tools:layout="@layout/fragment_track_confirm">
+
+        <argument
+            android:name="sessionName"
+            app:argType="string"
+            android:defaultValue="Unknown Track" />
+
+        <argument
+            android:name="trackId"
+            app:argType="string" />
+
+        <action
+            android:id="@+id/action_track_confirm_to_recording"
+            app:destination="@id/recordingFragment"
+            app:popUpTo="@id/homeFragment">
+            <argument
+                android:name="sessionId"
+                app:argType="long"
+                android:defaultValue="-1L" />
+            <argument
+                android:name="trackName"
+                app:argType="string"
+                android:defaultValue="Unknown Track" />
+            <argument
+                android:name="trackId"
+                app:argType="string"
+                android:defaultValue="" />
         </action>
     </fragment>
 
@@ -221,6 +304,11 @@
             android:name="startLineLng2"
             app:argType="float"
             android:defaultValue="0" />
+
+        <argument
+            android:name="trackId"
+            app:argType="string"
+            android:defaultValue="" />
 
         <action
             android:id="@+id/action_recording_to_session_result"

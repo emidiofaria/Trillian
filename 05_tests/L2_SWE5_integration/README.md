@@ -38,7 +38,7 @@ app/src/androidTest/java/com/drivingcoach/
 │   │   └── TrackSetupResubscribeTest.kt        # TS-15 (resubscribe regression guard)
 │   ├── home/
 │   │   ├── HomeHeroTest.kt                     # UI-06
-│   │   └── HomeGpsChipTest.kt                  # TS-16, TS-17, TS-18
+│   │   └── HomeGpsWarmUpTest.kt                # TS-16, TS-17, TS-18
 │   └── session/
 │       └── SessionShareTest.kt                 # SH-07, SH-08, SH-10, SH-11
 └── StartupBackStackTest.kt                     # UI-05

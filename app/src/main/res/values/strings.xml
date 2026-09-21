@@ -125,12 +125,6 @@
     <string name="about_gps_seconds_format">%1$.1f s</string>
     <string name="about_gps_pending">not reached</string>
 
-    <!-- GPS readiness (Home hero) -->
-    <string name="gps_chip_acquiring">GPS · acquiring…</string>
-    <string name="gps_chip_ready">GPS ready · ±%1$.0f m</string>
-    <string name="gps_chip_acquiring_description">Satellite fix in progress. Wait for GPS ready before setting the start line.</string>
-    <string name="gps_chip_ready_description">Satellite fix ready to %1$.0f metres. You can set the start line now.</string>
-
     <!-- Splash initialisation steps -->
     <string name="splash_step_preferences">Loading preferences…</string>
     <string name="splash_step_database">Opening session database…</string>

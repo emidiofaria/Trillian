@@ -204,7 +204,8 @@ class RecordingFragment : Fragment() {
             }
             viewModel.createSessionAndStartRecording(
                 trackName = args.trackName,
-                startLine = startLine
+                startLine = startLine,
+                trackId = args.trackId.takeIf { it.isNotBlank() }
             )
         }
     }

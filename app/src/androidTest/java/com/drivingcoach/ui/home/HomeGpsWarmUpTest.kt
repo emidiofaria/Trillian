@@ -3,6 +3,7 @@ package com.drivingcoach.ui.home
 import android.content.Context
 import android.content.Intent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -46,18 +47,22 @@ import org.junit.runner.RunWith
 import javax.inject.Singleton
 
 /**
- * L2 (ASPICE SWE.5) coverage for **SRS TS-16 to TS-18**: Home warms the GPS up before the
- * user reaches Track Setup, shows how close it is, and releases it when the screen stops.
+ * L2 (ASPICE SWE.5) coverage for **SRS TS-16 and TS-18**: Home warms the GPS up before the
+ * user reaches Track Setup, holds it across the walk to the start line, and releases it when
+ * the app leaves the foreground.
  *
- * Fixes are scripted rather than real. An emulator cannot produce the coarse-then-accurate
- * progression the readiness chip exists to display, and a test that waits for real
- * satellites would be the flakiest in the suite.
+ * Home deliberately shows nothing while this happens. The readiness chip was removed because
+ * a progress message the user cannot act on is not information; the acquisition itself is
+ * unchanged, which is exactly what these tests exist to keep proving.
+ *
+ * Fixes are scripted rather than real. An emulator cannot produce a coarse-then-accurate
+ * progression, and a test that waits for real satellites would be the flakiest in the suite.
  */
 @LargeTest
 @UninstallModules(DataStoreModule::class, SplashModule::class, LocationModule::class)
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
-class HomeGpsChipTest {
+class HomeGpsWarmUpTest {
 
     @Module
     @InstallIn(SingletonComponent::class)
@@ -133,46 +138,35 @@ class HomeGpsChipTest {
         }
     }
 
+    /**
+     * The chip is gone; the warm-up it reported is not.
+     *
+     * Asserting only that no GPS text is on screen would pass on a Home screen that failed to
+     * inflate at all, and asserting only the subscription would not notice the message coming
+     * back. Both halves together are the actual requirement: acquisition running, user not
+     * told about it.
+     */
     @Test
-    fun chipReportsAcquiringUntilAFixIsAccurateEnough() {
+    fun warmUpRunsWithoutTellingTheUserAboutIt() {
         awaitUntil("warm-up to start") { locationUpdates.activeSubscriptions == 1 }
 
-        locationUpdates.emit(accuracyM = 35f)
-
-        awaitUntil("the chip to appear while acquiring") { chipIsVisible() }
-        assertTrue(
-            "A 35 m fix must not be advertised as ready",
-            chipText().contains("acquiring", ignoreCase = true)
-        )
-    }
-
-    @Test
-    fun chipReportsReadyOnceTheFixIsUsable() {
-        awaitUntil("warm-up to start") { locationUpdates.activeSubscriptions == 1 }
-
+        // Accurate enough that the old chip would have read "GPS ready · ±4 m".
         locationUpdates.emit(accuracyM = 4f)
 
-        awaitUntil("the chip to report readiness") {
-            chipIsVisible() && chipText().contains("ready", ignoreCase = true)
-        }
-        assertTrue("Accuracy should be shown", chipText().contains("4"))
-    }
-
-    @Test
-    fun readinessDegradesIfAccuracyWorsens() {
-        awaitUntil("warm-up to start") { locationUpdates.activeSubscriptions == 1 }
-
-        locationUpdates.emit(accuracyM = 4f)
-        awaitUntil("the chip to report readiness") {
-            chipText().contains("ready", ignoreCase = true)
-        }
-
-        locationUpdates.emit(accuracyM = 45f)
-
-        // A stale green chip would send the user out to the track edge with a fix that
-        // cannot legally place a start line.
-        awaitUntil("the chip to fall back to acquiring") {
-            chipText().contains("acquiring", ignoreCase = true)
+        val deadline = System.currentTimeMillis() + HELD_SETTLE_MS
+        while (System.currentTimeMillis() < deadline) {
+            assertEquals(
+                "Hiding the readiness message must not stop the warm-up it described: the " +
+                    "cold fix is still paid for on Home, not at the track edge (SRS TS-16).",
+                1,
+                locationUpdates.activeSubscriptions
+            )
+            val gpsText = visibleTexts().filter { it.contains("gps", ignoreCase = true) }
+            assertTrue(
+                "Home must not report GPS state to the user, but showed: $gpsText",
+                gpsText.isEmpty()
+            )
+            Thread.sleep(50)
         }
     }
 
@@ -260,20 +254,23 @@ class HomeGpsChipTest {
         context.startActivity(requireNotNull(launch) { "no launch intent for the app under test" })
     }
 
-    private fun chipIsVisible(): Boolean {
-        var visible = false
+    /** Every piece of text the user can actually see right now. */
+    private fun visibleTexts(): List<String> {
+        val texts = mutableListOf<String>()
         scenario.onActivity { activity ->
-            visible = activity.findViewById<View>(R.id.gpsReadinessChip)?.visibility == View.VISIBLE
+            collectVisibleTexts(activity.window.decorView, texts)
         }
-        return visible
+        return texts
     }
 
-    private fun chipText(): String {
-        var text = ""
-        scenario.onActivity { activity ->
-            text = activity.findViewById<TextView>(R.id.gpsReadinessChip)?.text?.toString() ?: ""
+    private fun collectVisibleTexts(view: View, into: MutableList<String>) {
+        if (view.visibility != View.VISIBLE) return
+        when (view) {
+            is ViewGroup -> for (i in 0 until view.childCount) {
+                collectVisibleTexts(view.getChildAt(i), into)
+            }
+            is TextView -> view.text?.toString()?.takeIf { it.isNotBlank() }?.let(into::add)
         }
-        return text
     }
 
     private companion object {

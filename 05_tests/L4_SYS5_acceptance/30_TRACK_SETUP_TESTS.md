@@ -20,8 +20,12 @@
 
 ### TS-00: GPS Warm-Up on Home
 
-**Objective:** Verify the GPS readiness chip absorbs the cold time-to-first-fix before the user
+**Objective:** Verify the GPS warm-up absorbs the cold time-to-first-fix before the user
 reaches Track Setup, and that acquisition timings are recorded.
+
+> **Home shows nothing while this happens** (SRS TS-17, amended 2026-09-20). The warm-up is
+> therefore verified by its *effect* — Track Setup being ready on arrival — and by the About
+> screen timings, not by anything on Home.
 
 **Setup:** Force-stop the app and turn Location OFF then ON, so the next fix is genuinely cold.
 Stand outdoors with clear sky view. Have a stopwatch ready.
@@ -29,11 +33,14 @@ Stand outdoors with clear sky view. Have a stopwatch ready.
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | Launch the app, start the stopwatch | Home appears | ☐ |
-| 2 | Observe the chip below the tagline | Amber "Acquiring GPS…" | ☐ |
-| 3 | Wait, watching the chip | Turns green "GPS ready"; note the stopwatch time | ☐ |
+| 2 | Look over the Home screen | **No** GPS status, badge or message anywhere | ☐ |
+| 3 | Wait 60 s on Home | Still nothing shown; app otherwise usable | ☐ |
 | 4 | Tap FAB, enter a name, open Track Setup | GPS status populates in **< 5 s** (not 30–60 s) | ☐ |
 | 5 | Back out to Home, go to Profile → About | Last GPS acquisition timings shown | ☐ |
-| 6 | Compare | About's time-to-accurate-fix ≈ your step 3 stopwatch reading | ☐ |
+| 6 | Compare | About's time-to-accurate-fix is roughly the wait absorbed at step 3 | ☐ |
+
+> Step 4 is the whole point: if it takes 30–60 s, the warm-up is not running and hiding the
+> message has broken it.
 
 **Requirement Coverage:** TS-16, TS-17, TS-19
 
@@ -43,15 +50,18 @@ Stand outdoors with clear sky view. Have a stopwatch ready.
 
 **Objective:** Verify the receiver is not held open indefinitely.
 
+> With no Home indicator, each check is made at Track Setup: **fast** status means the receiver
+> was warm, **slow** (30–60 s from cold) means it had been released.
+
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
-| 1 | On Home, wait for green chip | "GPS ready" | ☐ |
+| 1 | On Home, wait ~60 s for the warm-up to complete | Nothing shown on Home | ☐ |
 | 2 | Press Home (background the app), wait 30 s | — | ☐ |
-| 3 | Reopen the app | Chip restarts at amber, or goes green quickly | ☐ |
-| 4 | Navigate Home → Track Setup → back to Home | Chip is still green; searching did **not** restart | ☐ |
-| 5 | Leave the app open for 30+ minutes | Chip disappears (idle ceiling backstop) | ☐ |
-| 6 | Navigate away and back | Chip reappears and searching restarts | ☐ |
-| 7 | Deny/revoke location permission, relaunch | Chip stays hidden; no crash | ☐ |
+| 3 | Reopen the app, go to Track Setup | Status populates quickly (re-warmed on return) | ☐ |
+| 4 | Back to Home, wait 10 s, open Track Setup again | Status populates **immediately**; no re-search | ☐ |
+| 5 | Leave the app open on Home for 30+ minutes, then open Track Setup | Noticeably slower — the idle-ceiling backstop released the receiver | ☐ |
+| 6 | Back out to Home, wait 60 s, open Track Setup | Fast again — searching restarted | ☐ |
+| 7 | Revoke location permission, relaunch | No crash on Home; Track Setup prompts for permission | ☐ |
 
 > Step 4 is the Incident 12 guard. Leaving Home must **not** end the warm-up; only leaving the
 > app, starting a recording, or the 30-minute backstop may.
@@ -131,13 +141,31 @@ the state never clearing without leaving the screen.
 | 1 | On Home screen | FAB visible (bottom right) | ☐ |
 | 2 | Tap FAB (record button) | New Session dialog appears | ☐ |
 | 3 | Enter track name | Track name accepted | ☐ |
-| 4 | Tap "Start" | Track Setup screen opens | ☐ |
-| 5 | Observe instructions | "SET START/FINISH LINE" title | ☐ |
-| 6 | Instruction text reads | "Walk to each edge of the track..." | ☐ |
-| 7 | GPS status indicator visible | Shows satellites and accuracy | ☐ |
-| 8 | START RECORDING button | Disabled initially | ☐ |
+| 4 | Tap "Start" | **"Where are you driving?"** appears with SELECT TRACK / NEW CIRCUIT | ☐ |
+| 5 | Tap **NEW CIRCUIT** | Track Setup screen opens | ☐ |
+| 6 | Observe instructions | "SET START/FINISH LINE" title | ☐ |
+| 7 | Instruction text reads | "Walk to each edge of the track..." | ☐ |
+| 8 | GPS status indicator visible | Shows satellites and accuracy | ☐ |
+| 9 | START RECORDING button | Disabled initially | ☐ |
 
-**Requirement Coverage:** TS-01, TS-02, TS-12, TS-14
+**Requirement Coverage:** TS-01, TS-02, TS-12, TS-14, TL-02
+
+---
+
+### TS-00f: Session Start Fork
+
+**Objective:** Verify the choice between a known circuit and a new one (TL-02, TL-03, TL-12).
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Tap START SESSION and enter a name | "Where are you driving?" appears | ☐ |
+| 2 | Read the two options | SELECT TRACK and NEW CIRCUIT, both enabled | ☐ |
+| 3 | Dismiss the dialog with back | Returns to Home; no session created | ☐ |
+| 4 | Repeat and choose **SELECT TRACK** with location permission denied or GPS off | List still opens and is browsable — no fix required to browse (TL-12) | ☐ |
+| 5 | Observe the list ordering | Plain manual list; **not** reordered by where you are | ☐ |
+| 6 | Choose **NEW CIRCUIT** instead | Track Setup opens, behaving exactly as in earlier versions | ☐ |
+
+**Requirement Coverage:** TL-02, TL-03, TL-12
 
 ---
 
@@ -365,6 +393,7 @@ the state never clearing without leaving the screen.
 | TS-05 | Line Distance — Too Close | ☐ Pass ☐ Fail |
 | TS-00d | Warm-Up Survives the Walk (Incident 12) | ☐ Pass ☐ Fail |
 | TS-00e | Stale Positions Rejected at Capture | ☐ Pass ☐ Fail |
+| TS-00f | Session Start Fork (SELECT TRACK / NEW CIRCUIT) | ☐ Pass ☐ Fail |
 | TS-06 | Clear Button | ☐ Pass ☐ Fail |
 | TS-07 | Valid Line Distance | ☐ Pass ☐ Fail |
 | TS-08 | Coordinates Storage | ☐ Pass ☐ Fail |
@@ -388,7 +417,9 @@ the state never clearing without leaving the screen.
 
 ---
 
-*Document ID: SAT-TS-001 | Version: 2.2 | Date: 2026-09-07*
-*Updated: Added TS-00d (warm-up survives the Home → Track Setup walk) and TS-00e (stale fixes
+*Document ID: SAT-TS-001 | Version: 2.3 | Date: 2026-09-21*
+*Updated: Added TS-00f (session start fork) and amended TS-01 for the SELECT TRACK / NEW CIRCUIT
+choice introduced with the track library. Earlier: added TS-00d (warm-up survives the Home →
+Track Setup walk) and TS-00e (stale fixes
 rejected at capture) after Incident 12; corrected TS-00b, which asserted the defective
 screen-scoped stop.*

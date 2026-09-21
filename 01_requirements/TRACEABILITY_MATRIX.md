@@ -10,7 +10,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 > `TEST_REPORT.html`. The percentages below are hand-maintained and should be read as
 > intent, not evidence.
 
-**Last Updated:** 2026-09-09 (updated by trillian-docs-sync — session analysis AS-01 to AS-17 added; AS-05 partially covered, rendering verified visually at L4)
+**Last Updated:** 2026-09-21 (updated by trillian-docs-sync — L2 coverage of the track library added: TL-07…TL-11 and TL-13 newly covered, TL-02/TL-03/TL-06 deepened, and LD-20 now has an end-to-end replay; L2 grew 64 → 93 tests)
 
 ---
 
@@ -22,12 +22,13 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Driver Profile (DR) | 8 | 8 | 100% ✅ |
 | Onboarding (ON) | 8 | 0 | 0% ❌ |
 | Track Setup (TS) | 20 | 12 | 60% ⚠️ |
+| Track Library (TL) | 14 | 12 | 86% ⚠️ |
 | Session Recording (SR) | 11 | 4 | 36% ⚠️ |
 | Telemetry Capture (TC) | 12 | 4 | 33% ⚠️ |
 | Telemetry Upload (TU) | 13 | 4 | 31% ⚠️ |
-| Lap Detection (LD) | 13 | 1 | 8% ❌ |
+| Lap Detection (LD) | 22 | 8 | 36% ⚠️ |
 | Lap Comparison (LC) | 15 | 0 | 0% ❌ |
-| Session Analysis (AS) | 17 | 16 | 94% ✅ |
+| Session Analysis (AS) | 18 | 18 | 100% ✅ |
 | AI Coaching (AI) | 14 | 0 | 0% ❌ |
 | Offline Coaching (OC) | 10 | 10 | 100% ✅ |
 | Driver Progression (DP) | 6 | 0 | 0% ⚠️ |
@@ -36,7 +37,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Startup & Branding (UI) | 9 | 9 | 100% ✅ |
 | Non-Functional (NF) | 13 | 1 | 8% ⚠️ |
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
-| **TOTAL** | **~218** | **~76** | **~35%** |
+| **TOTAL** | **~242** | **~97** | **~40%** |
 
 > ℹ️ **Resolved — the `@Ignore`d L2 classes were deleted (2026-09-16).** Eight rows used to
 > cite `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or
@@ -83,11 +84,26 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | TS-08 | Haversine distance | L1 | `GeoUtilsTest` | ✅ |
 | TS-12 | Start Recording disabled | — | *(none — test deleted 2026-09-16)* | ❌ |
 | TS-15 | Fused updates; resubscribe after stop/start | L2 | `TrackSetupResubscribeTest` (executing, not `@Ignore`d) | ✅ |
-| TS-16 | Warm-up starts when Home becomes visible | L1 + L2 | `LocationWarmUpTest`, `HomeViewModelTest`, `HomeGpsChipTest` | ✅ |
-| TS-17 | Home GPS readiness chip states | L1 + L2 | `LocationWarmUpTest`, `HomeGpsChipTest` | ✅ |
-| TS-18 | Warm-up stops on background / 3 min idle ceiling | L1 + L2 | `LocationWarmUpTest`, `HomeViewModelTest`, `HomeGpsChipTest` | ✅ |
+| TS-16 | Warm-up starts when Home becomes visible | L1 + L2 | `LocationWarmUpTest`, `HomeViewModelTest`, `HomeGpsWarmUpTest` | ✅ |
+| TS-17 | Warm-up is silent on Home; readiness persists across the Home → Track Setup handover | L2 | `HomeGpsWarmUpTest`, `WarmUpHandoverTest` | ✅ |
+| TS-18 | Warm-up stops on background / 3 min idle ceiling | L1 + L2 | `LocationWarmUpTest`, `HomeViewModelTest`, `HomeGpsWarmUpTest` | ✅ |
 | TS-19 | Time-to-first-fix metrics recorded and shown on About | L1 | `LocationWarmUpTest` | ✅ |
 | TS-20 | Warm-up exposes readiness only, never a position | L1 | `LocationWarmUpTest` | ✅ |
+| **Track Library** | | | | |
+| TL-01 | Bundled read-only circuit catalogue | L1 | `BundledTrackCatalogTest` | ✅ |
+| TL-02 | SELECT TRACK / NEW CIRCUIT fork after naming | L2 | `SessionStartForkTest`, `TrackLibraryGateTest` | ✅ |
+| TL-03 | One list of bundled and saved circuits | L2 | `TrackLibraryGateTest`, `SessionStartForkTest`, `TrackRepositoryTest` | ✅ |
+| TL-04 | Catalogue entry carries the priors the detector needs | L1 + L2 | `BundledTrackCatalogTest`, `TrackRepositoryTest` (centreline fidelity) | ✅ |
+| TL-05 | Provenance recorded per dataset, not per circuit | L1 | `BundledTrackCatalogTest` | ✅ |
+| TL-06 | Confirmation screen + GPS readiness gate | L2 | `TrackConfirmDisplayTest`, `TrackLibraryGateTest` | ✅ |
+| TL-07 | Start line re-resolved by id, never passed as a nav float | L2 | `TrackPriorsHandoffTest` | ✅ |
+| TL-08 | Session persists the circuit id it recorded against | L2 | `TrackPriorsHandoffTest` | ✅ |
+| TL-09 | Offer to save a captured line as a circuit | L2 | `SaveCapturedCircuitTest`, `TrackRepositoryTest` | ✅ |
+| TL-10 | A circuit under 3 m is refused | L2 | `SaveCapturedCircuitTest`, `TrackRepositoryTest` | ✅ |
+| TL-11 | Saved circuits renameable/deletable, bundled ones not | L2 | `TrackRepositoryTest`, `SaveCapturedCircuitTest` | ✅ |
+| TL-12 | V1 list is plain and manual | — | *(none — absence of behaviour)* | ❌ |
+| TL-13 | Recording may only touch last-used | L2 | `TrackRepositoryTest`, `TrackPriorsHandoffTest` | ✅ |
+| TL-14 | Missing/corrupt asset behaves as an empty catalogue | — | *(none — see uncovered list)* | ❌ |
 | **Session Recording** | | | | |
 | SR-04 | Elapsed time MM:SS.mmm | — | *(none — test deleted 2026-09-16)* | ❌ |
 | SR-05 | GPS status indicator | — | *(none — claim was unfounded)* | ❌ |
@@ -102,6 +118,10 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | TU-07 | HTTP 5xx → retry | L1 | `TelemetryUploadWorkerTest` | ✅ |
 | **Lap Detection** | | | | |
 | LD-04 | Line intersection | L1 | `GeoUtilsTest` | ✅ |
+| LD-19 | Direction-of-travel filter on crossings | L1 | `LapDetectionIncident15Test` | ✅ |
+| LD-20 | Catalogued heading is the reference | L1 + L2 | `LapDetectionIncident15Test`, `TrackPriorsEndToEndTest` (full replay through the production path) | ✅ |
+| LD-21 | Catalogued fastest lap tightens the minimum gap | L1 | `LapDetectionIncident15Test` | ✅ |
+| LD-22 | Wholly implausible lap sets discarded by surveyed distance | L1 | `LapDetectionIncident15Test` | ✅ |
 | **Offline Coaching** | | | | |
 | OC-01 | Local insights | L1 | `OfflineCoachingEngineTest` | ✅ |
 | OC-02 | 3-4 insights | L1 | `OfflineCoachingEngineTest` | ✅ |
@@ -182,6 +202,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Domain | Happy | Boundary | Edge | Stress | Negative |
 |--------|:-----:|:--------:|:----:|:------:|:--------:|
 | TS | ✅ | ⚠️ | ✅ | ❌ | ✅ |
+| TL | ✅ | ✅ | ✅ | ❌ | ✅ |
 | SR | ✅ | ❌ | ⚠️ | ⚠️ | ❌ |
 | TC | ✅ | ❌ | ✅ | ✅ | ✅ |
 | TU | ✅ | ❌ | ❌ | ❌ | ✅ |

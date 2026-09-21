@@ -1,7 +1,7 @@
 # Trillian - Driving coach — User Manual
 
-> **Version:** 1.0  
-> **Last Updated:** 2026-09-16  
+> **Version:** 1.1  
+> **Last Updated:** 2026-09-21  
 > **Platform:** Android 8.0+
 
 Welcome to Trillian! This app helps you become a faster, smoother driver by analyzing your track sessions and providing personalized AI coaching feedback.
@@ -137,7 +137,7 @@ on your phone.
 
 ## 3. Before Your Track Day
 
-### 3.0 The GPS Badge — Open the App Early
+### 3.0 Open the App Early
 
 The first GPS fix of the day is the slow one. Your phone has to download fresh satellite data
 before it can tell you where you are, and outdoors from cold that genuinely takes **30 to 60
@@ -145,41 +145,82 @@ seconds**. No app can make that faster — but Driving Coach can make it happen 
 still in the paddock instead of while you're standing at the track edge.
 
 **So: open the app a couple of minutes before you walk out.** The moment the Home screen
-appears, the app starts hunting for satellites.
+appears, the app starts hunting for satellites — quietly, with nothing for you to watch or
+wait on. Home stays out of your way; the searching happens in the background.
 
-Watch the small badge under the TRILLIAN tagline on Home:
+That head start is spent by the time you reach the track edge, so **Track Setup is ready the
+moment you arrive** — CAPTURE is live, with no second wait. Track Setup is also where the GPS
+status is shown, because that's the one screen where it changes what you can do: it reads
+*Acquiring GPS...* until the fix is good enough, then switches to the satellite count and
+accuracy.
 
-| Badge | Meaning | What to do |
-|-------|---------|------------|
-| *(nothing)* | Not searching — usually location permission isn't granted | Grant location permission (see 2.3) |
-| 🟠 **Acquiring GPS…** | Searching for satellites | Wait — this is the slow part |
-| 🟢 **GPS ready** | Good fix, accurate to 10 m or better | Walk out and capture your line |
-
-**Wait for green before you walk to the start/finish line.** Do that and Track Setup really is
-ready the moment you arrive — CAPTURE is live, with no second wait.
+If the app has no location permission it can't search at all, and Track Setup will sit on
+*Acquiring GPS...* indefinitely — see 2.3 to grant it.
 
 A few practical notes:
 
 - Get out from under a roof, an awning or a garage — GPS needs a clear view of the sky.
-- Once it's green, it stays green while you walk. Moving from Home to Track Setup doesn't
-  restart the search, so you only ever wait once.
+- The head start carries over. Moving from Home to Track Setup doesn't restart the search, so
+  you only ever wait once.
 - Searching stops when you leave the app — put your phone away and the receiver is released.
   Reopen it and the search starts again. It also stops on its own after half an hour if you
   simply leave the app sitting open.
-- The badge is only about *readiness*. Your actual start-line points are always taken fresh,
+- Warming up is only about *readiness*. Your actual start-line points are always taken fresh,
   at the moment you tap CAPTURE, from a live reading — and never from a reading older than a
   few seconds, so a position from back in the paddock can't become your start line.
 - Curious how long it actually took? **Profile → About** shows the timings from your last
   acquisition. That's the number to quote if you ever report a slow lock.
 
-### 3.1 Setting Up the Start/Finish Line
+### 3.1 Choosing Your Circuit
+
+From v3.0, starting a session asks you one extra question — and it saves you a walk.
+
+1. Tap **START SESSION**
+2. Type a name for the session and tap **Start**
+3. You'll be asked **"Where are you driving?"** with two choices:
+
+| Choice | Use it when | What happens |
+|--------|-------------|--------------|
+| **SELECT TRACK** | The circuit is already in the app — one that ships with Trillian, or one you saved earlier | Pick it from a list, confirm, and go straight to recording. No walking, no capturing |
+| **NEW CIRCUIT** | You're somewhere new | Exactly the same as before: walk to the track edges and capture two points (see 3.2) |
+
+**If you pick SELECT TRACK:**
+
+4. You'll see a list of circuits. Each one shows its name, where it is, and how wide its
+   start/finish line is. Both the circuits that ship with Trillian and the ones you've saved
+   appear in the same list.
+5. Tap the one you're at. A confirmation screen shows the circuit's name, lap length, the
+   number of corners and roughly how long a lap there should take — check it's the right
+   place.
+6. **START** stays greyed out until your GPS is ready, exactly as it does on the capture
+   screen. Picking a known circuit doesn't skip the GPS check — you still need a good, current
+   fix before recording begins.
+7. Tap **START RECORDING** and drive.
+
+**Circuits that ship with Trillian**
+
+At the moment there's one: **Kartódromo de Baltar** (Paredes, Portugal). Its start/finish line
+and its 140-point track outline were surveyed on foot rather than captured in ten seconds
+before a session — which is why the app can be more precise about your laps there than it can
+anywhere it's never been.
+
+Knowing a circuit gives Trillian three things it can't get from a line you capture:
+
+- **Which way you drive through the start/finish** — so it can tell a lap from a walk across
+  the track, right from the first crossing
+- **How long a lap should take** — so a "lap" of fifteen minutes is recognised as nonsense and
+  not shown to you
+- **The shape of the track** — so time you spend in the paddock or queueing doesn't get counted
+  into your session distance and average speed
+
+### 3.2 Setting Up the Start/Finish Line (New Circuit)
 
 Before recording, you need to tell the app where your start/finish line is. This lets the app automatically split your session into individual laps.
 
 **How to capture the line:**
 
-1. Open the app and wait for the **🟢 GPS ready** badge on Home (see 3.0)
-2. Tap the **+** button (Start New Session)
+1. Open the app a couple of minutes before you walk out, so the first fix is already done (see 3.0)
+2. Tap **START SESSION**, name the session, then choose **NEW CIRCUIT**
 3. You'll see the **Track Setup** screen
 4. Walk to **one edge** of the track at the start/finish line
 5. Wait for GPS accuracy to show **< 5 meters** (the better, the better!)
@@ -188,6 +229,13 @@ Before recording, you need to tell the app where your start/finish line is. This
 8. Tap **Capture Point B**
 9. You'll see the distance between points — it should be roughly the track width (typically 10-15 meters)
 10. Tap **Start Recording** when ready
+11. Trillian will ask **"Save this circuit?"** — tap **SAVE & START** to keep it for next time,
+    or **JUST START** to use it only for this session
+
+> **Save it and you never capture it again.** A circuit you save appears in the SELECT TRACK
+> list from then on, so your next visit is two taps instead of a walk across the track. You can
+> rename or delete your saved circuits at any time. The circuits that ship with Trillian can't
+> be renamed or deleted — they come with the app.
 
 > **Don't worry about which way round you capture the two points.** The app works out the
 > direction you're driving from the recording itself, so it only needs to know *where* the
@@ -203,7 +251,7 @@ Before recording, you need to tell the app where your start/finish line is. This
 - If your screen switches off or you jump to another app mid-setup, that's fine — GPS picks
   straight back up when you return to the screen
 
-### 3.2 Phone Mounting Tips
+### 3.3 Phone Mounting Tips
 
 - Mount your phone securely where it won't move
 - Windscreen or dashboard mounts work well
@@ -525,8 +573,8 @@ Use it when handing the phone to someone else, or to start completely fresh.
 3. Restart the app
 4. Toggle Location off/on in your phone settings
 5. Wait 1-2 minutes for GPS lock
-6. Open the app early and wait for the **🟢 GPS ready** badge on Home before walking out
-   (see 3.0) — the first fix of the day is always the slow one
+6. Open the app a few minutes before walking out (see 3.0) — the first fix of the day is
+   always the slow one, and the app spends that time for you while you're still in the paddock
 7. Check **Profile → About**: it shows how long your last fix actually took. If that number
    is small but you waited a long time, mention it when you report the problem — it means
    something other than satellite reception was at fault
@@ -636,6 +684,43 @@ straight will do.
 If your track really does cross over itself and there is nowhere that works, please send a
 diagnostic file (see 6.1.1) — we'd like to see a real recording of a layout like that.
 
+### My Lap Times Are in Minutes, Not Seconds
+
+**Symptoms:** A full session comes back as two or three "laps" of several minutes each. No error
+message. The numbers are confidently, specifically wrong.
+
+**Cause:** The recording was started before you got in the kart, and you walked across the
+start/finish line while waiting. The app used to accept that walk as your first lap crossing —
+and worse, it then measured every *real* lap against the direction you'd been walking, throwing
+most of them away.
+
+This is exactly what happened at Baltar: sixteen minutes in the queue beside the start straight,
+twelve laps driven, two absurd "laps" reported.
+
+**Fixed in version 3.0.** A crossing made below walking-to-jogging pace (about 4 m/s) is no
+longer counted as a lap, on any circuit — whether or not it's one the app knows. If you pick a
+circuit from **SELECT TRACK**, the app also knows which way you drive through the start/finish
+before your session even begins, so a wrong-way pass can't set the reference at all.
+
+**What you can do:** nothing is required, but starting the recording when you get in the kart
+rather than when you join the queue still gives cleaner session statistics.
+
+**Older sessions:** the stored lap times can't be recalculated. Re-recording on 3.0 or later will
+be correct.
+
+### The Circuit List Is Empty
+
+**Symptoms:** You tap **SELECT TRACK** and there's nothing there, or Baltar is missing.
+
+**Possible causes:**
+1. You haven't saved any circuits yet, and something went wrong reading the ones that ship with
+   the app
+2. You're on a version before 3.0, which didn't have the track library
+
+**Solution:** Use **NEW CIRCUIT** — it always works and is completely unaffected. Then report the
+problem with your app version from *About Trillian*; an empty list when Baltar should be there is
+a packaging fault worth knowing about.
+
 ### App Crashes When Recording
 
 **Solutions:**
@@ -689,6 +774,28 @@ A: The app shows a warning, but recording continues. Gaps in GPS may affect lap 
 
 **Q: Can I edit the start/finish line after recording?**  
 A: Not currently. You set the line before recording, and that's used for that session's lap detection.
+
+**Q: Which circuits come with the app?**  
+A: One, for now: **Kartódromo de Baltar** in Paredes, Portugal. Its start/finish line and its
+track outline were surveyed properly rather than captured in a hurry before a session, which is
+why the app can be more precise about laps there. More will follow — and anything you save
+yourself sits in the same list.
+
+**Q: Why should I pick SELECT TRACK instead of just capturing the line again?**  
+A: Three reasons, all of them about accuracy. A surveyed line is in the right place — your phone
+is at its *worst* at fixing its own position while you stand still, which is exactly what
+capturing asks you to do. The app also knows which direction you drive through the start/finish,
+so it can tell a lap from a walk across the track. And it knows roughly how long a lap should
+take, so it won't show you a "lap" that obviously isn't one.
+
+**Q: Can I edit or delete a circuit I saved?**  
+A: Yes — rename or delete any circuit you saved, from the circuit list. The ones that ship with
+Trillian can't be changed or removed; they're part of the app.
+
+**Q: I picked a circuit but START is greyed out. Why?**  
+A: Your GPS isn't ready yet, or the last fix the phone has is too old to trust. Picking a known
+circuit doesn't skip that check — you still need a good, current fix before recording starts.
+Hold the phone with a view of the sky and it clears in a moment.
 
 **Q: Does the app work on tablets?**  
 A: Yes, any Android device running 8.0+ with GPS hardware should work, though it's optimized for phones.

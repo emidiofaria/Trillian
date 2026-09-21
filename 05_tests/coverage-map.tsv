@@ -66,12 +66,12 @@ TS-08	GeoUtilsTest	Haversine distance
 TS-15	TrackSetupResubscribeTest	Resubscribe after stop/start
 TS-16	LocationWarmUpTest	Warm-up starts when Home becomes visible
 TS-16	HomeViewModelTest
-TS-16	HomeGpsChipTest
-TS-17	LocationWarmUpTest	Readiness chip states
-TS-17	HomeGpsChipTest
+TS-16	HomeGpsWarmUpTest
+TS-17	HomeGpsWarmUpTest	Warm-up silent on Home; readiness persists to Track Setup
+TS-17	WarmUpHandoverTest
 TS-18	LocationWarmUpTest	Stops on background / 3 min idle ceiling
 TS-18	HomeViewModelTest
-TS-18	HomeGpsChipTest
+TS-18	HomeGpsWarmUpTest
 TS-19	LocationWarmUpTest	Time-to-first-fix metrics recorded
 TS-20	LocationWarmUpTest	Exposes readiness only, never a position
 
@@ -145,3 +145,60 @@ AS-17	SessionAnalysisGuardsTest.aLapWindowThatDoesNotOverlapTheTelemetryFallsBac
 
 # --- Non-Functional ---
 NF-07	TelemetryFileWriterTest	18K samples benchmark
+LD-19	LapDetectionIncident15Test.theWalkingPassAcrossTheStartPointIsRejectedAsTooSlow	A 2.9 m/s walk across the start point is rejected as TOO_SLOW
+LD-19	LapDetectionIncident15Test.theTwelveLapsAreDetectedFromTheLineTheDriverCaptured	Speed gate alone recovers all 12 laps against the driver's own mis-captured line
+LD-20	LapDetectionIncident15Test.theCatalogueHeadingIsUsedAsTheReference	Catalogued travel heading replaces the first-crossing reference
+LD-20	LapDetectionIncident15Test.aWrongCatalogueHeadingFallsBackToTheSession	A wrong catalogue heading is never worse than no catalogue
+LD-20	LapDetectionIncident15Test.theTwelveLapsAreDetectedFromTheCataloguedStartLine	Incident 15 replay: 12 laps from the catalogued start line
+LD-21	LapDetectionIncident15Test.theCircuitsOwnLapTimeTightensTheMinimumGapBetweenCrossings	Catalogued fastest lap raises the minimum-lap guard
+LD-22	LapDetectionIncident15Test.lapsImpossibleForTheCircuitAreNotReported	An implausible lap set is discarded rather than shown
+LD-22	LapDetectionIncident15Test.aDriverSlowerThanTheCircuitsDeclaredEnvelopeStillGetsTheirLaps	A driver slower than the declared envelope keeps their laps
+LD-22	LapDetectionIncident15Test.aSingleSpinLapDoesNotDiscardTheSessionAroundIt	One long lap among normal ones survives
+LD-22	LapDetectionIncident15Test.withoutASurveyedLengthNothingIsDiscarded	The guard comes from the surveyed length, not the declared envelope
+AS-18	TrackCorridorFilterTest.theQueueIsRemovedAndTheDrivingIsKept	Corridor filter removes paddock/queue samples from session statistics
+AS-18	TrackCorridorFilterTest.aCentrelineForAnotherPlaceIsIgnoredRatherThanObeyed	Filter stands down below 30 % retention
+AS-18	TrackCorridorFilterTest.withoutACentrelineNothingIsFiltered	No centreline means no filtering
+AS-18	TrackCorridorFilterTest.aSampleOnTheStartFinishSurvives	Lap detection geometry is untouched by the filter
+TL-01	BundledTrackCatalogTest.theShippedCatalogueParses	The asset that ships with the build parses
+TL-04	BundledTrackCatalogTest.baltarCarriesThePriorsTheDetectorNeeds	Heading and lap envelope are present and usable
+TL-04	BundledTrackCatalogTest.everyCircuitsLengthAndLapEnvelopeImplyAPlausibleSpeed	Length and lap envelope cross-check to a kart-plausible speed
+TL-04	BundledTrackCatalogTest.baltarsStartLineIsTheOneValidatedAgainstTheSession	Shipped start line measured against the real session
+TL-04	BundledTrackCatalogTest.baltarsCentrelineIsAClosedRingStartingAtTheStartFinish	140-point closed ring, 1020 m, starting at the start/finish
+TL-04	BundledTrackCatalogTest.theCentrelineAgreesWithTheSessionRecordedOnIt	Racing line sits within 4 m of the shipped centreline
+TL-05	BundledTrackCatalogTest.provenanceIsRecordedPerDatasetRatherThanPerTrack	Start line and centreline carry separate provenance
+TL-02	TrackLibraryGateTest.choosingACircuitSkipsTrackSetup	SELECT TRACK reaches recording without Track Setup
+TL-03	TrackLibraryGateTest.theBundledCircuitIsOfferedWithoutCapturingALine	Bundled circuit appears in the list
+TL-06	TrackLibraryGateTest.startRecordingStaysLockedUntilGpsIsReady	GPS readiness gate is enforced on the confirm screen
+TL-02	SessionStartForkTest.theNewCircuitBranchStillReachesTrackSetup	NEW CIRCUIT still reaches Track Setup unchanged
+TL-02	SessionStartForkTest.theSelectTrackBranchReachesTheLibrary	SELECT TRACK reaches the circuit library
+TL-02	SessionStartForkTest.theSessionNameSurvivesTheSelectTrackBranch	The typed session name survives the SELECT TRACK branch
+TL-02	SessionStartForkTest.theSessionNameSurvivesTheNewCircuitBranch	The typed session name survives the NEW CIRCUIT branch
+TL-02	SessionStartForkTest.backFromConfirmReturnsToTheListWithTheNameIntact	Backing out of the confirm screen loses neither list nor name
+TL-03	SessionStartForkTest.theChosenCircuitIdIsCarriedToTheConfirmScreen	The chosen circuit identifier reaches the confirm screen
+TL-03	TrackRepositoryTest.savedCircuitsAreOfferedAheadOfBundledOnes	One list, saved circuits ordered ahead of bundled ones
+TL-06	TrackConfirmDisplayTest.theCircuitIsNamedSoTheDriverCanSeeWhichOneTheyPicked	The confirm screen names the circuit that was picked
+TL-06	TrackConfirmDisplayTest.theStartLineIsDescribedAsAlreadySetWithItsWidth	The start line is shown as already set, with its width
+TL-06	TrackConfirmDisplayTest.theSurveyedFactsAndTheExpectedLapWindowAreShown	Lap length, corner count and expected lap window are shown
+TL-07	TrackPriorsHandoffTest.theSurveyedLineReplacesTheQuantisedNavigationArgument	The surveyed line is re-read by id, not taken from nav arguments
+TL-07	TrackPriorsHandoffTest.anUnknownCircuitIdDoesNotTakeTheSessionDownWithIt	An unresolvable circuit id degrades instead of failing the session
+TL-08	TrackPriorsHandoffTest.theChosenCircuitIsRecordedOnTheSession	The circuit identifier is persisted on the session row
+TL-08	TrackPriorsHandoffTest.aSessionWithNoCircuitKeepsTheLineItWasGivenAndStaysUncatalogued	A captured-line session persists no identifier
+TL-09	SaveCapturedCircuitTest.aCapturedCircuitIsWaitingInTheLibraryOnTheNextVisit	A saved capture is in the library on the next visit
+TL-09	SaveCapturedCircuitTest.aSavedCircuitCanBeResolvedByIdTheWayASessionStartDoes	A saved capture resolves by id the way a session start does
+TL-09	SaveCapturedCircuitTest.savingTheSameCircuitTwiceDoesNotOverwriteTheFirst	Saving twice keeps both rather than silently overwriting
+TL-09	TrackRepositoryTest.aCapturedCircuitSurvivesTheRoundTripThroughTheDatabase	A captured circuit survives the round trip through Room
+TL-09	TrackRepositoryTest.twoCircuitsSavedUnderTheSameNameDoNotOverwriteOneAnother	Same-named circuits do not overwrite one another
+TL-10	SaveCapturedCircuitTest.aLineTooShortToDetectALapIsRefusedWithAReasonTheDriverCanActOn	A sub-3 m line is refused with an actionable reason
+TL-10	TrackRepositoryTest.aLineTooShortToDetectALapIsRefusedRatherThanStored	A sub-3 m line is refused rather than stored
+TL-11	SaveCapturedCircuitTest.aSavedCircuitCanBeCorrectedAndRemovedUnlikeABundledOne	Saved circuits can be corrected and removed, bundled ones cannot
+TL-11	TrackRepositoryTest.aSavedCircuitCanBeRenamedAndDeleted	A saved circuit can be renamed and deleted
+TL-11	TrackRepositoryTest.aBundledCircuitCannotBeDeletedOrRenamed	A bundled circuit resists rename and delete
+TL-04	TrackRepositoryTest.aSurveyedCentrelineSurvivesTheDatabaseWithoutLosingItsShape	140-point centreline survives persistence to under a centimetre
+TL-13	TrackRepositoryTest.markUsedReordersSavedCircuitsAndToleratesBundledOnes	Last-used is the only field a recording may touch
+TL-13	TrackPriorsHandoffTest.startingASessionOnASavedCircuitMarksItAsRecentlyUsed	Starting a session marks the circuit recently used
+LD-20	TrackPriorsEndToEndTest.theCataloguedCircuitInformsDetectionAndTheTwelveLapsAreStored	End-to-end: catalogued priors reach the detector and 12 laps are stored
+TL-04	BaltarSurveyCorroborationTest.theHeadingTheKartsActuallyCrossAtMatchesTheOneSurveyedFromTheMap	Surveyed heading corroborated by real crossings
+TL-04	BaltarSurveyCorroborationTest.theSurveyedLapLengthIsCorroboratedByTheDistanceTheKartsCovered	Surveyed lap length corroborated by distance actually covered
+TL-04	BaltarSurveyCorroborationTest.theDeclaredLapLengthMatchesTheCentrelineItWasDerivedFrom	Declared length cannot drift from its own centreline
+TL-05	BaltarSurveyCorroborationTest.theCataloguedLineIsNotTheLineTheDriverCaptured	The catalogued line is provably not the session's captured line
+LD-22	BaltarSurveyCorroborationTest.everyRealLapIsComfortablyInsideTheLd22Floor	Real laps sit far clear of the plausibility floor

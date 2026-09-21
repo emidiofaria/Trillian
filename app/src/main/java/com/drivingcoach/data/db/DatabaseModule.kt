@@ -6,6 +6,7 @@ import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.dao.SessionPreferenceDao
+import com.drivingcoach.data.db.dao.TrackDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,9 +29,13 @@ object DatabaseModule {
             .addMigrations(
                 DrivingCoachDatabase.MIGRATION_1_2, 
                 DrivingCoachDatabase.MIGRATION_2_3,
-                DrivingCoachDatabase.MIGRATION_3_4
+                DrivingCoachDatabase.MIGRATION_3_4,
+                DrivingCoachDatabase.MIGRATION_4_5
             )
-            .fallbackToDestructiveMigration()
+            // No destructive fallback. Sessions could at least be re-derived from the
+            // raw telemetry files, but a circuit the driver walked and saved exists
+            // nowhere else, and wiping it to avoid writing a migration is not a trade
+            // that is ours to make on their behalf.
             .build()
     }
 
@@ -52,5 +57,10 @@ object DatabaseModule {
     @Provides
     fun provideSessionPreferenceDao(database: DrivingCoachDatabase): SessionPreferenceDao {
         return database.sessionPreferenceDao()
+    }
+
+    @Provides
+    fun provideTrackDao(database: DrivingCoachDatabase): TrackDao {
+        return database.trackDao()
     }
 }

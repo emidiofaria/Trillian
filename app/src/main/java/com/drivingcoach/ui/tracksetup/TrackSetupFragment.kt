@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -22,7 +23,9 @@ import com.drivingcoach.R
 import com.drivingcoach.data.location.FixFreshness
 import com.drivingcoach.data.location.LocationUpdates
 import com.drivingcoach.data.location.LocationWarmUp
+import com.drivingcoach.data.track.SaveTrackResult
 import com.drivingcoach.databinding.FragmentTrackSetupBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -47,6 +50,8 @@ class TrackSetupFragment : Fragment() {
     lateinit var locationWarmUp: LocationWarmUp
 
     private var currentLocation: Location? = null
+
+    private var saveCircuitDialog: androidx.appcompat.app.AlertDialog? = null
 
     /**
      * The permission prompt is asked at most once per screen visit. Without this, a denial
@@ -88,6 +93,7 @@ class TrackSetupFragment : Fragment() {
 
         setupUI()
         observeViewModel()
+        observeSaveEvents()
         checkPermissionsAndStart()
     }
 
@@ -330,6 +336,65 @@ class TrackSetupFragment : Fragment() {
     }
 
     private fun navigateToRecording() {
+        if (viewModel.getStartLineCoords() == null) return
+        promptToSaveCircuit()
+    }
+
+    /**
+     * Offered once, at the moment the line is known to be good.
+     *
+     * Asked here rather than on Home because this is the only point where the app
+     * has something worth saving, and because a driver who has just walked the
+     * length of a start/finish line is the one most likely to want to never do it
+     * again. Declining costs nothing and is not asked about a second time.
+     */
+    private fun promptToSaveCircuit() {
+        saveCircuitDialog?.dismiss()
+
+        val editText = EditText(requireContext()).apply {
+            setText(args.trackName)
+            setSelection(args.trackName.length)
+            setPadding(64, 32, 64, 32)
+            setTextColor(0xFFFFFFFF.toInt())
+            setHintTextColor(0xFF888888.toInt())
+            hint = "Circuit name"
+        }
+
+        saveCircuitDialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Save this circuit?")
+            .setMessage(
+                "Next time you can pick it from the list instead of walking the " +
+                    "start/finish line again."
+            )
+            .setView(editText)
+            .setPositiveButton("SAVE & START") { _, _ ->
+                viewModel.saveAsTrack(editText.text.toString())
+            }
+            .setNegativeButton("JUST START") { _, _ ->
+                navigateToRecording(trackId = "")
+            }
+            .show()
+    }
+
+    private fun observeSaveEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.saveEvents.collectLatest { result ->
+                    when (result) {
+                        is SaveTrackResult.Success -> navigateToRecording(result.track.id)
+                        is SaveTrackResult.Rejected -> {
+                            // The session still goes ahead on the captured line. Only
+                            // reusing it later is refused, and the driver is told why.
+                            Snackbar.make(binding.root, result.reason, Snackbar.LENGTH_LONG).show()
+                            navigateToRecording(trackId = "")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun navigateToRecording(trackId: String) {
         val coords = viewModel.getStartLineCoords() ?: return
 
         // Navigate to recording with start line coords and track name
@@ -340,7 +405,8 @@ class TrackSetupFragment : Fragment() {
                 startLineLat1 = coords.lat1.toFloat(),
                 startLineLng1 = coords.lng1.toFloat(),
                 startLineLat2 = coords.lat2.toFloat(),
-                startLineLng2 = coords.lng2.toFloat()
+                startLineLng2 = coords.lng2.toFloat(),
+                trackId = trackId
             )
         findNavController().navigate(action)
     }
@@ -350,6 +416,8 @@ class TrackSetupFragment : Fragment() {
         // The collector is scoped to the view lifecycle, so it is already gone; the flag has
         // to follow it or a recreated view would never resubscribe.
         collecting = false
+        saveCircuitDialog?.dismiss()
+        saveCircuitDialog = null
         _binding = null
     }
 
