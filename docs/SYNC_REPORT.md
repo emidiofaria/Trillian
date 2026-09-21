@@ -4,6 +4,54 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-21] Release v3.0 — Play Build (Internal testing)
+
+**Codebase Version:** v3.0 (versionCode 300)
+**Commit:** `6eb296f` on branch `FT_Add_native_Track_library`
+**Trigger:** Promoting the track library from a dev APK to a Play bundle.
+
+### What was released
+
+`releases/v3.0-play/` — `Trillian-v3.0.aab` (7.7 MB, signed and signature-verified),
+`TEST_REPORT.html`/`.md`, `RELEASE_NOTES.md`, `PLAY_SUBMISSION.md`.
+
+Verified from the bundle itself rather than from the build that produced it:
+`versionCode=300`, `versionName=3.0`, package `io.github.emidiofaria.trillian`,
+and `base/assets/tracks/tracks.json` carrying Baltar at 1020 m / 137.8° with all
+140 surveyed centreline points intact.
+
+### The commit came first, deliberately
+
+The dev APK in `releases/v3.0-track-library/` was built from an uncommitted tree,
+which is why its auto-generated change list described the v2.96 → v2.98 release —
+the packaging script derives "What changed" from `git log`, and there was nothing
+in the log to derive it from. Committing before packaging fixed that at the root:
+the Play notes list the real change, and the test report records a commit that
+actually contains the code it tested. The dev notes have been amended to point at
+`6eb296f` rather than leaving a banner that is now untrue.
+
+All five Play refusal gates passed: signing present, working tree clean,
+versionCode 300 clear of the previous 298, `lintVitalRelease` passed, and a test
+report matching both version **and** commit.
+
+### Channel restriction
+
+Recorded in `RELEASE_NOTES.md`: **Internal testing only**, at the user's decision.
+
+The headline feature is a bundled circuit whose data has never been validated at
+the circuit. The survey and the Incident 15 recording corroborate each other, and
+that corroboration is not circular — the recording predates the catalogue — but
+two agreeing sources are still not a measurement taken at racing speed. The L4
+acceptance tests at Baltar remain the gate for any wider release.
+
+### Files
+
+- `releases/v3.0-play/` (new, gitignored — build artefact)
+- `releases/v3.0-track-library/RELEASE_NOTES.md` (banner corrected)
+- `docs/SYNC_REPORT.md` (this entry)
+
+---
+
 ## [2026-09-21] Release v3.0 — Dev Build
 
 **Codebase Version:** v3.0 (versionCode 300, was 2.98/298)
