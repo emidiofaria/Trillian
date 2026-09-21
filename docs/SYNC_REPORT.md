@@ -4,6 +4,68 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-21] Skill — trillian-add-track
+
+**Codebase Version:** v3.0 (no production code changed)
+**Trigger:** Standardising how a new built-in circuit gets added, after Baltar showed how much of the process lived only in one session's context.
+
+### What was added
+
+`.github/skills/trillian-add-track.md` — a file-based skill that collects the six survey
+inputs (SF line, car direction, track distance, lap envelope, walked centreline, real
+telemetry), sanity-checks them, and emits a full implementation plan covering data, code,
+L1, L2, docs, validation and release.
+
+`.github/agents/SW_dev_agent.md` — menu option 6 (🏁 Add a Built-in Track), the skill in
+the local-skills table, and a Phase 1 routing section for "add a track" requests.
+
+### Why a skill rather than a checklist
+
+`Track.kt` declares no validation — no `require`, no `init` block, every field but `id`,
+`name` and `startLine` nullable with a default. A circuit with a backwards heading or a
+missing length parses cleanly and produces laps; it simply produces the wrong ones. There
+is no runtime guardrail, so the guardrail has to sit at the moment the data is authored.
+
+The hard stop is the heading. A `travelHeadingDeg` roughly 180° out rejects every genuine
+crossing, silently, which is Incident 15's root cause. Baltar's two candidate start lines
+were 164.6° opposed and both looked reasonable on a map — plausibility is not a check.
+
+### Verified against Baltar
+
+Every gate run against the shipped entry: heading within **1.1°** of the centreline
+direction at the start line, envelope implying **91.8 / 30.6 km/h** (inside 18–126),
+start line **10.97 m** and straddling the centreline, ring perimeter **1020.1 m** against
+a declared 1020, provenance distinct per dataset (`MAP_COORDINATES` for the line,
+`SURVEYED_ON_FOOT` for the ring). Tolerances were taken from
+`BundledTrackCatalogTest` rather than invented, so data authored to the skill satisfies the
+existing suite.
+
+### Known gotchas recorded, deliberately not fixed
+
+Four single-track assumptions are documented in the skill instead of being refactored now,
+because until a second circuit exists they are not wrong — merely assumptions that happen
+to hold:
+
+- `SessionStartForkTest:233` opens the first circuit and asserts it is `"baltar"`
+- `everyCircuitsLengthAndLapEnvelopeImplyAPlausibleSpeed` does `return@forEach` on nulls,
+  so an incomplete track skips the only catalogue-wide check
+- six of seven catalogue tests look up `id == "baltar"` directly
+- `TrackRepositoryTest` recency assertions read `.first().first()`
+
+Fixing them speculatively would have changed passing tests to suit a circuit nobody has
+added yet. Writing them down costs nothing and means the next developer meets them as a
+checklist item rather than a broken build.
+
+### Files
+
+- `.github/skills/trillian-add-track.md` (new)
+- `.github/agents/SW_dev_agent.md` (menu, skills table, Phase 1 routing)
+- `docs/SYNC_REPORT.md` (this entry)
+
+No production code, no tests, no build impact.
+
+---
+
 ## [2026-09-21] Release v3.0 — Play Build (Internal testing)
 
 **Codebase Version:** v3.0 (versionCode 300)
