@@ -111,9 +111,16 @@ Foreground service that captures GPS and IMU (accelerometer/gyroscope) data at 1
 Starts GNSS acquisition as soon as the Home screen is visible so that the cold time-to-first-fix
 (TTFF, typically 30–60 s: ephemeris download) elapses while the user is still preparing, instead
 of on the Track Setup screen where they are standing at the track edge with nothing to do.
-Publishes readiness for the Home hero chip and records TTFF metrics for diagnosis.
+Records TTFF metrics for diagnosis.
 
 Implements SRS TS-16 to TS-23.
+
+> **Silent since 2026-09-20.** Home used to render a readiness chip (amber "Acquiring GPS…",
+> green "GPS ready · ±X m"). It was removed: it narrated a wait the user can neither act on nor
+> shorten, on the one screen where nothing depends on it. The acquisition is unchanged — only
+> the narration is gone. Readiness is still surfaced on Track Setup, where it gates CAPTURE.
+> `HomeGpsWarmUpTest.warmUpRunsWithoutTellingTheUserAboutIt` asserts both halves: subscription
+> held, no GPS text on screen.
 
 > **Lifetime is scoped to the user's task, not to a screen (Incident 12).** Warm-up used to be
 > stopped by `HomeFragment.onStop()`, which made the single navigation it exists to serve —
@@ -133,7 +140,7 @@ Implements SRS TS-16 to TS-23.
 - `data/location/FixFreshness.kt` — `MAX_FIX_AGE_MS = 3_000`; monotonic age arithmetic, JVM-testable
 - `data/location/GpsAcquisitionMetricsStore.kt` — DataStore-backed TTFF metrics
 - `di/LocationModule.kt` — `@Binds LocationUpdates`, `@ApplicationScope CoroutineScope`, timings
-- `ui/home/HomeViewModel.kt` / `HomeFragment.kt` — `start()` on `onStart()`; **no stop path exists**
+- `ui/home/HomeViewModel.kt` / `HomeFragment.kt` — `start()` on `onStart()`; **no stop path exists**, and nothing is rendered
 - `ui/tracksetup/TrackSetupFragment.kt` — `start()` on `onStart()` so the receiver stays warm across the handover
 - `ui/MainActivity.kt` — binds `WarmUpForegroundBinder` (not the Application class: `@HiltAndroidTest` replaces it)
 - `ui/about/AboutFragment.kt` — renders the last acquisition metrics
@@ -151,7 +158,7 @@ Implements SRS TS-16 to TS-23.
 
 ### Outputs
 
-- `StateFlow<GpsReadiness>` — consumed by `HomeViewModel.gpsReadiness`
+- `StateFlow<GpsReadiness>` — exposed as `HomeViewModel.gpsReadiness`; no UI consumer on Home since the chip was removed, retained as the readiness seam and as the L1 assertion surface
 - `GpsAcquisition(timeToFirstFixMs, timeToAccurateFixMs, recordedAtMs)` in DataStore
 
 ### Safety Invariant
@@ -175,9 +182,9 @@ subscribes to live updates and applies its own ≤10 m gate (SRS TS-20).
 
 | Mode | Symptom | Cause |
 |------|---------|-------|
-| Permission not granted | Chip stays hidden, no warm-up | `hasPermission()` false — Track Setup still prompts |
-| No fix indoors | Chip stuck amber "Acquiring GPS…" | No sky view; identical latency to pre-feature behaviour |
-| Idle ceiling reached | Chip disappears after 30 min | By design; re-entering the app restarts |
+| Permission not granted | No warm-up at all; nothing visible either way | `hasPermission()` false — Track Setup still prompts |
+| No fix indoors | Nothing on Home; Track Setup sits on "Acquiring GPS…" on arrival | No sky view; identical latency to pre-feature behaviour |
+| Idle ceiling reached | Warm-up released after 30 min, silently | By design; re-entering the app restarts |
 | Stale fix held at the line | CAPTURE withdrawn, "Getting a current GPS fix…" | Fix older than `FixFreshness.MAX_FIX_AGE_MS`; clears on the next current fix (SRS TS-21 to TS-23) |
 | Metrics write fails | About shows no acquisition data | DataStore I/O — caught, non-fatal |
 
@@ -185,9 +192,13 @@ subscribes to live updates and applies its own ≤10 m gate (SRS TS-20).
 
 | Signal | Location |
 |--------|----------|
-| GPS chip state (hidden / amber / green) | Home hero |
+| Track Setup GPS status (red "Acquiring GPS…" / green satellites + accuracy) | Track Setup screen |
 | Time-to-first-fix, time-to-accurate-fix | About screen |
-| `GpsReadiness` | `HomeViewModel.gpsReadiness` |
+| `GpsReadiness` | `HomeViewModel.gpsReadiness` (no UI consumer) |
+
+> **Home is deliberately silent.** Warm-up failures are therefore invisible on Home by design;
+> diagnose them from the About screen timings and from Track Setup's status line, not from the
+> Home screen. This is the cost that was accepted when the chip was removed.
 
 ### Criticality
 
@@ -273,6 +284,52 @@ failed, only within `MAX_ANCHOR_PROJECTION_M`, and its answer is kept only if it
 On Incident 13, captured while moving, the projection would move the point **0.8 m**, so the
 fallback is never reached. See `FP-STATIONARY-POSITION-BIAS` in `failure-patterns.md`.
 
+### Why a pass made at walking pace is refused (since Incident 15)
+
+`MAX_HEADING_DIFFERENCE_DEG` takes its reference from the session's **first accepted crossing**,
+which means the first crossing is the one thing it cannot guard. In Incident 15 the driver started
+recording, pocketed the phone, and queued 16 minutes for a kart beside the start straight. A
+**2.9 m/s drift across the start point** was accepted, became the reference at 272°, and the 12
+real crossings at 331–343° were then measured against a pedestrian. Ten were rejected; the two
+that squeaked under 60° (54.3° and 59.6°) were reported as laps of **15m54s and 6m44s**.
+
+Two independent corrections now apply:
+
+| Correction | Mechanism | Scope |
+|-----------|-----------|-------|
+| Speed gate | Reject below `MIN_CROSSING_SPEED_MS`, recorded as `TOO_SLOW` | **Every** session, catalogued or not |
+| Catalogued heading | `TrackPriors.travelHeadingDeg` replaces the first-crossing reference | Track-library sessions only |
+
+The ordering matters: the speed gate is applied **after** the corridor check, so a slow pass far
+to the side is still reported as `TOO_FAR_TO_THE_SIDE` and the Incident 14 diagnostics keep their
+meaning.
+
+**The speed gate alone recovers all 12 laps of Incident 15 against the driver's own mis-captured
+line** — which was 164.6 m from the real start/finish. This is asserted separately in
+`LapDetectionIncident15Test` precisely so that the fix cannot quietly become dependent on the
+track library. A circuit the app has never seen gets the same correction.
+
+### Track priors
+
+`TrackPriors(travelHeadingDeg, fastestLapMs, slowestLapMs, lengthM)` is supplied by `Track.priors()` when a
+session was started from the track library, and is `TrackPriors.NONE` otherwise.
+
+| Prior | Effect |
+|-------|--------|
+| `travelHeadingDeg` | Seeds the heading reference before the first sample is read, so it guards the first crossing too. Recorded in diagnostics as `headingReference = TRACK_CATALOGUE` |
+| `fastestLapMs` | Raises `minLapTimeMs()` to `max(MIN_LAP_TIME_MS, fastest × 0.8)` |
+| `slowestLapMs` | **Display only.** Shown to the driver as the expected lap window on the confirm screen (TL-06). Deliberately *not* used to discard laps — it is a typed-in estimate, and an estimate guessed too tight would erase real sessions |
+| `lengthM` | `lapsArePlausible()` discards a lap set only when **every** lap in it implies an average speed below `MIN_PLAUSIBLE_LAP_SPEED_MS`. Surveyed, so it can carry a decision the envelope cannot |
+
+Detection is structured as a three-stage fallback over a private `Attempt`: seeded heading →
+unseeded retry → anchor projection onto the driven path (Incident 14). A seeded attempt that
+produces an implausible lap set falls through rather than being shown, which is what prevents a
+wrong catalogue heading from being worse than no catalogue at all.
+
+**Why the heading prior is load-bearing at Baltar specifically:** the nearest other part of the
+circuit passes **24.7 m** from the start/finish, against a 15 m corridor on a device reporting
+±6 m. The heading guard is the entire margin between 12 laps and `FP-LAP-DOUBLE-COUNT`.
+
 ### Configuration Constants
 
 | Constant | Value | Purpose |
@@ -287,6 +344,9 @@ fallback is never reached. See `FP-STATIONARY-POSITION-BIAS` in `failure-pattern
 | `MIN_REPEAT_LAG_S` / `MAX_REPEAT_LAG_S` | 25 / 180 | Lag window searched when asking whether the driver was lapping a circuit at all |
 | `REPEAT_RATIO_THRESHOLD` | 0.5 | Separation ratio below which a path counts as repeating. Real sessions measure 0.15 and 0.21; the same samples shuffled measure 0.87 and 0.88 |
 | `MAX_HEADING_DIFFERENCE_DEG` | 60 | Rejects passes in a materially different direction. 60 rather than 90 because at a corner start/finish arriving and leaving differ by *exactly* 90°, which made a real case turn on floating-point rounding |
+| `MIN_CROSSING_SPEED_MS` | 4 | A pass made below this is recorded as `TOO_SLOW` and is not a lap. Same value as `MIN_ANCHOR_SPEED_MS` and for the same reason: below 4 m/s this is a pedestrian. In the Incident 15 session the queue never exceeded 3 m/s and no racing pass fell below 5.9 m/s, so any threshold between them works and none is tuned |
+| `LAP_TIME_PRIOR_GRACE` | 0.8 | A catalogued fastest lap raises `MIN_LAP_TIME_MS` to 80 % of itself. The grace exists so a driver who beats the catalogue's figure is not refused their own lap |
+| `MIN_PLAUSIBLE_LAP_SPEED_MS` | 5.0 | A lap set is discarded whole only when **no** lap in it reaches this average speed over the circuit's surveyed length. Replaced a test against the catalogued slowest lap, which would have erased the whole session of a driver simply slower than the estimate somebody typed in. One long lap among normal ones is a spin, not a detection failure, and survives |
 | `MIN_SEGMENT_LENGTH_M` | 0.5 | Below this, the bearing between two samples is meaningless |
 
 ### Behaviour that looks like a bug and is not
@@ -303,6 +363,7 @@ crossing". Guarded by `distanceTravelledSurvivesARejectedCandidate`.
 | Mode | Symptom | Cause |
 |------|---------|-------|
 | No crossings detected | "No laps detected" message | Car never passed within `DETECTION_HALF_WIDTH_M` of the captured start point |
+| Laps reported that were walked | Two "laps" of 15m54s and 6m44s for a 12-lap session | A pedestrian pass set the reference heading — `FP-PEDESTRIAN-REFERENCE`. Fixed by `MIN_CROSSING_SPEED_MS` |
 | Laps counted twice | Lap times ~half of reality | Track passes the same point twice per lap at an angle the heading guard admits — `FP-LAP-DOUBLE-COUNT` |
 | Insufficient laps | "Only 1 lap detected" | User didn't complete 2+ laps |
 | File not found | Error result | Telemetry file missing or wrong path |
@@ -318,6 +379,9 @@ crossing". Guarded by `distanceTravelledSurvivesARejectedCandidate`.
 | "Built X laps from crossings" | Logcat DEBUG |
 | Per-candidate rejection reason and detail | Logcat DEBUG |
 | `angleBetweenLineAndTravelDeg` | Diagnostics sidecar — a value near 0 identifies `FP-DEGENERATE-BASELINE` on sight |
+| `headingReference` | Diagnostics sidecar — `TRACK_CATALOGUE` or `FIRST_CROSSING`. Says whether the guard in LD-14 was seeded by the circuit or by the session |
+| `referenceHeadingDeg` / `minLapTimeMs` | Diagnostics sidecar — the values actually in force for this run, rather than the defaults |
+| `TOO_SLOW` rejections | Diagnostics sidecar — a run with many of these is a session that started before the driver got in the kart |
 
 ### Replay Harness
 
@@ -2012,6 +2076,151 @@ why it parses only structured inputs and never prose.
 
 ---
 
+## Component: Bundled Track Catalog (`BundledTrackCatalog`)
+
+### Purpose
+
+Reads the circuits shipped with the app from `assets/tracks/tracks.json`. Read-only, offline,
+loaded once and cached in memory.
+
+### Key Code Areas
+
+- `data/track/BundledTrackCatalog.kt` — asset read, `parse()` exposed for tests
+- `data/track/Track.kt` — `Track`, `TrackStartLine`, `Centreline`, `TrackPoint`, `GeometrySource`
+- `app/src/main/assets/tracks/tracks.json` — the shipped data
+
+### Why an asset and not a Room table
+
+A circuit in the catalogue is an artefact of the build, not user data. Shipping it as an asset
+means correcting a circuit is a release, not a migration, and a driver can never be left holding a
+stale copy of a circuit that has since been fixed. `TrackRepository` unions the asset with the
+user's saved circuits so nothing downstream has to know which is which.
+
+### What a catalogue entry carries
+
+| Field | Purpose |
+|-------|---------|
+| `startLine` (two coordinate pairs) | The start/finish. Used for its midpoint, as always (LD-02) |
+| `travelHeadingDeg` | Direction of travel through the line — the prior that guards the *first* crossing |
+| `fastestLapMs` | Raises the minimum-lap guard to 80 % of itself (LD-21) |
+| `slowestLapMs` | Display only — the expected lap window on the confirm screen. Not a cutoff (LD-22) |
+| `lengthM` | Shown on the confirm screen, and the surveyed quantity LD-22 uses to decide whether a detected lap could have been driven |
+| `cornerCount` | Shown on the confirm screen so a driver can tell they picked the right circuit |
+| `centreline` | Ordered closed ring, used by the analysis corridor filter (AS-18) |
+| `startLineSource`, `centrelineSource`, `centrelineMethod`, `centrelineSurveyedBy` | Provenance, **per dataset** (TL-05) |
+
+### Provenance is recorded per dataset, not per circuit
+
+Baltar's start/finish line came from map imagery (`MAP_COORDINATES`); its centreline was walked on
+foot (`SURVEYED_ON_FOOT`, method "manually placed waypoints, walked"). A single blanket claim would
+be false about one of the two. `centrelineSurveyedBy` is deliberately **empty**: the surveyor's
+identity is not known to the app, and a plausible-sounding invented name is a worse artefact than
+an absent field.
+
+### The shipped Baltar entry, and how it was validated
+
+| Measurement | Value | How it was checked |
+|-------------|-------|--------------------|
+| Start/finish line length | 10.97 m | Haversine over the corrected A/B coordinates |
+| Travel heading | 137.8° | Bearing C→D along the start straight |
+| Angle between line and travel | 88.7° | Essentially square — the opposite of `FP-DEGENERATE-BASELINE` |
+| Distance from the driver's originally captured line | **164.6 m** | Why the session had to be re-detected, not just re-guarded |
+| Centreline | 140 points, 1020 m closed ring | Racing line sits at median **3.98 m** from the ring (p90 9.63 m) |
+| Queue/paddock samples | median **29.53 m** from the ring | The separation that makes the corridor filter possible |
+
+**Centreline closure is not obvious and is worth writing down.** The survey was 142 walked points;
+point 142 is a 0.61 m duplicate of point 3, and point 1 is a 4.42 m duplicate near point 140 — the
+walk overshot its own closure. The correct ring is **points 2…141**, which starts exactly at the
+start/finish and whose closing segment runs at 138.4°, within 0.6° of the measured travel heading.
+Taking the raw 142 points would have put a spurious spike across the start straight.
+
+### Failure Modes
+
+| Mode | Symptom | Cause |
+|------|---------|-------|
+| Asset missing / malformed | Empty circuit list, NEW CIRCUIT still works | Build packaging error or hand-edited JSON. Caught and logged, never thrown (TL-14) |
+| Circuit selected at the wrong venue | Detection finds nothing | Human error; the confirm screen states name, location and lap length for exactly this reason |
+
+### Criticality
+
+**LOW** — total failure degrades the app to its pre-library behaviour (capture a line yourself).
+It cannot cost recorded data.
+
+---
+
+## Component: Track Repository (`TrackRepository`)
+
+### Purpose
+
+The single source of truth for circuits, unioning bundled circuits (assets) with saved circuits
+(Room `tracks`). Everything upstream — the list, the confirm screen, recording — sees one list.
+
+### Key Code Areas
+
+- `data/track/TrackRepository.kt` — `observeTracks`, `getTrack`, `markUsed`, `rename`, `delete`, `saveCapturedTrack`
+- `data/track/TrackMapper.kt` — `TrackEntity` ⇄ `Track`
+- `data/db/dao/TrackDao.kt`, `data/db/entity/TrackEntity.kt`
+
+### Behaviour worth knowing
+
+| Behaviour | Reason |
+|-----------|--------|
+| `saveCapturedTrack` returns `SaveTrackResult.Rejected` for a line under 3 m | Consistent with TS-09; a degenerate line saved once would be wrong forever |
+| Bundled circuits cannot be renamed or deleted | They are build artefacts, not user data (TL-11) |
+| `markUsed` is the only write a recording performs on a circuit | TL-13 — a session must never edit geometry |
+| `getTrack(id)` is called at the moment recording starts | TL-07 — resolving by id avoids float nav-arg quantisation (~0.55 m at latitude 41°) |
+
+### Criticality
+
+**MEDIUM** — a failure blocks the SELECT TRACK path and loses saved circuits, but NEW CIRCUIT and
+all recording remain available.
+
+### Test surface
+
+Until 2026-09-21 this component had **no test at any level**, which mattered more than the number
+suggests: every link between choosing a circuit and the detector using it degrades to
+`TrackPriors.NONE`, and `NONE` is a *successful* outcome that still produces laps. The whole
+feature could have been inert with no visible symptom. `TrackRepositoryTest` (L2, 9 tests) now
+covers the round trip, ordering, the rename/delete asymmetry, `markUsed`, both rejection paths and
+the 140-point centreline surviving persistence to under a centimetre.
+
+---
+
+## Component: Track Library UI (`ui/tracklist`)
+
+### Purpose
+
+The SELECT TRACK half of the session-start fork: list the circuits, confirm the chosen one, and
+gate the start on GPS readiness.
+
+### Key Code Areas
+
+- `ui/tracklist/TrackListFragment.kt` / `TrackListViewModel.kt` / `TrackAdapter.kt`
+- `ui/tracklist/TrackConfirmFragment.kt` / `TrackConfirmViewModel.kt`
+- `res/layout/fragment_track_list.xml`, `item_track.xml`, `fragment_track_confirm.xml`
+- `res/navigation/nav_graph.xml` — `trackListFragment`, `trackConfirmFragment`, `trackId` argument
+
+### The gate that is easy to lose
+
+Selecting a known circuit skips Track Setup entirely — and Track Setup is where TS-04, TS-21 and
+TS-22 live. Without a gate on the confirm screen, "SELECT TRACK" would be a way to start recording
+with no GPS fix at all, which is a regression dressed as a feature. `TrackConfirmViewModel` carries
+that gate, and `TrackLibraryGateTest` (L2) asserts it.
+
+### Test surface
+
+`SessionStartForkTest` (6) asserts both branches of the fork and that the typed session name
+survives each, including a back-out from the confirm screen. `TrackConfirmDisplayTest` (3) asserts
+what the screen actually renders — and is the only test anywhere that exercises `slowestLapMs`,
+which since the LD-22 rework is advisory display text and nothing more. Its name assertion is
+case-insensitive because the style uppercases the label.
+
+### Criticality
+
+**LOW** — UI only; failure prevents circuit selection but cannot affect a recording in progress.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -2024,6 +2233,7 @@ why it parses only structured inputs and never prose.
 | Preferences DataStore | HIGH | Auth lost, re-login required |
 | Telemetry Upload Worker | MEDIUM | Delayed sync, no data loss |
 | Session Repository | MEDIUM | Operation-specific failures |
+| Track Repository | MEDIUM | SELECT TRACK unavailable and saved circuits lost; NEW CIRCUIT unaffected |
 | Lap & Coaching Sync | MEDIUM | Delayed insights |
 | Offline Coaching Engine | MEDIUM | No coaching insights |
 | Session State Machine | MEDIUM | UX confusion |
@@ -2034,4 +2244,6 @@ why it parses only structured inputs and never prose.
 | About Screen | LOW | Version and manifesto unreachable in-app; bug reports lose build identity |
 | Session Analysis Engine | LOW | ANALYSIS tab shows an empty state; no effect on recorded data |
 | TrackMapView | LOW | Track outline missing from the ANALYSIS tab |
+| Bundled Track Catalog | LOW | App degrades to pre-library behaviour: capture your own line |
+| Track Library UI | LOW | Circuit selection unreachable; no effect on a recording in progress |
 | Test Evidence Pipeline | LOW (build-time) | No report ships with a release; coverage claims stop being verified |

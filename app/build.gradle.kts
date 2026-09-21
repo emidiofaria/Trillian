@@ -31,7 +31,7 @@ plugins {
 
 // Single source of truth for the app version. Release APKs in releases/ are named
 // from this value, so the filename can never disagree with what the app reports.
-val appVersionName = "2.98"
+val appVersionName = "3.0"
 
 // major*100 + minor keeps codes monotonic across the whole v1.0 -> v2.8 history
 // (1.0 -> 100, 2.8 -> 208) and leaves room for 99 minor releases per major.
@@ -131,6 +131,18 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    sourceSets {
+        // MigrationTestHelper opens the exported schemas at runtime on the device,
+        // so the JSON Room writes at build time has to be packaged with the tests.
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+
+        // The lap fixtures are shared with the L1 suite rather than copied. The L2
+        // end-to-end test asserts the same 12 laps that LapDetectionIncident15Test
+        // asserts on the JVM, and that claim is only worth making if both levels
+        // read the same bytes. A second copy would let the two drift apart silently.
+        getByName("androidTest").assets.srcDir("$projectDir/src/test/resources/lapfixtures")
+    }
+
     applicationVariants.all {
         outputs.all {
             (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
@@ -144,6 +156,24 @@ kapt {
         arg("room.schemaLocation", "$projectDir/schemas")
     }
     correctErrorTypes = true
+}
+
+// ─── Test task inputs ─────────────────────────────────────────────────────────
+
+// BundledTrackCatalogTest and BaltarSurveyCorroborationTest read the shipped
+// catalogue straight off disk, by path, because the point of those tests is to
+// assert against the exact bytes that go into the APK rather than a copy.
+//
+// Gradle cannot see that. The asset is not on the unit-test runtime classpath, so
+// editing tracks.json left `testDebugUnitTest` UP-TO-DATE and the catalogue tests
+// silently did not run. A wrong circuit could be committed through a green build
+// -- the precise failure the catalogue tests exist to prevent.
+//
+// Declaring the directory as an explicit input restores the link.
+tasks.withType<Test>().configureEach {
+    inputs.dir("$projectDir/src/main/assets/tracks")
+        .withPropertyName("trackCatalogue")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 // ─── Dependencies ─────────────────────────────────────────────────────────────

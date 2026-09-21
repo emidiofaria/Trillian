@@ -67,22 +67,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/spacing_xs"
                     android:text="@string/hero_kicker" />
-
-                <!--
-                    GPS readiness (SRS TS-16). Hidden until the warm-up reports something,
-                    so a user without location permission sees the hero exactly as before.
-                -->
-                <TextView
-                    android:id="@+id/gpsReadinessChip"
-                    style="@style/TextAppearance.DrivingCoach.Kicker"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/spacing_sm"
-                    android:drawablePadding="@dimen/spacing_xs"
-                    android:drawableStart="@drawable/ic_dot"
-                    android:visibility="gone"
-                    tools:text="GPS ready ±4 m"
-                    tools:visibility="visible" />
             </LinearLayout>
 
             <!-- Pinned bar: stays visible once the hero has collapsed -->

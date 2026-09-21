@@ -15,6 +15,14 @@ data class SessionEntity(
     val uploadStatus: String = UploadStatus.PENDING.name,
     val processingStatus: String = ProcessingStatus.PENDING.name,
     val remoteSessionId: String? = null,
+    /**
+     * The catalogue circuit this session was driven on, if one was selected.
+     *
+     * Kept so that re-detecting laps later can reapply the same priors the live
+     * detection used, and so a session cannot silently be re-analysed against a
+     * different circuit than the one it happened on.
+     */
+    val trackId: String? = null,
     // Start/finish line coordinates (two GPS points defining the line)
     val startLineLat1: Double? = null,
     val startLineLng1: Double? = null,

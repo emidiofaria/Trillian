@@ -10,11 +10,18 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 
 /**
- * A [DataStore] whose read never completes.
+ * A [DataStore] whose I/O never completes.
  *
  * Models the pathological disk-I/O case that SRS UI-03 and UI-04 exist to defend against:
  * the app must still reach a usable screen, and the main thread must stay responsive while
  * the read is outstanding.
+ *
+ * [updateData] stalls rather than throwing. A store that cannot be read cannot be written
+ * either, so stalling is the faithful model — but the practical reason is sharper: the
+ * fallback destination is Onboarding, and Onboarding writes a preference as soon as it sees
+ * permissions already granted. A throwing double turned that into an uncaught exception on
+ * the main thread, crashing the app and aborting the whole instrumentation run. Whether that
+ * write survives is not what these tests assert; that the app stays alive is.
  */
 class StallingPreferencesDataStore : DataStore<Preferences> {
 
@@ -24,7 +31,7 @@ class StallingPreferencesDataStore : DataStore<Preferences> {
 
     override suspend fun updateData(
         transform: suspend (t: Preferences) -> Preferences
-    ): Preferences = throw UnsupportedOperationException("Reads only in tests")
+    ): Preferences = awaitCancellation()
 }
 
 /**

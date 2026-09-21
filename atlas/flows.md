@@ -387,10 +387,9 @@ HomeFragment.onStart()
                                           → readiness = Ready(accuracyM)
         → GpsAcquisitionMetricsStore.record(...)   [DATASTORE WRITE, non-fatal]
     → [PARALLEL] idle ceiling: delay(1_800_000) → stop()   (backstop only)
-→ HomeViewModel.gpsReadiness (StateFlow) → HomeFragment.updateGpsChip()
-    Idle      → chip gone
-    Acquiring → amber "Acquiring GPS…"
-    Ready     → green "GPS ready"
+→ HomeViewModel.gpsReadiness (StateFlow) → no consumer on Home
+    Nothing is rendered: the chip that reported Idle / Acquiring / Ready was removed
+    2026-09-20 (SRS TS-17). Readiness is surfaced on Track Setup, where it gates CAPTURE.
 
 Stop conditions — none of them a screen (SRS TS-18, Incident 12)
 → WarmUpForegroundBinder: last started Activity stops, not for a configuration change
@@ -427,7 +426,7 @@ gap. `WarmUpHandoverTest` asserts continuity across this boundary rather than sa
 | Warm-up collection | `@ApplicationScope CoroutineScope` job | `LocationWarmUp.start()` |
 | Idle ceiling | Separate coroutine `delay(1800 s)` | `LocationWarmUp.restartIdleCeiling()` |
 | Foreground transitions | `Application.ActivityLifecycleCallbacks` | `WarmUpForegroundBinder` |
-| Readiness observation | `StateFlow` + `repeatOnLifecycle(STARTED)` | `HomeFragment` |
+| Readiness observation | `StateFlow`, no Home collector since 2026-09-20 | `HomeViewModel.gpsReadiness` |
 
 ### Persistence Boundaries
 
@@ -449,9 +448,9 @@ session. Capture reads live updates and applies its own ≤10 m accuracy gate (S
 
 | Stage | Failure | Symptom | Propagation |
 |-------|---------|---------|-------------|
-| Permission not granted | `hasPermission()` false | Chip stays hidden | Warm-up no-ops; Track Setup still prompts |
-| Indoors / no sky view | No fix arrives | Chip stuck amber | Same latency as before the feature — no regression |
-| Idle ceiling fires | 30 min in the foreground | Chip returns to hidden | Re-entering restarts warm-up |
+| Permission not granted | `hasPermission()` false | Nothing happens, nothing shown | Warm-up no-ops; Track Setup still prompts |
+| Indoors / no sky view | No fix arrives | Silent on Home; "Acquiring GPS…" on arrival at Track Setup | Same latency as before the feature — no regression |
+| Idle ceiling fires | 30 min in the foreground | Warm-up released silently | Re-entering restarts warm-up |
 | Stale fix on Track Setup | Fix older than 3 s | CAPTURE withdrawn, "Getting a current GPS fix…" | Clears on the next current fix; never latches (SRS TS-22) |
 | DataStore write fails | I/O error | Metrics missing on About | Caught, non-fatal; warm-up continues |
 
@@ -466,6 +465,107 @@ session. Capture reads live updates and applies its own ≤10 m accuracy gate (S
 > **Diagnostic value.** The reported 45 s wait was never measured. These two numbers make the
 > next report evidence-based: a large TTFF is cold-fix physics, a small TTFF with a large
 > user-perceived wait points at a subscription/lifecycle defect instead.
+
+---
+
+## Flow: Session Start Fork (SELECT TRACK / NEW CIRCUIT)
+
+### Goal
+
+Let the driver start a session against a circuit the app already knows, instead of capturing a
+start/finish line by hand every time. Introduced with the track library (§4a).
+
+### Trigger
+
+- `HomeFragment` → START SESSION → session name dialog → **OK**
+
+### Execution Path
+
+```
+HomeFragment: START SESSION
+→ name dialog (unchanged)
+→ choice dialog: "SELECT TRACK"  |  "NEW CIRCUIT"
+   │
+   ├── NEW CIRCUIT ──────────────────────────────────────────────────────────
+   │     HomeViewModel.startNewSession(name)
+   │     → NavigateToTrackSetup
+   │     → TrackSetupFragment   // §4, entirely unchanged: capture A, capture B
+   │     → on START RECORDING: "Save this circuit?"  [SAVE & START] [JUST START]
+   │         SAVE & START → TrackSetupViewModel.saveAsTrack()
+   │                      → TrackRepository.saveCapturedTrack(...)
+   │                      → Rejected if line < 3 m (TS-09 / TL-10)
+   │                      → trackId threaded into recording
+   │         JUST START   → trackId = null, behaviour identical to before
+   │
+   └── SELECT TRACK ─────────────────────────────────────────────────────────
+         HomeViewModel.selectTrackForSession(name)
+         → NavigateToTrackList
+         → TrackListFragment
+             TrackRepository.observeTracks()     // bundled ∪ saved, one list
+             → plain manual list (TL-12): no location filtering, no fix required
+         → TrackConfirmFragment(trackId)
+             shows name, location, line length, lap length, expected lap window
+             GPS readiness gate: TS-04 / TS-21 / TS-22 enforced HERE
+             → START disabled until a current fix at ≤ 10 m accuracy exists
+         → RecordingFragment(trackId)
+
+RecordingViewModel.startRecording(trackId)
+→ TrackRepository.getTrack(trackId)          // resolve by id, NOT by nav argument (TL-07)
+→ startLine = track.detectorStartLine()      // full double precision
+→ SessionEntity(trackId = trackId, startLine…)
+→ TrackRepository.markUsed(trackId)          // the ONLY write a recording makes (TL-13)
+→ on stop: detectLapsWithDiagnostics(file, startLine, track.priors())
+```
+
+### Why the start line is resolved by id and not carried as an argument
+
+Navigation arguments carry coordinates as 32-bit floats. Near latitude 41° one ULP is about
+4.9 × 10⁻⁶ degrees — roughly **0.55 m**. That is harmless for a line a phone captured at ±6 m, and
+absurd for one that was surveyed. Passing the id and reading the coordinates from the repository at
+the moment recording starts keeps the precision that was the point of surveying it.
+
+### Async Boundaries
+
+| Boundary | Type | Location |
+|----------|------|----------|
+| Circuit list | `Flow` from Room, unioned with an in-memory asset list | `TrackRepository.observeTracks()` |
+| Circuit lookup | `suspend`, `Dispatchers.IO` | `TrackRepository.getTrack()` |
+| Save captured circuit | `suspend`, `Dispatchers.IO` | `TrackSetupViewModel.saveAsTrack()` |
+
+### Persistence Boundaries
+
+| Storage | Data | Trigger |
+|---------|------|---------|
+| Room `tracks` | `TrackEntity` | SAVE & START on Track Setup |
+| Room `tracks.lastUsedAt` | timestamp only | Recording starts against that circuit |
+| Room `sessions.trackId` | circuit id, or null | Session created |
+| `assets/tracks/tracks.json` | — | Read-only, never written |
+
+### Failure Points
+
+| Stage | Failure | Symptom | Propagation |
+|-------|---------|---------|-------------|
+| Catalogue load | Asset missing or malformed | Bundled circuits absent from the list | Logged; saved circuits and NEW CIRCUIT still work (TL-14) |
+| Confirm screen | No current GPS fix | START stays disabled | Same gate as Track Setup — selecting a circuit is not a bypass |
+| Circuit lookup | `trackId` no longer in Room (deleted between screens) | `getTrack` returns null | Recording falls back to the session's stored start line |
+| Save | Captured line < 3 m | `SaveTrackResult.Rejected` with a reason | Recording still starts; only the save is refused |
+| Wrong circuit chosen | Human error | Detection finds nothing at that venue | Confirm screen states name, location and lap length precisely to catch this |
+
+### User-Visible Symptoms
+
+| Symptom | Cause |
+|---------|-------|
+| Circuit list is empty | No saved circuits and the bundled asset failed to load — check logcat for `BundledTrackCatalog` |
+| START greyed out on the confirm screen | GPS not ready, or only a stale fix is held (TS-22) |
+| "Circuit saved" then it isn't in the list | Save was rejected — line under 3 m |
+
+### Operational Signals
+
+| Signal | Tag | Meaning |
+|--------|-----|---------|
+| Catalogue parse failure | `BundledTrackCatalog` WARN | Shipped asset is unreadable; list degrades to saved circuits only |
+| `headingReference: TRACK_CATALOGUE` | Diagnostics sidecar | The session really did use a catalogued circuit's prior |
+| `trackId` non-null on a session | Room | Session was started from the library rather than a captured line |
 
 ---
 
@@ -718,8 +818,9 @@ RecordingViewModel.stopRecording()
   → LocalLapDetector.readTelemetryFile(filePath)
     → Read header line (if present) for start line coords
     → Parse JSONL samples into List<TelemetrySample>
-  → LocalLapDetector.detectLapsWithDiagnostics(file, startLine)
-    → detectCrossings(samples, startLine)
+  → LocalLapDetector.detectLapsWithDiagnostics(file, startLine, priors)
+    → priors = track?.priors() ?: TrackPriors.NONE     // §4a track library, else none
+    → Attempt 1: detectCrossings(samples, startLine, seededHeading = priors.travelHeadingDeg)
       → startPoint = startLine.midpoint()   // orientation of the captured line unused
       → For each sample pair:
           heading = bearing(previous, current)          // skip if segment < 0.5 m
@@ -727,13 +828,20 @@ RecordingViewModel.stopRecording()
           reject if |lateral offset| > DETECTION_HALF_WIDTH_M (15 m)
               → if within REJECTION_REPORTING_RADIUS_M (60 m), record TOO_FAR_TO_THE_SIDE
                 with the measured distance   // silent before Incident 14
-          reject if since last accepted < MIN_LAP_TIME_MS (20 s)
+          reject if speed at the crossing < MIN_CROSSING_SPEED_MS (4 m/s)  → TOO_SLOW
+              → applied AFTER the corridor check, so Incident 14 diagnostics keep their meaning
+          reject if since last accepted < priors.minLapTimeMs()   // max(20 s, fastest × 0.8)
           reject if travelled since last accepted < MIN_DISTANCE_FROM_START_M (50 m)
-          reject if heading differs > MAX_HEADING_DIFFERENCE_DEG (60°) from first crossing
+          reject if heading differs > MAX_HEADING_DIFFERENCE_DEG (60°) from the reference
+              → reference = catalogued travelHeadingDeg if seeded, else first accepted crossing
+                a seeded reference guards the FIRST crossing, which an unseeded one cannot
           interpolate the crossing instant between the two samples
       → record every rejection with its reason
     → buildLaps(crossings)
-    → IF laps < 2:                            // Incident 14 fallback
+    → discard the attempt entirely if !priors.lapsArePlausible(laps)   // any lap > slowest × 1.5
+    → IF attempt 1 unusable: Attempt 2 — retry unseeded (a wrong catalogue heading
+        must never be worse than no catalogue at all)
+    → IF still laps < 2:                      // Incident 14 fallback
         projectOntoDrivenPath(startPoint, samples)   // segments at >= 4 m/s only
         IF projected != null AND moved <= MAX_ANCHOR_PROJECTION_M (20 m):
           retry detectCrossings + buildLaps against the projected point
@@ -741,7 +849,7 @@ RecordingViewModel.stopRecording()
           ELSE: discard the retry entirely, captured point stands
         pathRepeats(samples)                  // only when still < 2 laps
     → Mark best lap (shortest duration)
-    → Return DetectionOutcome(result, diagnostics)
+    → Return DetectionOutcome(result, diagnostics)   // incl. headingReference, referenceHeadingDeg, minLapTimeMs
   → LapDiagnosticsWriter.write(file, sessionId, outcome)   // whatever the result
     → writes <telemetry>.lapdiag.json beside the telemetry; never throws
   → lapDao.insertAll(laps.map { it.toEntity(sessionId, isLocalOnly=true) })
@@ -777,6 +885,9 @@ None — fully offline operation.
 | `MIN_SAMPLES` | 50 | Minimum telemetry samples required |
 | `DETECTION_HALF_WIDTH_M` | 15.0 | Lateral extent of the crossing plane |
 | `MAX_HEADING_DIFFERENCE_DEG` | 60.0 | Rejects passes in a materially different direction |
+| `MIN_CROSSING_SPEED_MS` | 4.0 | A pass made below this is a pedestrian, not a lap — `TOO_SLOW` |
+| `LAP_TIME_PRIOR_GRACE` | 0.8 | Catalogued fastest lap × this raises the minimum-lap guard |
+| `MIN_PLAUSIBLE_LAP_SPEED_MS` | 5.0 | Surveyed length ÷ lap time; the lap set is discarded only if **no** lap reaches this |
 | `MIN_SEGMENT_LENGTH_M` | 0.5 | Below this the bearing between two samples is meaningless |
 
 ### Failure Points
@@ -788,6 +899,7 @@ None — fully offline operation.
 | No start line | All coords 0.0 | `LocalLapResult.NoStartLine` | Detection skipped |
 | No crossings | Car never passed within 15 m of the captured start point | `DetectionResult.InsufficientLaps` | "Complete 2+ laps" message, **and all coaching is lost** |
 | Double counting | Track passes the same point twice per lap at an admitted angle | `DetectionResult.Success` with twice the laps | Lap times ~half of reality, no error — `FP-LAP-DOUBLE-COUNT` |
+| Pedestrian reference | Session started before the driver got in the kart; a walking pass sets the heading reference | `DetectionResult.Success` with 2 absurd laps | Lap times in the *minutes* — `FP-PEDESTRIAN-REFERENCE`. Guarded by `MIN_CROSSING_SPEED_MS` and, on catalogued circuits, by the seeded heading |
 | Diagnostics write | Storage full / path unwritable | `write()` returns null | None. Logged only, by design |
 | Insufficient laps | Only 1 crossing | `LocalLapResult.InsufficientLaps` | "Complete 2+ laps" message |
 | Room insert | DB error | Exception logged | Laps not persisted |

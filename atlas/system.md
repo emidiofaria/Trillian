@@ -144,6 +144,8 @@ by design, so this cannot happen silently.
 - `RecordingFragment` / `RecordingViewModel` — Active recording UI, service binding
 - `SessionResultFragment` / `SessionResultViewModel` — Post-session analysis
 - `AnalysisFragment` / `AnalysisViewModel` — ANALYSIS tab: derived session report, offline
+- `TrackListFragment` / `TrackListViewModel` — SELECT TRACK: bundled + saved circuits (TL-03)
+- `TrackConfirmFragment` / `TrackConfirmViewModel` — circuit confirmation and GPS readiness gate (TL-06)
 - `TrackMapView` — custom `View` drawing the track outline from GPS, no map SDK
 - `LoginFragment` / `RegisterFragment` — Authentication (minimal implementation)
 
@@ -164,6 +166,7 @@ by design, so this cannot happen silently.
 |------------|---------|--------------|
 | `AuthRepository` | Login, register, token management | ApiService + DataStore |
 | `SessionRepository` | Session CRUD, upload orchestration | SessionDao, LapDao, CoachingInsightDao, ApiService |
+| `TrackRepository` | Unified view of bundled and saved circuits; save, rename, delete, mark-used | `BundledTrackCatalog` (assets), `TrackDao` (Room) |
 
 ### Networking
 
@@ -194,9 +197,9 @@ by design, so this cannot happen silently.
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| Database | Room 2.6.1 | Schema version 2 |
+| Database | Room 2.6.1 | Schema version 5 |
 | Database Name | `driving_coach.db` | — |
-| Migration Strategy | `MIGRATION_1_2` + `fallbackToDestructiveMigration()` | Explicit migrations with destructive fallback |
+| Migration Strategy | `MIGRATION_1_2` … `MIGRATION_4_5`, **no destructive fallback** | Explicit migrations only. `fallbackToDestructiveMigration()` was removed when the `tracks` table was added: a circuit the driver walked exists nowhere else, so silently wiping the database on a migration fault is no longer an acceptable outcome. Removing it promoted a latent `MIGRATION_1_2` fault (duplicate column) into a launch crash, which is why that migration is now idempotent |
 
 **Tables:**
 
@@ -484,8 +487,8 @@ while (processingStatus in [PENDING, UPLOADING, DETECTING_LAPS, GENERATING_COACH
 | ProGuard/R8 | Disabled (`isMinifyEnabled = false`) |
 | Compile SDK | 36 |
 | Target SDK | 36 |
-| Version Code | 297 (derived: `major*100 + minor`) |
-| Version Name | 2.97 (single source of truth in `app/build.gradle.kts`) |
+| Version Code | 300 (derived: `major*100 + minor`) |
+| Version Name | 3.0 (single source of truth in `app/build.gradle.kts`) |
 
 **Why the toolchain moved (2026-09-16).** Google Play rejected the first
 submission: new apps must target API 36. `compileSdk 36` is not supported by
@@ -676,4 +679,6 @@ No CI/CD workflow files found in `.github/workflows/` or other common locations.
 | Upload Worker | `/app/src/main/java/.../data/worker/TelemetryUploadWorker.kt` |
 | Auth Interceptor | `/app/src/main/java/.../data/api/AuthInterceptor.kt` |
 | Room Schemas | `/app/schemas/` |
+| Bundled track catalogue | `/app/src/main/assets/tracks/tracks.json` |
+| Track repository | `/app/src/main/java/.../data/track/TrackRepository.kt` |
 | Backend | `/backend/` |

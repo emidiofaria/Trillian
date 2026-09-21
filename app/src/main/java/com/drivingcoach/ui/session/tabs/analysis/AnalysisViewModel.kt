@@ -3,6 +3,7 @@ package com.drivingcoach.ui.session.tabs.analysis
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drivingcoach.data.db.entity.LapEntity
+import com.drivingcoach.data.track.TrackRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,7 +25,9 @@ import javax.inject.Inject
  * is not repeated every time the tab is scrolled back into view.
  */
 @HiltViewModel
-class AnalysisViewModel @Inject constructor() : ViewModel() {
+class AnalysisViewModel @Inject constructor(
+    private val trackRepository: TrackRepository
+) : ViewModel() {
 
     data class UiState(
         val isLoading: Boolean = true,
@@ -35,7 +38,8 @@ class AnalysisViewModel @Inject constructor() : ViewModel() {
     private data class Inputs(
         val filePath: String?,
         val lapIds: List<Long>,
-        val startLine: Pair<Double, Double>?
+        val startLine: Pair<Double, Double>?,
+        val trackId: String?
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -51,8 +55,13 @@ class AnalysisViewModel @Inject constructor() : ViewModel() {
      * laps actually changed, because the parent view model re-emits its state
      * on every poll while a session is still processing.
      */
-    fun submit(filePath: String?, laps: List<LapEntity>, startLine: Pair<Double, Double>?) {
-        val next = Inputs(filePath, laps.map { it.id }, startLine)
+    fun submit(
+        filePath: String?,
+        laps: List<LapEntity>,
+        startLine: Pair<Double, Double>?,
+        trackId: String? = null
+    ) {
+        val next = Inputs(filePath, laps.map { it.id }, startLine, trackId)
         if (next == inputs) return
         inputs = next
         this.laps = laps
@@ -87,7 +96,12 @@ class AnalysisViewModel @Inject constructor() : ViewModel() {
                 laps = laps.map { it.toLapOption() },
                 referenceLapId = selectedLapId,
                 lapWindows = laps.associate { it.id to it.startTs..it.endTs },
-                startLine = current.startLine
+                startLine = current.startLine,
+                centreline = current.trackId
+                    ?.let { trackRepository.getTrack(it) }
+                    ?.centreline
+                    ?.points
+                    ?.map { it.latitude to it.longitude }
             )
             _uiState.value = UiState(
                 isLoading = false,

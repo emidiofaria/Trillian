@@ -72,10 +72,14 @@ object LapReplayHarness {
     }
 
     /** Runs the detector over a fixture, exactly as the app does after a session. */
+    @JvmOverloads
     fun detect(
         fixture: Fixture,
-        detector: LocalLapDetector = LocalLapDetector()
-    ): LocalLapDetector.DetectionResult = detector.detectLaps(fixture.telemetryFile, fixture.startLine)
+        detector: LocalLapDetector = LocalLapDetector(),
+        priors: LocalLapDetector.TrackPriors = LocalLapDetector.TrackPriors.NONE,
+        startLine: LocalLapDetector.StartLine = fixture.startLine
+    ): LocalLapDetector.DetectionResult =
+        detector.detectLaps(fixture.telemetryFile, startLine, priors)
 
     /** Lap durations in seconds, for readable assertions and failure messages. */
     fun lapSeconds(result: LocalLapDetector.DetectionResult): List<Double> =

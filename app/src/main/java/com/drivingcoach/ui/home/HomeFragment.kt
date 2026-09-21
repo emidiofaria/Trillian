@@ -1,16 +1,10 @@
 package com.drivingcoach.ui.home
 
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.TextView
-import androidx.annotation.ColorRes
-import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
-import androidx.core.widget.TextViewCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -23,7 +17,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.drivingcoach.BuildConfig
 import com.drivingcoach.R
-import com.drivingcoach.data.location.GpsReadiness
 import com.drivingcoach.databinding.FragmentHomeBinding
 import com.drivingcoach.databinding.ItemSessionHistoryBinding
 import com.drivingcoach.util.LapTimeFormatter
@@ -43,6 +36,7 @@ class HomeFragment : Fragment() {
     private val viewModel: HomeViewModel by viewModels()
     
     private var trackNameDialog: androidx.appcompat.app.AlertDialog? = null
+    private var trackChoiceDialog: androidx.appcompat.app.AlertDialog? = null
 
     private val sessionsAdapter = SessionHistoryAdapter(
         onSessionClick = { sessionId -> viewModel.onSessionClick(sessionId) },
@@ -144,9 +138,33 @@ class HomeFragment : Fragment() {
             .setView(editText)
             .setPositiveButton("Start") { _, _ ->
                 val trackName = editText.text.toString().trim()
-                viewModel.startNewSession(trackName)
+                showTrackChoiceDialog(trackName)
             }
             .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /**
+     * The fork added with the track library.
+     *
+     * Naming the session and choosing where it happens are two different questions,
+     * and they used to be collapsed into one because there was only ever one answer.
+     * Selecting a known circuit skips setting the start/finish line, which is the
+     * step most likely to go wrong; capturing one stays exactly as it was.
+     */
+    private fun showTrackChoiceDialog(sessionName: String) {
+        val name = sessionName.ifBlank { "Unknown Track" }
+
+        trackChoiceDialog?.dismiss()
+        trackChoiceDialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(name)
+            .setMessage("Where are you driving?")
+            .setPositiveButton("SELECT TRACK") { _, _ ->
+                viewModel.selectTrackForSession(name)
+            }
+            .setNegativeButton("NEW CIRCUIT") { _, _ ->
+                viewModel.startNewSession(name)
+            }
             .show()
     }
 
@@ -209,53 +227,8 @@ class HomeFragment : Fragment() {
                         handleEvent(event)
                     }
                 }
-                launch {
-                    viewModel.gpsReadiness.collect { readiness ->
-                        updateGpsChip(readiness)
-                    }
-                }
             }
         }
-    }
-
-    /**
-     * Turns the warm-up into something the user can act on: the point of the chip is that
-     * they learn to walk out to the start line when it goes green, instead of discovering a
-     * cold fix while standing at the track edge.
-     *
-     * Hidden while idle, which is also what a user without location permission sees — the
-     * hero then looks exactly as it did before this feature.
-     */
-    private fun updateGpsChip(readiness: GpsReadiness) {
-        val chip = binding.gpsReadinessChip
-
-        when (readiness) {
-            is GpsReadiness.Idle -> {
-                chip.isVisible = false
-                return
-            }
-
-            is GpsReadiness.Acquiring -> {
-                chip.text = getString(R.string.gps_chip_acquiring)
-                chip.contentDescription = getString(R.string.gps_chip_acquiring_description)
-                chip.setChipColor(R.color.colorWarning)
-            }
-
-            is GpsReadiness.Ready -> {
-                chip.text = getString(R.string.gps_chip_ready, readiness.accuracyM)
-                chip.contentDescription =
-                    getString(R.string.gps_chip_ready_description, readiness.accuracyM)
-                chip.setChipColor(R.color.colorSuccess)
-            }
-        }
-
-        chip.isVisible = true
-    }
-
-    private fun TextView.setChipColor(@ColorRes colorRes: Int) {
-        val color = ContextCompat.getColor(requireContext(), colorRes)
-        setTextColor(color)
-        TextViewCompat.setCompoundDrawableTintList(this, ColorStateList.valueOf(color))
     }
 
     private fun updateUI(state: HomeUiState) {
@@ -299,6 +272,10 @@ class HomeFragment : Fragment() {
                 val action = HomeFragmentDirections.actionHomeToTrackSetup(event.trackName)
                 findNavController().navigate(action)
             }
+            is HomeEvent.NavigateToTrackList -> {
+                val action = HomeFragmentDirections.actionHomeToTrackList(event.sessionName)
+                findNavController().navigate(action)
+            }
             is HomeEvent.NavigateToProfile -> {
                 val action = HomeFragmentDirections.actionHomeToProfile()
                 findNavController().navigate(action)
@@ -319,6 +296,8 @@ class HomeFragment : Fragment() {
         super.onDestroyView()
         trackNameDialog?.dismiss()
         trackNameDialog = null
+        trackChoiceDialog?.dismiss()
+        trackChoiceDialog = null
         _binding = null
     }
 }

@@ -3,10 +3,15 @@ package com.drivingcoach.ui.tracksetup
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.drivingcoach.data.track.SaveTrackResult
+import com.drivingcoach.data.track.TrackRepository
 import com.drivingcoach.util.GeoUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -49,10 +54,37 @@ data class LatLng(
  * Manages capturing two GPS points to define a start/finish line.
  */
 @HiltViewModel
-class TrackSetupViewModel @Inject constructor() : ViewModel() {
+class TrackSetupViewModel @Inject constructor(
+    private val trackRepository: TrackRepository
+) : ViewModel() {
 
     private val _state = MutableStateFlow(TrackSetupState())
     val state: StateFlow<TrackSetupState> = _state.asStateFlow()
+
+    private val _saveEvents = MutableSharedFlow<SaveTrackResult>()
+    val saveEvents: SharedFlow<SaveTrackResult> = _saveEvents.asSharedFlow()
+
+    /**
+     * Saves the captured line as a reusable circuit.
+     *
+     * The repository refuses a line too short to detect a lap. That refusal is
+     * surfaced rather than swallowed: a circuit saved from a bad line would be
+     * reused every visit, and a name in a list gives the driver no way to see it.
+     */
+    fun saveAsTrack(name: String) {
+        val coords = getStartLineCoords() ?: return
+        viewModelScope.launch {
+            _saveEvents.emit(
+                trackRepository.saveCapturedTrack(
+                    name = name,
+                    lat1 = coords.lat1,
+                    lng1 = coords.lng1,
+                    lat2 = coords.lat2,
+                    lng2 = coords.lng2
+                )
+            )
+        }
+    }
 
     /**
      * Updates GPS status from location updates.

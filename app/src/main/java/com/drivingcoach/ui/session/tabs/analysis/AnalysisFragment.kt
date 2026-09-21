@@ -81,7 +81,7 @@ class AnalysisFragment : Fragment() {
                     } else {
                         null
                     }
-                    viewModel.submit(state.rawFilePath, state.laps, startLine)
+                    viewModel.submit(state.rawFilePath, state.laps, startLine, session?.trackId)
                 }
             }
         }

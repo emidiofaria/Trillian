@@ -57,6 +57,7 @@ sealed class HomeEvent {
     data class NavigateToRecording(val sessionId: Long) : HomeEvent()
     data class NavigateToSessionResult(val sessionId: Long) : HomeEvent()
     data class NavigateToTrackSetup(val trackName: String) : HomeEvent()
+    data class NavigateToTrackList(val sessionName: String) : HomeEvent()
     object NavigateToProfile : HomeEvent()
     data class ShowError(val message: String) : HomeEvent()
     data class ShowSessionDeleted(val trackName: String) : HomeEvent()
@@ -188,6 +189,13 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             // Navigate to track setup instead of directly starting recording
             _events.emit(HomeEvent.NavigateToTrackSetup(trackName.ifBlank { "Unknown Track" }))
+        }
+    }
+
+    /** Takes a named session to the circuit list instead of straight to line capture. */
+    fun selectTrackForSession(sessionName: String) {
+        viewModelScope.launch {
+            _events.emit(HomeEvent.NavigateToTrackList(sessionName.ifBlank { "Unknown Track" }))
         }
     }
 

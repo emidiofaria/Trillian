@@ -894,6 +894,8 @@ empirically falsified (proven to fail when the defect is reintroduced).
 | Telemetry File Missing | LOW | HIGH | HIGH | P2 |
 | WorkManager Constraint Starvation | MEDIUM | MEDIUM | MEDIUM | P2 |
 | Room Migration Failure | LOW | CRITICAL | HIGH | P2 |
+| Pedestrian Sets the Heading Reference | ~~MEDIUM~~ FIXED | HIGH | LOW *(result looks plausible)* | ~~P1~~ Closed (Incident 15) |
+| Destructive Fallback Hiding a Broken Migration | ~~LOW~~ FIXED | CRITICAL | **NONE** *(silent by construction)* | ~~P1~~ Closed |
 | GPS Signal Lost | HIGH | LOW | HIGH | P3 |
 | Service Killed by System | MEDIUM | MEDIUM | MEDIUM | P3 |
 | Coroutine Cancellation Data Loss | LOW | MEDIUM | LOW | P3 |
@@ -908,6 +910,8 @@ empirically falsified (proven to fail when the defect is reintroduced).
 | State desync | Service lifecycle, binding state |
 | Data loss | Coroutine cancellation, service kill |
 | Startup crashes | Migration, DataStore corruption |
+| Lap times in minutes, not seconds | `TOO_SLOW` rejections and `headingReference` in the diagnostics sidecar |
+| Session history empty after an upgrade | Migration abort swallowed by a destructive fallback |
 | Sensor permission crash | HIGH_SAMPLING_RATE_SENSORS on API 31+ |
 
 ---
@@ -1998,6 +2002,158 @@ incident 13 never reaches the fallback.
 
 ---
 
+## Pattern: The Reference Was Set by a Pedestrian (FP-PEDESTRIAN-REFERENCE) — ✅ FIXED (Incident 15)
+
+### Symptoms
+
+A driver completes a full session — twelve laps of 72–85 s. The app reports **two laps: 15m54s and
+6m44s**. Nothing errors, nothing is empty, and no message suggests anything went wrong. The result
+is not *missing*; it is confidently, specifically wrong, which is worse, because there is nothing
+to prompt the driver to doubt it.
+
+### Signals
+
+Measured on the Incident 15 session (Kartódromo de Baltar, 12 laps driven, 2 reported):
+
+| Signal | Value | Reading |
+|--------|-------|---------|
+| Session length before the first racing lap | ~16 minutes | Recording started, phone pocketed, driver queued |
+| Speed of the accepted first "crossing" | **2.9 m/s** | Walking pace |
+| Heading of that crossing | **272°** | Became the session's reference |
+| Heading of the 12 racing crossings | **331–343°** | 59–71° away from the reference |
+| Racing crossings rejected as heading mismatches | **10 of 12** | Rejected for disagreeing with a pedestrian |
+| The two that were admitted | 54.3° and 59.6° | Just under the 60° guard |
+| Distance from captured line to the real start/finish | **164.6 m** | A second, independent fault |
+| Minimum speed of any racing crossing | 5.9 m/s | Twice the walking pass |
+
+The two populations are separated by a factor of four in speed. Nothing in the detector was looking
+at speed.
+
+### Root Cause
+
+`MAX_HEADING_DIFFERENCE_DEG` (LD-14) exists to reject a pass made in the wrong direction. It takes
+its reference from **the session's first accepted crossing** — which means the first crossing is
+the one candidate the guard structurally cannot evaluate. Whatever is accepted first defines
+"correct" for everything after it.
+
+The queue at Baltar stands beside the start straight. The driver walked across the start point
+while waiting, at 2.9 m/s, in roughly the direction of the paddock. That pass satisfied every
+existing check: it was inside the corridor, it was the first crossing so no minimum-lap or
+minimum-distance guard applied, and there was no reference heading yet to disagree with. It became
+the reference, and the actual laps were then measured against it.
+
+### The generalisation worth keeping
+
+**A guard that derives its reference from the data it is guarding cannot protect the first
+sample.** This is structural, not a tuning problem — widening or narrowing the 60° window changes
+only *which* wrong laps are reported. The reference has to come either from a different signal
+(speed, here) or from outside the session entirely (the circuit's known direction of travel).
+
+Related but distinct from `FP-STATIONARY-POSITION-BIAS`, which is about a *position* fixed while
+parked. This one is about a *reference* fixed from motion that was never driving.
+
+### Fix
+
+Two corrections, deliberately independent:
+
+| Part | Mechanism | Scope | Why |
+|------|-----------|-------|-----|
+| Refuse walking passes | Reject below `MIN_CROSSING_SPEED_MS` (4 m/s), recorded as `TOO_SLOW` | **Every** session | A different signal entirely. 4 m/s is not tuned — the queue never exceeded 3 m/s, racing never fell below 5.9 m/s, and the value already exists as `MIN_ANCHOR_SPEED_MS` expressing the same judgement |
+| Seed the reference from outside | `TrackPriors.travelHeadingDeg` from the track catalogue (§4a) replaces the first-crossing reference | Catalogued circuits | Fixed before the first sample is read, so it guards the first crossing too |
+| Refuse to report nonsense | `lapsArePlausible()` discards a lap set whole only when **every** lap in it averages under 5 m/s over the circuit's surveyed length | Circuits with a surveyed length | A set in which nothing could have been driven is evidence the crossings were not laps. Measured against the surveyed length rather than the typed-in lap envelope, so a driver merely slower than the estimate keeps their session; and only when *all* laps fail, so a single spin lap survives |
+
+The speed gate is applied **after** the corridor check, so a slow pass far to the side is still
+recorded as `TOO_FAR_TO_THE_SIDE` and the Incident 14 diagnostics keep their meaning.
+
+**The speed gate alone recovers all 12 laps** — against the driver's own captured line, 164.6 m
+from the real start/finish. That is asserted as a separate test precisely so the fix cannot quietly
+become dependent on the track library. An uncatalogued circuit gets the same correction.
+
+### Detection
+
+Three new fields ride in the diagnostics sidecar: `headingReference` (`TRACK_CATALOGUE` or
+`FIRST_CROSSING`), `referenceHeadingDeg`, and `minLapTimeMs`. Together they answer "what was this
+run actually measured against?", which could not be answered when the incident was opened.
+
+Watch for: `TOO_SLOW` rejections clustered at the *start* of a session. That is the signature of
+recording started before the driver got in the kart, and it is now visible rather than silently
+load-bearing.
+
+### Open risk
+
+The speed gate assumes a vehicle always crosses the start/finish above 4 m/s. A session that
+genuinely crawls the start/finish — a formation lap, a red flag, a kart pushed across after a spin
+— will have that pass refused. This is the right trade: refusing a real lap that happened at
+walking pace costs one lap, while accepting a walk costs the whole session. If a venue is found
+where laps are legitimately completed below 4 m/s, the gate needs a circuit-specific value rather
+than a global one.
+
+### Confidence
+
+**HIGH** — `LapDetectionIncident15Test` replays the real session and asserts 12 laps from the
+captured line via the speed gate alone, 12 laps from the catalogued line, that the catalogue's
+heading guards the first crossing, and that an implausible lap set is discarded rather than shown.
+
+---
+
+## Pattern: A Destructive Fallback Hiding a Broken Migration (FP-DESTRUCTIVE-FALLBACK-MASK) — ✅ FIXED
+
+### Symptoms
+
+None. That is the entire problem. The app launches, works, and shows an empty session list to a
+driver who had sessions yesterday — occasionally, on upgrade, with no error and no log anyone
+reads.
+
+### Signals
+
+| Signal | Value | Reading |
+|--------|-------|---------|
+| Schema `1.json` | **already contains** `startLineLat1..Lng2` | The columns `MIGRATION_1_2` adds |
+| `MIGRATION_1_2` behaviour | `ALTER TABLE ADD COLUMN` → "duplicate column name" | The migration has never been able to succeed |
+| `fallbackToDestructiveMigration()` | present since the beginning | Catches the abort and **drops every table** |
+| Observed user impact | Session history silently gone | Indistinguishable from "I must have deleted it" |
+
+### Root Cause
+
+`fallbackToDestructiveMigration()` is documented as a development convenience and behaves as a
+permanent, silent data-loss handler in production. It converted a straightforward, loud,
+fixable migration bug into an invisible one, and kept it invisible for four schema versions.
+
+The bug itself was trivial: the columns were already in schema 1, so the migration adding them
+could only ever abort. Nobody found out, because the fallback swallowed the abort and wiped the
+database — and a wiped database still opens.
+
+### The generalisation worth keeping
+
+**A fallback that succeeds at the cost of the data is not a fallback; it is the failure, executed
+quietly.** The value of a crash on a broken migration is precisely that somebody has to look at it.
+
+This was found only because a test (`migrateAllTheWayFrom1`) was written to walk the real
+migration chain — not from any user report, and not from any log.
+
+### Fix
+
+| Part | Mechanism |
+|------|-----------|
+| Stop wiping | `fallbackToDestructiveMigration()` removed from `DatabaseModule` |
+| Make the latent fault survivable | `MIGRATION_1_2` made idempotent via an `addColumnIfMissing` helper that checks `PRAGMA table_info` first |
+| Keep it found | `DrivingCoachDatabaseMigrationTest` (L2) walks 1→5 and 4→5 against real schema JSON |
+
+Removing the fallback is what made this urgent: with the `tracks` table added, a circuit the driver
+**walked on foot** now lives in that database and exists nowhere else. Silently discarding it is not
+a recoverable outcome.
+
+### Detection
+
+A migration fault is now a launch crash with a stack trace naming the migration. Loud, immediate,
+and attributable — which is the desired behaviour, not a regression.
+
+### Confidence
+
+**HIGH** — the migration chain is exercised end to end in L2 against the checked-in schema files.
+
+---
+
 ## Pattern: A Test That Cannot Fail (FP-HOLLOW-TEST) — ✅ RESOLVED (2026-09-16)
 
 ### Symptoms
@@ -2345,3 +2501,170 @@ careful coding, and it is the one worth filing with Google.
 Corollary: **UI strings are part of the privacy surface.** They are read by
 users, by reviewers, and by future maintainers deciding what the app does. Text
 describing an unbuilt feature is a defect, not a placeholder.
+
+---
+
+## Pattern: A Successful Degradation Nobody Can See (FP-SILENT-DEGRADATION) — ⚠️ MITIGATED BY TESTS (2026-09-21)
+
+### Symptom
+
+None. That is the pattern.
+
+### What is actually there
+
+The chain from choosing a circuit to the detector using it is nine steps — list → confirm →
+`getTrack(id)` → session row → `trackId` → `TrackRepository` → `Track.priors()` →
+`LocalLapDetector` → diagnostics. **Every link degrades to `TrackPriors.NONE`**, and `NONE` is a
+valid, successful outcome: detection falls back to the first-crossing heading reference and still
+reports laps.
+
+So the entire track library can be inert — heading prior never applied, LD-21's tightened minimum
+gap never armed, LD-22 never able to fire because it needs `lengthM` — while the app looks correct,
+the driver sees laps, and every test that existed at the time still passes. The feature would
+simply have stopped paying for itself, silently, at whichever link broke.
+
+### Why the usual defences do not help
+
+Graceful degradation is normally the right design, and it is the right design here: a bad catalogue
+entry must never cost a driver their session. The cost is that the *fallback is indistinguishable
+from success* at every observation point the app offers — including the lap list, which is the only
+thing the driver looks at.
+
+A crash announces itself. This does not.
+
+### Mitigation
+
+Make the prior **observable in a production artifact**, then assert on it.
+`DetectionDiagnostics` already records `headingReference` (`TRACK_CATALOGUE` vs `FIRST_CROSSING`),
+`referenceHeadingDeg` and `minLapTimeMs`, and `LapDiagnosticsWriter` writes them to a sidecar next
+to the telemetry file. `TrackPriorsEndToEndTest` (L2) replays the incident 15 fixture through the
+real production path and asserts both the 12 laps *and* that the sidecar says `TRACK_CATALOGUE`,
+137.8°, 32000 ms. If any link in the chain silently reverts to `NONE`, that test fails — while a
+test asserting only "12 laps were found" would not.
+
+Note the shape of the fix: **no production change was needed.** The observability already existed
+because the incident 15 work put it there. The sidecar is for operators; it turned out to be the
+only honest test seam as well.
+
+### Generalisation
+
+**A fallback that is also a plausible success needs a witness.** Whenever a component degrades to
+a still-working default, ask what an outside observer could check to tell the two apart. If the
+answer is "nothing", the degradation is unmonitorable and the component will eventually be dead
+code nobody notices. Emit the discriminator — a diagnostic field, a log line, a metric — before
+the fallback ships, not after it silently engages in production.
+
+Corollary: **`NONE`-shaped defaults are where features go to die quietly.** They are the correct
+engineering choice and the worst observability choice, simultaneously.
+
+---
+
+## Pattern: A Test Double That Refuses a Write the Product Legitimately Makes (FP-DOUBLE-OVERREACH) — ✅ FIXED (2026-09-21)
+
+### Symptom
+
+Adding six new instrumented test classes made an **unrelated, previously passing** test fail — and
+took the whole L2 run down with it. Only 51 of 93 tests reported; the rest never ran.
+
+### Root cause
+
+`StallingPreferencesDataStore` models an unreadable preferences store for the SRS UI-03 fallback
+tests. Its `data` flow stalls forever, correctly. But its `updateData` threw
+`UnsupportedOperationException("Reads only in tests")`.
+
+The UI-03 fallback destination is Onboarding, and `OnboardingFragment.onResume()` calls
+`completeOnboarding()` — which **writes a preference** — as soon as it sees the required
+permissions already granted. On a clean emulator they never are, so the write never happened and
+the double's throw was never reached.
+
+The new `TrackPriorsHandoffTest` uses `GrantPermissionRule` for the location permissions. Those
+grants are **per-package and outlive the test class**. From then on Onboarding auto-completed, the
+double threw on the main thread inside a `lifecycleScope`, and the app process died — aborting
+instrumentation for every class scheduled after it.
+
+### Fix
+
+`updateData` now stalls like `data` does. A store that cannot be read cannot be written either, so
+this is also the more faithful model. Whether the write lands is not what UI-03 asserts; that the
+app stays alive is.
+
+### The real finding underneath
+
+`completeOnboarding()` calls `dataStore.edit { }` with **no error handling**. A genuine disk fault
+on a real device would crash the app at exactly the moment a first-time user is trying to get in.
+The test double only made an existing production fragility reachable. Left unfixed deliberately —
+it is outside the scope of the track-library work — but recorded here so it is not rediscovered
+from a Crashlytics report.
+
+### Detection
+
+A single failure that aborts the run is easy to misread as "one flaky test". The tell is the
+**test count**: 51 executed where 93 were expected. Always compare the executed count against the
+expected one; `generate-html-report.py` reports "never ran" for exactly this reason.
+
+### Generalisation
+
+**Test doubles inherit the product's whole contract, not the part the test exercises.** A double
+that throws on an unexercised method is a landmine with a delay fuse: it detonates when some
+unrelated change alters the path taken.
+
+Corollary: **`GrantPermissionRule` is global, persistent state.** It changes the device for every
+subsequent class in the run. Any test asserting first-run behaviour is downstream of every test
+that grants a permission, whether or not they know about each other.
+
+---
+
+## Pattern: A Test Whose Input Gradle Cannot See (FP-UNDECLARED-TEST-INPUT) — ✅ FIXED (2026-09-21)
+
+### Symptom
+
+Mutation-testing the track catalogue produced a perfect score of zero. Changing
+`travelHeadingDeg` from 137.8° to 90°, and `lengthM` from 1020 m to 1500 m and then 700 m,
+each left every catalogue test **passing**.
+
+The tests were not weak. They were not running.
+
+### Root cause
+
+`BundledTrackCatalogTest` and `BaltarSurveyCorroborationTest` read the catalogue by path —
+`File("src/main/assets/tracks/tracks.json")` — deliberately, so that they assert against the
+exact bytes packaged into the APK rather than a copy that could drift.
+
+But an asset is not on the unit-test runtime classpath. Gradle's up-to-date check saw no
+declared input change, marked `testDebugUnitTest` UP-TO-DATE, and skipped it. The tests only
+re-ran when *Kotlin source* changed — which is exactly when the catalogue has not.
+
+So: **edit a circuit, run the tests, see green, ship the wrong circuit.** The precise failure
+the catalogue tests exist to prevent, enabled by the build system.
+
+### Fix
+
+```kotlin
+tasks.withType<Test>().configureEach {
+    inputs.dir("$projectDir/src/main/assets/tracks")
+        .withPropertyName("trackCatalogue")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+```
+
+Verified by repeating the mutations without `--rerun`: all three now fail.
+
+### Detection
+
+This is invisible to any amount of reading. The only thing that exposed it was **mutating the
+data and expecting a failure that did not come**. A test suite that has never been shown to
+fail has not been shown to work.
+
+### Generalisation
+
+**A test that reads a file Gradle does not know about is a test that runs when it feels like
+it.** Any test reaching outside its source set and classpath — assets, fixtures, schemas,
+golden files, config — needs its input declared, or the build will cache right over it.
+
+Corollary: **`--rerun` and `clean` hide this bug.** CI usually builds clean and therefore
+always runs the test, so the gap only opens on a developer's machine, incrementally, which is
+exactly where catalogue data gets edited.
+
+Corollary: **mutation-test data the way you would mutation-test code.** Shipped data that
+drives a decision is code. These four numbers steer lap detection for every driver at the
+circuit; they deserve the same proof of consequence as a branch condition.

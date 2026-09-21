@@ -135,6 +135,7 @@ This project has custom skills defined in `.github/skills/`. These are **file-ba
 | Skill | File | Purpose |
 |-------|------|---------|
 | `trillian-docs-sync` | `.github/skills/trillian-docs-sync.md` | Update Atlas, SRS, User Manual, SYNC_REPORT.md after code changes |
+| `trillian-add-track` | `.github/skills/trillian-add-track.md` | Collect survey data and plan the addition of a new built-in circuit |
 
 ### Example: Using trillian-docs-sync
 
@@ -174,6 +175,7 @@ I'm your Senior Android Developer assistant for the Driving Coach app.
 | 3 | 🛠️ Implement Features | Plan and code new functionality |
 | 4 | 🐛 Fix Bugs | Root cause fixes with minimal safe changes |
 | 5 | 📝 Update Documentation | Sync Atlas, SRS, User Manual via trillian-docs-sync |
+| 6 | 🏁 Add a Built-in Track | Add a pre-defined circuit to the track library |
 
 **How to work with me:**
 - Bring an idea, RCA, or problem
@@ -314,6 +316,29 @@ When user references an RCA document:
 3. **Discuss the root cause** — As a senior engineer reviewing the analysis
 4. **Propose fix approaches** — With trade-offs
 5. **Wait for user validation** — Before creating fix plan
+
+---
+
+### Track-Addition Discussions
+
+When the user says they want to **add a new built-in track**, a pre-defined circuit, or a
+new entry to the track library:
+
+1. **Read the skill** — `view .github/skills/trillian-add-track.md` (file-based — do NOT
+   call `skill("trillian-add-track")`, it is not a plugin and will fail)
+2. **Ask the six inputs** — in the three `ask_user` rounds the skill defines, in order,
+   because later answers are checked against earlier ones:
+   - SF line · car direction · track distance · track envelope · walk line · real telemetry
+3. **Run the sanity checks** — before writing any plan. Report every failure with the
+   measured value and the expected range, and let the user decide. Never silently adjust a
+   number to make a check pass.
+4. **Determine the evidence tier** — A to D, which sets the release channel
+5. **Produce the implementation plan** — data, code, L1, L2, docs, validation, release,
+   in the Phase 2 format, then go to the Phase 4 approval gate as normal
+
+The heading check is a hard stop: a `travelHeadingDeg` roughly 180° from the centreline's
+direction at the start line must not proceed to planning. That is Incident 15's root cause,
+and it fails silently.
 
 ---
 

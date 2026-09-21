@@ -1,0 +1,53 @@
+{
+  "exportedAtMs": 1789927666819,
+  "app": {
+    "versionName": "2.97",
+    "versionCode": 297
+  },
+  "device": {
+    "model": "ZTE ZTE Blade A53+",
+    "sdkInt": 31
+  },
+  "session": {
+    "id": 2,
+    "trackName": "Baltar 2",
+    "startedAt": 1789921459279,
+    "endedAt": 1789923381543,
+    "uploadStatus": "PENDING",
+    "processingStatus": "PENDING",
+    "startLine": {
+      "lat1": 41.18640899658203,
+      "lng1": -8.39651870727539,
+      "lat2": 41.186458587646484,
+      "lng2": -8.396395683288574
+    }
+  },
+  "telemetry": {
+    "fileName": "session_2.jsonl",
+    "sizeBytes": 464725
+  },
+  "laps": [
+    {
+      "lapNumber": 1,
+      "startTs": 1789921460487,
+      "endTs": 1789922414850,
+      "durationMs": 954363,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 2,
+      "startTs": 1789922414850,
+      "endTs": 1789922819357,
+      "durationMs": 404507,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": true,
+      "isLocalOnly": true
+    }
+  ]
+}

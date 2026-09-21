@@ -4,6 +4,669 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-21] Skill — trillian-add-track
+
+**Codebase Version:** v3.0 (no production code changed)
+**Trigger:** Standardising how a new built-in circuit gets added, after Baltar showed how much of the process lived only in one session's context.
+
+### What was added
+
+`.github/skills/trillian-add-track.md` — a file-based skill that collects the six survey
+inputs (SF line, car direction, track distance, lap envelope, walked centreline, real
+telemetry), sanity-checks them, and emits a full implementation plan covering data, code,
+L1, L2, docs, validation and release.
+
+`.github/agents/SW_dev_agent.md` — menu option 6 (🏁 Add a Built-in Track), the skill in
+the local-skills table, and a Phase 1 routing section for "add a track" requests.
+
+### Why a skill rather than a checklist
+
+`Track.kt` declares no validation — no `require`, no `init` block, every field but `id`,
+`name` and `startLine` nullable with a default. A circuit with a backwards heading or a
+missing length parses cleanly and produces laps; it simply produces the wrong ones. There
+is no runtime guardrail, so the guardrail has to sit at the moment the data is authored.
+
+The hard stop is the heading. A `travelHeadingDeg` roughly 180° out rejects every genuine
+crossing, silently, which is Incident 15's root cause. Baltar's two candidate start lines
+were 164.6° opposed and both looked reasonable on a map — plausibility is not a check.
+
+### Verified against Baltar
+
+Every gate run against the shipped entry: heading within **1.1°** of the centreline
+direction at the start line, envelope implying **91.8 / 30.6 km/h** (inside 18–126),
+start line **10.97 m** and straddling the centreline, ring perimeter **1020.1 m** against
+a declared 1020, provenance distinct per dataset (`MAP_COORDINATES` for the line,
+`SURVEYED_ON_FOOT` for the ring). Tolerances were taken from
+`BundledTrackCatalogTest` rather than invented, so data authored to the skill satisfies the
+existing suite.
+
+### Known gotchas recorded, deliberately not fixed
+
+Four single-track assumptions are documented in the skill instead of being refactored now,
+because until a second circuit exists they are not wrong — merely assumptions that happen
+to hold:
+
+- `SessionStartForkTest:233` opens the first circuit and asserts it is `"baltar"`
+- `everyCircuitsLengthAndLapEnvelopeImplyAPlausibleSpeed` does `return@forEach` on nulls,
+  so an incomplete track skips the only catalogue-wide check
+- six of seven catalogue tests look up `id == "baltar"` directly
+- `TrackRepositoryTest` recency assertions read `.first().first()`
+
+Fixing them speculatively would have changed passing tests to suit a circuit nobody has
+added yet. Writing them down costs nothing and means the next developer meets them as a
+checklist item rather than a broken build.
+
+### Files
+
+- `.github/skills/trillian-add-track.md` (new)
+- `.github/agents/SW_dev_agent.md` (menu, skills table, Phase 1 routing)
+- `docs/SYNC_REPORT.md` (this entry)
+
+No production code, no tests, no build impact.
+
+---
+
+## [2026-09-21] Release v3.0 — Play Build (Internal testing)
+
+**Codebase Version:** v3.0 (versionCode 300)
+**Commit:** `6eb296f` on branch `FT_Add_native_Track_library`
+**Trigger:** Promoting the track library from a dev APK to a Play bundle.
+
+### What was released
+
+`releases/v3.0-play/` — `Trillian-v3.0.aab` (7.7 MB, signed and signature-verified),
+`TEST_REPORT.html`/`.md`, `RELEASE_NOTES.md`, `PLAY_SUBMISSION.md`.
+
+Verified from the bundle itself rather than from the build that produced it:
+`versionCode=300`, `versionName=3.0`, package `io.github.emidiofaria.trillian`,
+and `base/assets/tracks/tracks.json` carrying Baltar at 1020 m / 137.8° with all
+140 surveyed centreline points intact.
+
+### The commit came first, deliberately
+
+The dev APK in `releases/v3.0-track-library/` was built from an uncommitted tree,
+which is why its auto-generated change list described the v2.96 → v2.98 release —
+the packaging script derives "What changed" from `git log`, and there was nothing
+in the log to derive it from. Committing before packaging fixed that at the root:
+the Play notes list the real change, and the test report records a commit that
+actually contains the code it tested. The dev notes have been amended to point at
+`6eb296f` rather than leaving a banner that is now untrue.
+
+All five Play refusal gates passed: signing present, working tree clean,
+versionCode 300 clear of the previous 298, `lintVitalRelease` passed, and a test
+report matching both version **and** commit.
+
+### Channel restriction
+
+Recorded in `RELEASE_NOTES.md`: **Internal testing only**, at the user's decision.
+
+The headline feature is a bundled circuit whose data has never been validated at
+the circuit. The survey and the Incident 15 recording corroborate each other, and
+that corroboration is not circular — the recording predates the catalogue — but
+two agreeing sources are still not a measurement taken at racing speed. The L4
+acceptance tests at Baltar remain the gate for any wider release.
+
+### Files
+
+- `releases/v3.0-play/` (new, gitignored — build artefact)
+- `releases/v3.0-track-library/RELEASE_NOTES.md` (banner corrected)
+- `docs/SYNC_REPORT.md` (this entry)
+
+---
+
+## [2026-09-21] Release v3.0 — Dev Build
+
+**Codebase Version:** v3.0 (versionCode 300, was 2.98/298)
+**Trigger:** Packaging the track library for a real session at Baltar.
+
+### Version
+
+`appVersionName` 2.98 → **3.0** in `app/build.gradle.kts`, the single source of truth —
+`versionCode`, the APK filename and the About screen all derive from it, so no other code
+changed. A bundled circuit catalogue, a new session-start fork, a new Room table and a
+reworked detector is not a point release, and `SYNC_REPORT` had already been calling this
+codebase `v3.0-track-library` for three entries.
+
+Also corrected: `atlas/system.md` still recorded 2.97/297, stale since 17 September.
+
+### Artifact
+
+`releases/v3.0-track-library/` — debug APK, `TEST_REPORT.html`/`.md` (v3.0, 403/403),
+hand-written `RELEASE_NOTES.md`. Verified from the packaged APK itself: versionCode 300,
+versionName 3.0, and `assets/tracks/tracks.json` carrying Baltar at 1020 m / 137.8° / 140
+points.
+
+### Two honesty problems recorded rather than papered over
+
+**The generated release notes described the wrong software.** The script builds them from
+`git log` since the previous tag, and because none of this work is committed, that produced
+the v2.96 → v2.98 change list against a v3.0 APK. Replaced by hand, with a banner stating
+that commit `7e8d696` does not contain the build. The script is not at fault; packaging an
+uncommitted tree is. *(The garbled `6362586` subject line it surfaced is a genuinely mangled
+commit message already in history, unrelated.)*
+
+**Nothing about Baltar has been validated on the circuit.** Every assertion rests on one
+replayed session plus a survey made on foot. The release notes say so explicitly under
+"Not yet verified", and the L4 acceptance tests are named as the gate. This build exists to
+make those runnable — it is not evidence that they would pass.
+
+---
+
+## [2026-09-21] Corroborating the Baltar Survey Against Real Telemetry
+
+**Codebase Version:** v3.0-track-library (follow-up 3)
+**Trigger:** The user asked whether the data they walked round Baltar could be crossed against
+the incident 15 telemetry — and then added the constraint that mattered: *use the correct
+start/finish line, not the one inside the incident 15 session.*
+
+### The constraint was already honoured, and now it is enforced
+
+An audit of every test touching the fixture confirmed the catalogue tests use the catalogued
+line and the incident-reproduction tests use the captured one, each deliberately. At L2,
+`TrackPriorsHandoffTest` already asserts the persisted line equals the catalogue's to 1e-12,
+so **no L2 change was needed.** The two lines are 164.5 m apart, drawn 164.6° opposed — and
+notably the captured one sits only 2.34 m from the racing line, so it was a *reasonable* place
+to stand, not a mistake of position. Incident 15 remains what the RCA said it was: a reference
+heading set by a driver walking.
+
+`theCataloguedLineIsNotTheLineTheDriverCaptured` now states that difference in numbers, so a
+later edit cannot quietly conflate them.
+
+### What the survey measured against 1923 real samples
+
+| Cross-check | Result |
+|---|---|
+| Crossing heading vs declared 137.8° | 11/11 forward, deltas 0.7°–10.1° |
+| Per-lap distance vs surveyed 1020 m | median 1094 m (+7.3%, the GPS over-read) |
+| Racing samples → centreline | median 3.99 m, p90 9.6 m |
+| Queue samples → centreline | median 29.5 m |
+| Ring coverage | 136/140 segments driven |
+| Implied lap speeds | 12.7–15.4 m/s, 2.5× the LD-22 floor |
+
+The walk holds. This is also why provenance stays `SURVEYED_ON_FOOT`: the defensible claim is
+not that the data came from a kart, but that data gathered on foot **agrees with** one.
+
+### New: `BaltarSurveyCorroborationTest` (L1, 5 tests)
+
+Measures with `TrackPriors.NONE` so the detector derives its reference heading from the session
+itself — making the comparison a real cross-check rather than an echo of the number under test.
+Crossings come from `detectLapsWithDiagnostics` rather than geometry re-implemented in the test,
+because a hand-rolled segment test drops crossings near the ends of an 11 m line at 16 m sample
+spacing, and would have asserted its own bug.
+
+### The finding that justified the whole exercise
+
+Mutation-testing the catalogue scored **zero**: heading 137.8 → 90, length 1020 → 1500 → 700,
+all still green. The tests were not running. Reading `src/main/assets/` by path is invisible to
+Gradle's up-to-date check, so editing the catalogue left `testDebugUnitTest` UP-TO-DATE —
+**edit a circuit, see green, ship the wrong circuit.** Fixed by declaring the directory as a
+test input; all three mutations now fail without `--rerun`. Filed as `FP-UNDECLARED-TEST-INPUT`.
+
+### Documentation updated
+
+- `01_requirements/DrivingCoach_SRS_v1.md` — new remark on TL-04
+- `atlas/failure-patterns.md` — `FP-UNDECLARED-TEST-INPUT`
+- `05_tests/coverage-map.tsv` — 5 new claims
+- `app/build.gradle.kts` — test input declaration
+- `BundledTrackCatalogTest` — measured percentiles recorded against the 5 m threshold
+
+---
+
+## [2026-09-21] L2 Coverage for the Track Library
+
+**Codebase Version:** v3.0-track-library (follow-up 2)
+**Trigger:** The user's observation that the track library is a *structural* change and deserved
+more than the 6 instrumented tests it had.
+
+### What the inventory found
+
+L1 had 55 tests on this change. L2 had **6** — `TrackLibraryGateTest` (3) and
+`DrivingCoachDatabaseMigrationTest` (3). `TrackRepository`, `TrackDao`, `TrackListViewModel` and
+`TrackConfirmViewModel` had **no test at any level**.
+
+That gap mattered more than the count suggests, and the reason is now filed as
+`FP-SILENT-DEGRADATION` in `atlas/failure-patterns.md`: every link in the nine-step chain from
+track selection to the detector degrades to `TrackPriors.NONE`, which is a *successful* outcome
+that still produces laps. The feature could have been entirely inert with no visible symptom and
+no failing test.
+
+### New L2 classes (29 tests)
+
+| Class | Tests | What it closes |
+|-------|------:|----------------|
+| `TrackRepositoryTest` | 9 | The repository and DAO had nothing anywhere |
+| `SessionStartForkTest` | 6 | Both branches of the fork; the session name surviving each |
+| `TrackPriorsHandoffTest` | 5 | The *write* side: `trackId` persisted, TL-07 surveyed-line substitution |
+| `TrackPriorsEndToEndTest` | 1 | The *read* side: incident 15 fixture replayed through the real path |
+| `TrackConfirmDisplayTest` | 3 | What the confirm screen renders; the only test of `slowestLapMs` |
+| `SaveCapturedCircuitTest` | 5 | Save-after-capture, rejection, correction and removal |
+
+`TrackPriorsHandoffTest` and `TrackPriorsEndToEndTest` meet at the session row: one asserts what is
+written to it, the other what is read from it. The seam is deliberate and documented in both.
+
+### The seam that made the anchor test possible
+
+`LocalLapDetector` is `@Singleton class … @Inject constructor()` with no Hilt module, so a test
+double would have required opening the production class. Instead the test asserts on
+`DetectionDiagnostics` — `headingReference`, `referenceHeadingDeg`, `minLapTimeMs` — read back from
+the sidecar `LapDiagnosticsWriter` already writes for operators. **No production change was needed
+to make the feature observable**, because the incident 15 work had already made it so.
+
+### One production-adjacent finding
+
+`StallingPreferencesDataStore.updateData` threw. Once the new tests granted location permissions
+(which persist per-package across classes), Onboarding began auto-completing, hit that throw on the
+main thread and killed the whole instrumentation run — 51 of 93 tests reported. The double now
+stalls instead of throwing. Underneath it sits a real fragility: `OnboardingFragment.completeOnboarding()`
+calls `dataStore.edit { }` with no error handling, so a genuine disk fault would crash a first-time
+user. **Deliberately not fixed** — out of scope — but recorded as `FP-DOUBLE-OVERREACH`.
+
+### Documentation updated
+
+- `05_tests/coverage-map.tsv` — 28 new claims; TL-07…TL-11 and TL-13 newly covered, TL-02/03/04/06 deepened, LD-20 gains its end-to-end claim
+- `01_requirements/TRACEABILITY_MATRIX.md` — full TL detail block added (was absent entirely), LD-19…LD-22 rows added, TL 6/14 → 12/14, TL row added to Test Type Coverage
+- `atlas/components.md` — test surface noted on Track Repository and Track Library UI
+- `atlas/failure-patterns.md` — `FP-SILENT-DEGRADATION`, `FP-DOUBLE-OVERREACH`
+- `app/build.gradle.kts` — L1 lap fixtures shared into `androidTest` assets so the two levels cannot drift
+
+### Validation
+
+**L1 305/305. L2 93/93** (was 64). Report: **398/398 executed, 398 passed, 0 failed, 0 never ran.**
+
+---
+
+## [2026-09-21] LD-22 Rework — Lap Plausibility by Surveyed Distance
+
+**Codebase Version:** v3.0-track-library (follow-up)
+**Trigger:** A review question from the user — *"what happens if a very slow driver uses our
+app?"* — asked while confirming Baltar's lap-time envelope. The answer exposed a defect in the
+incident 15 fix itself, and the user's own suggestion ("maybe keep the distance into
+consideration") pointed at the remedy.
+
+### The defect
+
+LD-22 as shipped discarded a whole lap set if any lap exceeded the catalogue's slowest lap ×
+1.5. Baltar's entry declared 90 s, so the cutoff sat at 135 s. A timid weekend driver lapping
+in 150 s would have had **every lap discarded and been shown nothing at all** — the guard
+written to prevent incident 15 reproducing incident 15's symptom, for the opposite reason.
+
+Two things were wrong with it. It measured detected laps against a **typed-in estimate**, when
+the entry also carries a **surveyed** lap length that could carry the decision instead. And it
+failed the whole set on a **single** outlier, when a single long lap among normal ones is a
+real lap — a spin, an off, a slow kart ahead — and is often the lap the driver most wants to
+see.
+
+### The change
+
+| Before | After |
+|--------|-------|
+| Trigger: any lap > `slowestLapMs × 1.5` | Trigger: **every** lap implies < 5 m/s over the surveyed `lengthM` |
+| Yardstick: declared lap envelope (estimated) | Yardstick: surveyed lap length (measured) |
+| Applies to: circuits declaring a slowest lap | Applies to: circuits declaring a surveyed length |
+| A single outlier erased the session | A single outlier survives; only a wholly incredible set is discarded |
+| `LAP_TIME_IMPLAUSIBLE_FACTOR = 1.5` | `MIN_PLAUSIBLE_LAP_SPEED_MS = 5.0` |
+
+At Baltar's 1020 m the new floor admits laps out to **204 s**. Incident 15's two false laps
+average **1.07** and **2.52 m/s** and remain caught.
+
+Baltar's envelope was corrected at the same time, from the user's own knowledge of the circuit:
+`fastestLapMs` 70 000 → **40 000**, `slowestLapMs` 120 000. The old fastest figure was also a
+live bug: LD-21 sets the minimum gap between crossings at 80 % of it, so 70 s gave a 56 s guard
+that **would have refused a genuine 40 s lap**. It is now 32 s. `slowestLapMs` survives as a
+display-only field — the expected lap window on the confirm screen (TL-06).
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| SRS_v1.md | ✅ Updated | LD-22 rewritten; TL-04 notes `slowestLapMs` is advisory; two new remarks on LD-22 |
+| coverage-map.tsv | ✅ Updated | +4 claims (3 × LD-22, 1 × TL-04) |
+| components.md | ✅ Updated | `TrackPriors` gains `lengthM`; priors and constants tables rewritten; catalogue field table split |
+| flows.md | ✅ Updated | Detection constants table: `LAP_TIME_IMPLAUSIBLE_FACTOR` → `MIN_PLAUSIBLE_LAP_SPEED_MS` |
+| failure-patterns.md | ✅ Updated | `FP-PEDESTRIAN-REFERENCE` fix table row rewritten |
+| USER_MANUAL.md | ⬜ No change | No user-visible behaviour changed; the expected lap window shown for Baltar is now correct because the catalogue is, not because the manual is |
+| Incident 15 record | ✅ Updated | Fix table row rewritten, 3 evidence rows added, follow-up note appended |
+
+### Code changed
+
+| File | Change |
+|------|--------|
+| `LocalLapDetector.kt` | `LAP_TIME_IMPLAUSIBLE_FACTOR` removed, `MIN_PLAUSIBLE_LAP_SPEED_MS` added; `TrackPriors.lengthM` added; `lapsArePlausible()` rewritten; discard log now reports the implied speed rather than the envelope |
+| `Track.kt` | `priors()` passes `lengthM` |
+| `assets/tracks/tracks.json` | Baltar envelope corrected; `centreline.surveyedBy` = "Emidio Costa" |
+| `LapDetectionIncident15Test.kt` | 2 tests reworked, 3 added |
+| `BundledTrackCatalogTest.kt` | 2 tests reworked, 1 added — a length-vs-envelope cross-check over **every** catalogue entry |
+
+### The new cross-check, and why it is worth having
+
+`everyCircuitsLengthAndLapEnvelopeImplyAPlausibleSpeed` asserts that every shipped circuit's
+declared length and lap envelope together imply an average speed inside 18–126 km/h. Any single
+field can look reasonable alone; it is the combination that exposes a length in the wrong unit,
+an envelope copied from a different circuit, or — the easiest mistake to make when adding the
+second track — a lap time entered in seconds where the field wants milliseconds. That last one
+would put the implied speed three orders of magnitude out, and nothing else in the suite would
+notice.
+
+### Validation
+
+- L1: **305/305 pass** (301 before, +4 new).
+- L2: 64/64 pass — unaffected by this change, re-run to confirm.
+- HTML report regenerated; all LD-22 and TL-04 coverage claims resolve **PASS**.
+
+### Open items
+
+None. The surveyor name and lap envelope questions raised by the previous entry are both closed.
+
+---
+
+## [2026-09-21] Track Library and Incident 15 Lap Detection Fix
+
+**Codebase Version:** v3.0-track-library
+**Trigger:** Incident 15 — a 12-lap session at Kartódromo de Baltar reported as two "laps"
+of 15m54s and 6m44s. The root-cause fix grew into a track library feature at the user's
+direction: pre-defined circuits bundled with the app, a session-start fork, saveable
+circuits, and lap detection informed by per-circuit prior knowledge.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| SRS_v1.md | ✅ Updated | +82 lines; new §4a, 19 new requirement IDs, OOS-05 reclassified, data model |
+| TRACEABILITY_MATRIX.md | ✅ Updated | +15/−8; new TL category, LD and AS counts revised |
+| coverage-map.tsv | ✅ Updated | +20 claims across LD-19…22, AS-18, TL-01…06 |
+| components.md | ✅ Updated | +208 lines; 3 new components, Local Lap Detector extended |
+| flows.md | ✅ Updated | +140 lines; 1 new flow, detection flow rewritten |
+| failure-patterns.md | ✅ Updated | +156 lines; 2 new patterns, priority matrix, correlations |
+| system.md | ✅ Updated | +9/−4; schema v5, migration strategy, new UI and repository entries |
+| USER_MANUAL.md | ✅ Updated | +151/−13; new §3.1, §3.2 renumbered, 2 troubleshooting entries, 4 FAQ entries |
+| 30_TRACK_SETUP_TESTS.md | ✅ Updated | +67/−12; TS-00f added, TS-01 amended |
+| 50_LAP_DETECTION_TESTS.md | ✅ Updated | +75; LD-CROSS-08 and LD-CAT-01…03 added |
+| Incident 15 record | ✅ Updated | Root cause, fix, verification and closure appended |
+
+### New Requirement IDs
+
+| Range | Covers |
+|-------|--------|
+| **TL-01 … TL-14** | Track library: bundled catalogue, session-start fork, confirm screen and its GPS gate, save/rename/delete, per-dataset provenance, id-based resolution |
+| **LD-19 … LD-22** | Minimum crossing speed, catalogued heading prior, lap-time-derived minimum gap, implausible lap-set discard |
+| **AS-18** | Centreline corridor filter for session statistics and the speed trace |
+
+**Reclassified:** OOS-05 ("Track map library or pre-loaded track database") struck from
+out-of-scope and scoped down — the app ships circuits it has measured data for, not a general
+track database, and AS-04's no-map-SDK rule is untouched.
+
+### Detailed Changes
+
+#### 📁 01_requirements/DrivingCoach_SRS_v1.md
+
+**Added §4a — Track library — pre-defined and saved circuits** (TL-01 … TL-14), with a remark
+on why provenance is recorded per dataset rather than per circuit.
+
+```diff
++| TL-05 | Provenance shall be recorded **per dataset, not per circuit**. …
++| TL-07 | The start/finish line of a selected circuit shall be resolved from the repository by
++         identifier at the moment recording starts. It shall not be passed between screens as a
++         coordinate, because navigation arguments are 32-bit floats …
+```
+
+**Added to §8 Lap detection:**
+
+```diff
++| LD-19 | A candidate crossing made below 4 m/s shall be rejected and recorded as `TOO_SLOW`. …
++| LD-20 | Where the session was recorded against a circuit from the track library (§4a), the
++         circuit's direction of travel shall be used as the reference heading for the guard in LD-14 …
++| LD-21 | … minimum lap time guard … raised to 80 % of [the catalogued fastest lap].
++| LD-22 | … a set of detected laps in which any lap exceeds 150 % of [the catalogued slowest]
++         shall be discarded in its entirety rather than presented.
+```
+
+Three new remarks: why 4 m/s is not a tuned number; why a catalogued heading is worth more than a
+measured one; and **why the fix is not conditional on the library** — the speed gate alone
+recovers all 12 laps against the driver's own mis-captured line.
+
+**Added §14.1:** `TrackEntity`, and `trackId` on `SessionEntity`.
+
+#### 📁 atlas/components.md
+
+**Added three components:**
+
+| Component | Criticality |
+|-----------|-------------|
+| `BundledTrackCatalog` | LOW — failure degrades to pre-library behaviour |
+| `TrackRepository` | MEDIUM — SELECT TRACK unavailable; NEW CIRCUIT unaffected |
+| Track Library UI (`ui/tracklist`) | LOW — UI only |
+
+**Extended Local Lap Detector** with "Why a pass made at walking pace is refused (since Incident
+15)" and "Track priors", plus five new constants and three new diagnostic signals.
+
+```diff
++| `MIN_CROSSING_SPEED_MS` | 4 | … In the Incident 15 session the queue never exceeded 3 m/s and
++  no racing pass fell below 5.9 m/s, so any threshold between them works and none is tuned |
++| `LAP_TIME_PRIOR_GRACE` | 0.8 | …
++| `LAP_TIME_IMPLAUSIBLE_FACTOR` | 1.5 | …
+```
+
+#### 📁 atlas/flows.md
+
+**Added flow: Session Start Fork (SELECT TRACK / NEW CIRCUIT)** — both branches, the
+save-circuit prompt, the confirm-screen GPS gate, and why the start line is resolved by id
+rather than carried as a navigation argument (≈0.55 m of float quantisation at latitude 41°).
+
+**Rewrote the Local Lap Detection execution path** as the three-stage attempt structure:
+seeded heading → unseeded retry → anchor projection.
+
+#### 📁 atlas/failure-patterns.md
+
+**Added `FP-PEDESTRIAN-REFERENCE`** — the generalisation worth keeping: *a guard that derives
+its reference from the data it is guarding cannot protect the first sample.* Includes the
+measured signal table (2.9 m/s vs 5.9 m/s; 272° vs 331–343°; 10 of 12 laps rejected) and a
+stated open risk: a lap legitimately completed below 4 m/s would now be refused.
+
+**Added `FP-DESTRUCTIVE-FALLBACK-MASK`** — `fallbackToDestructiveMigration()` had been silently
+wiping user databases to hide a `MIGRATION_1_2` that could never succeed, because schema
+`1.json` already contained the columns it adds. *A fallback that succeeds at the cost of the
+data is not a fallback; it is the failure, executed quietly.*
+
+#### 📁 atlas/system.md
+
+```diff
+-| Database | Room 2.6.1 | Schema version 2 |
+-| Migration Strategy | `MIGRATION_1_2` + `fallbackToDestructiveMigration()` | …
++| Database | Room 2.6.1 | Schema version 5 |
++| Migration Strategy | `MIGRATION_1_2` … `MIGRATION_4_5`, **no destructive fallback** | …
+```
+
+#### 📁 docs/USER_MANUAL.md
+
+**Added §3.1 "Choosing Your Circuit"**, renumbering the former 3.1 → 3.2 and 3.2 → 3.3. Explains
+the fork, what ships with the app, and the three things a known circuit gives the app that a
+captured line cannot.
+
+**Added to §3.2:** the "Save this circuit?" step (SAVE & START / JUST START).
+
+**Added troubleshooting:** *"My Lap Times Are in Minutes, Not Seconds"* and *"The Circuit List
+Is Empty"*.
+
+**Added FAQ:** which circuits ship with the app; why SELECT TRACK over capturing again; editing
+saved circuits; why START is greyed out on the confirm screen.
+
+### What did **not** change
+
+- **NEW CIRCUIT is byte-for-byte the old flow.** TS-01 … TS-23 are unamended; Track Setup gained
+  only a save prompt after START RECORDING.
+- **The corridor filter is not applied to lap detection, the track map, or corner detection.**
+  Laps are decided by crossings; filtering samples near the start/finish would change lap times
+  in order to tidy a chart. Stated explicitly in AS-18.
+- **AS-04 stands** — no map SDK, no tiles, no network. A bundled centreline is measured data, not
+  a map service.
+- **No egress.** The catalogue is a build asset, never fetched. NF-20 is unaffected.
+
+### Open items for the user
+
+1. **`surveyedBy` is deliberately empty** in `tracks.json`. The Baltar centreline was walked by
+   the user, but the app does not know their name and inventing one would be a false provenance
+   claim. Say the word and it gets filled in.
+2. **The Baltar lap envelope is 70–90 s.** Measured laps in the fixture were 72.5–84.3 s. Confirm
+   this range is right before a faster driver is refused their own lap.
+
+### Files Modified
+
+```
+M  01_requirements/DrivingCoach_SRS_v1.md                        (+82, -5)
+M  01_requirements/TRACEABILITY_MATRIX.md                        (+15, -8)
+M  05_tests/coverage-map.tsv                                     (+20, -0)
+M  05_tests/L4_SYS5_acceptance/30_TRACK_SETUP_TESTS.md           (+67, -12)
+M  05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md         (+75, -2)
+M  atlas/components.md                                           (+208, -4)
+M  atlas/flows.md                                                (+140, -12)
+M  atlas/failure-patterns.md                                     (+156, -2)
+M  atlas/system.md                                               (+9, -4)
+M  docs/USER_MANUAL.md                                           (+151, -13)
+M  03_incidents/15_Baltar_session_track_detection/15_…detection.md (+95, -0)
+```
+
+### Recommendations
+
+- [ ] Fill in or formally waive `centrelineSurveyedBy` for Baltar
+- [ ] Confirm the 70–90 s lap envelope
+- [ ] Run LD-CAT-01 at Baltar on the next track day — it is the only L4 evidence that the
+      catalogued circuit works end to end on real hardware
+- [ ] Consider whether `MIN_CROSSING_SPEED_MS` should become circuit-specific if a venue is
+      found where laps are legitimately completed below 4 m/s
+
+---
+
+## [2026-09-20] Home GPS readiness message removed
+
+**Codebase Version:** v2.99
+**Trigger:** The Home screen narrated a wait the user can neither act on nor
+shorten. On the one screen where nothing depends on GPS readiness, an amber
+"GPS · acquiring…" chip reads as a fault rather than as progress.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `HomeFragment.kt` | ✅ Updated | −52 lines (chip rendering, `setChipColor`, 6 imports) |
+| `fragment_home.xml` | ✅ Updated | −16 lines (`gpsReadinessChip`) |
+| `strings.xml` | ✅ Updated | −6 lines (4 `gps_chip_*` strings) |
+| `HomeGpsChipTest.kt` | ✅ Renamed | → `HomeGpsWarmUpTest.kt`; −3 chip tests, +1 warm-up-is-silent test |
+| SRS_v1.md | ✅ Updated | TS-17 amended (no new IDs) |
+| TRACEABILITY_MATRIX.md | ✅ Updated | TS-16 / TS-17 / TS-18 test references |
+| coverage-map.tsv | ✅ Updated | Claim ledger rewired to `HomeGpsWarmUpTest` / `WarmUpHandoverTest` |
+| components.md | ✅ Updated | GPS Warm-Up: purpose, outputs, failure modes, signals |
+| flows.md | ✅ Updated | GPS Warm-Up: rendering branch, failure points, async boundaries |
+| USER_MANUAL.md | ✅ Updated | §3.0 rewritten; §3.1 and §7 references |
+| 30_TRACK_SETUP_TESTS.md | ✅ Updated | TS-00 and TS-00b rewritten for a silent Home |
+
+### What did **not** change
+
+Acquisition behaviour is untouched. `LocationWarmUp`, `WarmUpForegroundBinder`,
+`FixFreshness`, `WarmUpTimings`, the TTFF metrics and
+`HomeFragment.onStart() → startGpsWarmUp()` are all byte-for-byte identical. The
+cold fix is still paid for on Home; the user is simply no longer told about it.
+`HomeViewModel.gpsReadiness` was deliberately **kept** — the request was to hide
+the message, not to alter behaviour — so the L1 suite needed no changes at all.
+
+Track Setup (`Acquiring GPS...`, `Getting a current GPS fix...`) and the
+Recording screen (`ACQUIRING GPS...`) are unchanged. Readiness is still reported
+on Track Setup, where it gates CAPTURE and the user can act on it.
+
+### Requirement change
+
+**TS-17** — amended, not deleted. The chip clause is gone; the load-bearing half,
+*"readiness shall persist across the navigation from Home to Track Setup"*, is
+retained and still tested by `WarmUpHandoverTest`. TS-16, TS-18, TS-19 and TS-20
+are unaffected.
+
+### Detailed Changes
+
+#### 📁 app/src/main/java/com/drivingcoach/ui/home/HomeFragment.kt
+
+```diff
+-                launch {
+-                    viewModel.gpsReadiness.collect { readiness ->
+-                        updateGpsChip(readiness)
+-                    }
+-                }
+-    private fun updateGpsChip(readiness: GpsReadiness) { … }
+-    private fun TextView.setChipColor(@ColorRes colorRes: Int) { … }
+```
+
+#### 📁 app/src/main/res/values/strings.xml
+
+```diff
+-    <!-- GPS readiness (Home hero) -->
+-    <string name="gps_chip_acquiring">GPS · acquiring…</string>
+-    <string name="gps_chip_ready">GPS ready · ±%1$.0f m</string>
+-    <string name="gps_chip_acquiring_description">…</string>
+-    <string name="gps_chip_ready_description">…</string>
+```
+
+#### 📁 app/src/androidTest/…/HomeGpsWarmUpTest.kt (renamed)
+
+The file carried four **Incident 12 regression guards** alongside the three chip
+tests. Deleting it would have silently dropped the only L2 cover for the defect
+that discarded the user's warm fix at the track edge. It was renamed instead;
+those four tests are untouched.
+
+```diff
+- fun chipReportsAcquiringUntilAFixIsAccurateEnough()
+- fun chipReportsReadyOnceTheFixIsUsable()
+- fun readinessDegradesIfAccuracyWorsens()
++ fun warmUpRunsWithoutTellingTheUserAboutIt()
+```
+
+The new test asserts **both** halves over a settle window: the subscription is
+held *and* no visible `TextView` on Home contains "GPS". Either half alone would
+be hollow — a bare "nothing is displayed" assertion passes just as happily on a
+Home screen that failed to inflate (FP-HOLLOW-TEST).
+
+#### 📁 docs/USER_MANUAL.md
+
+§3.0 previously instructed users to *"wait for the 🟢 GPS ready badge on Home
+before walking out"* — advice that could no longer be followed. Rewritten around
+the effect rather than the indicator: open the app early, the search happens
+quietly, Track Setup is ready on arrival. The badge table was removed and the
+three cross-references (§3.0, §3.1 step 1, §7 step 6) updated.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| Compile (`compileDebugKotlin`, `compileDebugAndroidTestKotlin`) | ✅ PASS |
+| L1 SWE.4 unit | ✅ 283/283 |
+| L2 SWE.5 integration | ✅ 58/58 (was 60: −3 chip, +1 warm-up) |
+
+### Files Modified
+
+```
+M  app/src/main/java/com/drivingcoach/ui/home/HomeFragment.kt   (-52)
+M  app/src/main/res/layout/fragment_home.xml                    (-16)
+M  app/src/main/res/values/strings.xml                          (-6)
+R  app/src/androidTest/.../HomeGpsChipTest.kt
+     → app/src/androidTest/.../HomeGpsWarmUpTest.kt             (+43, -54)
+M  01_requirements/DrivingCoach_SRS_v1.md                       (+2, -2)
+M  01_requirements/TRACEABILITY_MATRIX.md                       (+3, -3)
+M  atlas/components.md                                          (+20, -7)
+M  atlas/flows.md                                               (+7, -8)
+M  docs/USER_MANUAL.md                                          (+16, -17)
+M  05_tests/L2_SWE5_integration/README.md                       (+1, -1)
+M  05_tests/L4_SYS5_acceptance/30_TRACK_SETUP_TESTS.md          (+19, -11)
+M  05_tests/coverage-map.tsv                                    (+4, -4)
+```
+
+### Recommendations
+
+- [ ] Home now has **no** in-app sign that location is being used. The Android 12+
+      OS location indicator is the only remaining cue; `WarmUpForegroundBinder`
+      still releases the receiver when the app leaves the foreground, so the
+      privacy bound itself is intact.
+- [ ] Warm-up failures are now invisible on Home by design. Diagnose from
+      **Profile → About** timings and from Track Setup's status line.
+
+---
+
 ## [2026-09-17] Make "collects no user data" true by construction
 
 **Codebase Version:** v2.98
