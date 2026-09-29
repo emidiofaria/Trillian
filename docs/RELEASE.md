@@ -67,6 +67,35 @@ Builds `bundleRelease`, signed with the upload key.
 These run **before** the build, so a refusal costs seconds rather than a full
 release build, and leaves the tree exactly as it found it.
 
+### Built-in circuits gate the channel
+
+A release carries the circuits in `assets/tracks/tracks.json`, and a circuit is a
+set of claims about a real place. The claims are graded, and the grade decides how
+far the build may travel. This is a judgement the script cannot make for you.
+
+| Tier | Evidence held | Channel |
+|------|---------------|---------|
+| **A** | Start/finish line, heading, lap distance, lap envelope | Internal testing only |
+| **B** | + walked centreline | Internal testing only |
+| **C** | + an independent recorded session that predates the catalogue | Internal testing only |
+| **D** | + an L4 acceptance run driven at the circuit on the shipped build | Eligible for wider release |
+
+**Tiers A–C are all internal-only, and C is not nearly D.** Two datasets that agree
+are still not a measurement taken at racing speed. Corroboration between a walk and
+a recording is meaningful only because the recording predates the catalogue and so
+cannot have been fitted to it — and even then it is evidence, not validation. Only
+a lap driven at the circuit moves a track to D.
+
+The rule for a release is the **lowest** tier among its built-in circuits, not the
+highest. One tier-C circuit holds the whole build to the internal channel.
+
+Each circuit's tier, the evidence behind it, and what remains outstanding are recorded
+per circuit in
+[`01_requirements/ANNEX_A_circuit_evidence.md`](../01_requirements/ANNEX_A_circuit_evidence.md),
+§A.2. That register is the authority; it is tied to the shipped catalogue by TL-18, so a
+circuit cannot be added without its tier being declared. Read it before choosing a channel
+— this file tells you what the tiers mean, not which tier you are at.
+
 ---
 
 ## Signing

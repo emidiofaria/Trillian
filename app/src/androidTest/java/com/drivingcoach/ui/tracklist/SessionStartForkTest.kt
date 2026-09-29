@@ -17,6 +17,7 @@ import com.drivingcoach.R
 import com.drivingcoach.data.location.ApplicationScope
 import com.drivingcoach.data.location.LocationUpdates
 import com.drivingcoach.data.location.WarmUpTimings
+import com.drivingcoach.data.track.TrackRepository
 import com.drivingcoach.di.DataStoreModule
 import com.drivingcoach.di.IoDispatcher
 import com.drivingcoach.di.LocationModule
@@ -38,6 +39,8 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -122,6 +125,9 @@ class SessionStartForkTest {
 
     @Inject
     lateinit var locationUpdates: ScriptedLocationUpdates
+
+    @Inject
+    lateinit var trackRepository: TrackRepository
 
     private lateinit var scenario: ActivityScenario<MainActivity>
 
@@ -230,7 +236,19 @@ class SessionStartForkTest {
         val trackId = currentArgs()?.getString("trackId")
         assertNotNull("the confirm screen must know which circuit it is confirming", trackId)
         assertTrue("and it must not be blank, which the recording screen reads as absent", trackId!!.isNotBlank())
-        assertEquals("the bundled circuit is the one on the list", "baltar", trackId)
+
+        // This used to assert "baltar" outright, which was true only while the
+        // catalogue held one circuit. It now holds two, and which one sorts first is
+        // an ordering detail this test has no stake in - what it is here to check is
+        // that the id of the circuit the driver tapped survives the navigation.
+        val bundled = runBlocking { trackRepository.observeTracks().first() }
+            .filter { it.isBundled }
+            .map { it.id }
+        assertTrue(
+            "the id carried across must be a circuit from the catalogue, got '$trackId' " +
+                "against $bundled",
+            trackId in bundled
+        )
     }
 
     private fun navigate(destination: Int, args: android.os.Bundle) {

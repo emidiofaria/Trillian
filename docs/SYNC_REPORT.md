@@ -4,6 +4,231 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-09-29] A Lost Lap Is Now Said Out Loud — LD-23, and Cabo do Mundo's Fast End
+
+**Codebase Version:** v3.01 (one new production class, one catalogue value, +14 L1 tests)
+**Trigger:** A driver noticed the Cabo do Mundo confirm screen promising laps of 1:00–2:00.
+Checking it found the fast end had been set from the best lap of one recorded session — which
+bounds what *has* been driven, not what *can* be — and that the driver in that session was an
+average one. Following the number into the detector found the larger problem: when the derived
+floor refuses a crossing, two laps are silently presented as one, and nothing in the app could
+tell.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `app/src/main/java/com/drivingcoach/lap/MergedLapCaveat.kt` | ✅ Created | Reads the rejection log and qualifies a lap count that may contain merged laps. Speaks only when a `TOO_SOON` landed ≥ 50 % of the way to the floor |
+| `app/src/main/java/com/drivingcoach/ui/recording/RecordingViewModel.kt` | ✅ Updated | The `Success` branch reported `"N laps detected"` unconditionally, discarding every rejection the detector recorded the moment one lap survived. Now appends the caveat |
+| `app/src/main/assets/tracks/tracks.json` | ✅ Updated | `cabo_do_mundo.fastestLapMs` 60000 → 50000, on the operator's figure for a quick pilot. Derived floor 48 s → 40 s |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | LD-23 added, plus a remark on LD-21/LD-23 explaining why LD-22 cannot catch this failure |
+| `01_requirements/ANNEX_A_circuit_evidence.md` | ✅ Updated | §A.1 envelope 60–120 s → 50–120 s. §A.2 gains a note that an envelope is corroborated differently from a heading or a length — a session can falsify one but not establish one. §A.3 records the 60 s figure as a methodological error rather than overwriting it |
+| `01_requirements/TRACEABILITY_MATRIX.md` | ✅ Updated | LD-23 row; LD count 22 → 23, covered 8 → 9 |
+| `05_tests/coverage-map.tsv` | ✅ Updated | +6 claims for LD-23, all verified backed by passing tests |
+| `atlas/components.md` | ✅ Updated | New `MergedLapCaveat` section; `fastestLapMs` row now records that it serves as both a display label and a safety gate; new passage on what a too-slow figure costs |
+| `atlas/failure-patterns.md` | ✅ Updated | New pattern `FP-SILENT-GUARD-LOSS` |
+| `docs/USER_MANUAL.md` | ✅ Updated | New troubleshooting section "Fewer Laps Than I Drove, Each About Twice as Long", mirroring the existing double-count entry |
+| `app/src/test/.../MergedLapCaveatTest.kt` | ✅ Created | 12 tests. Three mutations run against the implementation, each caught by the intended test |
+| `app/src/test/.../CaboDoMundoSurveyCorroborationTest.kt` | ✅ Updated | New gate test replaying one session against both floors; header table and envelope rationale corrected |
+| `app/src/test/.../CaboDoMundoCatalogueTest.kt` | ✅ Updated | `assertEquals(120_000L, slowestLapMs)` — a restatement of the catalogue that would have passed on any number — replaced with bounds that can fail, both mutation-verified |
+
+### What the measurement changed about the plan
+
+The concern behind lowering the floor was that Cabo do Mundo's return section passes 18.4 m from
+the start point, inside the corridor's error budget, and is driven late in the lap — so the 48 s
+floor might have been the only thing holding back a phantom lap. That was reasoning from
+geometry, and it was wrong. Replaying the session at 48 s, 40 s and 20 s floors produces the
+**same eight laps** every time: the return section never offers a candidate crossing at all,
+being filtered on geometry and direction long before timing is consulted. The time floor does no
+work whatsoever on this session. Recorded in Annex A §A.3 so the next person does not re-derive
+the wrong answer.
+
+### The part worth keeping
+
+LD-22 exists to stop the app stating a wrong answer confidently, and this failure walked past it
+untouched. LD-22 asks whether a lap *could have been driven*; a merged lap could have been. No
+tuning of a plausibility check separates the two, because they are identical in the evidence it
+looks at. **When a guard's refusal can change the output, the refusal is data about the output
+and has to travel with it.**
+
+### Known debt, logged not actioned
+
+- `fastestLapMs` is both a display label and a safety gate. Splitting them is the structurally
+  right answer and touches catalogue, schema, tests and docs. Noted in `atlas/components.md`.
+- `slowestLapMs` (120 s) promises a window narrower than LD-22 actually enforces (165.2 s). The
+  new test pins the band; the wording on the confirm screen was left alone.
+
+---
+
+## [2026-09-29] Circuit Evidence Moved Out of the Requirements — Annex A
+
+**Codebase Version:** v3.0 (documentation + one new L1 test; no production code changed)
+**Trigger:** The SRS justified its track-library requirements by naming the circuits they came
+from, with each circuit's headings, distances and margins written into the prose. That reads
+well at two circuits and does not survive twenty. Requirements are now venue-agnostic and
+per-circuit evidence lives in a register designed to scale past a hundred entries.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `01_requirements/ANNEX_A_circuit_evidence.md` | ✅ Created | New register: §A.1 catalogue claims, §A.2 evidence and tier, §A.3 exception notes. Tabular by design — a new circuit costs a row, not a section |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | TL-17 and TL-18 added. Five remark blocks in §4a and §8 split: the principle stays, the instance moves to Annex A. **Zero circuit names remain** |
+| `01_requirements/TRACEABILITY_MATRIX.md` | ✅ Updated | TL-15…TL-18 added (TL-15/TL-16 were missing from the previous sync); TL count 14 → 18 |
+| `05_tests/coverage-map.tsv` | ✅ Updated | +10 claims for TL-15…TL-18 |
+| `atlas/components.md` | ✅ Updated | Two per-circuit validation sections replaced by one generic "How a catalogue entry is validated". The *method* and its traps stay in Atlas; the *numbers* move to Annex A |
+| `docs/RELEASE.md` | ✅ Updated | Hardcoded per-circuit tier table replaced by a link to Annex A §A.2. Tier definitions unchanged — they were already venue-agnostic |
+| `docs/USER_MANUAL.md` | ✅ Updated | Circuit enumeration replaced by a pointer to the in-app SELECT TRACK list, which cannot go stale. Incident narrative retained |
+| `app/src/test/.../CircuitEvidenceAnnexTest.kt` | ✅ Created | 4 tests enforcing TL-17 and TL-18 |
+| `app/build.gradle.kts` | ✅ Updated | `01_requirements` declared as a test input (`FP-UNDECLARED-TEST-INPUT`) |
+
+### What moved, and what deliberately did not
+
+Incident evidence stays in the SRS. There will not be a hundred incident 15s, and the incident
+is the reason several of these requirements exist at all — relocating it would leave thresholds
+stated without the observation that produced them. What moved is evidence about a *place*:
+headings, surveyed lengths, corridor margins, LD-22 floors, corroborating sessions, tiers.
+
+The distinction drove the work sentence by sentence rather than block by block. Each remark
+mixed a timeless rule with a specific illustration, and only the illustration moved. The rule
+that "a wrong heading rejects laps that happened, silently" is now stated generally; the 3.4 m
+margin that makes it load-bearing on one circuit is a row in the annex.
+
+### Why TL-18 is the half that matters
+
+TL-17 forbids a requirement from naming a circuit. Its test passes today and always did — no
+requirement row ever named one; the leakage was entirely in the explanatory prose. It is a
+regression guard on a correct state, and is honest about being that.
+
+TL-18 is the load-bearing one. It ties the annex to the shipped catalogue in both directions: a
+circuit added without evidence fails the build, and evidence left behind by a removed circuit
+fails it too. A register nobody is forced to update goes stale silently, and stale evidence is
+worse than none because it is still believed.
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| L1 suite | **329 tests, 0 failures, 0 skipped** (325 → 329) |
+| Mutation test — circuit name inserted into a requirement row | Caught by `noRequirementNamesASpecificCircuit` |
+| Mutation test — circuit deleted from Annex A | Caught by `everyShippedCircuitHasAnAnnexEntry` |
+| Mutation test — unshipped circuit added to Annex A | Caught by `annexDescribesNoCircuitThatIsNotShipped` |
+| Mutation test — Annex A deleted | Caught by `bothRequirementsDocumentsArePresent` |
+| Gradle input wiring | Proven by the first mutation: an SRS edit re-runs the suite rather than returning UP-TO-DATE |
+| L2 | Not run — documentation plus one JVM test; no runtime surface touched |
+
+### Follow-ups
+
+- Annex A is hand-maintained. It is structured so it could later be generated from
+  `tracks.json` plus test results, which would remove the last route by which it can drift.
+  TL-18 bounds the damage until then.
+- `docs/RELEASE.md` had the same defect as the SRS and was fixed in the same pass. Worth
+  checking any future per-circuit table against TL-17's reasoning before it is written.
+
+---
+
+## [2026-09-29] Second Built-in Circuit — Cabo do Mundo
+
+**Codebase Version:** v3.0 (data + tests; no production code changed)
+**Trigger:** Adding Cabo do Mundo (Leça da Palmeira, Matosinhos) to the bundled track
+catalogue — the first addition since Baltar, and the first to test whether the track library
+generalises past a single entry.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `assets/tracks/tracks.json` | ✅ Updated | +662 lines (1 circuit, 159 centreline points). Baltar byte-identical |
+| `atlas/components.md` | ✅ Updated | +56 lines — new circuit entry, the 18.4 m corridor margin, the `DETECTION_HALF_WIDTH_M` note |
+| `atlas/failure-patterns.md` | ✅ Updated | +78 lines (1 new pattern, FP-REIMPLEMENTED-GEOMETRY) |
+| `atlas/flows.md` | ➖ No change | Data addition only; no flow changed |
+| `atlas/system.md` | ➖ No change | No dependency, service or architecture change |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +2 requirements (TL-15, TL-16), 4 remarks extended |
+| `docs/USER_MANUAL.md` | ✅ Updated | §3.1 circuit list, FAQ, troubleshooting de-hardcoded |
+| L1 tests | ✅ Added | 2 classes, 15 tests |
+| L2 tests | ✅ Added | 1 class, 2 tests; 1 existing test generalised |
+| `05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md` | ✅ Updated | +1 acceptance test (LD-CAT-04) |
+| `docs/RELEASE.md` | ✅ Updated | +1 section — evidence tiers gate the release channel |
+
+### New Requirement IDs
+
+- **TL-15** — where a recorded session exists, a circuit's heading, length and lap envelope
+  shall be corroborated against it before shipping, and the corroboration held by a test
+- **TL-16** — a bundled circuit shall declare its lap length and lap envelope; an omission
+  shall fail the test suite rather than fall back to a default
+
+### What the circuit carries
+
+| Field | Value | Evidence |
+|---|---|---|
+| Start/finish | 7.01 m, `SURVEYED_ON_FOOT` | Two surveyed endpoints, 89.3° across travel |
+| `travelHeadingDeg` | 59.8° | 18.1 m baseline; 1.9° from the centreline's own direction |
+| `lengthM` | 826 m | 159-point walked ring, closes 0.14 m from the start/finish |
+| `cornerCount` | 14 | Driver's count |
+| Lap envelope | 60 s / 120 s | Fastest corrected from a drafted 40 s against measured telemetry |
+
+**Evidence tier: C** — surveyed geometry plus an independent recorded session. Internal
+testing channel only. Tier D needs an L4 lap driven at the circuit with the shipped build.
+
+### Three findings worth carrying forward
+
+1. **`fastestLapMs` was wrong and the fix is invisible.** Drafted at 40 s (copied from Baltar,
+   194 m longer); the real best lap is 63.4 s and 40 s would need 74.3 km/h against a 72.5 km/h
+   peak. Corrected to 60 s — which changes **no observable behaviour** on this circuit, because
+   LD-21's derived floor stays below the real gap between crossings either way. Recorded as a
+   truthfulness fix, not a detection fix.
+
+2. **A recommendation to widen the start line was withdrawn.** Hand-rolled crossing geometry
+   suggested 7 of 10 laps would be missed by a 7.01 m line and proposed widening it to 16 m
+   with `DERIVED_FROM_LAPS` provenance. A calibration probe showed the 7.01 m and 16.06 m lines
+   give **byte-identical** output: the detector never uses the line's length, only its midpoint
+   and a fixed 15 m corridor. The surveyed line ships unchanged. Written up as
+   **FP-REIMPLEMENTED-GEOMETRY**.
+
+3. **A teardown bug in the new L2 class ended instrumentation runs early.**
+   `TelemetryForegroundService.stopRecording` sends its command via `startService`, which
+   *creates* the service if it is not running — so stopping a service that was never started
+   crashed the test process after the Hilt component had gone. It did not report as a failed
+   test; the run simply ended, leaving later classes silently unreported. Baltar's equivalent
+   class never met it because it holds a single test that always records.
+
+### The driver's start line was in the pit lane
+
+The corroborating session's own `session.json` carries a start line 7.2 m off the centreline
+and 55 m short of the real start/finish, with the kart stationary on it for the first 76 s.
+It is preserved unmodified in the fixture — a fixture that has been tidied up is no longer
+evidence — and it makes the catalogued and recorded lines genuinely independent. Timed 57 m
+apart around the lap, they agree on eight lap times to within a third of a second.
+
+### Files Modified
+
+```
+M  app/src/main/assets/tracks/tracks.json                                  (+662)
+M  01_requirements/DrivingCoach_SRS_v1.md                                  (+51)
+M  atlas/components.md                                                     (+56)
+M  atlas/failure-patterns.md                                               (+78)
+M  docs/USER_MANUAL.md                                                     (+26, -6)
+M  docs/RELEASE.md                                                         (+30)
+M  05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md                   (+42)
+M  app/src/test/.../BundledTrackCatalogTest.kt                             (+22, -4)
+M  app/src/androidTest/.../SessionStartForkTest.kt                         (+18, -2)
+A  app/src/test/.../CaboDoMundoCatalogueTest.kt                            (7 tests)
+A  app/src/test/.../CaboDoMundoSurveyCorroborationTest.kt                  (8 tests)
+A  app/src/androidTest/.../CaboDoMundoPriorsEndToEndTest.kt                (2 tests)
+A  app/src/test/resources/lapfixtures/cabo_do_mundo/telemetry.jsonl        (877 lines)
+A  app/src/test/resources/lapfixtures/cabo_do_mundo/session.json
+```
+
+### Single-track assumptions found and fixed
+
+| Location | Was | Now |
+|---|---|---|
+| `BundledTrackCatalogTest` (~L146) | `return@forEach` skipped any circuit missing length or envelope — the entries most likely to be wrong evaded the only catalogue-wide check | Asserts completeness with a named reason (TL-16) |
+| `SessionStartForkTest:233` | `assertEquals("baltar", trackId)` | Asserts the id is *a* catalogued circuit |
+| `TrackRepositoryTest:242/248` | Recency assertions | Audited — unaffected; saved circuits sort before bundled |
+
+---
+
 ## [2026-09-21] Skill — trillian-add-track
 
 **Codebase Version:** v3.0 (no production code changed)

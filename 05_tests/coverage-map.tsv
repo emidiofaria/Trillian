@@ -201,4 +201,20 @@ TL-04	BaltarSurveyCorroborationTest.theHeadingTheKartsActuallyCrossAtMatchesTheO
 TL-04	BaltarSurveyCorroborationTest.theSurveyedLapLengthIsCorroboratedByTheDistanceTheKartsCovered	Surveyed lap length corroborated by distance actually covered
 TL-04	BaltarSurveyCorroborationTest.theDeclaredLapLengthMatchesTheCentrelineItWasDerivedFrom	Declared length cannot drift from its own centreline
 TL-05	BaltarSurveyCorroborationTest.theCataloguedLineIsNotTheLineTheDriverCaptured	The catalogued line is provably not the session's captured line
+TL-15	BaltarSurveyCorroborationTest.theHeadingTheKartsActuallyCrossAtMatchesTheOneSurveyedFromTheMap	The catalogued heading is corroborated by a recorded session
+TL-15	BaltarSurveyCorroborationTest.theSurveyedLapLengthIsCorroboratedByTheDistanceTheKartsCovered	The surveyed lap length is corroborated by the distance driven
+TL-15	CaboDoMundoSurveyCorroborationTest.theHeadingTheKartsActuallyCrossAtMatchesTheSurveyedOne	The catalogued heading is corroborated by a recorded session
+TL-15	CaboDoMundoSurveyCorroborationTest.theSurveyedLapLengthIsCorroboratedByTheDistanceTheKartsCovered	The surveyed lap length is corroborated by the distance driven
+TL-15	CaboDoMundoSurveyCorroborationTest.theDeclaredFastestLapIsQuickerThanAnyLapActuallyDrivenButStillReachable	The lap envelope is checked against a real session rather than guessed
+TL-16	BundledTrackCatalogTest.everyCircuitsLengthAndLapEnvelopeImplyAPlausibleSpeed	Every bundled circuit declares a length and an envelope that imply a plausible speed
+TL-17	CircuitEvidenceAnnexTest.noRequirementNamesASpecificCircuit	No requirement row names a catalogued circuit
+TL-18	CircuitEvidenceAnnexTest.bothRequirementsDocumentsArePresent	The SRS and Annex A both exist
+TL-18	CircuitEvidenceAnnexTest.everyShippedCircuitHasAnAnnexEntry	Every shipped circuit has an Annex A entry
+TL-18	CircuitEvidenceAnnexTest.annexDescribesNoCircuitThatIsNotShipped	Annex A describes no circuit absent from the catalogue
 LD-22	BaltarSurveyCorroborationTest.everyRealLapIsComfortablyInsideTheLd22Floor	Real laps sit far clear of the plausibility floor
+LD-23	MergedLapCaveatTest.speaks up when a refusal landed close under the floor	A crossing lost just under the minimum gap is reported to the driver
+LD-23	MergedLapCaveatTest.stays quiet when refusals are a second look at the pass just counted	Repeat fixes from one pass raise no caveat
+LD-23	MergedLapCaveatTest.the boundary between noise and a lost lap sits at half the floor	The half-of-the-gap threshold is pinned to behaviour
+LD-23	MergedLapCaveatTest.counts only the refusals that look like lost laps	Only refusals near the gap are counted
+LD-23	MergedLapCaveatTest.reads the same gap against whichever floor the circuit set	The threshold follows the circuit's own minimum gap
+LD-23	MergedLapCaveatTest.describes what was seen without guessing why	The caveat states the observation and offers no impossible remedy

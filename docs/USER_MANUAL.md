@@ -199,10 +199,14 @@ From v3.0, starting a session asks you one extra question — and it saves you a
 
 **Circuits that ship with Trillian**
 
-At the moment there's one: **Kartódromo de Baltar** (Paredes, Portugal). Its start/finish line
-and its 140-point track outline were surveyed on foot rather than captured in ten seconds
-before a session — which is why the app can be more precise about your laps there than it can
-anywhere it's never been.
+Open **SELECT TRACK** to see the current list — it's the authoritative one, and it works with
+no signal. Each entry shows the circuit's name, where it is, and how long a lap is.
+
+Every built-in circuit has had its start/finish line and its track outline surveyed on foot,
+rather than captured in ten seconds before a session — which is why the app can be more precise
+about your laps there than it can anywhere it's never been. Where a real recorded session of the
+circuit exists, the numbers the app expects were checked against it, so the lap times it
+anticipates are ones somebody actually set rather than ones somebody guessed at.
 
 Knowing a circuit gives Trillian three things it can't get from a line you capture:
 
@@ -684,6 +688,31 @@ straight will do.
 If your track really does cross over itself and there is nowhere that works, please send a
 diagnostic file (see 6.1.1) — we'd like to see a real recording of a layout like that.
 
+### Fewer Laps Than I Drove, Each About Twice as Long
+
+**Symptoms:** Half the laps you completed, each roughly double the time. The app now adds a note
+to the result: *"1 pass of the start line was too soon after the one before to be counted — some
+laps here may be timed as one."*
+
+**Cause:** You are quicker than the circuit expects. Every track in the library carries a fastest
+realistic lap time, and the app refuses to believe a lap shorter than 80 % of it — that guard is
+what stops a wobble across the line being counted as a lap of its own. If you genuinely lap
+faster than that, a real crossing gets refused, and the lap that followed it is timed from the
+crossing before instead. Two laps come out as one.
+
+**What changed:** the app used to do this without saying anything. A combined lap looks entirely
+ordinary — it is inside the expected window and at a perfectly believable speed — so nothing
+downstream could tell it apart from a slow lap, and you were shown the wrong number of laps with
+no warning at all. It now tells you when passes went uncounted.
+
+**Solution:** there is nothing to change in the app, and nothing you have done wrong — the note
+means the circuit's expected lap time needs correcting, not your driving. Please send a
+diagnostic file (see 6.1.1) with your session. A real recording from a driver quicker than the
+catalogue is exactly the evidence needed to fix the entry for everyone.
+
+**If you are recording without choosing a track** from the library, this cannot affect you above
+20-second laps, since the app then falls back to a fixed 20-second minimum.
+
 ### My Lap Times Are in Minutes, Not Seconds
 
 **Symptoms:** A full session comes back as two or three "laps" of several minutes each. No error
@@ -710,7 +739,8 @@ be correct.
 
 ### The Circuit List Is Empty
 
-**Symptoms:** You tap **SELECT TRACK** and there's nothing there, or Baltar is missing.
+**Symptoms:** You tap **SELECT TRACK** and there's nothing there, or one of the circuits that
+ships with the app is missing.
 
 **Possible causes:**
 1. You haven't saved any circuits yet, and something went wrong reading the ones that ship with
@@ -718,8 +748,8 @@ be correct.
 2. You're on a version before 3.0, which didn't have the track library
 
 **Solution:** Use **NEW CIRCUIT** — it always works and is completely unaffected. Then report the
-problem with your app version from *About Trillian*; an empty list when Baltar should be there is
-a packaging fault worth knowing about.
+problem with your app version from *About Trillian*; an empty list, or a missing built-in
+circuit, is a packaging fault worth knowing about.
 
 ### App Crashes When Recording
 
@@ -776,10 +806,10 @@ A: The app shows a warning, but recording continues. Gaps in GPS may affect lap 
 A: Not currently. You set the line before recording, and that's used for that session's lap detection.
 
 **Q: Which circuits come with the app?**  
-A: One, for now: **Kartódromo de Baltar** in Paredes, Portugal. Its start/finish line and its
-track outline were surveyed properly rather than captured in a hurry before a session, which is
-why the app can be more precise about laps there. More will follow — and anything you save
-yourself sits in the same list.
+A: Tap **SELECT TRACK** and you'll see them — that list is always current, and it doesn't need a
+connection. Their start/finish lines and track outlines were surveyed properly rather than
+captured in a hurry before a session, which is why the app can be more precise about laps there.
+More will follow — and anything you save yourself sits in the same list.
 
 **Q: Why should I pick SELECT TRACK instead of just capturing the line again?**  
 A: Three reasons, all of them about accuracy. A surveyed line is in the right place — your phone

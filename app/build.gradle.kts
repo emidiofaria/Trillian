@@ -31,7 +31,7 @@ plugins {
 
 // Single source of truth for the app version. Release APKs in releases/ are named
 // from this value, so the filename can never disagree with what the app reports.
-val appVersionName = "3.0"
+val appVersionName = "3.01"
 
 // major*100 + minor keeps codes monotonic across the whole v1.0 -> v2.8 history
 // (1.0 -> 100, 2.8 -> 208) and leaves room for 99 minor releases per major.
@@ -173,6 +173,13 @@ kapt {
 tasks.withType<Test>().configureEach {
     inputs.dir("$projectDir/src/main/assets/tracks")
         .withPropertyName("trackCatalogue")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+    // CircuitEvidenceAnnexTest reads the SRS and Annex A by path for the same reason, and
+    // needs the same declaration. TL-18's whole value is that a circuit cannot be added
+    // without its evidence; an UP-TO-DATE build would hand back that guarantee for free.
+    inputs.dir("$rootDir/01_requirements")
+        .withPropertyName("requirementsDocuments")
         .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 

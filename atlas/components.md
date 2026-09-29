@@ -317,7 +317,7 @@ session was started from the track library, and is `TrackPriors.NONE` otherwise.
 | Prior | Effect |
 |-------|--------|
 | `travelHeadingDeg` | Seeds the heading reference before the first sample is read, so it guards the first crossing too. Recorded in diagnostics as `headingReference = TRACK_CATALOGUE` |
-| `fastestLapMs` | Raises `minLapTimeMs()` to `max(MIN_LAP_TIME_MS, fastest × 0.8)` |
+| `fastestLapMs` | Raises `minLapTimeMs()` to `max(MIN_LAP_TIME_MS, fastest × 0.8)`. Also shown on the confirm screen as the fast end of the expected window (TL-06), so **one number serves as both a human-readable label and a safety gate** — a known design smell, since a cosmetic correction to it silently moves detection behaviour |
 | `slowestLapMs` | **Display only.** Shown to the driver as the expected lap window on the confirm screen (TL-06). Deliberately *not* used to discard laps — it is a typed-in estimate, and an estimate guessed too tight would erase real sessions |
 | `lengthM` | `lapsArePlausible()` discards a lap set only when **every** lap in it implies an average speed below `MIN_PLAUSIBLE_LAP_SPEED_MS`. Surveyed, so it can carry a decision the envelope cannot |
 
@@ -326,9 +326,50 @@ unseeded retry → anchor projection onto the driven path (Incident 14). A seede
 produces an implausible lap set falls through rather than being shown, which is what prevents a
 wrong catalogue heading from being worse than no catalogue at all.
 
-**Why the heading prior is load-bearing at Baltar specifically:** the nearest other part of the
-circuit passes **24.7 m** from the start/finish, against a 15 m corridor on a device reporting
-±6 m. The heading guard is the entire margin between 12 laps and `FP-LAP-DOUBLE-COUNT`.
+**Why the heading prior is load-bearing.** On a compact circuit another part of the track can
+pass close enough to the start/finish that the 15 m corridor alone does not separate the two, on
+a device reporting ±6 m. The heading guard is then the entire margin between a correct lap count
+and `FP-LAP-DOUBLE-COUNT`.
+
+Where that margin is narrow, replaying a real session with the heading reversed 180° — the
+likeliest data-entry error, and the shape of Incident 15 — produces **zero laps**, silently: no
+exception, no log, an empty session. Circuits in that position keep the mutation as a standing
+assertion in their corroboration test, so the guard cannot be weakened without a test failing.
+It is the clearest demonstration in the codebase that a wrong prior fails quietly rather than
+loudly. Per-circuit corridor margins are in
+[Annex A](../01_requirements/ANNEX_A_circuit_evidence.md), §A.2.
+
+**What `fastestLapMs` costs when it is set too slow, and how that reaches the driver.** The
+floor rejects a crossing; it does not close a lap. A driver quicker than the declared figure
+therefore has a real boundary discarded, and the next accepted crossing is measured from the one
+*before* it — two laps arrive as one of roughly double the time. Nothing downstream detects it:
+the merged lap sits inside the declared envelope and far above `MIN_PLAUSIBLE_LAP_SPEED_MS`, so
+`lapsArePlausible()` passes it, the three-stage fallback never fires, and the driver is shown a
+wrong lap count with no error of any kind. No tightening of the plausibility check could
+separate the two cases, because a merged lap is a credible lap. `MergedLapCaveat` exists because
+the rejection log is the only place the difference survives.
+
+### `MergedLapCaveat`
+
+**File:** `lap/MergedLapCaveat.kt` · **Requirement:** LD-23 · **Tests:** `MergedLapCaveatTest`
+
+Pure function over `DetectionDiagnostics`, returning a sentence to append to the lap count or
+`null`. Consumed by `RecordingViewModel`'s `Success` branch, which previously reported
+`"N laps detected"` unconditionally — every rejection reason the detector had carefully recorded
+was discarded the moment one lap survived. `NoLapsExplanation` covered only the *empty* result,
+and inspects only `TOO_FAR_TO_THE_SIDE`, so `TOO_SOON` reached the driver on no path at all.
+
+Speaks only when a `TOO_SOON` rejection landed at least `MERGED_LAP_GAP_FRACTION` (0.5) of the
+way to the floor, measured from the accepted crossing before it. The threshold exists because
+`TOO_SOON` fires routinely on healthy sessions: at racing speed a kart is inside the 15 m
+corridor for more than one 1 Hz fix, so one pass offers several candidates and every one after
+the first is correctly refused — those land a second or two after the crossing they duplicate.
+A swallowed lap lands just under the floor instead. The two clusters are far apart, so the exact
+fraction is not load-bearing; what matters is that it sits between them.
+
+Offers no remedy, deliberately. The cause is a catalogue figure slower than the driver, which no
+control in the app exposes, and `NoLapsExplanation`'s `theAdviceMustBeSomethingTheAppLetsYouDo`
+records what happens when a message diagnoses correctly and then instructs impossibly.
 
 ### Configuration Constants
 
@@ -2111,28 +2152,68 @@ user's saved circuits so nothing downstream has to know which is which.
 
 ### Provenance is recorded per dataset, not per circuit
 
-Baltar's start/finish line came from map imagery (`MAP_COORDINATES`); its centreline was walked on
-foot (`SURVEYED_ON_FOOT`, method "manually placed waypoints, walked"). A single blanket claim would
-be false about one of the two. `centrelineSurveyedBy` is deliberately **empty**: the surveyor's
-identity is not known to the app, and a plausible-sounding invented name is a worse artefact than
-an absent field.
+A circuit's start/finish line and its centreline may come from different sources — one read from
+map imagery (`MAP_COORDINATES`), the other walked on foot (`SURVEYED_ON_FOOT`, method "manually
+placed waypoints, walked"). A single blanket claim would be false about one of the two. Where the
+surveyor's identity is not known, `centrelineSurveyedBy` is deliberately left **empty**: a
+plausible-sounding invented name is a worse artefact than an absent field.
 
-### The shipped Baltar entry, and how it was validated
+The split still earns its place on a circuit whose datasets were both walked on the same
+afternoon by the same surveyor. They are two measurements by two methods, either of which could
+be re-surveyed alone. Provenance reading the same for both datasets today is not licence to
+collapse it into one field tomorrow.
 
-| Measurement | Value | How it was checked |
-|-------------|-------|--------------------|
-| Start/finish line length | 10.97 m | Haversine over the corrected A/B coordinates |
-| Travel heading | 137.8° | Bearing C→D along the start straight |
-| Angle between line and travel | 88.7° | Essentially square — the opposite of `FP-DEGENERATE-BASELINE` |
-| Distance from the driver's originally captured line | **164.6 m** | Why the session had to be re-detected, not just re-guarded |
-| Centreline | 140 points, 1020 m closed ring | Racing line sits at median **3.98 m** from the ring (p90 9.63 m) |
-| Queue/paddock samples | median **29.53 m** from the ring | The separation that makes the corridor filter possible |
+Per-circuit provenance is in [Annex A](../01_requirements/ANNEX_A_circuit_evidence.md), §A.1.
 
-**Centreline closure is not obvious and is worth writing down.** The survey was 142 walked points;
-point 142 is a 0.61 m duplicate of point 3, and point 1 is a 4.42 m duplicate near point 140 — the
-walk overshot its own closure. The correct ring is **points 2…141**, which starts exactly at the
-start/finish and whose closing segment runs at 138.4°, within 0.6° of the measured travel heading.
-Taking the raw 142 points would have put a spurious spike across the start straight.
+### How a catalogue entry is validated
+
+Per-circuit figures — headings, lengths, corridor margins, corroborating sessions, evidence tier
+— live in [Annex A](../01_requirements/ANNEX_A_circuit_evidence.md), not here. Annex A is the
+register; this section records the *method*, and the traps found while applying it.
+
+**What is checked before a circuit ships:**
+
+| Check | What it catches |
+|-------|-----------------|
+| Haversine over the two surveyed endpoints | A line entered with transposed or truncated coordinates |
+| Angle between the line and the declared travel heading | `FP-DEGENERATE-BASELINE` — a line not square across the track |
+| Centreline forms a closed ring, first point at the start/finish midpoint | A walk that never closed, or closed in the wrong place |
+| Closing segment against the mean segment length | A ring that closes by jumping rather than by arriving |
+| Nearest other part of the circuit to the start point | Whether the heading prior is load-bearing here |
+| Replay of an independent recorded session | Whether the priors describe the place they claim to |
+
+**Corroboration must use a session that predates the entry.** A session used to derive the
+catalogue can only ever agree with it. The value of the check comes entirely from the two having
+been produced by unrelated means — which is why a session whose own start line was captured
+badly, in the wrong place, is *better* evidence than one captured well: it cannot be a second
+reading of the same marker. Such fixtures are preserved unmodified. A fixture that has been
+tidied up is no longer evidence.
+
+**Expect the measured lap distance to exceed the surveyed one.** Summing straight-line distances
+between consecutive 1 Hz fixes over-reads, because each fix carries its own error and the sum
+accumulates a random walk on top of the true path. Agreement within a few percent is the signal;
+exact agreement would be suspicious.
+
+**A walked centreline can overshoot its own closure.** One shipped survey returned 142 points in
+which the last point duplicated point 3 at 0.61 m, and the first duplicated a point near the end
+at 4.42 m — the walker rounded past the start before stopping. Taking the raw points would have
+put a spurious spike across the start straight. Check the ends against each other before
+accepting a ring.
+
+**`DETECTION_HALF_WIDTH_M` replaces the line's length, and this surprises people.**
+`LocalLapDetector` uses only `startLine.midpoint()` and a fixed 15 m corridor around it; the
+captured line's width has no effect on detection whatsoever. That is the Incident 13 fix — a
+7.15 m line against a 4.8 m GPS error — but it means any reasoning of the form "the karts crossed
+outside the line, so laps will be missed" is simply wrong. Measure what the detector does by
+asking the detector. Proving this cost a calibration probe during the second circuit's addition,
+after a hand-rolled check produced a confident and entirely false conclusion
+(`FP-REIMPLEMENTED-GEOMETRY`).
+
+**A lap envelope copied from another circuit is a silent defect.** The envelope is typed in, not
+measured, and an envelope carried over from a longer circuit can demand an average speed above
+the fastest speed ever recorded at the new one. Where a session exists, check it. The correction
+may change nothing observable — LD-21's derived floor can sit below the real gap between
+crossings either way — and is made anyway, because the figure was untrue.
 
 ### Failure Modes
 

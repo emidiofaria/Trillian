@@ -235,32 +235,82 @@ driver travels through the start/finish, and how long a lap there should take.
 | TL-12 | V1 shall present the circuit list as a plain manual list. It shall not filter or reorder by the device's current position, and shall not require a location fix to be browsed. |
 | TL-13 | Recording a session shall never modify a circuit's geometry. The only field a recording may update is the circuit's last-used timestamp. |
 | TL-14 | If the bundled catalogue asset is missing or cannot be parsed, the app shall behave as though the catalogue were empty and shall log the failure. It shall not crash, and NEW CIRCUIT shall remain fully usable. |
+| TL-15 | Where a recorded session of a circuit exists, that circuit's `travelHeadingDeg`, `lengthM` and lap time envelope shall be corroborated against it before the circuit ships, and the corroboration shall be held by a test. A figure that cannot be corroborated shall be stated as an estimate rather than presented as a measurement. |
+| TL-16 | A bundled circuit shall declare its lap length and its lap time envelope. These are surveyed before the circuit ships, so a bundled entry that omits one shall fail the build's test suite rather than fall back to a default. A circuit saved by a driver has no surveyed length and is exempt. |
+| TL-17 | A requirement shall not name a specific circuit. Requirements state rules that hold for every circuit in the catalogue; evidence for an individual circuit belongs in [Annex A](ANNEX_A_circuit_evidence.md). Illustrative material drawn from a recorded incident is not a circuit reference and is not restricted by this requirement. |
+| TL-18 | Every circuit in the bundled catalogue shall have a corresponding entry in Annex A, and Annex A shall describe no circuit absent from the catalogue. A circuit added without its evidence shall fail the build's test suite. |
 
 **Remark on TL-05 — why provenance is split.**
-The first shipped circuit, Kartódromo de Baltar, has a start/finish line derived from map
-imagery and a centreline of 140 points walked on foot by the driver. Those are different
-kinds of evidence with different error characteristics, and a reader deciding whether to
-trust a number needs to know which one it came from. Where the surveyor's identity is not
-known to the app, the field shall be left empty rather than filled with a plausible guess —
-an invented provenance is worse than an absent one.
+The start/finish line and the centreline of a circuit are two measurements, and they are
+routinely taken by different means: one may be read from map imagery while the other is walked
+on foot. Those are different kinds of evidence with different error characteristics, and a
+reader deciding whether to trust a number needs to know which one it came from. Where the
+surveyor's identity is not known to the app, the field shall be left empty rather than filled
+with a plausible guess — an invented provenance is worse than an absent one.
 
-**Remark on TL-04 — the priors are corroborated against a recorded session.**
-Two fields in a catalogue entry are load-bearing for lap detection and were, until this
-point, supported only by the survey that produced them: `travelHeadingDeg` (which LD-19 and
-LD-20 depend on) and `lengthM` (which LD-22 depends on). A wrong value in either is silent —
-a wrong heading rejects laps that happened, a wrong length either discards real sessions or
-stops catching the incident it was written for.
+The split still earns its keep on a circuit whose datasets were gathered the same way on the
+same afternoon: they remain two measurements taken by two methods, and either could be
+re-surveyed without the other. Provenance that happens to read the same for both datasets
+today is not a reason to collapse it into one field tomorrow.
 
-Baltar's are therefore cross-checked against the incident 15 recording, which was made
-before the catalogue existed and so cannot have been fitted to it. Measured against the
-**catalogued** start/finish line: every crossing runs within 10° of the declared 137.8°, and
-the karts cover a median 1094 m between crossings against a surveyed 1020 m. The excess is
-expected — summing distances between consecutive 1 Hz fixes over-reads, because each fix
-carries its own error and the sum accumulates a random walk on top of the true path.
+**Remark on TL-04 and TL-15 — the priors are corroborated against a recorded session.**
+Two fields in a catalogue entry are load-bearing for lap detection, and are otherwise supported
+only by the survey that produced them: `travelHeadingDeg` (which LD-19 and LD-20 depend on) and
+`lengthM` (which LD-22 depends on). A wrong value in either is silent — a wrong heading rejects
+laps that happened, a wrong length either discards real sessions or stops catching the incident
+it was written for. Neither failure announces itself; both reach the driver as an empty or
+truncated session.
 
-This is why the shipped provenance stays `SURVEYED_ON_FOOT`. The honest claim is not that
-the data was gathered from a kart; it is that data gathered on foot **agrees with** a kart.
-That is the stronger statement, and it is the one the tests make.
+A circuit's priors are therefore cross-checked against a recording of that circuit before it
+ships. The recording must **predate the catalogue entry**, because a session used to derive the
+entry can only ever agree with it; agreement is evidence exactly to the extent that the two were
+produced independently. Where the measured lap distance exceeds the surveyed distance, that is
+expected rather than an error: summing distances between consecutive 1 Hz fixes over-reads,
+because each fix carries its own error and the sum accumulates a random walk on top of the true
+path.
+
+This is why a corroborated circuit's provenance stays as surveyed rather than being upgraded.
+The honest claim is not that the data was gathered from a kart; it is that data gathered on
+foot **agrees with** a kart. That is the stronger statement, and it is the one the tests make.
+
+Per-circuit corroboration figures — which session, how close the heading agreed, measured
+against surveyed distance — are recorded in [Annex A](ANNEX_A_circuit_evidence.md), §A.2.
+
+**Remark on TL-04 — a lap time envelope is a measurement where a session exists.**
+The lap length of a catalogue entry is surveyed. The lap time envelope is typically typed in
+from what somebody remembers of the circuit, and an envelope copied from a different circuit, or
+recalled optimistically, can be not merely wrong but physically impossible — demanding an
+average speed above the fastest speed the circuit has ever produced. Where a recorded session
+exists, the envelope shall be checked against it and corrected before the circuit ships.
+
+Such a correction may change nothing observable, because LD-21's derived floor can sit below the
+real gap between crossings at either value. It is made anyway, because the figure was untrue,
+and because the next driver to lap the circuit faster, or the next change to LD-21, would have
+found it. A catalogue entry is a set of claims about a place; claims that happen not to be
+load-bearing today are still claims. Instances where this has been applied are recorded in
+[Annex A](ANNEX_A_circuit_evidence.md), §A.3.
+
+**Remark on TL-17 and TL-18 — why circuit evidence lives outside this document.**
+Earlier drafts justified these requirements by naming the circuits they were derived from, with
+each circuit's headings, distances and margins written into the prose. It read well at two
+circuits and could not survive twenty. Worse, it made rules and examples indistinguishable: a
+reader could not tell which sentences constrained the app and which merely described a place,
+and adding a circuit meant editing the specification.
+
+The separation is therefore not cosmetic. A requirement is a claim about the app and is true of
+every circuit; a catalogue entry is a claim about one real place. Annex A holds the second kind,
+keyed by circuit identifier and tabular by design, so that the hundredth circuit costs a row
+rather than a section.
+
+TL-18 is the half with teeth. A register nobody is forced to update is a register that silently
+goes stale, and stale evidence is worse than none, because it is still believed. Tying the annex
+to the shipped catalogue in the test suite means a circuit cannot be added without its evidence
+being added too. TL-17's converse check — that no requirement has acquired a circuit name — is
+by comparison a regression guard on a state that is already correct.
+
+Evidence drawn from a recorded incident is deliberately exempt. There will not be a hundred
+incident 15s, and the incident is the reason several of these requirements exist at all;
+relocating it would leave thresholds stated without the observation that produced them.
 
 ---
 
@@ -369,6 +419,10 @@ recoverable from git at `0216475`.
 | LD-20 | Where the session was recorded against a circuit from the track library (§4a), the circuit's direction of travel shall be used as the reference heading for the guard in LD-14, in place of the heading of the session's first accepted crossing. |
 | LD-21 | Where the circuit declares a fastest plausible lap time, the minimum lap time guard of LD-05 shall be raised to 80 % of that value. The 20 % grace exists so that a driver who beats the catalogue's figure is not refused their own lap. |
 | LD-22 | Where the circuit declares a surveyed lap length, a set of detected laps in which **every** lap implies an average speed below 5 m/s (18 km/h) shall be discarded in its entirety rather than presented. A whole set of laps none of which could have been driven is evidence that the crossings were not laps, and reporting them as laps is worse than reporting nothing. A set containing at least one credible lap shall be presented unaltered, including any individual long lap within it. |
+| LD-23 | Where a candidate crossing is rejected for arriving sooner than the minimum gap, and it arrived at least half of the way to that gap, the lap count presented to the driver shall be qualified to say that passes went uncounted and that laps may have been timed as one. Rejections landing well short of the gap are repeat fixes from a single pass and shall not qualify anything. |
+
+**Remark on LD-21 and LD-23 — why a lost lap has to be said out loud.**
+LD-21's floor rejects a crossing; it does not end the lap. A driver quicker than the circuit's declared fastest lap therefore has a real boundary discarded, and the next accepted crossing is timed from the one before it, so two laps are presented as one of roughly double the duration. Nothing downstream can detect this. The merged lap sits inside the declared envelope and far above LD-22's floor, so it is indistinguishable from a lap somebody genuinely drove slowly — LD-22 is a check on whether a lap *could* have been driven, and a merged lap could have been. No tightening of it would help, because the two cases are identical in the only evidence LD-22 looks at. The record of the rejection is the one place the difference survives, which is why LD-23 reports from there rather than from the laps. Without it the app answers confidently and wrongly, which is the failure LD-22 was written for arriving by another route.
 
 **Remark on LD-02 and LD-04 — why the *orientation* of the captured line is ignored.**
 Track Setup asks the user to capture a point at each edge of the start/finish, typically 5–10 m apart. GPS accuracy on a phone is of the same order (4.8 m mean, 15.0 m worst, measured in incident 13). The *direction* of a line drawn between two points that close together is therefore dominated by measurement noise rather than by where the user stood, and can come out pointing along the track instead of across it. In incident 13 it did exactly that — within 0.1°–5.1° of the direction of travel — and no lap could be detected, because a car driving along a line never crosses it. The app therefore uses the captured points only for their midpoint, which is a *position* and is measurable, and derives the crossing direction from the car's own motion, which is measured over hundreds of metres. See `03_incidents/13_no_laps_detected_start_line_parallel_to_travel/`.
@@ -393,20 +447,38 @@ the one thing it cannot guard. In incident 15 that crossing was a 2.9 m/s walk a
 point at 272°; the 12 racing crossings arrived at 331–343°, and ten of them were then rejected
 for disagreeing with a pedestrian. A heading that comes from the circuit rather than from the
 session is fixed before the first sample is read, so it guards every crossing including the
-first. At Baltar this matters more than usual: the nearest other part of the circuit passes
-24.7 m from the start/finish against a 15 m corridor on a device reporting ±6 m, so the heading
-guard is the whole margin between 12 laps and a double count (FP-LAP-DOUBLE-COUNT).
+first.
+
+It matters most where a circuit's own geometry re-enters the detection corridor. The detector
+accepts fixes within a fixed 15 m half-width of the start/finish midpoint, and on a compact
+circuit another part of the track can pass close enough to that point that the corridor alone
+does not separate the two — on a device reporting ±6 m, the heading guard is then the whole
+margin between a correct lap count and a double count (FP-LAP-DOUBLE-COUNT).
+
+This is not a theoretical concern. Where the margin is narrow, replaying a real session with the
+catalogued heading reversed 180° — the single likeliest data-entry error, and the exact shape of
+incident 15 — yields **zero laps**, no error, and a driver shown an empty session. A circuit
+whose direction prior is load-bearing in this way shall keep that mutation as a permanent
+assertion, so the guard cannot be weakened without a test failing. Per-circuit corridor margins
+are recorded in [Annex A](ANNEX_A_circuit_evidence.md), §A.2.
 
 **Remark on LD-22 — why the guard is derived from the surveyed length and not from the declared envelope.**
-A catalogue entry carries two kinds of number. The lap length was *measured* — at Baltar, walked
-as 140 waypoints. The lap time envelope was *typed in* from what somebody remembers of the
-circuit. An earlier version of LD-22 measured detected laps against the envelope, which put a
-human estimate in a position to delete real data: Baltar shipped with an upper bound of 90 s, so
-anything over 135 s was discarded, and a timid weekend driver lapping in 150 s would have had
-every lap thrown away and been shown nothing at all — the guard meant to protect them erasing
-their session in silence. Deriving the test from the surveyed length removes the estimate from
-the decision. The 5 m/s floor is the same judgement as LD-19's 4 m/s, averaged over a lap rather
-than sampled at a point, and it admits laps out to 204 s at Baltar.
+A catalogue entry carries two kinds of number. The lap length was *measured*, by walking the
+circuit and recording waypoints. The lap time envelope was *typed in* from what somebody
+remembers of the circuit. An earlier version of LD-22 measured detected laps against the
+envelope, which put a human estimate in a position to delete real data: a circuit shipped with
+an upper bound of 90 s would discard anything over 135 s, so a timid weekend driver lapping in
+150 s would have had every lap thrown away and been shown nothing at all — the guard meant to
+protect them erasing their session in silence. Deriving the test from the surveyed length
+removes the estimate from the decision. The 5 m/s floor is the same judgement as LD-19's 4 m/s,
+averaged over a lap rather than sampled at a point.
+
+A session may legitimately contain a lap slower than that floor — an out-lap, driven while the
+kart is still finding the circuit, is the usual case. It is discarded, and correctly so, but it
+is worth writing down that this is the guard working rather than a defect, because "the app
+dropped my first lap" is exactly the shape of a report that invites a fix to the wrong thing.
+Flying laps sit an order of magnitude above the floor and are nowhere near it. Per-circuit
+floors are recorded in [Annex A](ANNEX_A_circuit_evidence.md), §A.2.
 
 **Remark on LD-22 — why the whole set must fail before anything is discarded.**
 A single long lap among normal ones is a *real* lap: a spin, an off, or a slow kart ahead.
