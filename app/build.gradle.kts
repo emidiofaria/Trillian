@@ -31,7 +31,7 @@ plugins {
 
 // Single source of truth for the app version. Release APKs in releases/ are named
 // from this value, so the filename can never disagree with what the app reports.
-val appVersionName = "3.01"
+val appVersionName = "3.02"
 
 // major*100 + minor keeps codes monotonic across the whole v1.0 -> v2.8 history
 // (1.0 -> 100, 2.8 -> 208) and leaves room for 99 minor releases per major.
