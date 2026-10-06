@@ -1,0 +1,64 @@
+{
+  "exportedAtMs": 1791296381731,
+  "app": {
+    "versionName": "2.96",
+    "versionCode": 296
+  },
+  "device": {
+    "model": "ZTE ZTE Blade A53+",
+    "sdkInt": 31
+  },
+  "session": {
+    "id": 11,
+    "trackName": "My circuit",
+    "startedAt": 1789409695234,
+    "endedAt": 1789409989313,
+    "uploadStatus": "FAILED",
+    "processingStatus": "PENDING",
+    "startLine": {
+      "lat1": 41.20045471191406,
+      "lng1": -8.61097240447998,
+      "lat2": 41.200523376464844,
+      "lng2": -8.610955238342285
+    }
+  },
+  "telemetry": {
+    "fileName": "session_11.jsonl",
+    "sizeBytes": 70802
+  },
+  "laps": [
+    {
+      "lapNumber": 1,
+      "startTs": 1789409746214,
+      "endTs": 1789409822627,
+      "durationMs": 76413,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": true,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 2,
+      "startTs": 1789409822627,
+      "endTs": 1789409902550,
+      "durationMs": 79923,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 3,
+      "startTs": 1789409902550,
+      "endTs": 1789409981888,
+      "durationMs": 79338,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    }
+  ]
+}

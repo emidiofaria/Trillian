@@ -155,10 +155,14 @@ class CaboDoMundoPriorsEndToEndTest {
         assertNotNull("adding a circuit must not displace the one already shipped", baltar)
         assertEquals(137.8, baltar!!.travelHeadingDeg!!, 0.01)
 
-        val bundled = runBlocking { trackRepository.observeTracks().first() }.filter { it.isBundled }
-        assertEquals(
-            "both circuits should be offered to the driver, got ${bundled.map { it.id }}",
-            2, bundled.size
+        // Presence rather than an exact count: the catalogue grows, and a count here
+        // would fail on every circuit added rather than on one going missing.
+        val bundled = runBlocking { trackRepository.observeTracks().first() }
+            .filter { it.isBundled }
+            .map { it.id }
+        assertTrue(
+            "both circuits should be offered to the driver, got $bundled",
+            bundled.containsAll(listOf("baltar", "cabo_do_mundo"))
         )
     }
 
@@ -223,10 +227,10 @@ class CaboDoMundoPriorsEndToEndTest {
             59.8, diagnostics.getDouble("referenceHeadingDeg"), 0.01
         )
         assertEquals(
-            "the catalogued fastest lap of 60 s should have tightened the crossing gap to 80% " +
+            "the catalogued fastest lap of 50 s should have tightened the crossing gap to 80% " +
                 "of itself (LD-21). 20000 would mean the priors never arrived; 32000 would " +
                 "mean Baltar's arrived instead",
-            48_000L, diagnostics.getLong("minLapTimeMs")
+            40_000L, diagnostics.getLong("minLapTimeMs")
         )
         assertEquals(8, diagnostics.getInt("lapCount"))
     }

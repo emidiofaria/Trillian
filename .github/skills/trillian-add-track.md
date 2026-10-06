@@ -57,6 +57,9 @@ Later answers are validated against earlier ones, so they must arrive in order.
 **Round 2 — Direction and size**
 - `travelHeadingDeg`: the compass bearing a kart is travelling *as it crosses the line*,
   0–360. **Not** the bearing of the line itself, which is roughly perpendicular to it.
+  Developers often find it easier to give **two points** — one before the line, one after,
+  in the direction of travel. Accept that: compute the bearing yourself, round to 0.1°, and
+  check the segment between the two points actually **crosses** the SF line.
 - Track distance in metres, **and where that number came from** (official figure, map
   measurement, or derived from the walk — this matters, see below)
 - Corner count
@@ -68,6 +71,12 @@ Later answers are validated against earlier ones, so they must arrive in order.
 - Walked centreline points, if surveyed — plus who walked it, when, and how
 - A recorded session for this circuit, if one exists
 - Anything known to be uncertain, so it can be recorded rather than discovered later
+
+**Verify the telemetry is from this circuit before using it.** The first fix and the
+session's own captured start line must lie within ~200 m of the catalogued SF line. A
+wrong zip is an easy mistake — S.Mamede was first supplied with a Cabo do Mundo session
+8.9 km away — and every downstream check would then measure the wrong place. Also check the
+session's date: it must **predate** the survey (TL-15).
 
 ---
 
@@ -102,7 +111,13 @@ get backwards than it sounds.
 length may not later be cited as corroboration of the survey, because it *is* the survey.
 
 Baltar's 1020 m came from the walk, which makes "the ring perimeter is 1020 m" a true
-statement that proves nothing. Record provenance per dataset — the schema already supports
+statement that proves nothing.
+
+The same applies the other way round. **If `lengthM` came from the recorded session**, that
+session cannot corroborate it. Use the walked ring as the independent check, with a
+**percentage** tolerance (S.Mamede: 802 m declared vs 821.6 m ring, +2.5%, asserted
+within 3%), because the two measure different paths — racing line vs mid-track. Record
+this in Annex A §A.3. Record provenance per dataset — the schema already supports
 this, with `source`, `method`, `surveyedAt` and `surveyedBy` on the centreline and `source`
 and `recordedAt` on the start line. Use them. One blanket claim across a map-read line and
 a walked ring is untrue of half of it.
@@ -117,7 +132,12 @@ If a centreline is supplied, it must also be a **closed ring whose first point i
 start/finish**, because distance along the ring is what makes lap distance meaningful:
 
 - First point within **1 m** of the start line's midpoint
-- Ring perimeter within **10 m** of the published `lengthM`
+- Ring perimeter within **10 m** of the published `lengthM` (or a % band — see check 3)
+
+**If the walk did not start at the SF line**, do not discard it. With the developer's
+approval, rotate the ring so it starts at the walked point nearest the line, and insert the
+line's midpoint as point 0. Move and drop nothing; record it in Annex A §A.3. (S.Mamede's
+walk began 173 m around the lap.)
 - The closing segment (last point back to first) should be comparable to the other
   segment lengths, not an outlier — Baltar's is 12.3 m against a mean spacing of ~7 m,
   which is acceptable for hand-placed waypoints but is the kind of number to look at
@@ -140,10 +160,37 @@ Run with `TrackPriors.NONE` specifically: the detector then derives its referenc
 from the session itself, so the result measures the karts rather than echoing the value
 being checked.
 
-**Expect GPS distance to over-read.** Summing 1 Hz fixes adds a random walk on top of the
-true path; Baltar's karts covered a median 1094 m against a surveyed 1020 m, **+7.3%**,
-which is textbook rather than alarming. Any assertion must be a band — roughly
-**0.9× to 1.2× the surveyed length** — never an equality.
+**GPS distance usually over-reads, but not always.** Summing 1 Hz fixes adds a random walk
+on top of the true path; Baltar's karts covered a median 1094 m against a surveyed 1020 m,
+**+7.3%**. On a tight circuit the opposite can win — fixes chord across corners and the
+racing line is shorter than the walk; S.Mamede read **0.97×**. Any assertion must be a band
+— roughly **0.9× to 1.2× the surveyed length** — never an equality and never a direction.
+
+**Scale thresholds to the laps you have.** A three-lap session cannot carry Cabo's
+"fastest > 0.75 × recorded best" check (an average driver's best says nothing about the
+fast end). Prefer physical bounds: the declared fastest lap must be below every lap driven
+and reachable at the session's peak speed.
+
+### 6. Reversed-heading probe and corridor margin
+
+Measure the distance from the SF midpoint to the nearest *other* part of the centreline
+(more than 50 m along the ring) — the margin over the 15 m detection corridor. Then replay
+the session with the heading reversed 180°:
+
+- **Narrow margin** (Cabo, 3.4 m): reversed → **zero laps**. Assert that.
+- **Wide margin** (S.Mamede, 65 m): reversed → **same laps**, because the detector falls
+  back to the first-crossing reference. A lap-count assertion passes on either heading.
+  Assert `DetectionDiagnostics.headingReference` instead: `TRACK_CATALOGUE` for the
+  shipped heading, `FIRST_CROSSING` for the reversed one (`FP-FALLBACK-MASKS-PRIOR`).
+
+Run the real detector in a scratch probe for this — never a re-implementation
+(`FP-REIMPLEMENTED-GEOMETRY`) — and delete the probe afterwards.
+
+### 7. Draw it before planning (optional, recommended)
+
+Render the centreline, SF line, heading arrow, GPS laps and the session's captured line on
+one image (matplotlib in a throwaway venv) and show it to the developer. A reversed arrow or
+a line on the wrong straight is obvious in a picture and invisible in a table of numbers.
 
 ### Reporting
 
@@ -188,10 +235,13 @@ State explicitly that no code is needed, or name what is. A circuit needing new 
 a schema change and a much larger piece of work.
 
 ### Task 3 — L1 unit tests
+Template: `CaboDoMundoCatalogueTest` / `CaboDoMundoSurveyCorroborationTest` (or the
+S.Mamede pair for a wide-margin circuit) — they are the most complete.
 - Catalogue entry parses and carries the four required fields
 - Structural checks from this skill, as assertions
-- If telemetry exists: a corroboration test modelled on `BaltarSurveyCorroborationTest`,
-  including its guard that the catalogued line is not the line a driver captured
+- Fixture in `app/src/test/resources/lapfixtures/<id>/` (auto-shared with androidTest assets)
+- If telemetry exists: a corroboration test, including the guard that the catalogued line is
+  not the line a driver captured, and the reversed-heading assertion chosen in check 6
 - **Mutation-test the new assertions.** Change the heading, change the length, confirm each
   one fails. An assertion that survives a deliberately wrong value is not testing anything.
 
@@ -199,74 +249,73 @@ a schema change and a much larger piece of work.
 - The circuit appears in the track list and can be selected
 - Its priors reach the detector — assert on `DetectionDiagnostics`
   (`headingReference`, `referenceHeadingDeg`, `minLapTimeMs`), not merely that laps appeared
-- **Run the single-track assumption audit below.**
+- A `<Circuit>PriorsEndToEndTest` modelled on `CaboDoMundoPriorsEndToEndTest`
+- Confirm screen shows the circuit's own facts (`TrackConfirmDisplayTest`, parameterised)
+- **Never assert the catalogue size.** Use `containsAll(...)` — an `assertEquals(2, size)`
+  breaks on every addition
 
-### Task 5 — Documentation
-Via `.github/skills/trillian-docs-sync.md`: SRS, atlas, the USER_MANUAL circuit list, and
-a SYNC_REPORT entry recording the evidence tier and why the circuit is trusted as far as
-it is.
+### Task 5 — Documentation (before validation)
+Via `.github/skills/trillian-docs-sync.md`. It must precede the full run, because
+`CircuitEvidenceAnnexTest` (TL-18) fails until Annex A has the circuit.
+- `01_requirements/ANNEX_A_circuit_evidence.md`: rows in §A.1 (claims, provenance), §A.2
+  (tier, corridor margin, LD-22 floor, outstanding work) and a §A.3 note for anything unusual
+- SRS: **generic rules only** — TL-17 forbids naming a circuit in a requirement
+- `05_tests/coverage-map.tsv`: TL-05/TL-15 rows for the new tests
+- `05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md`: an `LD-CAT-NN` on-track test —
+  it is the tier-D gate
+- atlas `failure-patterns.md` if something new was learned; SYNC_REPORT entry with the tier
+- USER_MANUAL only if it names circuits (it currently points users at SELECT TRACK)
 
 ### Task 6 — Validation
-Full L1 and L2, then generate a report. Catalogue changes touch shared fixtures, so a
-targeted run is not sufficient.
+Full L1 and L2 (`run-all-tests.sh --start-emulator --stop-emulator`), then the report.
+Catalogue changes touch shared fixtures, so a targeted run is not sufficient.
 
-### Task 7 — Release
+### Task 7 — Update this skill
+Fold in anything the addition taught — new gotchas, thresholds that did not fit, steps that
+were missing. A skill not updated after use is stale by the next circuit.
+
+### Task 8 — Release
 Package per `docs/RELEASE.md`, with the channel set by the evidence tier.
 
 ---
 
 ## Known gotchas
 
-Traps confirmed in the codebase as of v3.0. They have not been fixed, because until a
-second circuit exists they are not wrong — they are assumptions that happen to hold.
-**The first developer to add a second built-in track will meet all of them.**
+Status as of v3.02 (third circuit, S.Mamede). The single-track assumptions recorded at v3.0
+have been fixed: `SessionStartForkTest` is generic, and `BundledTrackCatalogTest` now
+requires completeness for bundled entries instead of skipping them.
 
-### The catalogue is assumed to contain exactly one track
+### Circuit-specific tests are still per circuit
 
-`SessionStartForkTest` (~line 233) opens the first circuit on the list and asserts:
-
-```kotlin
-assertEquals("the bundled circuit is the one on the list", "baltar", trackId)
-```
-
-A second bundled circuit sorting above Baltar fails this test. The assertion should become
-"is a bundled circuit", not "is Baltar".
-
-`TrackRepositoryTest` has recency assertions reading `observeTracks().first().first()`,
-which are sensitive to catalogue ordering for the same reason.
-
-### An incomplete track passes the catalogue-wide test by omission
-
-`BundledTrackCatalogTest.everyCircuitsLengthAndLapEnvelopeImplyAPlausibleSpeed` is the only
-test that loops the whole catalogue, and it opens with:
-
-```kotlin
-if (length == null || fastest == null || slowest == null) return@forEach
-```
-
-**A track that omits its length skips the only check that would have caught it.** When a
-second track is added, this should assert completeness for bundled tracks rather than
-skipping. User-saved circuits legitimately have no surveyed length, so the stricter rule
-applies to bundled entries only.
-
-### Six of the seven catalogue tests are hardcoded to Baltar
-
-They look up `id == "baltar"` directly. A new circuit inherits almost no coverage
-automatically — its tests must be written, or the existing ones generalised to loop.
+Most catalogue tests look up one id directly. A new circuit inherits only the catalogue-wide
+checks in `BundledTrackCatalogTest` — its own catalogue and corroboration tests must be
+written.
 
 ### `Track.kt` validates nothing
 
-Stated above and repeated because it is the reason for this skill: bad catalogue data
-does not fail, it under-performs silently.
+Bad catalogue data does not fail, it under-performs silently. This is the reason for this
+skill.
+
+### Annex A is enforced
+
+`CircuitEvidenceAnnexTest` reads the first column of the Annex A tables. A circuit in
+`tracks.json` without a row fails TL-18; so does a row for a circuit that is not shipped.
+
+### The fallback hides a wrong heading on wide-margin circuits
+
+See check 6. Assert on `headingReference`, not lap counts.
+
+### Stale per-circuit figures in L2/L4
+
+When a catalogue value changes, grep for its derived figures (e.g. `minLapTimeMs` =
+max(20 s, 0.8 × fastest)) in androidTest and the L4 checklists. Cabo's fastest lap moved
+60 → 50 s on 2026-09-29, but `CaboDoMundoPriorsEndToEndTest` and LD-CAT-04 still said 48000.
 
 ### Editing the catalogue used not to re-run its tests
 
-`app/build.gradle.kts` declares `src/main/assets/tracks` as a `Test` task input. **Do not
-remove it.** Without it, tests reading the asset by path are invisible to Gradle's
-up-to-date checks: edit a circuit, run the tests, see green, ship the wrong circuit. This
-was measured — mutating the heading and the length scored zero detections. `clean` and
-`--rerun` both hide it, so CI would never have shown it. Recorded as
-`FP-UNDECLARED-TEST-INPUT`.
+`app/build.gradle.kts` declares `src/main/assets/tracks` and `01_requirements` as `Test`
+task inputs. **Do not remove them.** Without them, tests reading those files by path are
+invisible to Gradle's up-to-date checks (`FP-UNDECLARED-TEST-INPUT`).
 
 ---
 
@@ -308,6 +357,9 @@ app/src/main/java/com/drivingcoach/data/track/  # Track.kt, BundledTrackCatalog.
 app/src/test/java/com/drivingcoach/data/track/  # L1 catalogue + corroboration tests
 app/src/androidTest/java/com/drivingcoach/      # L2 track list, confirm, priors handoff
 app/src/test/resources/lapfixtures/             # telemetry fixture, if one exists
-01_requirements/DrivingCoach_SRS_v1.md          # TL requirements
-docs/USER_MANUAL.md                             # the list of built-in circuits
+01_requirements/DrivingCoach_SRS_v1.md          # TL requirements (generic only, TL-17)
+01_requirements/ANNEX_A_circuit_evidence.md     # per-circuit evidence register (TL-18)
+05_tests/coverage-map.tsv                       # requirement → test claims
+05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md  # LD-CAT-NN on-track test
+docs/USER_MANUAL.md                             # built-in circuits section
 ```

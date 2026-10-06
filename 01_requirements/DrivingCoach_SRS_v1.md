@@ -267,7 +267,15 @@ entry can only ever agree with it; agreement is evidence exactly to the extent t
 produced independently. Where the measured lap distance exceeds the surveyed distance, that is
 expected rather than an error: summing distances between consecutive 1 Hz fixes over-reads,
 because each fix carries its own error and the sum accumulates a random walk on top of the true
-path.
+path. The opposite can also happen — 1 Hz fixes chord across tight corners, and a racing line is
+shorter than a mid-track walk — so length agreement is asserted as a band, not as a direction.
+Where `lengthM` was itself measured from the corroborating session, that session cannot
+corroborate it; the independent walked centreline does, within a stated percentage tolerance.
+
+Where the corridor margin is wide, a reversed heading may not lose any laps: the detector falls
+back to the first-crossing reference (LD-14) when the catalogued one yields nothing plausible. On
+such circuits the heading is verified through the diagnostic `headingReference`, not through the
+lap count.
 
 This is why a corroborated circuit's provenance stays as surveyed rather than being upgraded.
 The honest claim is not that the data was gathered from a kart; it is that data gathered on
