@@ -387,18 +387,18 @@ prior is the only thing separating the two pieces of track, and if it is wrong t
 | Lap times, flying laps | 63–71 s |
 | Lap length | 826 m |
 | `referenceHeadingDeg` | 59.8 |
-| `minLapTimeMs` | 48000 |
+| `minLapTimeMs` | 40000 |
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
 | 1 | Tap START SESSION, name it, choose **SELECT TRACK** | Circuit list appears with **both** built-in circuits | ☐ |
-| 2 | Select **Cabo do Mundo** | Confirm screen reads: Leça da Palmeira, 7.0 m line, 826 m lap, 14 corners, 60–120 s window | ☐ |
+| 2 | Select **Cabo do Mundo** | Confirm screen reads: Leça da Palmeira, 7.0 m line, 826 m lap, 14 corners, 50–120 s window | ☐ |
 | 3 | Confirm the line's position on the ground before starting | It is on the start/finish straight, **not** in the pit lane | ☐ |
 | 4 | Wait for GPS readiness, then start and drive **at least 6 laps** | Recording proceeds with no line capture | ☐ |
 | 5 | Return to the pits and stop the session | Session completes | ☐ |
 | 6 | Count the laps reported against the laps you drove | Every flying lap present. **Zero laps reported is the failure this test exists for** — report it as a heading fault, not as "no GPS" | ☐ |
 | 7 | Check the lap times | Within 63–71 s for a normal pace, and none suspiciously close to *half* a real lap (a double count) | ☐ |
-| 8 | Retrieve the `.lapdiag.json` sidecar (see 6.1.1) | `headingReference` reads `TRACK_CATALOGUE`, `referenceHeadingDeg` reads `59.8`, `minLapTimeMs` reads `48000` | ☐ |
+| 8 | Retrieve the `.lapdiag.json` sidecar (see 6.1.1) | `headingReference` reads `TRACK_CATALOGUE`, `referenceHeadingDeg` reads `59.8`, `minLapTimeMs` reads `40000` | ☐ |
 | 9 | Check `rejectedCrossings` in the sidecar | Any `HEADING_MISMATCH` entries should be pit-lane or out-lap passes, not racing laps | ☐ |
 | 10 | Compare your first lap out of the pits | Out-laps slower than 165 s are discarded by design (LD-22). Not a defect — confirm it was genuinely that slow | ☐ |
 
@@ -406,6 +406,43 @@ prior is the only thing separating the two pieces of track, and if it is wrong t
 sidecar and the raw telemetry first — a reversed `travelHeadingDeg` and a mislocated line look
 identical from the app, and only the sidecar's `referenceHeadingDeg` and rejection reasons tell
 them apart.
+
+### LD-CAT-05: Test Circuit S.Mamede — Confirming the Surveyed Circuit on Track
+
+**Objective:** Close the last gap in Test Circuit S.Mamede's evidence (TL-15). Its heading,
+start/finish line and envelope have been checked against a session recorded on 2026-09-14,
+before the circuit was surveyed. What no test can show off-track is that the shipped build
+detects laps correctly **while driving it**. Passing this test raises the circuit from evidence
+tier C to tier D.
+
+**Venue:** Test Circuit S.Mamede, Matosinhos, Porto. This test cannot be performed anywhere else.
+
+**What to watch for.** Unlike Cabo do Mundo, nothing else passes near the start/finish (80 m
+away against a 15 m corridor), so a wrong heading here does **not** lose laps — the detector
+silently falls back to the first crossing. The lap count cannot reveal it; only the sidecar can.
+
+**Reference figures** (from the 2026-09-14 session, replayed against the catalogued line):
+
+| Quantity | Expected |
+|---|---|
+| Lap times | ~76–80 s at that session's pace |
+| Lap length | 802 m |
+| `referenceHeadingDeg` | 284.7 |
+| `minLapTimeMs` | 40000 |
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Tap START SESSION, name it, choose **SELECT TRACK** | Circuit list includes **Test Circuit S.Mamede** | ☐ |
+| 2 | Select **Test Circuit S.Mamede** | Confirm screen reads: Matosinhos, 10.2 m line, 802 m lap, 6 corners, 0:50.0–2:00.0 window | ☐ |
+| 3 | Confirm the line's position on the ground before starting | It is across the start/finish straight | ☐ |
+| 4 | Wait for GPS readiness, then start and drive **at least 4 laps** | Recording proceeds with no line capture | ☐ |
+| 5 | Return to the pits and stop the session | Session completes | ☐ |
+| 6 | Count the laps reported against the laps you drove | Every flying lap present, none doubled | ☐ |
+| 7 | Retrieve the `.lapdiag.json` sidecar (see 6.1.1) | `headingReference` reads `TRACK_CATALOGUE` — **`FIRST_CROSSING` is a failure even if every lap is present**; `referenceHeadingDeg` reads `284.7`, `minLapTimeMs` reads `40000` | ☐ |
+| 8 | Compare your first lap out of the pits | Out-laps slower than 160 s are discarded by design (LD-22) | ☐ |
+
+**If step 7 reads `FIRST_CROSSING`:** the catalogued heading or line is wrong. Capture the
+sidecar and raw telemetry; do not edit the catalogue from the device.
 
 ---
 
@@ -435,6 +472,7 @@ them apart.
 | LD-CAT-02 | Saving a Captured Circuit and Reusing It | ☐ Pass ☐ Fail |
 | LD-CAT-03 | Queue Time Excluded From Session Statistics | ☐ Pass ☐ Fail |
 | LD-CAT-04 | Cabo do Mundo — Confirming the Surveyed Circuit on Track | ☐ Pass ☐ Fail |
+| LD-CAT-05 | Test Circuit S.Mamede — Confirming the Surveyed Circuit on Track | ☐ Pass ☐ Fail |
 
 ---
 
@@ -461,3 +499,7 @@ LD-CAT-01…03 (track library: catalogued circuit, save and reuse, corridor filt
 *Updated 2026-09-29: Added LD-CAT-04 (Cabo do Mundo on-track confirmation). It is the only
 outstanding evidence for that circuit, and passing it is what clears it for release beyond the
 internal channel.*
+
+*Updated 2026-10-05: Added LD-CAT-05 (Test Circuit S.Mamede on-track confirmation). On this
+circuit a reversed heading is masked by the first-crossing fallback, so the sidecar's
+`headingReference` is the pass criterion, not the lap count.*

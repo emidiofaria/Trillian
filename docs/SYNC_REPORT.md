@@ -4,6 +4,82 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-10-06] Third Built-in Circuit — Test Circuit S.Mamede (Tier C)
+
+**Codebase Version:** v3.03 (catalogue data only; no production code changed; +17 L1, +L2 tests)
+**Trigger:** Built-in track addition via `trillian-add-track`. Evidence tier **C** — walked
+centreline and start line (2026-10-05) corroborated by a 3-lap kart session recorded
+2026-09-14, before the survey. Internal channel only until LD-CAT-05 is driven on track.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `app/src/main/assets/tracks/tracks.json` | ✅ Updated | `test_circuit_s_mamede`: 10.16 m line, 284.7°, 802 m, 6 corners, 50–120 s, 74-point ring |
+| `app/src/test/.../SMamedeCatalogueTest.kt` | ✅ Created | 9 structural tests |
+| `app/src/test/.../SMamedeSurveyCorroborationTest.kt` | ✅ Created | 8 corroboration tests against the 2026-09-14 fixture |
+| `app/src/androidTest/.../SMamedePriorsEndToEndTest.kt` | ✅ Created | Priors reach the detector; sidecar `TRACK_CATALOGUE`, 284.7°, 40000 ms, 3 laps |
+| `app/src/androidTest/.../TrackConfirmDisplayTest.kt` | ✅ Updated | Confirm screen shows a non-default circuit's own facts |
+| `app/src/androidTest/.../CaboDoMundoPriorsEndToEndTest.kt` | ✅ Updated | Catalogue-size assertion → `containsAll`; stale `minLapTimeMs` 48000 → 40000 (left over from v3.02's 60 → 50 s change) |
+| `01_requirements/ANNEX_A_circuit_evidence.md` | ✅ Updated | §A.1/§A.2 rows; GPS can under-read; three §A.3 notes (session-derived length, ring rotation, fallback-masked heading) |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | Remark on TL-04/TL-15: length agreement is a band; session-derived length corroborated by the walk; heading verified via `headingReference` where the fallback recovers laps. No circuit named (TL-17) |
+| `05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md` | ✅ Updated | LD-CAT-05 added; LD-CAT-04 stale figures (48000, 60–120 s) corrected |
+| `05_tests/coverage-map.tsv` | ✅ Updated | +6 claims (TL-05, TL-15) |
+| `atlas/failure-patterns.md` | ✅ Updated | New pattern `FP-FALLBACK-MASKS-PRIOR` |
+| `.github/skills/trillian-add-track.md` | ✅ Updated | Lessons folded in (see below) |
+| `docs/USER_MANUAL.md` | ⏭️ Unchanged | Names no circuits; directs users to SELECT TRACK |
+
+### New IDs
+- L4: LD-CAT-05 · Failure pattern: FP-FALLBACK-MASKS-PRIOR · No new SRS requirement IDs
+
+### Detailed Changes
+
+```diff
++ | `test_circuit_s_mamede` | C | 2026-09-14 kart session, 3 laps @ 1 Hz | yes — 21 days before survey and cataloguing | every racing crossing within 2.8–4.5° of 284.7° | 795–810 m measured vs 821.6 m walked ring (0.97×) … | `SMamedeSurveyCorroborationTest` |
+- | `minLapTimeMs` | 48000 |
++ | `minLapTimeMs` | 40000 |
+```
+
+**Skill update (`trillian-add-track`):** heading may be given as two points; telemetry
+location/date check; session-derived length uses a % band against the walk; ring rotation
+with SF midpoint insertion; GPS under-read allowed; thresholds scaled to available laps;
+reversed-heading probe + corridor margin (assert `headingReference` on wide-margin circuits);
+optional drawing step; Annex A / coverage-map / LD-CAT tasks; docs before validation; an
+explicit "update this skill" task; outdated single-track gotchas replaced.
+
+### Validation
+Clean build, `run-all-tests.sh` L1+L2: **458/458 passed** (L1 360, L2 98) —
+`05_tests/reports/RUN_20261006_165858`. Mutation run on the new L1 assertions: 10/10 caught.
+
+An earlier incremental L2 run failed `AboutScreenTest` showing "2.98 (298)": Kotlin incremental
+compilation had kept a stale inlined `BuildConfig.VERSION_NAME` in `AboutFragment.class`. A
+clean build fixed it; no code change.
+
+### Files Modified
+```
+M  app/src/main/assets/tracks/tracks.json                         (+322)
+A  app/src/test/java/com/drivingcoach/data/track/SMamedeCatalogueTest.kt
+A  app/src/test/java/com/drivingcoach/data/track/SMamedeSurveyCorroborationTest.kt
+A  app/src/test/resources/lapfixtures/s_mamede/
+A  app/src/androidTest/java/com/drivingcoach/ui/recording/SMamedePriorsEndToEndTest.kt
+M  app/src/androidTest/.../TrackConfirmDisplayTest.kt              (+27)
+M  app/src/androidTest/.../CaboDoMundoPriorsEndToEndTest.kt        (+16)
+M  app/build.gradle.kts                                            (3.02 → 3.03)
+M  01_requirements/ANNEX_A_circuit_evidence.md                     (+49, -2)
+M  01_requirements/DrivingCoach_SRS_v1.md                          (+9, -1)
+M  05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md           (+45, -3)
+M  05_tests/coverage-map.tsv                                       (+6)
+M  atlas/failure-patterns.md                                       (+28)
+M  .github/skills/trillian-add-track.md                            (+108, -56)
+```
+
+### Recommendations
+- [ ] Drive LD-CAT-05 at S.Mamede to raise it to tier D
+- [ ] Fixtures `teste3` and `ines3` were also recorded at S.Mamede — candidate extra corroboration
+- [ ] Consider making release packaging always build clean (stale inlined constants)
+
+---
+
 ## [2026-09-29] A Lost Lap Is Now Said Out Loud — LD-23, and Cabo do Mundo's Fast End
 
 **Codebase Version:** v3.01 (one new production class, one catalogue value, +14 L1 tests)

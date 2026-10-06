@@ -194,11 +194,34 @@ class TrackConfirmDisplayTest {
         )
     }
 
-    private fun navigateToConfirm() {
+    /**
+     * A circuit added later must reach the same screen with its own facts, not Baltar's:
+     * the confirm screen is resolved by id, and an id that resolved to the wrong entry
+     * would show a plausible screen for the wrong place. S.Mamede is 802 m, 6 corners,
+     * 50 s to 2 minutes.
+     */
+    @Test
+    fun aLaterCircuitIsSelectableAndShowsItsOwnFacts() {
+        navigateToConfirm(trackId = "test_circuit_s_mamede")
+        awaitUntil("S.Mamede's name to be shown") {
+            text(R.id.trackName).lowercase() == "Test Circuit S.Mamede".lowercase()
+        }
+
+        assertTrue(text(R.id.trackLocation).contains("Matosinhos"))
+        val facts = text(R.id.trackFacts)
+        assertTrue("its own length, not Baltar's: '$facts'", facts.contains("802 m"))
+        assertTrue("its own corner count: '$facts'", facts.contains("6 corners"))
+        assertTrue(
+            "and its own lap window: '$facts'",
+            facts.contains("0:50.0") && facts.contains("2:00.0")
+        )
+    }
+
+    private fun navigateToConfirm(trackId: String = "baltar") {
         scenario.onActivity { activity ->
             navController(activity).navigate(
                 R.id.trackConfirmFragment,
-                bundleOf("sessionName" to "Display Test", "trackId" to "baltar")
+                bundleOf("sessionName" to "Display Test", "trackId" to trackId)
             )
         }
         awaitUntil("the confirm screen to become the current destination") {

@@ -2785,3 +2785,31 @@ that the next iteration measures against. In this detector the same shape is del
 documented for `MIN_DISTANCE_FROM_START_M` (incident 13 finding F2, where resetting was the
 worse option) — the point is not that the pattern is always a bug, but that whether the driver
 is told is a separate decision from whether the guard is right.
+
+---
+
+## Pattern: A Fallback That Masks a Wrong Prior (FP-FALLBACK-MASKS-PRIOR) — ⚠️ TEST DESIGN (2026-10-05)
+
+**Shape.** A catalogue prior is wrong, the detector notices that the result is implausible, and
+it recovers by re-running without the prior. The output is correct, so every assertion on the
+output passes, and the wrong prior ships.
+
+**The instance.** On a circuit whose start/finish has a wide corridor margin, replaying a real
+session with `travelHeadingDeg` reversed 180° still yields every lap: the catalogue attempt
+rejects every crossing, `LocalLapDetector` falls back to the first-crossing reference (LD-14),
+and the laps reappear. A mutation test written in the shape used for narrow-margin circuits
+("reversed heading → zero laps") would fail, and a test asserting "correct heading → N laps"
+would pass on *either* heading.
+
+**Why it matters.** The fallback is what protects the driver, which is good. But it also
+withdraws the one protection the catalogued heading was meant to give: guarding the *first*
+crossing (incident 15's walk across the line). A reversed prior therefore degrades the app to
+uncatalogued behaviour without telling anyone.
+
+**Mitigation.** Assert on `LocalLapDetector.DetectionDiagnostics.headingReference`: `TRACK_CATALOGUE` for the
+shipped heading, `FIRST_CROSSING` for the reversed one. Replaying both is what proves the
+heading is actually used. The L4 acceptance step for such circuits checks the sidecar field,
+not the lap count.
+
+**Where else to look.** Any prior that has a recovery path behind it (`lengthM` vs LD-22, the
+envelope vs LD-21): mutation tests must observe *which path produced the answer*, not only the answer.

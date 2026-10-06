@@ -206,6 +206,12 @@ TL-15	BaltarSurveyCorroborationTest.theSurveyedLapLengthIsCorroboratedByTheDista
 TL-15	CaboDoMundoSurveyCorroborationTest.theHeadingTheKartsActuallyCrossAtMatchesTheSurveyedOne	The catalogued heading is corroborated by a recorded session
 TL-15	CaboDoMundoSurveyCorroborationTest.theSurveyedLapLengthIsCorroboratedByTheDistanceTheKartsCovered	The surveyed lap length is corroborated by the distance driven
 TL-15	CaboDoMundoSurveyCorroborationTest.theDeclaredFastestLapIsQuickerThanAnyLapActuallyDrivenButStillReachable	The lap envelope is checked against a real session rather than guessed
+TL-15	SMamedeSurveyCorroborationTest.theHeadingTheKartsActuallyCrossAtMatchesTheSurveyedOne	The catalogued heading is corroborated by a recorded session
+TL-15	SMamedeSurveyCorroborationTest.theCatalogueHeadingIsTheReferenceAndAReversedOneIsDetectable	A reversed heading is detectable even where the fallback recovers the laps
+TL-15	SMamedeSurveyCorroborationTest.theDistanceTheKartsCoveredAgreesWithTheWalkedRing	The distance driven agrees with the walked ring within a band
+TL-15	SMamedeCatalogueTest.theWalkedRingCorroboratesTheDeclaredLengthWithinThreePercent	A session-derived length is corroborated by the independent walk
+TL-15	SMamedeSurveyCorroborationTest.theDeclaredFastestLapIsQuickerThanAnyLapDrivenButReachable	The lap envelope is checked against a real session rather than guessed
+TL-05	SMamedeCatalogueTest.provenanceIsRecordedPerDatasetRatherThanPerTrack	Provenance recorded per dataset
 TL-16	BundledTrackCatalogTest.everyCircuitsLengthAndLapEnvelopeImplyAPlausibleSpeed	Every bundled circuit declares a length and an envelope that imply a plausible speed
 TL-17	CircuitEvidenceAnnexTest.noRequirementNamesASpecificCircuit	No requirement row names a catalogued circuit
 TL-18	CircuitEvidenceAnnexTest.bothRequirementsDocumentsArePresent	The SRS and Annex A both exist

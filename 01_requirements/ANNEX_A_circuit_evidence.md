@@ -26,6 +26,7 @@ The contents of `app/src/main/assets/tracks/tracks.json`, per TL-04 and TL-05.
 |---|---|---|---|---|---|---|
 | `baltar` | Kartódromo de Baltar | Baltar, Paredes, Portugal | 1020 m | 13 | 137.8° | 40–120 s |
 | `cabo_do_mundo` | Cabo do Mundo | Leça da Palmeira, Matosinhos, Portugal | 826 m | 14 | 59.8° | 50–120 s |
+| `test_circuit_s_mamede` | Test Circuit S.Mamede | Matosinhos, Porto, Portugal | 802 m | 6 | 284.7° | 50–120 s |
 
 Provenance is recorded per dataset, not per circuit (TL-05). The two datasets of a circuit may
 have been obtained by different means and may be re-surveyed independently.
@@ -34,10 +35,12 @@ have been obtained by different means and may be re-surveyed independently.
 |---|---|---|---|---|---|---|
 | `baltar` | 10.97 m | `MAP_COORDINATES` | 2026-09-20 | 140 waypoints | walked on foot | 2026-09-20 |
 | `cabo_do_mundo` | 7.00 m | `SURVEYED_ON_FOOT` | 2026-09-28 | 159 waypoints | walked on foot, mid-track | 2026-09-28 |
+| `test_circuit_s_mamede` | 10.16 m | `SURVEYED_ON_FOOT` | 2026-10-05 | 74 waypoints (73 walked + start/finish midpoint) | walked on foot with the phone | 2026-10-05 |
 
 Structural conformance of every row above — identifier uniqueness, closed centreline ring, line
 squareness against the declared heading, envelope plausibility — is asserted by
-`BundledTrackCatalogTest` for all circuits and by `CaboDoMundoCatalogueTest` for `cabo_do_mundo`.
+`BundledTrackCatalogTest` for all circuits, by `CaboDoMundoCatalogueTest` for `cabo_do_mundo` and
+by `SMamedeCatalogueTest` for `test_circuit_s_mamede`.
 
 ---
 
@@ -54,10 +57,14 @@ catalogue entry**, otherwise agreement proves only that the data was fitted to i
 |---|---|---|---|---|---|---|
 | `baltar` | C | Incident 15 recording | yes — recorded before the catalogue existed | every crossing within 10° of 137.8° | median 1094 m measured vs 1020 m surveyed | `BaltarSurveyCorroborationTest` |
 | `cabo_do_mundo` | C | 2026-09-26 kart session, 10 laps @ 1 Hz | yes — 2 days before survey, 3 before cataloguing | every racing crossing within 3.4° of 59.8° | median 841 m measured vs 826 m surveyed | `CaboDoMundoSurveyCorroborationTest` |
+| `test_circuit_s_mamede` | C | 2026-09-14 kart session, 3 laps @ 1 Hz | yes — 21 days before survey and cataloguing | every racing crossing within 2.8–4.5° of 284.7° | 795–810 m measured vs 821.6 m walked ring (0.97×); declared 802 m is session-derived — see §A.3 | `SMamedeSurveyCorroborationTest` |
 
 Measured lap distance exceeding surveyed distance is expected, not an error: summing the
 straight-line distance between consecutive 1 Hz fixes over-reads, because each fix carries its
-own error and the sum accumulates a random walk on top of the true path.
+own error and the sum accumulates a random walk on top of the true path. It is not a law,
+though: on a circuit with tight corners, 1 Hz fixes chord across them and a racing line is
+shorter than a mid-track walk, and the two effects can outweigh the random walk. Length
+agreement is therefore asserted as a band, never as a direction (`test_circuit_s_mamede`, §A.3).
 
 **The lap envelope is corroborated differently from the other two, and the difference matters.**
 `travelHeadingDeg` and `lengthM` are properties of the place, so a recorded session measures
@@ -80,6 +87,7 @@ the only thing separating the two pieces of track — see the remark on LD-20 in
 |---|---|---|---|
 | `baltar` | 24.7 m | 9.7 m | `BaltarSurveyCorroborationTest` |
 | `cabo_do_mundo` | 18.4 m | 3.4 m | `CaboDoMundoCatalogueTest` |
+| `test_circuit_s_mamede` | 80 m | 65 m | `SMamedeCatalogueTest` |
 
 ### Lap length guard floor
 
@@ -90,6 +98,7 @@ is circuit-specific and drivers do occasionally drive slower than it.
 |---|---|---|
 | `baltar` | 204 s | 12 laps recovered |
 | `cabo_do_mundo` | 165.2 s | 8 flying laps, 63.4–70.8 s, at 12–13 m/s; one out-lap at 167.1 s correctly discarded |
+| `test_circuit_s_mamede` | 160.4 s | 3 laps, 76.4–79.9 s — more than 80 s inside the floor |
 
 ### Outstanding work
 
@@ -97,6 +106,7 @@ is circuit-specific and drivers do occasionally drive slower than it.
 |---|---|
 | `baltar` | An L4 acceptance run driven at the circuit on the shipped build |
 | `cabo_do_mundo` | LD-CAT-04 in [`05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md`](../05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md) |
+| `test_circuit_s_mamede` | LD-CAT-05 in [`05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md`](../05_tests/L4_SYS5_acceptance/50_LAP_DETECTION_TESTS.md) |
 
 ---
 
@@ -173,3 +183,40 @@ section from the start/finish. Replaying the recorded session with `travelHeadin
 laps**, no error, and a driver shown an empty session.
 `CaboDoMundoSurveyCorroborationTest` keeps that mutation as a permanent assertion, so the guard
 cannot be weakened without a test failing.
+
+### `test_circuit_s_mamede` — the declared lap length was measured from the corroborating session
+
+`lengthM` = 802 m was taken from a driving session, not from the walk. TL-15 cannot be satisfied
+by that session for that figure: a number derived from a session can only agree with it. The
+independent check is the walked centreline, a closed ring of 821.6 m — 2.5 % longer than the
+declared length. `SMamedeCatalogueTest` asserts agreement within 3 %, not the 10 m used where
+the length was walked, because the two figures measure different paths (racing line vs
+mid-track) and the declared one carries GPS error of its own.
+
+The session's GPS lap distances (795–810 m, 0.97× the ring) **under-read** — the opposite of
+`baltar` and `cabo_do_mundo`. On a six-corner, 800 m circuit, 1 Hz fixes chord across the
+corners and the karts take a shorter line than the walk, and here that outweighs the random-walk
+over-read. `SMamedeSurveyCorroborationTest` asserts the ratio lies in a 0.9–1.2 band, not that it
+exceeds one.
+
+### `test_circuit_s_mamede` — the walk did not start at the start/finish
+
+The first walked waypoint lay 173 m around the lap from the start/finish line. The ring was
+rotated so the walk begins at the waypoint nearest the line, and the line's midpoint was
+inserted as waypoint 0. No walked point was moved or dropped; the rotation is visible as the
+74-vs-73 count in §A.1.
+
+### `test_circuit_s_mamede` — the direction prior is guarded by its reference, not by the lap count
+
+The opposite case to `cabo_do_mundo`. With 65 m of corridor margin nothing re-enters the
+corridor, and replaying the session with `travelHeadingDeg` reversed still yields **three laps**:
+the detector rejects every crossing against the catalogue heading, judges the attempt
+implausible, and falls back to the first-crossing reference (LD-14). The driver would not see
+the fault. The mutation is therefore asserted on the sidecar's `headingReference`
+(`TRACK_CATALOGUE` for the shipped heading, `FIRST_CROSSING` for the reversed one), which is the
+only place a reversed heading is observable on this circuit.
+
+The fast end of the envelope (50 s) is operator-supplied; the session's best lap is 76.4 s. It is
+asserted to be below every recorded lap and reachable at the session's peak speed (19.1 m/s),
+not to be within a fixed fraction of the recorded best — one session of three laps is too thin
+to bound pace from below.
