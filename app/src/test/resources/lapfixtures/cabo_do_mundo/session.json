@@ -1,0 +1,141 @@
+{
+  "exportedAtMs": 1790445701322,
+  "app": {
+    "versionName": "2.97",
+    "versionCode": 297
+  },
+  "device": {
+    "model": "OPPO CPH2005",
+    "sdkInt": 31
+  },
+  "session": {
+    "id": 2,
+    "trackName": "Leça",
+    "startedAt": 1790443944041,
+    "endedAt": 1790444819775,
+    "uploadStatus": "PENDING",
+    "processingStatus": "PENDING",
+    "startLine": {
+      "lat1": 41.22349548339844,
+      "lng1": -8.714224815368652,
+      "lat2": 41.22346878051758,
+      "lng2": -8.714250564575195
+    }
+  },
+  "telemetry": {
+    "fileName": "session_2.jsonl",
+    "sizeBytes": 219409
+  },
+  "laps": [
+    {
+      "lapNumber": 1,
+      "startTs": 1790443949734,
+      "endTs": 1790444116817,
+      "durationMs": 167083,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 2,
+      "startTs": 1790444116817,
+      "endTs": 1790444187614,
+      "durationMs": 70797,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 3,
+      "startTs": 1790444187614,
+      "endTs": 1790444255234,
+      "durationMs": 67620,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 4,
+      "startTs": 1790444255234,
+      "endTs": 1790444324437,
+      "durationMs": 69203,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 5,
+      "startTs": 1790444324437,
+      "endTs": 1790444390836,
+      "durationMs": 66399,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 6,
+      "startTs": 1790444390836,
+      "endTs": 1790444458371,
+      "durationMs": 67535,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 7,
+      "startTs": 1790444458371,
+      "endTs": 1790444523299,
+      "durationMs": 64928,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 8,
+      "startTs": 1790444523299,
+      "endTs": 1790444587734,
+      "durationMs": 64435,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 9,
+      "startTs": 1790444587734,
+      "endTs": 1790444651450,
+      "durationMs": 63716,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": true,
+      "isLocalOnly": true
+    },
+    {
+      "lapNumber": 10,
+      "startTs": 1790444651450,
+      "endTs": 1790444733959,
+      "durationMs": 82509,
+      "sector1Ms": 0,
+      "sector2Ms": 0,
+      "sector3Ms": 0,
+      "isBestLap": false,
+      "isLocalOnly": true
+    }
+  ]
+}

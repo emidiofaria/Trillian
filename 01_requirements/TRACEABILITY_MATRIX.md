@@ -10,7 +10,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 > `TEST_REPORT.html`. The percentages below are hand-maintained and should be read as
 > intent, not evidence.
 
-**Last Updated:** 2026-09-21 (updated by trillian-docs-sync — L2 coverage of the track library added: TL-07…TL-11 and TL-13 newly covered, TL-02/TL-03/TL-06 deepened, and LD-20 now has an end-to-end replay; L2 grew 64 → 93 tests)
+**Last Updated:** 2026-09-29 (updated by trillian-docs-sync — LD-23 added and covered by `MergedLapCaveatTest`, LD count 22 → 23; Cabo do Mundo's fast-lap envelope corrected to 50 s; L1 grew 329 → 343 tests)
 
 ---
 
@@ -22,11 +22,11 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Driver Profile (DR) | 8 | 8 | 100% ✅ |
 | Onboarding (ON) | 8 | 0 | 0% ❌ |
 | Track Setup (TS) | 20 | 12 | 60% ⚠️ |
-| Track Library (TL) | 14 | 12 | 86% ⚠️ |
+| Track Library (TL) | 18 | 16 | 89% ⚠️ |
 | Session Recording (SR) | 11 | 4 | 36% ⚠️ |
 | Telemetry Capture (TC) | 12 | 4 | 33% ⚠️ |
 | Telemetry Upload (TU) | 13 | 4 | 31% ⚠️ |
-| Lap Detection (LD) | 22 | 8 | 36% ⚠️ |
+| Lap Detection (LD) | 23 | 9 | 39% ⚠️ |
 | Lap Comparison (LC) | 15 | 0 | 0% ❌ |
 | Session Analysis (AS) | 18 | 18 | 100% ✅ |
 | AI Coaching (AI) | 14 | 0 | 0% ❌ |
@@ -37,7 +37,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Startup & Branding (UI) | 9 | 9 | 100% ✅ |
 | Non-Functional (NF) | 13 | 1 | 8% ⚠️ |
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
-| **TOTAL** | **~242** | **~97** | **~40%** |
+| **TOTAL** | **~243** | **~98** | **~40%** |
 
 > ℹ️ **Resolved — the `@Ignore`d L2 classes were deleted (2026-09-16).** Eight rows used to
 > cite `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or
@@ -104,6 +104,10 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | TL-12 | V1 list is plain and manual | — | *(none — absence of behaviour)* | ❌ |
 | TL-13 | Recording may only touch last-used | L2 | `TrackRepositoryTest`, `TrackPriorsHandoffTest` | ✅ |
 | TL-14 | Missing/corrupt asset behaves as an empty catalogue | — | *(none — see uncovered list)* | ❌ |
+| TL-15 | Priors corroborated against a recorded session before shipping | L1 | `BaltarSurveyCorroborationTest`, `CaboDoMundoSurveyCorroborationTest` | ✅ |
+| TL-16 | Bundled circuit must declare length and envelope | L1 | `BundledTrackCatalogTest` | ✅ |
+| TL-17 | No requirement names a specific circuit | L1 | `CircuitEvidenceAnnexTest` | ✅ |
+| TL-18 | Annex A and the catalogue match, both ways | L1 | `CircuitEvidenceAnnexTest` | ✅ |
 | **Session Recording** | | | | |
 | SR-04 | Elapsed time MM:SS.mmm | — | *(none — test deleted 2026-09-16)* | ❌ |
 | SR-05 | GPS status indicator | — | *(none — claim was unfounded)* | ❌ |
@@ -122,6 +126,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | LD-20 | Catalogued heading is the reference | L1 + L2 | `LapDetectionIncident15Test`, `TrackPriorsEndToEndTest` (full replay through the production path) | ✅ |
 | LD-21 | Catalogued fastest lap tightens the minimum gap | L1 | `LapDetectionIncident15Test` | ✅ |
 | LD-22 | Wholly implausible lap sets discarded by surveyed distance | L1 | `LapDetectionIncident15Test` | ✅ |
+| LD-23 | A lap count that may contain merged laps is qualified | L1 | `MergedLapCaveatTest` | ✅ |
 | **Offline Coaching** | | | | |
 | OC-01 | Local insights | L1 | `OfflineCoachingEngineTest` | ✅ |
 | OC-02 | 3-4 insights | L1 | `OfflineCoachingEngineTest` | ✅ |

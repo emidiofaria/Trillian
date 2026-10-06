@@ -20,6 +20,7 @@ import com.drivingcoach.data.telemetry.TelemetryFileWriter
 import com.drivingcoach.data.track.TrackRepository
 import com.drivingcoach.lap.LapDiagnosticsWriter
 import com.drivingcoach.lap.LocalLapDetector
+import com.drivingcoach.lap.MergedLapCaveat
 import com.drivingcoach.lap.NoLapsExplanation
 import com.drivingcoach.service.RecordingState
 import com.drivingcoach.service.TelemetryForegroundService
@@ -351,7 +352,15 @@ class RecordingViewModel @Inject constructor(
                             generateOfflineCoaching(sessionId, lapEntities, session.rawFilePath)
                         }
                         
-                        finishProcessing("${result.laps.size} laps detected", result.laps.size)
+                        // The count on its own is stated with a confidence the detector
+                        // may not have earned: where a crossing was refused just under
+                        // the minimum gap, two laps have been timed as one and nothing
+                        // downstream can tell, because a merged lap is a credible lap
+                        // (LD-23).
+                        val caveat = MergedLapCaveat.of(outcome.diagnostics)
+                        val message = "${result.laps.size} laps detected" +
+                            (caveat?.let { ". $it" } ?: "")
+                        finishProcessing(message, result.laps.size)
                     }
                     is LocalLapDetector.DetectionResult.InsufficientLaps -> {
                         // Still save any laps detected, but warn user

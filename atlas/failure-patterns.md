@@ -2668,3 +2668,120 @@ exactly where catalogue data gets edited.
 Corollary: **mutation-test data the way you would mutation-test code.** Shipped data that
 drives a decision is code. These four numbers steer lap detection for every driver at the
 circuit; they deserve the same proof of consequence as a branch condition.
+
+---
+
+## Pattern: Reasoning About the Detector by Re-Implementing It (FP-REIMPLEMENTED-GEOMETRY) — ⚠️ PROCESS (2026-09-29)
+
+### Symptom
+
+While adding the Cabo do Mundo circuit, an analysis of the corroborating telemetry concluded
+that **7 of 10 laps would be missed**. The reasoning was specific and looked sound: the karts
+cross the start/finish at lateral offsets of −6.50 m to −2.76 m from the line's midpoint,
+while the surveyed 7.01 m line only spans −3.48 m to +3.53 m. Seven crossings therefore fall
+outside the line.
+
+The recommendation was to widen the shipped start/finish line from 7.01 m to 16 m, replacing a
+surveyed measurement with a fitted one and downgrading its provenance from `SURVEYED_ON_FOOT`
+to `DERIVED_FROM_LAPS`.
+
+All of it was wrong. A calibration probe run against the real detector showed the 7.01 m line
+and the 16.06 m line produce **byte-identical** output: same eight laps, same timestamps, same
+diagnostics.
+
+### Root cause
+
+`LocalLapDetector` never uses the start line's length. It takes `startLine.midpoint()` and
+applies a fixed `DETECTION_HALF_WIDTH_M = 15.0` corridor around that point. The line's two
+endpoints determine *where* the start/finish is; they have no bearing on *how wide* the
+detection window is.
+
+That is deliberate, and it is the Incident 13 fix: a 7.15 m line is narrower than the GPS error
+of the device crossing it, so treating the line as the detection target loses real crossings.
+The corridor replaces it precisely so that a narrow surveyed line stays safe to ship.
+
+The analysis had re-implemented a plausible crossing test — segment intersection against the
+line — and then reasoned about the re-implementation. It answered a question the production
+code does not ask.
+
+### What made it persuasive
+
+The failure mode here is not carelessness, it is **confidence produced by specificity**. The
+numbers were real, computed from real telemetry, quoted to two decimal places. The lateral
+offsets are genuinely −6.50 m to −2.76 m. Every figure in the analysis was correct except the
+one that mattered: the relevance of the line's width, which was assumed rather than checked.
+
+Precision in the inputs was mistaken for validity in the conclusion.
+
+### Fix
+
+The widening was reverted; the shipped line is the surveyed 7.01 m with `SURVEYED_ON_FOOT`
+provenance. The finding is preserved as a KDoc note on
+`CaboDoMundoSurveyCorroborationTest.lapDistancesBetweenCrossings`, at the one place where
+somebody would be most tempted to make the same mistake again.
+
+### Detection
+
+Only one thing caught this: **running the actual detector on both variants and comparing the
+output.** No amount of re-reading the analysis would have exposed it, because the analysis was
+internally consistent. The `trillian-add-track` skill already warned "do not hand-roll crossing
+geometry to check this" — the warning was read, and disregarded, because the hand-rolled result
+looked too concrete to doubt.
+
+### Generalisation
+
+**To find out what a system does, run it.** Any claim of the form "the detector will/won't
+accept X" must come from `detectLapsWithDiagnostics`, not from geometry reconstructed
+alongside it. A re-implementation is a hypothesis about the code, not evidence about it.
+
+Corollary: **a throwaway probe is cheap and a wrong shipped constant is not.** The probe that
+settled this took minutes and was deleted immediately. Widening the line would have put a
+fitted number, wearing a survey's provenance, into the catalogue permanently.
+
+Corollary: **the fields a system ignores are as worth knowing as the ones it uses.** Nothing in
+the code says "line length is unused"; it is visible only as an absence. Absences do not show
+up when reading for what the code does, only when reading for what it does *not*.
+
+Corollary: **be specific about what a correction actually corrects.** The same review also
+found `fastestLapMs` set to an impossible 40 s. That figure was genuinely wrong and was fixed —
+but fixing it changes no observable behaviour on this circuit, and saying so plainly is part of
+the fix. A correction oversold once makes the next one harder to trust.
+
+---
+
+## Pattern: A Guard That Discards Evidence Instead of Reporting It (FP-SILENT-GUARD-LOSS) — ✅ FIXED (2026-09-29)
+
+**Shape.** A validity guard refuses an input, the refusal is correct, and the refusal is also
+the whole story — because discarding the input silently changes the answer that gets shown, and
+the changed answer is indistinguishable from a legitimate one.
+
+**The instance.** `LocalLapDetector` raises its minimum gap between crossings to 80 % of the
+circuit's declared fastest lap (LD-21). A driver quicker than that figure has a genuine
+start/finish crossing rejected as `TOO_SOON`. The rejection is right by its own rule, but a
+rejected candidate is deliberately not treated as a lap boundary, so the next accepted crossing
+is timed from the one *before* it. Two laps are presented as one lap of roughly double the
+duration.
+
+**Why nothing caught it.** Every downstream check agreed. The merged lap sits inside the
+declared envelope, and its implied average speed is far above `MIN_PLAUSIBLE_LAP_SPEED_MS`, so
+`lapsArePlausible()` passes it and the three-stage fallback never fires. `NoLapsExplanation`
+covers only the *empty* result and reads only `TOO_FAR_TO_THE_SIDE`, so `TOO_SOON` reached the
+driver on no code path. `RecordingViewModel` reported `"N laps detected"` unconditionally.
+
+**The part worth generalising.** LD-22 was written to stop the app stating a wrong answer
+confidently, and here the same failure walked straight past it. LD-22 asks whether a lap *could
+have been driven*; a merged lap could have been. The two cases are identical in the only
+evidence that check looks at, so no tuning of it would ever have helped. **When a guard's
+refusal can change the output, the refusal is data about the output and has to travel with it.**
+Tightening a downstream plausibility check is the tempting fix and the wrong one.
+
+**Mitigation.** `MergedLapCaveat` (LD-23) reads the rejection log — the only place the
+difference survives — and qualifies the lap count when a `TOO_SOON` landed at least half the way
+to the floor. Refusals landing well short are repeat fixes from a single pass and are ignored,
+because a caveat on ordinary sessions costs more trust than it buys.
+
+**Where else to look.** Any guard whose rejection path `continue`s without updating the state
+that the next iteration measures against. In this detector the same shape is deliberate and
+documented for `MIN_DISTANCE_FROM_START_M` (incident 13 finding F2, where resetting was the
+worse option) — the point is not that the pattern is always a bug, but that whether the driver
+is told is a separate decision from whether the guard is right.

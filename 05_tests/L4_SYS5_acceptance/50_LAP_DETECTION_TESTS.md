@@ -320,7 +320,7 @@ heading (LD-19).
 
 **Objective:** Verify SELECT TRACK produces laps without capturing a line (TL-02, TL-06, LD-20).
 
-**Venue:** Kartódromo de Baltar, or any circuit previously saved on this device.
+**Venue:** Kartódromo de Baltar, Cabo do Mundo, or any circuit previously saved on this device.
 
 | Step | Action | Expected Result | Pass/Fail |
 |------|--------|-----------------|-----------|
@@ -365,6 +365,50 @@ heading (LD-19).
 
 ---
 
+### LD-CAT-04: Cabo do Mundo — Confirming the Surveyed Circuit on Track
+
+**Objective:** Close the last gap in Cabo do Mundo's evidence (TL-15). Every other claim about
+this circuit has been checked against a session recorded *before* it was catalogued. What no
+test can show off-track is that the shipped build detects laps correctly **while driving it**.
+Passing this test is what raises the circuit from evidence tier C to tier D and clears it for
+release beyond the internal channel.
+
+**Venue:** Cabo do Mundo, Leça da Palmeira, Matosinhos. This test cannot be performed anywhere else.
+
+**Why it is worth a trip.** The circuit's return section passes 18.4 m from the start/finish
+against a 15 m detection corridor — a margin of 3.4 m, where Baltar has 9.7 m. The direction
+prior is the only thing separating the two pieces of track, and if it is wrong the app reports
+**no laps at all**, with no error shown. That failure is invisible from a desk.
+
+**Reference figures** (measured from the 2026-09-26 session, replayed against the catalogued line):
+
+| Quantity | Expected |
+|---|---|
+| Lap times, flying laps | 63–71 s |
+| Lap length | 826 m |
+| `referenceHeadingDeg` | 59.8 |
+| `minLapTimeMs` | 48000 |
+
+| Step | Action | Expected Result | Pass/Fail |
+|------|--------|-----------------|-----------|
+| 1 | Tap START SESSION, name it, choose **SELECT TRACK** | Circuit list appears with **both** built-in circuits | ☐ |
+| 2 | Select **Cabo do Mundo** | Confirm screen reads: Leça da Palmeira, 7.0 m line, 826 m lap, 14 corners, 60–120 s window | ☐ |
+| 3 | Confirm the line's position on the ground before starting | It is on the start/finish straight, **not** in the pit lane | ☐ |
+| 4 | Wait for GPS readiness, then start and drive **at least 6 laps** | Recording proceeds with no line capture | ☐ |
+| 5 | Return to the pits and stop the session | Session completes | ☐ |
+| 6 | Count the laps reported against the laps you drove | Every flying lap present. **Zero laps reported is the failure this test exists for** — report it as a heading fault, not as "no GPS" | ☐ |
+| 7 | Check the lap times | Within 63–71 s for a normal pace, and none suspiciously close to *half* a real lap (a double count) | ☐ |
+| 8 | Retrieve the `.lapdiag.json` sidecar (see 6.1.1) | `headingReference` reads `TRACK_CATALOGUE`, `referenceHeadingDeg` reads `59.8`, `minLapTimeMs` reads `48000` | ☐ |
+| 9 | Check `rejectedCrossings` in the sidecar | Any `HEADING_MISMATCH` entries should be pit-lane or out-lap passes, not racing laps | ☐ |
+| 10 | Compare your first lap out of the pits | Out-laps slower than 165 s are discarded by design (LD-22). Not a defect — confirm it was genuinely that slow | ☐ |
+
+**If step 6 reports zero laps:** do not adjust the start line. Capture the `.lapdiag.json`
+sidecar and the raw telemetry first — a reversed `travelHeadingDeg` and a mislocated line look
+identical from the app, and only the sidecar's `referenceHeadingDeg` and rejection reasons tell
+them apart.
+
+---
+
 ## Lap Detection Tests Summary
 
 | Test ID | Test Name | Status |
@@ -390,6 +434,7 @@ heading (LD-19).
 | LD-CAT-01 | Recording Against a Catalogued Circuit | ☐ Pass ☐ Fail |
 | LD-CAT-02 | Saving a Captured Circuit and Reusing It | ☐ Pass ☐ Fail |
 | LD-CAT-03 | Queue Time Excluded From Session Statistics | ☐ Pass ☐ Fail |
+| LD-CAT-04 | Cabo do Mundo — Confirming the Surveyed Circuit on Track | ☐ Pass ☐ Fail |
 
 ---
 
@@ -412,3 +457,7 @@ heading (LD-19).
 *Document ID: SAT-LD-001 | Version: 1.2 | Date: 2026-09-21*
 *Updated: Added LD-CROSS-08 (Incident 15 regression — a walked pass is not a lap) and
 LD-CAT-01…03 (track library: catalogued circuit, save and reuse, corridor filter).*
+
+*Updated 2026-09-29: Added LD-CAT-04 (Cabo do Mundo on-track confirmation). It is the only
+outstanding evidence for that circuit, and passing it is what clears it for release beyond the
+internal channel.*

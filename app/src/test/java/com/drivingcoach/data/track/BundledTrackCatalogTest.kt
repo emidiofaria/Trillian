@@ -140,10 +140,28 @@ class BundledTrackCatalogTest {
         val ceilingKmh = 126.0
 
         tracks().forEach { track ->
-            val length = track.lengthM
-            val fastest = track.fastestLapMs
-            val slowest = track.slowestLapMs
-            if (length == null || fastest == null || slowest == null) return@forEach
+            // This used to `return@forEach` on a null field, which meant the one
+            // catalogue-wide check in the suite was skipped by exactly the entries
+            // most likely to be wrong: a circuit that omitted its length evaded the
+            // only test that would have caught it. A bundled circuit is surveyed
+            // before it ships, so all three are required. Driver-saved circuits
+            // legitimately have no surveyed length, but none reach this test -
+            // `tracks()` parses the shipped asset, where `isBundled` is always true.
+            assertTrue(
+                "${track.id}: only bundled circuits are parsed from the shipped asset",
+                track.isBundled
+            )
+            val length = requireNotNull(track.lengthM) {
+                "${track.id}: a bundled circuit must declare its surveyed length - " +
+                    "LD-22 measures every lap against it"
+            }
+            val fastest = requireNotNull(track.fastestLapMs) {
+                "${track.id}: a bundled circuit must declare its fastest realistic lap - " +
+                    "it sets the minimum gap between crossings"
+            }
+            val slowest = requireNotNull(track.slowestLapMs) {
+                "${track.id}: a bundled circuit must declare its slowest realistic lap"
+            }
 
             assertTrue(
                 "${track.id}: fastest lap must not be slower than the slowest",
