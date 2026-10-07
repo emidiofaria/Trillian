@@ -139,6 +139,122 @@ class SectorSplitterTest {
         assertEquals("trailing samples must not move sector 2", lapOnly.sector2Ms, windowed.sector2Ms)
     }
 
+    // ==================== The ruler starts at the line ====================
+
+    @Test
+    fun `the first boundary is a third past the line, not a third past the first fix`() {
+        // 31 fixes 20 m apart, so 600 m of road at a constant 20 m/s. The lap starts
+        // half a second in, which puts the line at 10 m - between fix 0 and fix 1.
+        val samples = straightRun(count = 31, intervalMs = 1000L, metresPerStep = 20.0)
+        val startTs = samples.first().timestampMs + 500L
+        val endTs = samples.last().timestampMs
+
+        val sectors = SectorSplitter.split(samples, startTs, endTs)!!
+
+        // From the line the lap is 590 m, so a third is 196.67 m, reached 9.833 s in.
+        assertEquals(
+            "sector 1 should be a third of the lap measured from the line",
+            9833.0, sectors.sector1Ms.toDouble(), 50.0
+        )
+        // Measuring from the first fix instead gives 580 m, a third of which is
+        // 193.33 m reached at 10.167 s - a third of a second too long.
+        assertTrue(
+            "sector 1 of ${sectors.sector1Ms} ms is the value you get by zeroing the " +
+                "ruler at the first fix rather than at the line",
+            sectors.sector1Ms < 10_000L
+        )
+    }
+
+    @Test
+    fun `sector 1 does not drift with where the line falls between two fixes`() {
+        // This is the artefact the anchoring exists to remove. At a constant pace a
+        // third of the lap's distance is a third of its duration, whatever the GPS
+        // clock's phase happens to be. Before the ruler was anchored at the line this
+        // same sweep moved sector 1 by about half a second from end to end, purely on
+        // the arbitrary offset between the crossing and the next fix.
+        val samples = straightRun(count = 31, intervalMs = 1000L, metresPerStep = 20.0)
+        val endTs = samples.last().timestampMs
+
+        (0L until 1000L step 100L).forEach { phaseMs ->
+            val startTs = samples.first().timestampMs + phaseMs
+            val sectors = SectorSplitter.split(samples, startTs, endTs)!!
+
+            val third = (endTs - startTs) / 3.0
+            assertEquals(
+                "with the line $phaseMs ms after a fix, sector 1 came back as " +
+                    "${sectors.sector1Ms} ms against a true third of $third ms",
+                third, sectors.sector1Ms.toDouble(), 20.0
+            )
+        }
+    }
+
+    @Test
+    fun `sectors still sum to the lap when both ends are interpolated`() {
+        val samples = straightRun(count = 31, intervalMs = 1000L, metresPerStep = 20.0)
+        val startTs = samples.first().timestampMs + 400L
+        val endTs = samples.last().timestampMs - 700L
+
+        val sectors = SectorSplitter.split(samples, startTs, endTs)!!
+
+        assertEquals(
+            "the arithmetic promise must survive the anchoring",
+            endTs - startTs,
+            sectors.totalMs
+        )
+    }
+
+    @Test
+    fun `a fix landing exactly on the boundary is not counted twice`() {
+        // The anchor and the fix are the same point here. Adding both would insert a
+        // zero-length span for the interpolator to divide by.
+        val samples = straightRun(count = 31, intervalMs = 1000L, metresPerStep = 20.0)
+        val startTs = samples[2].timestampMs
+        val endTs = samples[28].timestampMs
+
+        val sectors = SectorSplitter.split(samples, startTs, endTs)!!
+
+        assertEquals(endTs - startTs, sectors.totalMs)
+        assertEquals(
+            "constant pace over whole samples should still give even thirds",
+            (endTs - startTs) / 3.0, sectors.sector1Ms.toDouble(), 20.0
+        )
+    }
+
+    @Test
+    fun `the sample floor counts recorded fixes and not the interpolated anchors`() {
+        // Seven fixes 100 m apart. The window excludes the first and last, leaving
+        // five recorded fixes - one short of the floor. The two anchors would make
+        // seven, which is exactly the quiet weakening this guards against.
+        val samples = straightRun(count = 7, intervalMs = 1000L, metresPerStep = 100.0)
+        val startTs = samples.first().timestampMs + 500L
+        val endTs = samples.last().timestampMs - 500L
+
+        assertEquals(
+            "fixture should leave exactly five recorded fixes in the window",
+            5,
+            samples.count { it.timestampMs in startTs..endTs }
+        )
+        assertNull(
+            "five recorded fixes is below the floor however many anchors are added",
+            SectorSplitter.split(samples, startTs, endTs)
+        )
+    }
+
+    @Test
+    fun `a boundary instant outside the telemetry yields no sectors`() {
+        // A truncated file. The ruler would have to be anchored on a guess, and three
+        // plausible numbers with nothing behind them is the outcome this project fears
+        // more than an empty screen.
+        val samples = straightRun(count = 31, intervalMs = 1000L, metresPerStep = 20.0)
+
+        assertNull(
+            SectorSplitter.split(samples, samples.first().timestampMs - 1L, samples.last().timestampMs)
+        )
+        assertNull(
+            SectorSplitter.split(samples, samples.first().timestampMs, samples.last().timestampMs + 1L)
+        )
+    }
+
     // ==================== Against a real recorded session ====================
 
     @Test

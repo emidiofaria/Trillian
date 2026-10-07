@@ -410,7 +410,14 @@ It shows the shape of the circuit you drove, coloured in three parts:
 | 🟣 Purple | **Sector 2** — the middle third |
 | 🟠 Orange | **Sector 3** — the final third, back to the start/finish |
 
-The gold dot is your start/finish line. The sectors run in the direction you drove.
+The gold dot is your start/finish line. The sectors run in the direction you drove. The dot
+sits **on the line itself**, not at the first spot your phone happened to take a reading after
+it — your phone only samples your position about once a second, and at racing speed that is
+fifteen to twenty metres of track.
+
+That same correction is why sector 1 now **begins at the start/finish line**. Sectors are
+equal thirds of the lap measured from the line, so the thirds — and the colours on the map —
+now line up with where you actually crossed it.
 
 **Where the shape comes from.** If you chose your circuit from Trillian's library, the map is
 the surveyed shape of that circuit. If you set up your own start/finish line, Trillian draws
@@ -424,6 +431,19 @@ too, and you should trust the shape a little less.
 telemetry file is no longer on your phone. The coaching cards below are unaffected — they
 don't depend on the map, and you'll still get every one your session supports. Trillian would
 rather show you nothing than show you a shape you can't recognise.
+
+#### Sessions you recorded before this update
+
+The first time you open an older session, Trillian quietly re-measures its sectors from the
+telemetry it already saved and corrects them. You don't have to do anything, and nothing is
+lost — **your lap times never change**, because only the *boundaries between* sectors were in
+the wrong place, never the laps themselves. Sessions recorded before sectors existed at all
+will gain them, as long as the telemetry file is still on your phone.
+
+The wording of the coaching cards is usually refreshed to match. For a few of the oldest
+sessions Trillian can correct the numbers but can't safely re-write the text, so the cards
+stay as they were — it would rather leave a slightly out-of-date sentence than risk showing
+you a Dream Lap it had good reason to hold back.
 
 > **Why not show the Dream Lap on the map?** Your Dream Lap is three sectors from three
 > different laps. Drawing it as one continuous line would show you a path round the circuit

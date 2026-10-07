@@ -20,4 +20,15 @@ interface CoachingInsightDao {
 
     @Query("DELETE FROM coaching_insights WHERE sessionId = :sessionId")
     suspend fun deleteInsightsForSession(sessionId: Long)
+
+    /**
+     * Removes only the insights this device generated for itself.
+     *
+     * Insights that came from the backend or an AI pass are the user's paid-for
+     * content and cannot be regenerated locally, so a local recalculation must never
+     * take them with it (OC-09, OC-10). That is the whole reason this exists next to
+     * [deleteInsightsForSession] rather than replacing it.
+     */
+    @Query("DELETE FROM coaching_insights WHERE sessionId = :sessionId AND isLocalOnly = 1")
+    suspend fun deleteLocalInsightsForSession(sessionId: Long)
 }

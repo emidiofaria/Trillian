@@ -2618,12 +2618,25 @@ dot at index 0, and a provenance-aware content description.
 
 ---
 
-## Component: Coach Map View Model (`CoachMapViewModel`)
+## Component: Coach Telemetry View Model (`CoachTelemetryViewModel`)
+
+*Named `CoachMapViewModel` until the sector repair joined it.*
 
 ### Purpose
 
 Reads telemetry and builds the drawing off the main thread, so the Coach tab's insights —
-already persisted as text — appear immediately and the map arrives behind them.
+already persisted as text — appear immediately and the map arrives behind them. It then
+runs `SectorRepair` over the samples it has just loaded.
+
+### Why the repair rides along here
+
+`SectorRepair` needs the whole session's telemetry, which this view model has already read
+in order to draw. Running it anywhere else would mean reading the same file a second time
+on every session open, purely to keep a class name accurate. The name was changed instead.
+
+Because the repair writes through Room, the LAPS tab — observing the same query — corrects
+itself without being told. A repair confined to the Coach tab would leave two tabs of the
+same screen quoting different numbers for the same lap.
 
 ### Why it is separate from `SessionResultViewModel`
 
@@ -2640,6 +2653,107 @@ needs.
 ### Criticality
 
 **LOW**
+
+---
+
+## Component: Lap Anchor (`lap/LapAnchor`)
+
+### Purpose
+
+Recovers where the car was at a given instant by interpolating between the two fixes either
+side of it. Its one real use is recovering the start/finish crossing *position* from the
+crossing *instant* that lap detection persisted.
+
+### Why it is an inversion and not a second opinion
+
+`LocalLapDetector` derives the crossing position and the crossing timestamp from a single
+interpolation fraction of a single segment, keeps the timestamp, and discards the position.
+Given the timestamp, that fraction is recoverable by proportion and the position follows
+exactly — lossless to the detector's millisecond rounding, about two centimetres at racing
+speed.
+
+This is deliberately *not* a reimplementation of the detector's start-line plane geometry,
+which would be a second opinion liable to disagree with the first (`FP-REIMPLEMENTED-GEOMETRY`).
+The dependency is noted at the crossing site in `LocalLapDetector`: if the two ever stop
+sharing a fraction, this inversion silently degrades from exact to approximate.
+
+### Refusals
+
+Returns null for an instant outside the recorded range. Extrapolating past the end of the
+data would be inventing a position rather than recovering one.
+
+### Key Files
+
+| File | Responsibility |
+|------|----------------|
+| `lap/LapAnchor.kt` | `positionAt()` |
+
+### Criticality
+
+**MEDIUM** — everything that measures distance along a lap depends on it.
+
+---
+
+## Component: Sector Repair (`coaching/SectorRepair`)
+
+### Purpose
+
+Brings a session's stored sector times up to date with the current measurement when the
+session is opened, and regenerates the coaching text when — and only when — that can be
+done safely.
+
+### Why repair on read rather than migrate
+
+A Room migration cannot do this work: it would have to re-read every telemetry file from
+inside a schema upgrade, on a device that may be low on time and battery, for sessions the
+driver may never open again. Repairing lazily costs nothing for sessions nobody looks at
+and needs no schema change — the database stays at **version 5**.
+
+It is also naturally idempotent. There is no "has been migrated" flag to drift out of step
+with reality, because the check *is* the recomputation: recompute, compare, write only on
+difference.
+
+### The dangerous part: regenerating insights
+
+Sector times are numbers and can be replaced. Insights are *sentences* built from those
+numbers, so correcting the numbers leaves the text stale — and regenerating it is where this
+could do real harm.
+
+`DreamLap` must be suppressed when lap detection suspected it had merged two laps into one
+(OC-14), and that signal comes from detection diagnostics, not from the sector times. OC-14
+is explicit that it must be *passed in* rather than inferred, so inferring it here is not
+available. Regenerating without it would silently resurrect a dream lap that was correctly
+withheld.
+
+The diagnostics are written to a `.lapdiag.json` sidecar beside the telemetry (LD-16), so
+the signal is usually recoverable:
+
+| Sidecar | Sectors | Insight text |
+|---------|---------|--------------|
+| Present and parseable | Corrected | Regenerated with the recovered caveat |
+| Absent, unreadable, or no telemetry path | Corrected | **Left exactly as recorded** |
+
+Only `isLocalOnly` insights are ever removed (OC-09, OC-10): insights that came from the
+backend cannot be regenerated locally, so a local recalculation must never take them along.
+
+### Backfill
+
+A lap stored with zero sectors is treated as differing, so a session recorded before sectors
+existed gains them on first open. A lap the road genuinely cannot be divided for yields null
+from `SectorSplitter` and keeps whatever it had, rather than being blanked.
+
+### Key Files
+
+| File | Responsibility |
+|------|----------------|
+| `coaching/SectorRepair.kt` | `repair()`, `regenerateInsights()` |
+| `data/db/dao/LapDao.kt` | `updateSectors()` |
+| `data/db/dao/CoachingInsightDao.kt` | `deleteLocalInsightsForSession()` |
+| `lap/LapDiagnosticsWriter.kt` | `read()` |
+
+### Criticality
+
+**LOW** — failure leaves old sessions with their old numbers; new sessions are unaffected.
 
 ---
 
@@ -2664,7 +2778,9 @@ needs.
 | SessionOutline | LOW | Coach-tab map absent for captured circuits; insights unaffected |
 | CoachMap | LOW | Coach-tab map absent; insights unaffected |
 | SectorMapView | LOW | Sector map missing from the COACH tab |
-| CoachMapViewModel | LOW | Sector map never populates; insights still render |
+| CoachTelemetryViewModel | LOW | Sector map never populates and stored sectors are never repaired; insights still render |
+| LapAnchor | MEDIUM | Sectors and the drawn outline lose their start/finish anchor; every boundary drifts by one sample gap |
+| SectorRepair | LOW | Sessions recorded before the ruler was anchored keep their old sector times; new sessions are unaffected |
 | Session State Machine | MEDIUM | UX confusion |
 | App Startup / Branded Loading Screen | HIGH | App unusable (no cold start) |
 | Stale Upload Detection | LOW | Missing UX warning |

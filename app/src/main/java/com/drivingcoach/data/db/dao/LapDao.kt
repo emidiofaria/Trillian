@@ -32,4 +32,15 @@ interface LapDao {
 
     @Query("SELECT * FROM laps WHERE sessionId = :sessionId ORDER BY durationMs ASC LIMIT 1")
     suspend fun getFastestLap(sessionId: Long): LapEntity?
+
+    /**
+     * Replaces one lap's sector times.
+     *
+     * Used to correct laps measured before the distance ruler was anchored at the
+     * start/finish line (OC-31). Deliberately narrow: the lap's own start, end and
+     * duration were never wrong, and rewriting the whole row would risk reverting a
+     * field some other part of the app had since updated.
+     */
+    @Query("UPDATE laps SET sector1Ms = :sector1Ms, sector2Ms = :sector2Ms, sector3Ms = :sector3Ms WHERE id = :lapId")
+    suspend fun updateSectors(lapId: Long, sector1Ms: Long, sector2Ms: Long, sector3Ms: Long)
 }

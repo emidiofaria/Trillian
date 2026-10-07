@@ -157,6 +157,33 @@ OC-25	CoachMapTest.a centreline from a different circuit falls back to the drive
 OC-26	CoachTabTest.aMapDerivedFromLapsSaysSoBeneathItself	Provenance note shown for a derived shape
 OC-27	CoachTabTest.missingTelemetryHidesTheMapAndKeepsTheInsights	Map hidden, insights kept
 
+# --- Sector anchoring at the start/finish line ---
+LD-27	LapAnchorTest.an instant halfway between two fixes gives the halfway position	Crossing position interpolated from the crossing instant
+LD-27	LapAnchorTest.interpolation is proportional across the whole span	Inversion is proportional, matching the detector's fraction
+LD-27	LapAnchorTest.the recovered position matches the crossing offset the detector recorded	Recovered position agrees with the detector's own lateral offset
+LD-27	LapAnchorTest.an instant before the first fix has no position	No extrapolation before the data
+LD-27	LapAnchorTest.an instant after the last fix has no position	No extrapolation after the data
+LD-27	SectorSplitterTest.the first boundary is a third past the line, not a third past the first fix	Ruler zeroed at the line
+LD-27	SectorSplitterTest.sector 1 does not drift with where the line falls between two fixes	Phase sweep: no artefact from GPS sampling phase
+LD-27	SectorSplitterTest.sectors still sum to the lap when both ends are interpolated	Sum preserved with both anchors
+LD-27	SectorSplitterTest.a boundary instant outside the telemetry yields no sectors	Refusal rather than a guessed anchor
+LD-28	SectorSplitterTest.the sample floor counts recorded fixes and not the interpolated anchors	MIN_SAMPLES_PER_LAP counts real fixes only
+LD-28	SectorSplitterTest.a fix landing exactly on the boundary is not counted twice	No zero-length span at an exact hit
+OC-30	SessionOutlineTest.index 0 is the interpolated crossing, not the first fix after it	Drawn outline starts at the line
+OC-30	SessionOutlineTest.a real session's outline starts nearer the line than its first fix does	Real session: start marker on the line
+OC-31	SectorRepairTest.sectors measured the old way are rewritten	Stored sectors corrected on read
+OC-31	SectorRepairTest.a session already measured correctly is not written to	No write when nothing changed
+OC-31	SectorRepairTest.repairing twice writes only once	Idempotent
+OC-31	SectorRepairTest.a session with no telemetry is left exactly as it was	No telemetry, no repair
+OC-31	CoachTabTest.staleSectorTimesAreCorrectedWhenTheSessionIsOpened	Repair reaches the screen when the session is opened
+OC-31	CoachTabTest.missingTelemetryLeavesTheStoredSectorsUntouched	Stored sectors untouched without telemetry
+OC-32	SectorRepairTest.without diagnostics the sectors are corrected and the wording is left alone	No blind regeneration
+OC-32	SectorRepairTest.with diagnostics the insights are regenerated	Regeneration when the caveat is recoverable
+OC-32	SectorRepairTest.an unreadable sidecar is treated as no sidecar rather than as no caveat	Unreadable is unknowable, not absent
+OC-32	SectorRepairTest.regeneration removes only the locally generated insights	Backend insights never removed
+OC-32	SectorRepairTest.a null telemetry file does not regenerate	No path, no regeneration
+OC-32	CoachTabTest.correctingSectorsWithoutDiagnosticsLeavesTheInsightTextAlone	Insight text preserved end to end
+
 # --- Session Management ---
 SM-01	HomeViewModelTest	Delete session
 SM-05	HomeViewModelTest	Rename session

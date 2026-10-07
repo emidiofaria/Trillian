@@ -1033,6 +1033,12 @@ class LocalLapDetector @Inject constructor() {
             if (!(before <= 0.0 && after >= 0.0) && !(before >= 0.0 && after <= 0.0)) continue
             if (before == after) continue
 
+            // The crossing position and the crossing instant below are derived from
+            // this one fraction of this one segment. That shared origin is what lets
+            // LapAnchor recover the position later from the persisted instant alone,
+            // rather than re-deriving this plane geometry and risking a second opinion
+            // that disagrees with the first. Deriving the two separately would break
+            // that inversion silently.
             val fraction = (0.0 - before) / (after - before)
             val crossingX = px + dx * fraction
             val crossingY = py + dy * fraction

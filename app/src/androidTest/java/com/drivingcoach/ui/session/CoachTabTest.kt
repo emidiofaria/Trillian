@@ -23,8 +23,11 @@ import com.drivingcoach.testing.awaitUntil
 import com.drivingcoach.testing.launchFragmentInHiltContainer
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -36,7 +39,8 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * L2 (ASPICE SWE.5) coverage for the COACH tab — SRS OC-19, LD-27, LD-28, LD-29.
+ * L2 (ASPICE SWE.5) coverage for the COACH tab — SRS OC-19, OC-20, OC-26, OC-27,
+ * OC-31 and OC-32.
  *
  * ### Why this class exists
  *
@@ -87,7 +91,7 @@ class CoachTabTest {
 
     private fun context(): Context = ApplicationProvider.getApplicationContext()
 
-    // --- The map reaches the screen (SRS LD-27, LD-28) ---
+    // --- The map reaches the screen (SRS OC-20, OC-26) ---
 
     @Test
     fun coachTabShowsTheSectorMapWhenLapsAreUsable() {
@@ -112,7 +116,7 @@ class CoachTabTest {
             .check(matches(withText(R.string.coach_map_note_derived)))
     }
 
-    // --- Degraded input hides the map but never the insights (SRS LD-29) ---
+    // --- Degraded input hides the map but never the insights (SRS OC-27) ---
 
     /**
      * The insights were generated at save time and stored as text. They do not depend
@@ -143,13 +147,19 @@ class CoachTabTest {
     }
 
     /**
-     * A single lap earns no sector comparison, so the laps are stored without sector
-     * times and the caveat has nothing to qualify. Showing it anyway would explain a
-     * concept the driver is not being shown.
+     * Laps stored without sector times have nothing for the caveat to qualify, and
+     * showing it anyway would explain a concept the driver is not being shown.
+     *
+     * The telemetry is deliberately absent. With a readable file this state no longer
+     * survives being opened: OC-31 recomputes the sectors and, finding stored zeroes
+     * where the road can be divided, fills them in - which is exactly what gives a
+     * session recorded before sectors existed its sectors back. A fixture combining
+     * splittable telemetry with empty sector times therefore describes a session that
+     * cannot persist, and testing against it would be testing a transient.
      */
     @Test
     fun sectorCaveatIsHiddenWhenLapsCarryNoSectorTimes() {
-        seedSession(lapCount = 3, withSectorTimes = false, withTelemetryFile = true)
+        seedSession(lapCount = 3, withSectorTimes = false, withTelemetryFile = false)
         launchCoachTab()
 
         onView(withText(HEADLINE)).perform(scrollTo()).check(matches(isDisplayed()))
@@ -160,7 +170,92 @@ class CoachTabTest {
         }
     }
 
+    // --- Sectors measured the old way are repaired on open (SRS OC-31, OC-32) ---
+
+    /**
+     * The repair runs on a read path, so this is the only level at which it can be
+     * shown to actually happen: a real Room database, the real view model, and the
+     * fragment that triggers it. The assertion is made against the database rather
+     * than the screen because the correction's whole point is that it reaches *every*
+     * tab, not just the one the driver happened to open.
+     */
+    @Test
+    fun staleSectorTimesAreCorrectedWhenTheSessionIsOpened() {
+        seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true, staleSectors = true)
+        launchCoachTab()
+
+        awaitUntil("the stored sector times to be recomputed") {
+            val lap = storedLaps().firstOrNull { it.lapNumber == 1 } ?: return@awaitUntil false
+            lap.sector1Ms != LAP_MS / 2
+        }
+
+        val lap = storedLaps().first { it.lapNumber == 1 }
+        assertEquals(
+            "corrected sectors must still account for the whole lap and nothing more",
+            lap.durationMs,
+            lap.sector1Ms + lap.sector2Ms + lap.sector3Ms
+        )
+        assertTrue(
+            "sector 1 of ${lap.sector1Ms} ms is not a plausible third of a ${lap.durationMs} ms lap",
+            lap.sector1Ms.toDouble() / lap.durationMs in 0.15..0.55
+        )
+    }
+
+    /**
+     * No diagnostics sidecar was written beside this telemetry, so the merged-lap
+     * signal of OC-14 cannot be recovered. The numbers are corrected; the wording the
+     * driver already had must survive untouched, because regenerating it without that
+     * signal could resurrect a dream lap detection had deliberately withheld.
+     */
+    @Test
+    fun correctingSectorsWithoutDiagnosticsLeavesTheInsightTextAlone() {
+        seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true, staleSectors = true)
+        launchCoachTab()
+
+        awaitUntil("the stored sector times to be recomputed") {
+            val lap = storedLaps().firstOrNull { it.lapNumber == 1 } ?: return@awaitUntil false
+            lap.sector1Ms != LAP_MS / 2
+        }
+
+        onView(withText(HEADLINE)).perform(scrollTo()).check(matches(isDisplayed()))
+        assertEquals(
+            "the seeded insight should neither have been removed nor duplicated",
+            1,
+            storedInsights().count { it.headline == HEADLINE }
+        )
+    }
+
+    /**
+     * Without telemetry there is nothing to recompute from. Blanking or guessing the
+     * stored sectors would lose a measurement to no one's benefit.
+     */
+    @Test
+    fun missingTelemetryLeavesTheStoredSectorsUntouched() {
+        seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = false, staleSectors = true)
+        launchCoachTab()
+
+        awaitUntil("the sector map card to be hidden") {
+            runCatching {
+                onView(withId(R.id.sectorMapCard)).check(matches(not(isDisplayed())))
+            }.isSuccess
+        }
+
+        storedLaps().forEach { lap ->
+            assertEquals(
+                "lap ${lap.lapNumber} was rewritten despite there being nothing to measure",
+                LAP_MS / 2,
+                lap.sector1Ms
+            )
+        }
+    }
+
     // --- helpers ---
+
+    private fun storedLaps(): List<LapEntity> =
+        runBlocking { lapDao.getLapsForSession(sessionId).first() }
+
+    private fun storedInsights(): List<CoachingInsightEntity> =
+        runBlocking { insightDao.getInsightsForSession(sessionId).first() }
 
     private fun not(matcher: org.hamcrest.Matcher<android.view.View>) =
         org.hamcrest.CoreMatchers.not(matcher)
@@ -186,7 +281,8 @@ class CoachTabTest {
     private fun seedSession(
         lapCount: Int,
         withSectorTimes: Boolean,
-        withTelemetryFile: Boolean
+        withTelemetryFile: Boolean,
+        staleSectors: Boolean = false
     ) = runBlocking {
         val telemetryDir = File(context().filesDir, "telemetry").apply { mkdirs() }
         telemetryFile = File(telemetryDir, "coach_tab_test.jsonl")
@@ -217,9 +313,24 @@ class CoachTabTest {
                     startTs = start,
                     endTs = start + LAP_MS,
                     durationMs = LAP_MS,
-                    sector1Ms = if (withSectorTimes) LAP_MS / 3 else 0L,
-                    sector2Ms = if (withSectorTimes) LAP_MS / 3 else 0L,
-                    sector3Ms = if (withSectorTimes) LAP_MS - 2 * (LAP_MS / 3) else 0L,
+                    // `staleSectors` stands in for a session measured before the
+                    // ruler was anchored at the start/finish line: the halves are far
+                    // enough from a third that no rounding could explain them.
+                    sector1Ms = when {
+                        !withSectorTimes -> 0L
+                        staleSectors -> LAP_MS / 2
+                        else -> LAP_MS / 3
+                    },
+                    sector2Ms = when {
+                        !withSectorTimes -> 0L
+                        staleSectors -> LAP_MS / 4
+                        else -> LAP_MS / 3
+                    },
+                    sector3Ms = when {
+                        !withSectorTimes -> 0L
+                        staleSectors -> LAP_MS - LAP_MS / 2 - LAP_MS / 4
+                        else -> LAP_MS - 2 * (LAP_MS / 3)
+                    },
                     isBestLap = n == 1,
                     isLocalOnly = true
                 )
@@ -279,6 +390,13 @@ class CoachTabTest {
                 }
             }
         }
+
+        // Close the final lap. The seeded lap windows run to START_MS + laps * LAP_MS,
+        // and a real session's windows always do fall between two recorded fixes,
+        // because lap detection derived them from this very file. Without this sample
+        // the fixture describes a session that stops mid-lap, and the last lap is
+        // correctly refused a measured start and end.
+        appendSample(maxOf(t, START_MS + lapCount * LAP_MS), x, y, TOP_SPEED_MS, heading)
     }
 
     private fun StringBuilder.appendSample(

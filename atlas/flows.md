@@ -1918,14 +1918,15 @@ and without ever drawing a shape that misleads.
 ### Trigger
 
 - `SessionUiState` emits with `rawFilePath`, `laps` and `session.trackId`
-- Only from the **populated** branch of `CoachFragment.updateUI` — a loading or empty tab
-  never asks for a map
+- Asked for whenever the state is **not loading**, deliberately outside the populated
+  branch: a session with no insights yet still has laps whose sectors may need repairing
+  (OC-31), and the LAPS tab is already showing them
 
 ### Execution Path
 
 ```
 CoachFragment.updateUI(state)  [populated branch only]
-→ mapViewModel.load(state.rawFilePath, state.session?.trackId, state.laps)
+→ mapViewModel.load(sessionId, rawFilePath, trackId, laps)   [CoachTelemetryViewModel]
   → Key(filePath, trackId, lapCount) == last key?  → return, no work
   → rawFilePath null/blank or laps empty?          → MapState.Unavailable
 → [ASYNC] viewModelScope.launch
@@ -1947,17 +1948,32 @@ CoachFragment.updateUI(state)  [populated branch only]
         → < 3 laps → single best lap, isSingleLap = true  → SINGLE_LAP
         → otherwise                                        → DERIVED_FROM_LAPS
   → MapState.Ready(drawing) | MapState.Unavailable
+  → MapState published FIRST — the map is what the driver is waiting for
+  → [ASYNC] SectorRepair.repair(sessionId, laps, samples, telemetryFile)   [Dispatchers.IO]
+    → per lap: SectorSplitter.split(samples, startTs, endTs)
+      → null  → leave the lap alone (not proof the stored value is wrong)
+      → differs by >= 1 ms → lapDao.updateSectors(...)
+    → nothing changed → stop, no insight work
+    → lapDiagnosticsWriter.read(telemetryFile)
+      → null (absent / unparseable)  → STOP. Sectors corrected, wording left as recorded
+      → diagnostics → MergedLapCaveat.of(it)
+        → OfflineCoachingEngine.generateInsights(laps, path, caveat)
+        → empty → keep existing rather than replace real insights with none
+        → deleteLocalInsightsForSession (NEVER the indiscriminate delete)
+        → insertInsights(isLocalOnly = true)
 → CoachFragment.updateSectorMap(mapState)   [repeatOnLifecycle STARTED]
   → Ready        → sectorMapCard VISIBLE, sectorMap.setDrawing(d), provenance note
   → Unavailable  → sectorMapCard GONE, insights untouched
   → Loading      → sectorMapCard GONE
+→ Room re-emits laps and insights → LAPS tab corrects itself without being told
 ```
 
 ### Async Boundaries
 
 | Boundary | Thread | Why |
 |----------|--------|-----|
-| `TelemetryFileReader.readAll` | `Dispatchers.Default` | File read plus parse of a whole session |
+| `TelemetryFileReader.readAll` | `Dispatchers.IO` | File read plus parse of a whole session |
+| `SectorRepair.repair` | `Dispatchers.IO` | Recomputation plus database writes, after the map is on screen |
 | `CoachMap.build` | `Dispatchers.Default` | ~240 × laps projections and a median per index |
 | `updateSectorMap` | Main, via `repeatOnLifecycle` | View access only while STARTED |
 
@@ -1970,6 +1986,9 @@ CoachFragment.updateUI(state)  [populated branch only]
 | `spreadM > 25 m` | Laps disagree — poor fix, mixed lines | No map at all |
 | Centreline mismatch | Session recorded against the wrong circuit | Falls back to the driven shape |
 | Catalogue lookup fails | Captured circuit, `trackId` null | Derived shape; this is the ordinary path |
+| Boundary instant outside telemetry | Truncated file | That lap gets no sectors and is dropped from the outline; no guessed ruler |
+| Diagnostics sidecar missing | Older session, or a failed write | Sectors corrected, insight wording left stale — never regenerated blind |
+| `SectorRepair` throws | Anything | Swallowed. A session must not fail to open because its coaching text could not be refreshed |
 
 ### Invariants
 
@@ -1977,4 +1996,9 @@ CoachFragment.updateUI(state)  [populated branch only]
   read corners into GPS noise, which is worse than an absent picture.
 - The insights never wait for the map and never disappear with it.
 - The Dream Lap is never drawn as a path (OC-28).
-- Index 0 is the start/finish on **both** provenances.
+- Index 0 is the start/finish on **both** provenances — on the derived shape because the
+  resampling is anchored at the interpolated crossing (LD-27), on the surveyed one because
+  of the rotation in `fromCentreline` (OC-21). OC-30 is the requirement that they agree.
+- The repair writes **only on difference**, so opening a correct session is read-only.
+- The repair never regenerates insights without the merged-lap signal (OC-14, OC-32), and
+  never removes an insight it did not generate (OC-09, OC-10).

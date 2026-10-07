@@ -422,6 +422,8 @@ recoverable from git at `0216475`.
 | LD-24 | Sector boundary instants shall be **interpolated** between the two samples either side of the boundary. At the ~1 Hz reference sampling rate, snapping to the nearest fix quantises every boundary to a whole second — a ~4% error on a 25 s sector, far larger than the differences sectors exist to reveal. This is the same reasoning as NF-16 applies to lap boundaries. |
 | LD-25 | A lap carrying fewer than 6 telemetry samples, or covering less than 50 m, shall receive **no sectors** (all three remain `0L`) rather than estimated ones. Below these bounds the boundaries would be decided by interpolation alone, and a sector time that is a straight-line guess between two distant fixes is not a measurement. |
 | LD-26 | Sectors shall be derived **only after** a candidate lap set has passed the plausibility check and all detection fallbacks have run, so that sectors belonging to a discarded attempt can never reach the driver and detection geometry is provably unaffected. |
+| LD-27 | The distance ruler used to divide a lap into sectors shall be anchored at the **interpolated start/finish crossing position** at both ends of the lap, not at the first and last recorded fix inside the lap window. The crossing position shall be recovered from the persisted crossing instant by inverting the interpolation lap detection already performed, rather than by re-deriving the start-line geometry. |
+| LD-28 | The minimum-sample floor of LD-25 shall count **recorded fixes only**. The two interpolated anchor points introduced by LD-27 are not measurements and shall not be counted towards it. |
 | LD-11 | The lap with the minimum `durationMs` shall be flagged as `isBestLap=true`. Exactly one lap per session shall have this flag set. |
 | LD-12 | `SessionEntity.processingStatus` shall progress through: `PENDING → PROCESSING → LAPS_DONE → COMPLETE` on success, or `FAILED` on any error. |
 | LD-13 | The lat/lng approximation used for crossing geometry (equirectangular Cartesian) is valid for tracks smaller than 5 km in extent. This is the supported use case. |
@@ -616,8 +618,36 @@ no network connection of any kind.
 | OC-27 | Where no map can be drawn honestly, the map shall be **hidden entirely** and the insights shall be shown unaltered. A shape the driver cannot recognise is worse than no shape, because it invites them to read corners into GPS noise. The insights do not depend on telemetry still being readable and shall not be withheld with the picture. |
 | OC-28 | The Dream Lap shall **never** be drawn as a path on the map. Its three sectors come from three different laps, and a continuous line through them would depict a trajectory nobody drove. |
 | OC-29 | The map shall be computed off the main thread and shall not delay the insights, which are already persisted as text and require no telemetry to display. |
+| OC-30 | The start/finish marker on the map shall be drawn at the start/finish line itself. On a derived outline this follows from LD-27; on a surveyed centreline it follows from the rotation of OC-21. The two shall agree. |
+| OC-31 | When a session is opened, its stored sector times shall be recomputed from its telemetry and rewritten **only where they differ** from the stored values. This includes laps stored with no sector times at all: a session recorded before sectors existed, whose telemetry is still present, shall gain them. A lap the road cannot be divided for shall keep whatever it already had rather than be blanked. No schema migration shall be required, and a session that is never opened shall never be rewritten. |
+| OC-32 | Locally generated insights shall be regenerated after a sector correction **only when the merged-lap signal of OC-14 can be recovered** from the detection diagnostics recorded under LD-16. Where it cannot, the corrected sector times shall stand and the existing insight text shall be left unchanged. Insights not generated locally shall never be removed or replaced by this correction (OC-09, OC-10). |
 | OC-09 | Offline insights shall be stored with `source="LOCAL"` flag in `coaching_insights` table. |
 | OC-10 | When backend coaching arrives, local insights shall be replaced by backend insights. |
+
+**Remark on LD-27 — the clock and the ruler used to start in different places.**
+Lap *times* have been interpolated to the crossing instant since LD-15. Sector boundaries
+inherited that instant but not the matching position: the ruler was zeroed at `lap[0]`, the
+first fix *after* the line. All three recorded fixtures sample at a median gap of exactly
+**1000 ms**, and `LocalLapDetector` notes that the car covers 15–20 m between samples, so
+the lap's measured distance was short by that stretch at each end while its duration was not.
+
+Writing `d₀` for the gap from the line to the first fix and `d_e` for the gap from the last
+fix to the line, the first boundary landed `(2/3)d₀ − (1/3)d_e` late and the second
+`(1/3)d₀ − (2/3)d_e` late. On Cabo do Mundo (825 m at ~14 m/s) that is about **0.34 s**
+moved out of sector 2 and into sector 1. The damaging part is not the size but the
+variability: `d₀` depends on the GPS clock's arbitrary phase against the crossing, so it is
+re-rolled every lap, giving sector 1 roughly **±0.5 s of pure artefact** — about 2% of a
+28 s sector, and of the same order as the differences sectors exist to reveal.
+
+The dream lap is where this did real harm. It takes the *fastest* sector 1, 2 and 3 across
+the session, so it preferentially selects whichever lap's artefact flattered it most — the
+same argument OC-13 makes about a minimum actively selecting for the worst data. The
+plausible inflation is around **1 s**, comfortably under OC-13's 25% cap, so it would never
+have announced itself.
+
+Sector times always summed to the lap exactly, because sector 3 takes the remainder, and lap
+times were never affected. Nothing was lost or double-counted; the *placement* of the two
+boundaries was wrong. That is why OC-31 repairs rather than discards.
 
 **Remark on OC-21 — a catalogue centreline does not start at the start/finish line.**
 `Centreline`'s own documentation claimed that its points begin at the start/finish. That is

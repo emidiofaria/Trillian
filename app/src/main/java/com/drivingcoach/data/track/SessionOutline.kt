@@ -1,6 +1,7 @@
 package com.drivingcoach.data.track
 
 import com.drivingcoach.data.telemetry.TelemetrySample
+import com.drivingcoach.lap.LapAnchor
 import com.drivingcoach.lap.SectorSplitter
 import com.drivingcoach.util.GeoUtils
 import kotlin.math.max
@@ -176,18 +177,38 @@ object SessionOutline {
      * side of it, for the same reason the sector boundary instant is: snapping to
      * the nearest fix at ~1 Hz would quantise the shape to wherever the car happened
      * to be sampled, which at 40 m/s is a 40 m step.
+     *
+     * Both ends are anchored at the interpolated start/finish crossing recovered by
+     * [LapAnchor], not at the first and last recorded fix. Index 0 is therefore the
+     * line itself, which is what lets the Coach map draw its start/finish marker in
+     * the place the driver crosses rather than fifteen metres down the road (OC-30).
+     * It also keeps this resampling measuring the same stretch of road as
+     * [SectorSplitter], so index [POINTS] / 3 remains the first sector boundary by
+     * construction rather than by coincidence.
      */
     private fun resample(samples: List<TelemetrySample>, lap: LapWindow): List<Pair<Double, Double>>? {
         if (lap.endTs <= lap.startTs) return null
 
-        val window = samples.filter { it.timestampMs in lap.startTs..lap.endTs }
-        if (window.size < MIN_SAMPLES_PER_LAP) return null
+        val recorded = samples.filter { it.timestampMs in lap.startTs..lap.endTs }
+        if (recorded.size < MIN_SAMPLES_PER_LAP) return null
+
+        val startPos = LapAnchor.positionAt(samples, lap.startTs) ?: return null
+        val endPos = LapAnchor.positionAt(samples, lap.endTs) ?: return null
+
+        val window = ArrayList<Pair<Double, Double>>(recorded.size + 2)
+        if (recorded.first().timestampMs != lap.startTs) {
+            window.add(startPos.latitude to startPos.longitude)
+        }
+        recorded.forEach { window.add(it.latitude to it.longitude) }
+        if (recorded.last().timestampMs != lap.endTs) {
+            window.add(endPos.latitude to endPos.longitude)
+        }
 
         val cumulative = DoubleArray(window.size)
         for (i in 1 until window.size) {
             cumulative[i] = cumulative[i - 1] + GeoUtils.haversineDistance(
-                window[i - 1].latitude, window[i - 1].longitude,
-                window[i].latitude, window[i].longitude
+                window[i - 1].first, window[i - 1].second,
+                window[i].first, window[i].second
             )
         }
 
@@ -206,8 +227,8 @@ object SessionOutline {
 
             val f = if (spanM <= 0.0) 0.0 else ((target - cumulative[cursor - 1]) / spanM).coerceIn(0.0, 1.0)
             out.add(
-                prev.latitude + (next.latitude - prev.latitude) * f to
-                    prev.longitude + (next.longitude - prev.longitude) * f
+                prev.first + (next.first - prev.first) * f to
+                    prev.second + (next.second - prev.second) * f
             )
         }
         return out

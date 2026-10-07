@@ -30,7 +30,7 @@ class CoachFragment : Fragment() {
         ownerProducer = { requireParentFragment() }
     )
 
-    private val mapViewModel: CoachMapViewModel by viewModels()
+    private val mapViewModel: CoachTelemetryViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -83,15 +83,15 @@ class CoachFragment : Fragment() {
      * [CoachMap] declines to produce one, the card disappears and the insights below are
      * left untouched - they are still true, they just lose their picture.
      */
-    private fun updateSectorMap(state: CoachMapViewModel.MapState) {
+    private fun updateSectorMap(state: CoachTelemetryViewModel.MapState) {
         when (state) {
-            is CoachMapViewModel.MapState.Ready -> {
+            is CoachTelemetryViewModel.MapState.Ready -> {
                 binding.sectorMapCard.visibility = View.VISIBLE
                 binding.sectorMap.setDrawing(state.drawing)
                 updateMapNote(state.drawing)
             }
-            CoachMapViewModel.MapState.Loading,
-            CoachMapViewModel.MapState.Unavailable -> {
+            CoachTelemetryViewModel.MapState.Loading,
+            CoachTelemetryViewModel.MapState.Unavailable -> {
                 binding.sectorMapCard.visibility = View.GONE
                 binding.sectorMap.setDrawing(null)
             }
@@ -152,6 +152,19 @@ class CoachFragment : Fragment() {
             else -> state.insights.filter { !it.isLocalOnly }
         }
 
+        // Asked for once the session itself has loaded, because the file path and the
+        // lap windows both arrive with it. Deliberately outside the branches below: a
+        // session with no insights yet still has laps whose sector times may need
+        // correcting (OC-31), and the LAPS tab is already showing them.
+        if (!state.isLoading) {
+            mapViewModel.load(
+                sessionId = state.session?.id ?: 0L,
+                telemetryFilePath = state.rawFilePath,
+                trackId = state.session?.trackId,
+                laps = state.laps
+            )
+        }
+
         // Handle loading/empty states
         when {
             state.isLoading -> {
@@ -178,9 +191,6 @@ class CoachFragment : Fragment() {
                 binding.headerCard.visibility = View.VISIBLE
                 populateInsights(insightsToShow)
                 updateSectorCaveat(state)
-                // Asked for only once the session itself has loaded, because the file
-                // path and the lap windows both arrive with it.
-                mapViewModel.load(state.rawFilePath, state.session?.trackId, state.laps)
             }
         }
     }

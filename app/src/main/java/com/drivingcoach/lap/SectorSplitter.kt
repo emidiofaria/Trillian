@@ -40,18 +40,38 @@ import com.drivingcoach.util.GeoUtils
  * instant is interpolated between the two samples either side of the boundary, for
  * the same reason and by the same reasoning as NF-16 does for lap boundaries.
  *
+ * ### Why the ruler starts at the line and not at the first fix
+ *
+ * The clock starts the instant the car crossed the start/finish plane. The ruler
+ * used to start at the first fix *after* it, which at 1 Hz is fifteen to twenty
+ * metres further on. The lap's measured distance was therefore short by that
+ * stretch at the start and by another at the end, while its duration was not -
+ * so every boundary landed late on the circuit by a drifting amount, and the
+ * drift was different on every lap because the GPS clock's phase against the
+ * crossing is arbitrary. Sector 1 carried roughly half a second of pure artefact
+ * lap to lap, which matters most to the dream lap, since it takes the *fastest*
+ * sector and so preferentially selects whichever lap's artefact flattered it.
+ *
+ * Both ends of the lap are now anchored at the interpolated crossing position
+ * recovered by [LapAnchor], so the ruler and the clock measure the same stretch
+ * of road (LD-27).
+ *
  * Sector times therefore always sum to exactly the lap duration.
  */
 object SectorSplitter {
 
     /**
-     * Fewest samples a lap must contain before it can be divided into three.
-     *
-     * Three sectors need at least one interior sample each plus the two endpoints.
-     * Below this the boundaries would be decided by interpolation alone, and a
-     * "sector time" that is a straight-line guess between two distant fixes is not
-     * a measurement. Such a lap gets no sectors rather than invented ones.
-     */
+ * Fewest samples a lap must contain before it can be divided into three.
+ *
+ * Three sectors need at least one interior sample each plus the two endpoints.
+ * Below this the boundaries would be decided by interpolation alone, and a
+ * "sector time" that is a straight-line guess between two distant fixes is not
+ * a measurement. Such a lap gets no sectors rather than invented ones.
+ *
+ * This counts *recorded* fixes only. The two anchor points at the start/finish
+ * line are interpolated rather than measured, so counting them would quietly
+ * admit a four-fix lap past a floor that was written to demand six (LD-28).
+ */
     const val MIN_SAMPLES_PER_LAP = 6
 
     /**
@@ -75,8 +95,9 @@ object SectorSplitter {
     /**
      * Derives the three sector times for a single lap.
      *
-     * @param samples the whole session, sorted by timestamp. Only those falling
-     *   inside the lap window are used.
+     * @param samples the whole session, sorted by timestamp. Those falling inside the
+     *   lap window are used, plus the two fixes bracketing each boundary instant, from
+     *   which the crossing positions are recovered.
      * @param startTs the lap's start instant, as decided by lap detection
      * @param endTs the lap's end instant, as decided by lap detection
      * @return the three sector times, or null when the lap carries too little data
@@ -85,10 +106,27 @@ object SectorSplitter {
     fun split(samples: List<TelemetrySample>, startTs: Long, endTs: Long): Sectors? {
         if (endTs <= startTs) return null
 
-        val lap = samples.filter { it.timestampMs in startTs..endTs }
-        if (lap.size < MIN_SAMPLES_PER_LAP) return null
+        val recorded = samples.filter { it.timestampMs in startTs..endTs }
+        if (recorded.size < MIN_SAMPLES_PER_LAP) return null
 
-        // Cumulative distance along the lap, one entry per sample.
+        // Where the car actually was when the clock started and stopped. A null here
+        // means the boundary instant falls outside the telemetry - a truncated file,
+        // not a normal lap - and a ruler anchored on a guess is worse than no sectors.
+        val startPos = LapAnchor.positionAt(samples, startTs) ?: return null
+        val endPos = LapAnchor.positionAt(samples, endTs) ?: return null
+
+        val lap = ArrayList<Point>(recorded.size + 2)
+        // A fix landing exactly on the boundary already *is* the anchor; adding it
+        // again would insert a zero-length span for the interpolator to divide by.
+        if (recorded.first().timestampMs != startTs) {
+            lap.add(Point(startPos.latitude, startPos.longitude, startTs))
+        }
+        recorded.forEach { lap.add(Point(it.latitude, it.longitude, it.timestampMs)) }
+        if (recorded.last().timestampMs != endTs) {
+            lap.add(Point(endPos.latitude, endPos.longitude, endTs))
+        }
+
+        // Cumulative distance along the lap, one entry per point, zeroed at the line.
         val cumulative = DoubleArray(lap.size)
         for (i in 1 until lap.size) {
             cumulative[i] = cumulative[i - 1] + GeoUtils.haversineDistance(
@@ -118,12 +156,19 @@ object SectorSplitter {
         return Sectors(sector1, sector2, sector3)
     }
 
+    /** One point along the lap: a recorded fix, or an interpolated line crossing. */
+    private data class Point(
+        val latitude: Double,
+        val longitude: Double,
+        val timestampMs: Long
+    )
+
     /**
      * The instant at which the car had travelled [target] metres into the lap,
-     * interpolated between the two samples either side of that point.
+     * interpolated between the two points either side of that point.
      */
     private fun timeAtDistance(
-        lap: List<TelemetrySample>,
+        lap: List<Point>,
         cumulative: DoubleArray,
         target: Double
     ): Long? {

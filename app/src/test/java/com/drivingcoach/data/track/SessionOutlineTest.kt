@@ -27,6 +27,85 @@ class SessionOutlineTest {
     @get:Rule
     val tempFolder = TemporaryFolder()
 
+    // ==================== The outline starts at the line ====================
+
+    @Test
+    fun `index 0 is the interpolated crossing, not the first fix after it`() {
+        // 120 fixes to a 300 m-radius lap puts them 15.7 m apart. Starting each lap
+        // window half a sample interval in places the line 7.85 m along the circle,
+        // and the first recorded fix another 7.85 m beyond that - the exact distance
+        // the start/finish marker used to be wrong by.
+        val perLap = 120
+        val halfStep = (LAP_MS / perLap) / 2
+        val samples = circleLaps(laps = 4)
+        val offsetWindows = (0 until 3).map {
+            SessionOutline.LapWindow(lapStart(it) + halfStep, lapStart(it + 1) + halfStep)
+        }
+
+        val outline = SessionOutline.build(samples, offsetWindows)!!
+
+        val lineAngle = Math.PI / perLap
+        val (lineLat, lineLng) = GeoUtils.fromLocalMetres(
+            300.0 * cos(lineAngle), 300.0 * sin(lineAngle), 41.0, -8.0
+        )
+        val toLine = GeoUtils.haversineDistance(
+            outline.startAt.first, outline.startAt.second, lineLat, lineLng
+        )
+        assertTrue(
+            "index 0 sits $toLine m from where the lap window actually began",
+            toLine < 1.0
+        )
+
+        val firstFixAngle = 2 * Math.PI / perLap
+        val (fixLat, fixLng) = GeoUtils.fromLocalMetres(
+            300.0 * cos(firstFixAngle), 300.0 * sin(firstFixAngle), 41.0, -8.0
+        )
+        val toFirstFix = GeoUtils.haversineDistance(
+            outline.startAt.first, outline.startAt.second, fixLat, fixLng
+        )
+        assertTrue(
+            "index 0 is still sitting on the first recorded fix ($toFirstFix m away)",
+            toFirstFix > 5.0
+        )
+    }
+
+    @Test
+    fun `a real session's outline starts nearer the line than its first fix does`() {
+        // No magic threshold: the claim is simply that anchoring moved the start of the
+        // drawn shape towards the start/finish line on every circuit, which is what the
+        // marker on the Coach map is drawn from.
+        listOf("s_mamede", "cabo_do_mundo", "baltar2").forEach { name ->
+            val fixture = LapReplayHarness.load(name, tempFolder.newFolder())
+            val result = LapReplayHarness.detect(fixture)
+            val laps = (result as? LocalLapDetector.DetectionResult.Success)?.laps
+                ?: error("$name should detect laps")
+            val samples = runBlocking {
+                TelemetryFileReader.readAll(fixture.telemetryFile.absolutePath)
+            }
+            val outline = SessionOutline.build(
+                samples, laps.map { SessionOutline.LapWindow(it.startTs, it.endTs) }
+            )!!
+
+            val midLat = (fixture.startLine.lat1 + fixture.startLine.lat2) / 2.0
+            val midLng = (fixture.startLine.lng1 + fixture.startLine.lng2) / 2.0
+
+            val anchored = GeoUtils.haversineDistance(
+                midLat, midLng, outline.startAt.first, outline.startAt.second
+            )
+            // What index 0 used to be: the first fix recorded inside the first window.
+            val firstFix = samples.first { it.timestampMs >= laps.first().startTs }
+            val unanchored = GeoUtils.haversineDistance(
+                midLat, midLng, firstFix.latitude, firstFix.longitude
+            )
+
+            assertTrue(
+                "$name: anchored start is $anchored m from the line, the first fix is " +
+                    "$unanchored m - anchoring should not have made this worse",
+                anchored <= unanchored + 1.0
+            )
+        }
+    }
+
     // ==================== Shape and boundaries ====================
 
     @Test
