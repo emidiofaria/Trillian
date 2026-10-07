@@ -10,7 +10,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 > `TEST_REPORT.html`. The percentages below are hand-maintained and should be read as
 > intent, not evidence.
 
-**Last Updated:** 2026-09-29 (updated by trillian-docs-sync — LD-23 added and covered by `MergedLapCaveatTest`, LD count 22 → 23; Cabo do Mundo's fast-lap envelope corrected to 50 s; L1 grew 329 → 343 tests)
+**Last Updated:** 2026-10-07 (updated by trillian-docs-sync — Coaching Slices 2 and 3: LD 23 → 28, OC 10 → 32. Slice 3 anchored the sector ruler at the start/finish line: LD-27, LD-28, OC-30, OC-31, OC-32. L1 343 → 447 tests, L2 106 tests; the generated report counts 114/252 V1 requirements claimed)
 
 ---
 
@@ -26,18 +26,18 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Session Recording (SR) | 11 | 4 | 36% ⚠️ |
 | Telemetry Capture (TC) | 12 | 4 | 33% ⚠️ |
 | Telemetry Upload (TU) | 13 | 4 | 31% ⚠️ |
-| Lap Detection (LD) | 23 | 9 | 39% ⚠️ |
+| Lap Detection (LD) | 28 | 15 | 54% ⚠️ |
 | Lap Comparison (LC) | 15 | 0 | 0% ❌ |
 | Session Analysis (AS) | 18 | 18 | 100% ✅ |
 | AI Coaching (AI) | 14 | 0 | 0% ❌ |
-| Offline Coaching (OC) | 10 | 10 | 100% ✅ |
+| Offline Coaching (OC) | 32 | 28 | 88% ⚠️ |
 | Driver Progression (DP) | 6 | 0 | 0% ⚠️ |
 | Session Management (SM) | 10 | 4 | 40% ⚠️ |
 | Share (SH) | 6 | 0 | 0% ⚠️ |
 | Startup & Branding (UI) | 9 | 9 | 100% ✅ |
 | Non-Functional (NF) | 13 | 1 | 8% ⚠️ |
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
-| **TOTAL** | **~243** | **~98** | **~40%** |
+| **TOTAL** | **~252** | **~114** | **~45%** |
 
 > ℹ️ **Resolved — the `@Ignore`d L2 classes were deleted (2026-09-16).** Eight rows used to
 > cite `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or

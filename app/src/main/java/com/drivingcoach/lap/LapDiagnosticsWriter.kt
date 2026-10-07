@@ -77,6 +77,30 @@ class LapDiagnosticsWriter @Inject constructor() {
         }
     }
 
+    /**
+     * Reads back the diagnostics written beside [telemetryFile], if any.
+     *
+     * The merged-lap signal (LD-23) is derived from these diagnostics at save time and
+     * is not stored in the database. Recovering it here is what lets a later pass
+     * regenerate coaching insights without silently resurrecting a dream lap that was
+     * correctly suppressed (OC-14, OC-32).
+     *
+     * Never throws, and returns null for every kind of absence - no sidecar, an
+     * unreadable one, or one written by an older version whose shape no longer parses.
+     * A caller must treat null as "the signal is unknowable", not as "there was no
+     * caveat": the two look identical here and only one of them is safe to act on.
+     */
+    fun read(telemetryFile: File): LocalLapDetector.DetectionDiagnostics? {
+        return try {
+            val sidecar = sidecarFor(telemetryFile)
+            if (!sidecar.exists()) return null
+            gson.fromJson(sidecar.readText(), Record::class.java)?.diagnostics
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not read lap diagnostics beside ${telemetryFile.name}", e)
+            null
+        }
+    }
+
     /** A short, stable label for the outcome, so the file is readable without the app. */
     private fun describe(result: LocalLapDetector.DetectionResult): String = when (result) {
         is LocalLapDetector.DetectionResult.Success -> "success:${result.laps.size}_laps"

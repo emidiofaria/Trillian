@@ -4,6 +4,103 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-10-07] Coaching Slice 3 — Anchoring Sector 1 at the Start/Finish Line
+
+**Codebase Version:** v3.06 (no Room migration; DB stays at version 5)
+**Trigger:** The driver asked that sector 1 begin right after the start/finish line. It did
+not. A lap's clock started at the interpolated crossing instant, but its distance ruler was
+zeroed at the first GPS fix *after* it — so every sector boundary, and the map's start/finish
+dot, sat fifteen to twenty metres late.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `SRS_v1.md` | ✅ Updated | +5 requirements (LD-27, LD-28, OC-30, OC-31, OC-32) and one remark |
+| `components.md` | ✅ Updated | +2 components, 1 renamed, criticality matrix rows |
+| `flows.md` | ✅ Updated | Coach Sector Map flow extended with the repair pass |
+| `failure-patterns.md` | ✅ Updated | +2 patterns (FP-SPLIT-ORIGIN, FP-STALE-DERIVED-TEXT) |
+| `USER_MANUAL.md` | ✅ Updated | §5.2 — start/finish dot, and a new "Sessions you recorded before this update" |
+| `coverage-map.tsv` | ✅ Updated | +25 claims across the 5 new IDs |
+
+### New Requirement IDs
+
+LD-27, LD-28, OC-30, OC-31, OC-32
+
+### What was built
+
+| File | Role |
+|------|------|
+| `lap/LapAnchor.kt` *(new)* | Recovers the crossing **position** by inverting the detector's own interpolation of the crossing **instant** |
+| `lap/SectorSplitter.kt` | Lap is now `[crossing] + recorded fixes + [crossing]`; the ruler starts at the line |
+| `data/track/SessionOutline.kt` | Same anchoring, so index 0 of the drawn shape *is* the line (OC-30) |
+| `coaching/SectorRepair.kt` *(new)* | Recompute → compare → write only on difference, on session open |
+| `ui/session/tabs/CoachTelemetryViewModel.kt` | Renamed from `CoachMapViewModel`; hosts map build **and** repair |
+| `lap/LapDiagnosticsWriter.kt` | `read()` — makes the merged-lap caveat recoverable at read time |
+
+### Validation
+
+L1 **447/447** (+26) · L2 **106/106** on `Trillian_API36` (+3) · DB still at version 5.
+
+### What we learned
+
+1. **One measurement, two origins.** The error conserved every total — sector 3 takes the
+   remainder, so the three always summed to the lap exactly, and no invariant anyone had
+   thought to assert could see it. It was a *phase shift*, not a magnitude, and it was
+   re-rolled each lap from the arbitrary phase of the GPS clock against the crossing. That
+   gave sector 1 about **±0.5 s** of artefact, which reads as driving. `DreamLap` takes the
+   *fastest* sector, and a minimum does not average an artefact away — it selects for it,
+   for about **1 s** of invented gain, comfortably under OC-13's 25% cap. Recorded as
+   `FP-SPLIT-ORIGIN`.
+
+2. **The codebase had already won this fight once.** LD-15 exists because snapping a lap
+   boundary to the nearest 1 Hz sample was a 4% error. Sectors inherited the interpolated
+   *instant* from that fix and not the interpolated *position* — computed on the same line
+   of `LocalLapDetector` and discarded.
+
+3. **Inverting beat re-deriving.** Because the detector computes crossing position and
+   crossing timestamp from a single shared fraction, the position recovers *exactly* from
+   the persisted timestamp — lossless to about two centimetres. Re-implementing the start-line
+   plane geometry would have been a second opinion liable to disagree with the first
+   (`FP-REIMPLEMENTED-GEOMETRY`). It also meant **no schema migration**: the fix repairs
+   lazily on read instead, with no "has been migrated" flag to drift, because the check *is*
+   the recomputation.
+
+4. **The `MergedLapCaveat` trap.** Correcting the numbers leaves the *sentences* built from
+   them stale, and regenerating them looked free. It is not: `DreamLap` must be suppressed
+   when detection suspected it merged two laps, and OC-14 requires that signal be passed in
+   rather than inferred — a regeneration pass does not have it. Regenerating blind would
+   silently resurrect a dream lap that was correctly withheld. The `.lapdiag.json` sidecar
+   (LD-16) turned out to make it recoverable; where the sidecar is missing or unreadable,
+   the numbers are corrected and the wording is left exactly as recorded. Recorded as
+   `FP-STALE-DERIVED-TEXT`.
+
+5. **A failing L2 test found an unplanned behaviour.** `sectorCaveatIsHiddenWhenLapsCarryNoSectorTimes`
+   broke because the repair treats zeroed sectors as differing, so a session recorded before
+   sectors existed now *gains* them. That is desirable, and it was not in the plan. The
+   fixture was made coherent (no telemetry) and **OC-31 was widened** to state the backfill
+   explicitly, rather than the behaviour being quietly left undocumented.
+
+6. **A fixture, not the product, broke the other two.** The synthetic oval generator never
+   emitted a sample at or after the final lap's `endTs`, so the newly strict `resample`
+   dropped the last lap and two Slice 2 tests fell over. Real lap windows always fall between
+   recorded fixes — detection derived them from the same file — so the fixture was wrong, not
+   the strictness. Worth stating plainly: the temptation was to relax the production code.
+
+7. **Three stale requirement IDs were hiding in test comments.** `CoachTabTest` cited
+   LD-27/28/29 as sector-map requirements. They never existed as such — `coverage-map.tsv`
+   correctly claimed OC-19/20/26/27 — and they now collide with the real new LD-27/LD-28.
+   Corrected. Note that lines ~4295 and ~4309 of *this* file reference LD-27/LD-28 with
+   **different, older meanings** ("Offline indicator", "Start line from header"); those are
+   append-only history for IDs no longer in the SRS and were deliberately left alone.
+
+### Known gaps
+
+- The repair's write-back is not synchronised against another writer touching the same laps.
+  Single-user app, single screen; judged acceptable, untested.
+
+---
+
 ## [2026-10-07] Coaching Slice 2 — The Sector Map on the Coach Tab
 
 **Codebase Version:** v3.05 (no Room migration; DB stays at version 5)

@@ -2897,3 +2897,129 @@ bug and would have converted a recoverable error into a crash.
 suspension. Audit every `lifecycleScope.launch` that touches `binding` after an `await`,
 `withContext`, or suspending call. A crash surfacing in an untouched file during a new
 test is evidence of a latent defect, not of a bad test.
+
+---
+
+## Pattern: One Measurement, Two Origins (FP-SPLIT-ORIGIN) — ✅ FIXED (2026-10-07)
+
+### Symptom
+
+Nothing. Sector times summed to the lap exactly, lap times were correct, every test passed,
+and the numbers looked entirely plausible. The only visible trace was that sector 1 wandered
+by a few tenths from lap to lap on a driver who felt consistent.
+
+### What was happening
+
+`SectorSplitter` measured a lap with a **clock** and a **ruler** that started in different
+places:
+
+- the clock started at `startTs`, the interpolated instant the car crossed the start/finish
+  plane — correct, and inherited from LD-15
+- the ruler was zeroed at `lap[0]`, the first GPS *fix* after that instant
+
+All three recorded fixtures sample at a median gap of exactly 1000 ms, and `LocalLapDetector`
+notes that the car covers 15–20 m between samples. So the lap's measured *distance* was short
+by that stretch at each end while its *duration* was not, and the boundaries — defined as
+thirds of distance — landed late on the circuit.
+
+### Why it was so hard to see
+
+Three properties conspired:
+
+1. **The arithmetic stayed perfect.** Sector 3 takes the remainder, so the three always summed
+   to the lap. Every invariant anyone had thought to assert still held.
+2. **The error was a phase shift, not a magnitude.** Nothing was lost or double-counted; the
+   boundaries were simply in the wrong *place*. There is no conservation law that notices.
+3. **It was re-rolled every lap.** `d₀` depends on the GPS clock's arbitrary phase against the
+   crossing, giving sector 1 about **±0.5 s** of artefact — around 2% of a 28 s sector, and of
+   the same order as the differences sectors exist to reveal. Variability reads as driving.
+
+### The part that actually did harm
+
+`DreamLap` takes the *fastest* sector 1, 2 and 3 across the session. A minimum does not
+average an artefact away — it **actively selects for it**, picking whichever lap's phase
+flattered that sector most. This is the identical argument OC-13 already makes, applied to a
+source of error OC-13 did not know about. Plausible inflation: around **1 s**, comfortably
+under OC-13's 25% sanity cap, so it would never have announced itself.
+
+### The irony worth remembering
+
+The codebase had already fought this exact battle and won it. LD-15 exists because quantising
+a lap boundary to the nearest 1 Hz sample was a 4% error. Sectors inherited the interpolated
+*instant* from that fix — and not the interpolated *position*, which the detector computed on
+the same line of code and threw away.
+
+### Root cause
+
+A derived quantity took one of its two endpoints from a corrected source and the other from
+the uncorrected one. The two were never written down side by side, so the inconsistency had
+nowhere to become visible.
+
+### Fix
+
+`LapAnchor` recovers the crossing position by **inverting** the detector's own interpolation
+from the persisted instant, rather than re-deriving the plane geometry (which would have been
+`FP-REIMPLEMENTED-GEOMETRY`). `SectorSplitter` and `SessionOutline` anchor both ends of every
+lap there. `SectorRepair` corrects sessions already stored (OC-31).
+
+### Detection
+
+`SectorSplitterTest.sector 1 does not drift with where the line falls between two fixes`
+sweeps the crossing phase across a whole sample interval at constant pace and requires sector
+1 to stay a true third. Before the fix that sweep moved it by about half a second.
+
+### Generalisable rule
+
+**When a quantity has two endpoints, write down where each one comes from.** A correction
+applied to one end of a measurement and not the other produces an error that conserves
+totals, passes every sum check, and varies like signal.
+
+### Related
+
+- `FP-REIMPLEMENTED-GEOMETRY` — the trap avoided by inverting rather than re-deriving
+- `FP-UNMEASURED-ORIGIN` — the same family: an origin assumed rather than measured
+- OC-13 — a minimum selects for the worst data, including artefacts
+
+---
+
+## Pattern: Correcting the Numbers and Leaving the Sentences (FP-STALE-DERIVED-TEXT) — ⚠️ DESIGN (2026-10-07)
+
+### Symptom
+
+A fix corrects stored values, and the prose generated from those values — already persisted
+as text — silently continues to describe the old ones.
+
+### Where it bit
+
+`SectorRepair` rewrites sector times on read. Coaching insights are sentences built from
+those times at save time and stored in `coaching_insights`. Correcting the numbers without
+regenerating the text leaves the driver reading a paragraph about a sector that has moved.
+
+### Why the obvious fix is the dangerous one
+
+Regenerating looks free. It is not. `DreamLap` must be suppressed when lap detection
+suspected it had merged two laps into one, and OC-14 is explicit that this signal **must be
+passed in from detection rather than inferred from the sector times**. A regeneration pass is
+not re-running detection, so it does not have the signal — and regenerating without it
+silently resurrects a dream lap that was correctly withheld. A stale sentence is a small
+inaccuracy; an unearned dream lap is a trust failure.
+
+### Resolution
+
+The signal turned out to be recoverable after all: LD-16 writes detection diagnostics to a
+`.lapdiag.json` sidecar beside the telemetry. Regeneration happens only when that sidecar
+parses. Otherwise the corrected numbers stand and the wording is left exactly as recorded.
+
+### Generalisable rule
+
+**Persisted prose is derived data with no dependency tracking.** Before correcting a stored
+value, ask what text was generated from it, and what inputs that text needed that are no
+longer in scope. If a suppression rule depended on an input you no longer have, *not*
+regenerating is the safe direction — the failure mode of staleness is mild and the failure
+mode of regenerating blind is not.
+
+### Related
+
+- OC-14 — the merged-lap signal must be passed in, never inferred
+- OC-09 / OC-10 — only locally generated insights may be replaced
+- `FP-SPLIT-ORIGIN` — the correction that raised the question
