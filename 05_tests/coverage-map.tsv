@@ -142,7 +142,20 @@ TL-20	TrackStationTest.a missing centreline yields no station	Null rather than e
 TL-20	TrackStationTest.a centreline too thin to describe a circuit yields no station	MIN_POINTS refusal
 TL-20	TrackStationTest.every catalogue circuit with a centreline supports a station	Every shipped circuit projects
 TL-22	TrackStationTest.a point to one side of the track gets the opposite sign to a point on the other	Signed lateral offset distinguishes the two sides
-OC-19	OfflineCoachingEngineTest	Derived-sector caveat shown only when sectors exist
+OC-19	CoachTabTest.sectorCaveatIsShownWhenLapsCarrySectorTimes	Caveat shown when laps carry sector times
+OC-19	CoachTabTest.sectorCaveatIsHiddenWhenLapsCarryNoSectorTimes	Caveat hidden when they do not
+
+# --- Coach sector map ---
+OC-20	CoachTabTest.coachTabShowsTheSectorMapWhenLapsAreUsable	Map reaches the screen above the insights
+OC-21	CoachMapTest.index zero is the start finish line on a surveyed circuit	Centreline rotated to the start/finish
+OC-22	SessionOutlineTest.the median outline is closer to the true shape than any single lap	Derived shape is the per-fraction median
+OC-22	SessionOutlineTest.one wild lap does not bend the outline	Median resists a single off-line lap
+OC-23	SessionOutlineTest.the sector boundaries fall exactly on a point	Boundaries exact by construction
+OC-24	SessionOutlineTest.fewer than three laps is marked as a single lap	Single-lap fallback
+OC-24	SessionOutlineTest.a lap that earned sector times can always be drawn	Refuses below the LD-25 floor
+OC-25	CoachMapTest.a centreline from a different circuit falls back to the driven shape	Median lateral offset rejects a mismatch
+OC-26	CoachTabTest.aMapDerivedFromLapsSaysSoBeneathItself	Provenance note shown for a derived shape
+OC-27	CoachTabTest.missingTelemetryHidesTheMapAndKeepsTheInsights	Map hidden, insights kept
 
 # --- Session Management ---
 SM-01	HomeViewModelTest	Delete session

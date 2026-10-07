@@ -9,8 +9,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.drivingcoach.R
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
 import com.drivingcoach.data.db.entity.CoachingPreference
+import com.drivingcoach.data.track.CoachMap
 import com.drivingcoach.databinding.FragmentCoachBinding
 import com.drivingcoach.databinding.ItemCoachingInsightBinding
 import com.drivingcoach.ui.session.SessionResultViewModel
@@ -27,6 +29,8 @@ class CoachFragment : Fragment() {
     private val parentViewModel: SessionResultViewModel by viewModels(
         ownerProducer = { requireParentFragment() }
     )
+
+    private val mapViewModel: CoachMapViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,6 +64,58 @@ class CoachFragment : Fragment() {
                     updateUI(state)
                 }
             }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mapViewModel.state.collect { mapState ->
+                    updateSectorMap(mapState)
+                }
+            }
+        }
+    }
+
+    /**
+     * Shows the circuit with its sectors, or hides the card entirely.
+     *
+     * The map is never shown half-built: a shape the driver cannot recognise is worse
+     * than no shape, because it invites them to read corners into GPS noise. When
+     * [CoachMap] declines to produce one, the card disappears and the insights below are
+     * left untouched - they are still true, they just lose their picture.
+     */
+    private fun updateSectorMap(state: CoachMapViewModel.MapState) {
+        when (state) {
+            is CoachMapViewModel.MapState.Ready -> {
+                binding.sectorMapCard.visibility = View.VISIBLE
+                binding.sectorMap.setDrawing(state.drawing)
+                updateMapNote(state.drawing)
+            }
+            CoachMapViewModel.MapState.Loading,
+            CoachMapViewModel.MapState.Unavailable -> {
+                binding.sectorMapCard.visibility = View.GONE
+                binding.sectorMap.setDrawing(null)
+            }
+        }
+    }
+
+    /**
+     * Says where the drawn shape came from, when that changes what it can be trusted for.
+     *
+     * A surveyed circuit needs no note. A shape derived from the driver's own laps does,
+     * because it follows the line they drove rather than the edges of the road, and a
+     * shape from a single lap needs a stronger one still.
+     */
+    private fun updateMapNote(drawing: CoachMap.Drawing) {
+        val note = when (drawing.provenance) {
+            CoachMap.Provenance.SURVEYED_CENTRELINE -> null
+            CoachMap.Provenance.DERIVED_FROM_LAPS -> R.string.coach_map_note_derived
+            CoachMap.Provenance.SINGLE_LAP -> R.string.coach_map_note_single_lap
+        }
+        if (note == null) {
+            binding.sectorMapNote.visibility = View.GONE
+        } else {
+            binding.sectorMapNote.setText(note)
+            binding.sectorMapNote.visibility = View.VISIBLE
         }
     }
 
@@ -105,6 +161,7 @@ class CoachFragment : Fragment() {
                 binding.headerCard.visibility = View.GONE
                 binding.upsellCard.visibility = View.GONE
                 binding.sectorCaveat.visibility = View.GONE
+                binding.sectorMapCard.visibility = View.GONE
             }
             insightsToShow.isEmpty() && state.insights.isEmpty() -> {
                 binding.loadingContainer.visibility = View.GONE
@@ -112,6 +169,7 @@ class CoachFragment : Fragment() {
                 binding.emptyStateText.visibility = View.VISIBLE
                 binding.headerCard.visibility = View.VISIBLE
                 binding.sectorCaveat.visibility = View.GONE
+                binding.sectorMapCard.visibility = View.GONE
             }
             else -> {
                 binding.loadingContainer.visibility = View.GONE
@@ -120,6 +178,9 @@ class CoachFragment : Fragment() {
                 binding.headerCard.visibility = View.VISIBLE
                 populateInsights(insightsToShow)
                 updateSectorCaveat(state)
+                // Asked for only once the session itself has loaded, because the file
+                // path and the lap windows both arrive with it.
+                mapViewModel.load(state.rawFilePath, state.session?.trackId, state.laps)
             }
         }
     }

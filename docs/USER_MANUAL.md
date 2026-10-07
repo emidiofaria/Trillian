@@ -378,7 +378,9 @@ that lap to divide it honestly, so it shows nothing rather than guessing.
 
 ### 5.2 Coaching Feedback
 
-The **Coach** tab reads your laps and tells you what it can see in them. You'll get between
+At the top of the **Coach** tab you'll find a map of the circuit, split into three coloured
+parts — see "The sector map" just below. Underneath it, the tab reads your laps and tells you
+what it can see in them. You'll get between
 one and seven cards, depending on what your session actually supports:
 
 | Card | When you'll see it |
@@ -394,6 +396,38 @@ one and seven cards, depending on what your session actually supports:
 **The app will show fewer cards rather than make something up.** If your session doesn't
 support a particular piece of analysis, that card simply isn't there. A missing card is the
 app being honest, not the app being broken.
+
+#### The sector map
+
+When the coaching says *"Sector 2 is costing you the most"*, the obvious next question is
+**where is sector 2?** The map at the top of the Coach tab answers it.
+
+It shows the shape of the circuit you drove, coloured in three parts:
+
+| Colour | Part of the lap |
+|--------|-----------------|
+| 🔵 Blue | **Sector 1** — the first third after the start/finish line |
+| 🟣 Purple | **Sector 2** — the middle third |
+| 🟠 Orange | **Sector 3** — the final third, back to the start/finish |
+
+The gold dot is your start/finish line. The sectors run in the direction you drove.
+
+**Where the shape comes from.** If you chose your circuit from Trillian's library, the map is
+the surveyed shape of that circuit. If you set up your own start/finish line, Trillian draws
+the circuit from your own laps instead — it takes all of them and finds the line down the
+middle, so one scrappy lap can't bend the picture. In that case you'll see a short note under
+the map saying so, because a shape drawn from your laps follows **the line you drove**, not
+the edges of the road. If Trillian only had one usable lap to work with, the note says that
+too, and you should trust the shape a little less.
+
+**If there's no map**, your laps weren't consistent enough to draw a circuit from, or the
+telemetry file is no longer on your phone. The coaching cards below are unaffected — they
+don't depend on the map, and you'll still get every one your session supports. Trillian would
+rather show you nothing than show you a shape you can't recognise.
+
+> **Why not show the Dream Lap on the map?** Your Dream Lap is three sectors from three
+> different laps. Drawing it as one continuous line would show you a path round the circuit
+> that you never actually drove. The sector times are real; that line wouldn't be.
 
 #### Your Dream Lap
 

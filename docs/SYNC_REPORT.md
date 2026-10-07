@@ -4,6 +4,108 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-10-07] Coaching Slice 2 — The Sector Map on the Coach Tab
+
+**Codebase Version:** v3.05 (no Room migration; DB stays at version 5)
+**Trigger:** *"Sector 2 is costing you the most"* is a sentence about a place the driver
+cannot locate. Slice 1 gave the Coach tab a vocabulary of sectors; this slice gives that
+vocabulary something visible to point at.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `SRS_v1.md` | ✅ Updated | +10 requirements (OC-20..OC-29) and one remark |
+| `components.md` | ✅ Updated | +4 components, criticality matrix rows |
+| `flows.md` | ✅ Updated | +1 flow (Coach Sector Map) |
+| `failure-patterns.md` | ✅ Updated | +2 patterns |
+| `USER_MANUAL.md` | ✅ Updated | §5.2 — new "The sector map" subsection |
+| `coverage-map.tsv` | ✅ Updated | OC-19 retargeted; +11 claims |
+
+### New Requirement IDs
+
+OC-20, OC-21, OC-22, OC-23, OC-24, OC-25, OC-26, OC-27, OC-28, OC-29
+
+### What was built
+
+| File | Role |
+|------|------|
+| `data/track/SessionOutline.kt` | Per-fraction **median** shape from the driver's own laps |
+| `data/track/CoachMap.kt` | Chooses surveyed vs derived; owns the start/finish rotation |
+| `ui/common/SectorMapView.kt` | Three coloured polylines, S1/S2/S3, gold start/finish dot |
+| `ui/session/tabs/CoachMapViewModel.kt` | Reads telemetry off the main thread |
+
+### What we learned
+
+1. **A catalogue centreline does not start at the start/finish line.** Measured origins:
+   Baltar 400.0 m, Cabo do Mundo 770.9 m, S. Mamede 4.6 m. `Centreline`'s KDoc claimed
+   otherwise and was true of one circuit in three. Recorded as FP-UNMEASURED-ORIGIN and in
+   the remark under OC-21 — it is a trap for any future `s`-coordinate consumer.
+
+2. **A mismatched centreline must be detected by lateral distance, not boundary ordering.**
+   The ordering wraps legitimately whenever the start/finish falls late in the centreline's
+   own numbering, which is the common case. Measured offsets for correct matches: 2.8 / 6.4
+   / 2.7 m.
+
+3. **One constant was answering two questions.** `MIN_EXTENT_M` guarded both *metres driven*
+   and *metres across the bounding box*. A lap can drive 400 m round a 60 m box. Split, with
+   a test pinning the distance floor equal to `SectorSplitter`'s, so a lap that earns sector
+   times is always drawable.
+
+4. **A new test found a crash in a file the slice never touched.** `ChartFragment` wrote to
+   `binding` after its view was destroyed; `CoachTabTest` tore the screen down mid-render and
+   killed the whole instrumentation run. Fixed, and recorded as FP-BINDING-AFTER-DESTROY.
+   In production this is a driver leaving the screen while a large chart renders.
+
+5. **The map is not persisted.** An earlier plan justified a schema change by claiming SM-03
+   deletes telemetry. It does not — it deletes telemetry only as part of deleting the whole
+   session, so no surviving session's insights outlive the data their map needs. Checking the
+   claim removed a migration.
+
+6. **Espresso's `isDisplayed()` means on screen, not present.** With a 220 dp map pinned
+   above them, the insights now start entirely below the fold, so four tests waited for a
+   visibility that could never arrive. The fix was to scroll, and the symptom was itself
+   confirmation that the map had landed where it was meant to.
+
+### Deferred, deliberately
+
+**Per-insight sector dots.** `CoachingInsightEntity` has no sector field, so colouring an
+insight by sector would mean string-matching its wording — exactly the fragility
+`updateSectorCaveat` was written to avoid, and it would fail by pointing at the wrong place.
+Doing it honestly needs a schema change and is its own slice.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4) | **421 / 421** — was 390 before the slice |
+| L2 (SWE.5) | **103 / 103** on `Trillian_API36` (API 36, per NF-19) — was 98 |
+
+### Files Modified
+
+```
+A  app/src/main/java/com/drivingcoach/data/track/SessionOutline.kt
+A  app/src/main/java/com/drivingcoach/data/track/CoachMap.kt
+A  app/src/main/java/com/drivingcoach/ui/common/SectorMapView.kt
+A  app/src/main/java/com/drivingcoach/ui/session/tabs/CoachMapViewModel.kt
+A  app/src/test/java/com/drivingcoach/data/track/SessionOutlineTest.kt      (17 tests)
+A  app/src/test/java/com/drivingcoach/data/track/CoachMapTest.kt            (14 tests)
+A  app/src/androidTest/java/com/drivingcoach/ui/session/CoachTabTest.kt     ( 5 tests)
+M  app/src/main/java/com/drivingcoach/ui/session/tabs/CoachFragment.kt
+M  app/src/main/java/com/drivingcoach/ui/session/tabs/ChartFragment.kt      (crash fix)
+M  app/src/main/res/layout/fragment_coach.xml
+M  app/src/main/res/values/colors.xml
+M  app/src/main/res/values/strings.xml
+M  01_requirements/DrivingCoach_SRS_v1.md
+M  05_tests/coverage-map.tsv
+M  atlas/components.md
+M  atlas/flows.md
+M  atlas/failure-patterns.md
+M  docs/USER_MANUAL.md
+```
+
+---
+
 ## [2026-10-07] Coaching Slice 1 — Sectors, Dream Lap & Honest Insights
 
 **Codebase Version:** v3.04 (no Room migration; DB stays at version 5)
