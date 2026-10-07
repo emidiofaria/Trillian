@@ -955,31 +955,50 @@ Generate coaching insights locally from detected laps. Provides immediate feedba
 
 ```
 RecordingViewModel.processLapsLocally()
-→ LocalLapDetector.detectLaps() returns Success
+→ LocalLapDetector.detectLapsWithDiagnostics() returns Success + diagnostics
+  → (inside the detector, after the plausibility check and all three fallbacks)
+    withSectors(laps, samples)
+      → SectorSplitter.split(samples, startTs, endTs) per lap
+        → cumulative haversine distance along the lap
+        → interpolate the instants at 1/3 and 2/3 of that distance
+        → refuse (null) if <6 samples, <50 m, or boundaries out of order
+      → lap.copy(sector1Ms, sector2Ms, sector3Ms)   // or leave 0L on refusal
+→ caveat = MergedLapCaveat.of(diagnostics)          // computed BEFORE coaching
 → saveLapsToRoom(sessionId, detectedLaps)
-  → Map DetectedLap to LapEntity
-  → Set sector1Ms = 0L, sector2Ms = 0L, sector3Ms = 0L  // ⚠️ No sector data
+  → Map DetectedLap to LapEntity, carrying sector1Ms/2Ms/3Ms through
   → lapDao.insertLaps(lapEntities)
-→ generateOfflineCoaching(sessionId, lapEntities)
-  → OfflineCoachingEngine.generateInsights(laps)
+→ generateOfflineCoaching(sessionId, lapEntities, caveat)
+  → OfflineCoachingEngine.generateInsights(laps, rawFilePath, mergedLapCaveat)
     → Check laps.size >= 2
-    → generateBestLapInsight(laps, bestLap)
-      → avgS1 = laps.map { it.sector1Ms }.average()  // All 0 → avgS1 = 0.0
-      → gainS1 = avgS1 - bestLap.sector1Ms           // 0.0 - 0 = 0
-      → Select "best" sector (all gains equal at 0)
-      → Return "Lap X Was Your Fastest" + sector detail
+    → generateBestLapInsight(laps, bestLap)          // sector detail now real
+    → generateTopSpeedInsight(rawFilePath)           // omitted without telemetry
     → generateConsistencyInsight(laps)
-      → Calculate stdDev of durationMs
-      → Map to Excellent/Solid/Work thresholds
-      → Return headline + "Laps vary by {stdDev}" detail
-    → generateSectorFocusInsight(laps, bestLap)
-      → Calculate avg delta vs best for each sector
-      → Select weakest or "All Sectors Strong"
-  → Return List<OfflineInsight>
+    → generateDreamLapInsight(laps, mergedLapCaveat)
+      → DreamLap.of(laps, caveat)
+        → null if caveat present, <3 usable laps, sectors not summing,
+          implausible shares, total > best lap, or gain > 25%
+    → generateSectorDiagnosticInsight(laps, bestLap) // omitted when sectors are 0L
+    → generateOutlierLapInsight(laps)                // ≥4 laps, ≥15% off the MEDIAN
+    → generatePaceTrendInsight(laps)                 // ≥6 laps, halves differ >2%
+  → Return List<OfflineInsight>   // variable length, 1–7; each may be omitted
 → Map to CoachingInsightEntity with isLocalOnly=true
 → coachingInsightDao.insertInsights(insightEntities)
 → Log "Generated X offline coaching insights"
 ```
+
+### Why the caveat is computed before coaching
+
+`MergedLapCaveat` is derived from detection *diagnostics*, not from the laps. The Dream Lap
+cannot tell from sector times alone that two laps were reported as one — a half-lap's sectors
+are internally consistent and evenly shared. The signal therefore has to be carried forward
+from the detector and passed in. Computing it after coaching, or not at all, is what would
+let an artefact through.
+
+### Why sectors are derived inside the detector and not here
+
+So that sectors can only exist for a lap set that was actually accepted. The derivation sits
+after the plausibility check and after all three detection fallbacks, which means a discarded
+attempt's sectors are never built, and no sector logic can influence which laps are chosen.
 
 ### Async Boundaries
 
@@ -992,7 +1011,7 @@ RecordingViewModel.processLapsLocally()
 
 | Storage | Data | Trigger |
 |---------|------|---------|
-| Room `laps` | LapEntity with sector*Ms = 0L | Input to generation |
+| Room `laps` | LapEntity with real sector*Ms (or 0L when the splitter refused) | Input to generation |
 | Room `coaching_insights` | CoachingInsightEntity | Successful generation |
 
 ### External Dependencies

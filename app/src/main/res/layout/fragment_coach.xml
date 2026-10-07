@@ -142,6 +142,20 @@
             android:layout_marginTop="@dimen/spacing_md"
             android:orientation="vertical" />
 
+        <!-- How sectors were derived. Shown whenever an insight rests on sector times,
+             because the driver is entitled to know these are the app's own thirds of
+             the lap and not the circuit's official timing sectors. -->
+        <TextView
+            android:id="@+id/sectorCaveat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:text="@string/coach_sector_caveat"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
         <!-- Loading state -->
         <LinearLayout
             android:id="@+id/loadingContainer"

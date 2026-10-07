@@ -103,13 +103,46 @@ LD-18	NoLapsExplanationTest.never tells a driver to complete laps they may alrea
 
 # --- Offline Coaching ---
 OC-01	OfflineCoachingEngineTest	Local insights generated
-OC-02	OfflineCoachingEngineTest	3-4 insights
+OC-02	OfflineCoachingEngineTest	Variable-length insight list (1-7), omitted when unsupported
 OC-03	OfflineCoachingEngineTest	Best Lap insight
 OC-04	OfflineCoachingEngineTest	Zero sectors handled
 OC-05	OfflineCoachingEngineTest	Top Speed insight
 OC-06	OfflineCoachingEngineTest	GPS noise filter
 OC-07	OfflineCoachingEngineTest	Consistency wording
-OC-08	OfflineCoachingEngineTest	Sector Focus upsell
+OC-08	OfflineCoachingEngineTest.zero sectors - no sector insight and no upsell	Superseded: the upsell must NOT appear
+OC-11	SectorSplitterTest.every lap of a real session carries sectors that sum to the lap	Sectors persisted, non-zero, summing to the lap
+OC-12	DreamLapTest.stitches the best sector from each lap	Optimal sector stitching
+OC-12	DreamLapTest.the gain is the distance to the best lap actually driven	Gain reported against the fastest real lap
+OC-13	DreamLapTest.no dream lap below the minimum number of usable laps	MIN_LAPS gate
+OC-13	DreamLapTest.laps whose sectors do not sum to the lap are discarded	Arithmetic plausibility gate
+OC-13	DreamLapTest.a lap with an implausibly lopsided sector is discarded	Sector share bounds
+OC-13	DreamLapTest.a dream lap is never slower than a lap actually driven	Total bounded by the best real lap
+OC-13	DreamLapTest.a half-lap artefact can never produce a fabricated gain	No fabricated gain from a double-counted lap
+OC-14	DreamLapTest.no dream lap when lap detection warned about a merged lap	MergedLapCaveat suppression
+OC-14	DreamLapTest.the merged lap caveat is the real defence against a double counted lap	Caveat is the defence arithmetic cannot provide
+OC-15	DreamLapTest.one lap holding every best sector is reported as a complete lap	Complete-lap case, gain zero
+OC-15	DreamLapTest.the Baltar session produces an honest dream lap end to end	Real-session end-to-end honesty
+OC-16	OfflineCoachingEngineTest	Sector diagnostic insight
+OC-17	OfflineCoachingEngineTest	Outlier lap against the median
+OC-18	OfflineCoachingEngineTest	Pace trend across session halves
+LD-10	SectorSplitterTest.sectors sum to exactly the lap duration	Sectors sum to the lap exactly
+LD-10	SectorSplitterTest.an even lap splits into three near-equal sectors	Equal-distance thirds
+LD-10	SectorSplitterTest.sectors of a real session are plausible shares of their lap	Real-session sector shares
+LD-24	SectorSplitterTest.the boundary is interpolated rather than snapped to a sample	Boundary interpolation, not quantised to a fix
+LD-25	SectorSplitterTest.a lap with too few samples gets no sectors	MIN_SAMPLES_PER_LAP refusal
+LD-25	SectorSplitterTest.a lap that covered almost no ground gets no sectors	MIN_LAP_DISTANCE_M refusal
+LD-25	SectorSplitterTest.an inverted or empty window gets no sectors	Degenerate window refusal
+LD-26	SectorSplitterTest.only samples inside the lap window are used	Derivation confined to the accepted lap window
+TL-19	TrackStationTest.each circuit's ring length matches its surveyed length	Ring length corroborated against the survey
+TL-19	TrackStationTest.the start finish projects to the beginning of the ring	s origin at the start/finish
+TL-19	TrackStationTest.s stays inside the ring and d is signed	s bounded, d measured
+TL-19	TrackStationTest.s advances round the circuit as the centreline is walked	s monotonic round a lap
+TL-19	TrackStationTest.forward distance wraps at the start finish	Wrap handled at the start/finish
+TL-20	TrackStationTest.a missing centreline yields no station	Null rather than error
+TL-20	TrackStationTest.a centreline too thin to describe a circuit yields no station	MIN_POINTS refusal
+TL-20	TrackStationTest.every catalogue circuit with a centreline supports a station	Every shipped circuit projects
+TL-22	TrackStationTest.a point to one side of the track gets the opposite sign to a point on the other	Signed lateral offset distinguishes the two sides
+OC-19	OfflineCoachingEngineTest	Derived-sector caveat shown only when sectors exist
 
 # --- Session Management ---
 SM-01	HomeViewModelTest	Delete session
