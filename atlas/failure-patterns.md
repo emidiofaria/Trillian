@@ -3023,3 +3023,64 @@ mode of regenerating blind is not.
 - OC-14 — the merged-lap signal must be passed in, never inferred
 - OC-09 / OC-10 — only locally generated insights may be replaced
 - `FP-SPLIT-ORIGIN` — the correction that raised the question
+
+---
+
+## Pattern: A Constant Changed and Its Readers Did Not (FP-STALE-INLINED-CONST) — ✅ CAUGHT (2026-10-07)
+
+### Symptom
+
+A `const val` is changed in one place, everything compiles, every unit test agrees with the
+new value, and the running app still shows the old one.
+
+### Where it bit
+
+Cutting v3.04. `appVersionName` went 3.03 → 3.04, which regenerates
+`BuildConfig.VERSION_NAME`. The built APK's manifest correctly said `versionName='3.04'`, and
+`BuildConfig` in the dex correctly said `3.04`. The About screen rendered **3.03 (303)**.
+
+Unpacking the APK showed the literal `3.03` still present in two other dex files: Kotlin
+inlines `const val` into every call site at compile time, and incremental compilation had not
+recompiled the classes that read it. The constant and its readers had drifted apart inside a
+single APK.
+
+### Why the usual guards missed it
+
+- **The manifest was right.** `versionName`/`versionCode` come from the Gradle DSL, not from
+  the compiled code, so the APK filename, `aapt2 dump badging`, and Play's view of the build
+  were all correct. Everything *about* the build agreed; only the code *inside* it disagreed.
+- **The new L1 test passed.** `BuildVersionTest` compares `BuildConfig.VERSION_CODE` with
+  `BuildConfig.VERSION_NAME` — both read from the same freshly compiled class. A test that
+  reads the constant can never detect that someone else inlined an older copy of it.
+- **A clean build would have hidden it too.** The bug lives only in the incremental path, so
+  it reproduces on exactly the machine that cuts the release and not in CI-from-scratch.
+
+### What caught it
+
+`AboutScreenTest.aboutScreenReportsTheBuildIdentityFromBuildConfig` (L2, UI-12). It is an
+instrumentation test, so the expectation is compiled into the **test** APK and the rendered
+text comes from the **app** APK. Two separately compiled artifacts, each with its own inlined
+copy, compared at runtime — which is the only arrangement in which the drift is visible at
+all. The test was written to guard the About screen; it turns out to guard the build.
+
+### Resolution
+
+`./gradlew clean` before the release build, then re-run L1 + L2 and package from that. No
+code change: the defect is in the build's incrementality, not in the app.
+
+### Generalisable rule
+
+**An inlined constant has no single source of truth at runtime, only many copies of one.**
+After changing a `const val` that crosses module or artifact boundaries, do not trust an
+incremental build, and do not try to assert the change with a test that reads the same
+constant — that test is one of the copies. Assert it where two independently compiled
+artifacts meet, or build clean.
+
+Corollary for releases: **a version bump is the one edit that must never be packaged from an
+incremental build.**
+
+### Related
+
+- UI-12 — the About screen shows build identity read from `BuildConfig`
+- NF-17 — the packaging gates that stand between a bad build and strangers
+- `BuildVersionTest` (L1) — asserts the derivation; cannot see inlining drift
