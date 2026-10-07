@@ -10,7 +10,7 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 > `TEST_REPORT.html`. The percentages below are hand-maintained and should be read as
 > intent, not evidence.
 
-**Last Updated:** 2026-10-07 (updated by trillian-docs-sync — Coaching Slices 2 and 3: LD 23 → 28, OC 10 → 32. Slice 3 anchored the sector ruler at the start/finish line: LD-27, LD-28, OC-30, OC-31, OC-32. L1 343 → 447 tests, L2 106 tests; the generated report counts 114/252 V1 requirements claimed)
+**Last Updated:** 2026-10-07 (updated by trillian-docs-sync — Release v3.04: `BuildVersionTest` now backs UI-12, which was previously unclaimed. L1 447 → 449 tests, L2 106 tests; the generated report counts 115/252 V1 requirements claimed)
 
 ---
 
@@ -34,10 +34,10 @@ Maps requirements from [DrivingCoach_SRS_v1.md](DrivingCoach_SRS_v1.md) to test 
 | Driver Progression (DP) | 6 | 0 | 0% ⚠️ |
 | Session Management (SM) | 10 | 4 | 40% ⚠️ |
 | Share (SH) | 6 | 0 | 0% ⚠️ |
-| Startup & Branding (UI) | 9 | 9 | 100% ✅ |
+| Startup & Branding (UI) | 12 | 10 | 83% ⚠️ |
 | Non-Functional (NF) | 13 | 1 | 8% ⚠️ |
 | Security (SEC) | 9 | 0 | 0% ⚠️ |
-| **TOTAL** | **~252** | **~114** | **~45%** |
+| **TOTAL** | **~252** | **~115** | **~46%** |
 
 > ℹ️ **Resolved — the `@Ignore`d L2 classes were deleted (2026-09-16).** Eight rows used to
 > cite `EndToEndTest`, `RecordingFragmentTest`, `TrackSetupFragmentTest` or

@@ -4,9 +4,73 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-10-07] Release v3.04 — Packaging an APK and a Bundle Together
+
+**Codebase Version:** v3.04 (versionCode 304; no Room migration; DB stays at version 5)
+**Trigger:** Cutting the v3.04 release. The request was for one release directory holding the
+APK, the AAB and the test evidence. The packaging script could not do that: `--target` chose
+between `dev` (APK) and `play` (AAB), and the two produced *separate* directories.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `package-release.sh` | ✅ Updated | New `--target both`; intent flags replace 7 string compares; versionCode scan fixed |
+| `RELEASE.md` | ✅ Updated | Third release shape documented; refusal inheritance stated explicitly |
+| `app/build.gradle.kts` | ✅ Updated | `appVersionName` 3.03 → 3.04 (versionCode 304) |
+| `BuildVersionTest.kt` | ✅ Added | Asserts the About screen's version cannot drift from the build |
+| `system.md` | ✅ Updated | Release layout now three targets; bump procedure cites the L1 guard |
+| `Test_Strategy.md` | ✅ Updated | Script table; the `TEST_REPORT_MISSING` leniency scoped to `dev` |
+| `test_strategy_execution_instructions.md` | ✅ Updated | §1.5 names all three targets |
+| `coverage-map.tsv` | ✅ Updated | +2 claims for UI-12 |
+| `SYNC_REPORT.md` | ✅ Corrected | Slices 2 and 3 were labelled v3.05 and v3.06; both ship in 3.04 |
+| `SRS_v1.md` | ⬜ No change | Packaging change, not a product change; UI-12 and NF-17 already said this |
+| `USER_MANUAL.md` | ⬜ No change | Nothing the driver sees differs, beyond the version string |
+| `components.md` / `flows.md` / `failure-patterns.md` | ⬜ No change | No runtime component, flow or failure mode affected |
+
+### What we learned
+
+- **Seven string comparisons all meant "not dev".** `[ "$TARGET" = "play" ]` was asked in seven
+  places, and each one meant something different: build a bundle, verify a signature, run the
+  preflight, demand a report, write the Console checklist. That worked only while there were
+  exactly two targets. A third makes every one of them ambiguous, so they were replaced with
+  three named intents — `WANT_APK`, `WANT_AAB`, `PLAY_GATES` — stated once at the top.
+
+- **`PLAY_GATES` is kept separate from `WANT_AAB` even though they currently move together.**
+  They answer different questions. Collapsing them would re-create exactly the coupling that
+  made the third target hard to add.
+
+- **A latent gate bug surfaced only because the shape changed.** The duplicate-`versionCode`
+  preflight scanned `releases/v*-play/` — the *name* as a proxy for the contents. A `both`
+  directory holds a bundle under a different slug, so a later Play release at the same version
+  would have passed the gate and been rejected at upload, which is the one thing the gate
+  exists to prevent. It now scans for any release directory containing a `.aab`.
+
+- **`both` is held to the bundle's standard, not the APK's.** A dev release may ship with a
+  `TEST_REPORT_MISSING.txt` and say so honestly. A directory containing a signed bundle may
+  not. The combined target inherits every Play refusal; the APK rides along rather than
+  lowering the bar.
+
+- **Two files that look interchangeable in a listing are not.** `PLAY_SUBMISSION.md` now names
+  which of the two artifacts to upload, because a debug-signed APK and a release bundle differ
+  by key, not by appearance, and the Console is a late place to find that out.
+
+- **The version was in one place, and that was nearly enough.** `AboutFragment` already reads
+  `BuildConfig`, so bumping Gradle fixes the About screen with no second edit. The remaining
+  gap was `versionCode`, derived by arithmetic that nothing checked; a hand-edit would have
+  disagreed with `versionName` silently. `BuildVersionTest` now asserts the derivation rather
+  than a literal version, so it does not need editing every release — a test that must be
+  edited routinely is a test nobody reads.
+
+- **The labels in this very file were wrong.** Slices 2 and 3 were recorded as v3.05 and v3.06,
+  guessed at the time of writing from a version that had not been cut yet. Both ship in 3.04.
+  Writing down a version before deciding it is how provenance rots.
+
+---
+
 ## [2026-10-07] Coaching Slice 3 — Anchoring Sector 1 at the Start/Finish Line
 
-**Codebase Version:** v3.06 (no Room migration; DB stays at version 5)
+**Codebase Version:** v3.04 (no Room migration; DB stays at version 5)
 **Trigger:** The driver asked that sector 1 begin right after the start/finish line. It did
 not. A lap's clock started at the interpolated crossing instant, but its distance ruler was
 zeroed at the first GPS fix *after* it — so every sector boundary, and the map's start/finish
@@ -103,7 +167,7 @@ L1 **447/447** (+26) · L2 **106/106** on `Trillian_API36` (+3) · DB still at v
 
 ## [2026-10-07] Coaching Slice 2 — The Sector Map on the Coach Tab
 
-**Codebase Version:** v3.05 (no Room migration; DB stays at version 5)
+**Codebase Version:** v3.04 (no Room migration; DB stays at version 5)
 **Trigger:** *"Sector 2 is costing you the most"* is a sentence about a place the driver
 cannot locate. Slice 1 gave the Coach tab a vocabulary of sectors; this slice gives that
 vocabulary something visible to point at.

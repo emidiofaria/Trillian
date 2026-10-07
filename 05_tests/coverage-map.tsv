@@ -297,3 +297,7 @@ LD-23	MergedLapCaveatTest.the boundary between noise and a lost lap sits at half
 LD-23	MergedLapCaveatTest.counts only the refusals that look like lost laps	Only refusals near the gap are counted
 LD-23	MergedLapCaveatTest.reads the same gap against whichever floor the circuit set	The threshold follows the circuit's own minimum gap
 LD-23	MergedLapCaveatTest.describes what was seen without guessing why	The caveat states the observation and offers no impossible remedy
+
+# --- Build identity (v3.04) ---
+UI-12	BuildVersionTest.the version code is derived from the version name	The About screen's version cannot disagree with the build it runs on
+UI-12	BuildVersionTest.the minor component leaves room for the next release	The major*100 scheme is not silently overrun
