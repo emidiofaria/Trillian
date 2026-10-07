@@ -157,4 +157,7 @@
     <string name="onboarding_denied_label">Some permissions were denied:</string>
     <string name="onboarding_grant_button">GRANT PERMISSIONS</string>
     <string name="onboarding_permission_location">Location</string>
+    <!-- Coaching: sectors -->
+    <string name="coach_sector_caveat">Sectors are equal thirds of the distance you drove on each lap, measured by this app — not the circuit\'s official timing sectors. A lap driven on a different line moves the boundaries very slightly.</string>
+
 </resources>

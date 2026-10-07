@@ -351,7 +351,19 @@ class LocalLapDetector @Inject constructor() {
         val lapNumber: Int,
         val startTs: Long,
         val endTs: Long,
-        val durationMs: Long
+        val durationMs: Long,
+        /**
+         * Sector times, or zero where the lap carried too little data to be divided
+         * (see [SectorSplitter]). Zero is the "unavailable" value the rest of the app
+         * already understands: `OfflineCoachingEngine.areSectorsAvailable` and the laps
+         * table both treat a zero sector as absent rather than as an instantaneous one.
+         *
+         * Derived strictly after a lap has been accepted. Nothing in detection reads
+         * them, so they cannot influence which laps exist or how long they are.
+         */
+        val sector1Ms: Long = 0L,
+        val sector2Ms: Long = 0L,
+        val sector3Ms: Long = 0L
     )
 
     /**
@@ -602,7 +614,10 @@ class LocalLapDetector @Inject constructor() {
                     "${slowest}ms, which is %.2f m/s over ${priors.lengthM} m".format(impliedSpeed)
             )
         }
-        val laps = if (plausible) best.laps else emptyList()
+        // Sectors are derived only once the set of laps is final. Deriving them inside
+        // an attempt would put them in front of the plausibility checks and the two
+        // fallbacks, where a discarded attempt's sectors could reach the driver.
+        val laps = if (plausible) withSectors(best.laps, samples) else emptyList()
         rejections.forEach { Log.d(TAG, "  rejected at ${it.timestampMs}: ${it.reason} - ${it.detail}") }
         Log.d(TAG, "Built ${laps.size} laps from crossings using ${anchor.source}")
 
@@ -1167,6 +1182,26 @@ class LocalLapDetector @Inject constructor() {
         }
 
         return laps
+    }
+
+    /**
+     * Attaches sector times to laps that have already been accepted.
+     *
+     * Additive by construction: lap count, boundaries and durations are passed
+     * through untouched, and a lap the splitter declines to divide keeps its zeroes.
+     * A detection run with this applied must produce byte-identical lap timing to one
+     * without it, which `LapDetectionRealSessionTest` and the incident replays assert.
+     */
+    private fun withSectors(
+        laps: List<DetectedLap>,
+        samples: List<TelemetrySample>
+    ): List<DetectedLap> = laps.map { lap ->
+        val sectors = SectorSplitter.split(samples, lap.startTs, lap.endTs)
+        if (sectors == null) lap else lap.copy(
+            sector1Ms = sectors.sector1Ms,
+            sector2Ms = sectors.sector2Ms,
+            sector3Ms = sectors.sector3Ms
+        )
     }
 
     /**

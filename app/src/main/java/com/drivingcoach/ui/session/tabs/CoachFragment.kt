@@ -104,12 +104,14 @@ class CoachFragment : Fragment() {
                 binding.emptyStateText.visibility = View.GONE
                 binding.headerCard.visibility = View.GONE
                 binding.upsellCard.visibility = View.GONE
+                binding.sectorCaveat.visibility = View.GONE
             }
             insightsToShow.isEmpty() && state.insights.isEmpty() -> {
                 binding.loadingContainer.visibility = View.GONE
                 binding.insightsContainer.visibility = View.GONE
                 binding.emptyStateText.visibility = View.VISIBLE
                 binding.headerCard.visibility = View.VISIBLE
+                binding.sectorCaveat.visibility = View.GONE
             }
             else -> {
                 binding.loadingContainer.visibility = View.GONE
@@ -117,6 +119,7 @@ class CoachFragment : Fragment() {
                 binding.emptyStateText.visibility = View.GONE
                 binding.headerCard.visibility = View.VISIBLE
                 populateInsights(insightsToShow)
+                updateSectorCaveat(state)
             }
         }
     }
@@ -134,6 +137,22 @@ class CoachFragment : Fragment() {
             insightBinding.detail.text = insight.detail
             binding.insightsContainer.addView(insightBinding.root)
         }
+    }
+
+    /**
+     * Shows how sectors were derived, but only when the driver is actually being shown
+     * something that rests on them.
+     *
+     * The caveat is tied to the laps carrying sector times rather than to the insight
+     * text, because matching on wording would quietly stop working the first time an
+     * insight is reworded - and it would fail by hiding the caveat, which is the
+     * direction that costs the driver rather than merely looking wrong.
+     */
+    private fun updateSectorCaveat(state: SessionUiState) {
+        val sectorsShown = state.laps.isNotEmpty() && state.laps.all {
+            it.sector1Ms > 0 && it.sector2Ms > 0 && it.sector3Ms > 0
+        }
+        binding.sectorCaveat.visibility = if (sectorsShown) View.VISIBLE else View.GONE
     }
 
     private fun formatLapTime(durationMs: Long): String {

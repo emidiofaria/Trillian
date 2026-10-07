@@ -4,6 +4,125 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-10-07] Coaching Slice 1 — Sectors, Dream Lap & Honest Insights
+
+**Codebase Version:** v3.04 (no Room migration; DB stays at version 5)
+**Trigger:** Coaching slice implementation. The sector pipeline had been fully built and fed
+zeroes since the columns were created — `RecordingViewModel` literally wrote
+`sector1Ms = 0L, // No sectors in Phase 1` while five consumers read the columns. This slice
+writes real values and turns the existing wiring into working coaching.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `lap/SectorSplitter.kt` | ✅ Created | Equal-distance thirds with interpolated boundaries (+140) |
+| `coaching/DreamLap.kt` | ✅ Created | Optimal sector stitching + artefact gate (+150) |
+| `data/track/TrackStation.kt` | ✅ Created | s/d curvilinear coordinate, **ships dark** (+175) |
+| `lap/LocalLapDetector.kt` | ✅ Updated | `DetectedLap` carries sectors; `withSectors()` post-acceptance (+39, -5) |
+| `ui/recording/RecordingViewModel.kt` | ✅ Updated | Carries sectors to Room; caveat computed before coaching (+25, -8) |
+| `coaching/OfflineCoachingEngine.kt` | ✅ Updated | Variable-length 1–7 insights; upsell deleted (+177, -40) |
+| `ui/session/tabs/CoachFragment.kt` | ✅ Updated | Derived-sector caveat (+19) |
+| `res/layout/fragment_coach.xml` | ✅ Updated | `@+id/sectorCaveat` (+14) |
+| `res/values/strings.xml` | ✅ Updated | `coach_sector_caveat` (+3) |
+| `SectorSplitterTest.kt` | ✅ Created | 9 tests, incl. 2 real-fixture replays |
+| `DreamLapTest.kt` | ✅ Created | 10 tests, incl. real-fixture end-to-end |
+| `TrackStationTest.kt` | ✅ Created | 9 tests against surveyed lengths |
+| `OfflineCoachingEngineTest.kt` | ✅ Updated | Role-based lookups replace positional indices (+101, -36) |
+| `atlas/components.md` | ✅ Updated | +3 components, 2 revised, +3 matrix rows (+211, -14) |
+| `atlas/flows.md` | ✅ Updated | Offline coaching flow rewritten (+55, -22) |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +16 IDs, LD-10 and OC-02 amended, OC-08 superseded |
+| `docs/USER_MANUAL.md` | ✅ Updated | §5.1 sectors, §5.2 rewritten, +3 FAQ entries (+74, -11) |
+| `05_tests/coverage-map.tsv` | ✅ Updated | +33 traceability rows; OC-02 and OC-08 descriptions corrected |
+
+### New Requirement IDs
+
+- **LD-24, LD-25, LD-26** — boundary interpolation, refusal bounds, post-acceptance derivation
+- **OC-11 … OC-19** — sector persistence, Dream Lap + gate + caveat suppression + complete-lap case, sector diagnostic, median-based outlier, pace trend, UI caveat
+- **TL-19 … TL-22** — station projection, null on thin centreline, prohibition on use by lap detection, `d` valid only lap-vs-lap
+
+### Amended / Superseded
+
+| ID | Change |
+|----|--------|
+| **LD-10** | Was "3 equal-**time** sectors" — stale and wrong. Now equal-**distance** thirds. Time thirds move with the driver, so two laps' sectors would describe different stretches of road and the comparison would measure the misalignment. |
+| **OC-02** | Was "exactly 3-4 insights". Now 1–7, variable. The fixed quota is what required a slot to be filled whether or not anything was known — and the slot that couldn't be filled honestly was filled with an advertisement. |
+| **OC-08** | **Superseded.** The "Sector Analysis Coming Soon" upsell is now prohibited. ID retained rather than renumbered, to record that an advertisement once occupied a coaching slot. |
+
+### Findings During Implementation
+
+1. **No migration needed.** `LapEntity.sector1/2/3Ms` already existed; `LapsFragment`,
+   `LapDetailViewModel`, `OfflineCoachingEngine` and `SessionShareBuilder` already consumed
+   them. The entire feature was one assignment away from working.
+2. **SRS LD-10 contradicted the only sane implementation** and had done so silently, because
+   nothing wrote sectors at all and so nothing could disagree with it.
+3. **The Dream Lap gate cannot catch a half-lap by arithmetic.** A half-lap's sectors are
+   internally consistent and evenly shared — half a lap driven normally looks like a lap
+   driven normally, only shorter. Every sector wins, it becomes the "best lap" itself, and the
+   stitch restates it with a gain of **zero**. The guarantee is therefore *no fabricated
+   gain*, and `MergedLapCaveat` is the actual defence. A test asserting the stronger claim was
+   written, failed, and was corrected to the claim that is true.
+4. **`baltar2` is not a broken session.** The repaired detector finds the 12 laps of 72–85 s
+   the driver drove; the "2 laps" in Incident 15 was what the app of the day *recorded*. A test
+   written on the wrong premise (expecting Dream Lap suppression) was inverted into an
+   end-to-end assertion that the session produces an *honest* Dream Lap.
+5. **One test was deleted rather than made to pass.** "A half-lap quick in only one sector"
+   describes a shape a half-lap cannot have; contriving data to fit the name would have been a
+   test of nothing.
+6. **Requirement IDs cannot carry letter suffixes.** `LD-10a/b/c` were silently unrecognised by
+   the coverage generator (`REQ_ROW_RE` matches `[A-Z]{2,4}-\d{2}`), so three requirements
+   would have been documented but untraceable. Renumbered to **LD-24, LD-25, LD-26**. The
+   generator caught this only because the new tests were added to `coverage-map.tsv` — had
+   traceability been skipped, the IDs would have looked fine and covered nothing.
+
+### Validation
+
+| Level | ASPICE | Result |
+|-------|--------|--------|
+| L1 unit | SWE.4 | ✅ **390 tests, 0 failures** |
+| L2 integration | SWE.5 | ✅ **98 tests, 0 failures** on `Trillian_API36` (API 36, per NF-19) |
+
+**Total: 488/488 passing.** Requirements coverage 101/237 V1 claimed (43%), 55 deferred to V2
+— up from 85/234 (36%) before this slice.
+
+**Regression evidence:** `LapDetectionIncident14Test`, `LapDetectionIncident15Test`,
+`LapDetectionRealSessionTest`, `LocalLapDetectorGuardsTest`, `OneTapStartFinishCaptureTest`
+and `MergedLapCaveatTest` all pass unchanged. Detection geometry was not touched — sectors are
+derived strictly after the plausibility check and all three fallbacks.
+
+### Files Modified
+
+```
+A  app/src/main/java/com/drivingcoach/lap/SectorSplitter.kt
+A  app/src/main/java/com/drivingcoach/coaching/DreamLap.kt
+A  app/src/main/java/com/drivingcoach/data/track/TrackStation.kt
+A  app/src/test/java/com/drivingcoach/lap/SectorSplitterTest.kt
+A  app/src/test/java/com/drivingcoach/coaching/DreamLapTest.kt
+A  app/src/test/java/com/drivingcoach/data/track/TrackStationTest.kt
+M  app/src/main/java/com/drivingcoach/lap/LocalLapDetector.kt            (+39, -5)
+M  app/src/main/java/com/drivingcoach/ui/recording/RecordingViewModel.kt (+25, -8)
+M  app/src/main/java/com/drivingcoach/coaching/OfflineCoachingEngine.kt  (+177, -40)
+M  app/src/main/java/com/drivingcoach/ui/session/tabs/CoachFragment.kt   (+19, -0)
+M  app/src/main/res/layout/fragment_coach.xml                            (+14, -0)
+M  app/src/main/res/values/strings.xml                                   (+3, -0)
+M  app/src/test/java/com/drivingcoach/coaching/OfflineCoachingEngineTest.kt (+101, -36)
+M  atlas/components.md                                                   (+211, -14)
+M  atlas/flows.md                                                        (+55, -22)
+M  01_requirements/DrivingCoach_SRS_v1.md                                (+22, -3)
+M  docs/USER_MANUAL.md                                                   (+74, -11)
+M  05_tests/coverage-map.tsv                                             (+33, -2)
+```
+
+### Recommendations
+
+- [ ] Run L2 on a device: the COACH tab now renders a variable number of cards plus the caveat
+- [ ] `TrackStation` ships dark — Slice 2 (turn-by-turn speed, braking points) is its first consumer
+- [ ] Route A (fixed s-thirds from the surveyed centreline) can replace Route B later behind the
+      same columns with no schema change, for catalogue circuits only
+- [ ] L4 acceptance checklist needs sector and Dream Lap scenarios
+
+---
+
 ## [2026-10-06] Third Built-in Circuit — Test Circuit S.Mamede (Tier C)
 
 **Codebase Version:** v3.03 (catalogue data only; no production code changed; +17 L1, +L2 tests)
