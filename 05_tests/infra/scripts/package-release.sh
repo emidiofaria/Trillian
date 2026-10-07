@@ -299,6 +299,17 @@ fi
 # ---------------------------------------------------------------------------
 if [ "$WANT_AAB" = true ]; then
     if [ "$DO_BUILD" = true ]; then
+        # Clean first. Kotlin inlines `const val` into every call site, and an
+        # incremental build can leave readers of a changed constant holding the
+        # old copy: v3.04 was first built with a manifest saying 3.04, a
+        # BuildConfig saying 3.04, and an About screen still rendering 3.03 from
+        # a stale inlined literal. Nothing about the build was wrong except the
+        # code inside it (FP-STALE-INLINED-CONST). A release is exactly the case
+        # where a version constant has just changed, so the one build that must
+        # never be incremental is this one.
+        log_step "Cleaning before the release build"
+        ./gradlew clean --quiet || { log_error "Clean failed"; exit 1; }
+
         log_step "Building signed release bundle"
         ./gradlew bundleRelease --quiet || { log_error "Build failed"; exit 1; }
     fi

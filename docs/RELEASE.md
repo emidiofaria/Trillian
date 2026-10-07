@@ -105,6 +105,26 @@ in writing which of the two files is the one to upload, because in a file listin
 they are easy to confuse and uploading the debug-signed one is not a mistake you
 want to discover in the Console.
 
+### A release build is never incremental
+
+Any target that produces a bundle runs `./gradlew clean` first.
+
+Kotlin inlines `const val` into every call site, so changing `appVersionName`
+regenerates `BuildConfig` but does not necessarily recompile the classes that
+*read* it. v3.04 was first built with a manifest saying `3.04`, a `BuildConfig`
+saying `3.04`, and an About screen still rendering `3.03` from a stale inlined
+literal. The APK filename, `aapt2 dump badging` and Play's view of the build were
+all correct; only the code inside it disagreed.
+
+A release is precisely the moment a version constant has just changed, which
+makes it the one build that must not be taken from an incremental cache. See
+`FP-STALE-INLINED-CONST` in `atlas/failure-patterns.md`.
+
+**Run the tests clean too when the version changed.** The gate above protects the
+packaged artifact; it cannot protect an artifact the tests already ran against.
+After a version bump, run `./gradlew clean` before `run-all-tests.sh`, so that
+the build the evidence describes is the build that is shipped.
+
 ### Built-in circuits gate the channel
 
 A release carries the circuits in `assets/tracks/tracks.json`, and a circuit is a

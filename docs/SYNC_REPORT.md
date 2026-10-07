@@ -23,6 +23,7 @@ between `dev` (APK) and `play` (AAB), and the two produced *separate* directorie
 | `Test_Strategy.md` | ✅ Updated | Script table; the `TEST_REPORT_MISSING` leniency scoped to `dev` |
 | `test_strategy_execution_instructions.md` | ✅ Updated | §1.5 names all three targets |
 | `coverage-map.tsv` | ✅ Updated | +2 claims for UI-12 |
+| `failure-patterns.md` | ✅ Updated | +1 pattern: FP-STALE-INLINED-CONST |
 | `SYNC_REPORT.md` | ✅ Corrected | Slices 2 and 3 were labelled v3.05 and v3.06; both ship in 3.04 |
 | `SRS_v1.md` | ⬜ No change | Packaging change, not a product change; UI-12 and NF-17 already said this |
 | `USER_MANUAL.md` | ⬜ No change | Nothing the driver sees differs, beyond the version string |
@@ -65,6 +66,31 @@ between `dev` (APK) and `play` (AAB), and the two produced *separate* directorie
 - **The labels in this very file were wrong.** Slices 2 and 3 were recorded as v3.05 and v3.06,
   guessed at the time of writing from a version that had not been cut yet. Both ship in 3.04.
   Writing down a version before deciding it is how provenance rots.
+
+- **The version bump shipped the old version, and an L2 test caught it.** The first v3.04 build
+  had a manifest saying `3.04`, a `BuildConfig` saying `3.04`, and an About screen rendering
+  `3.03`. Kotlin inlines `const val` into every call site, and incremental compilation had not
+  recompiled the readers — the APK carried the literal `3.03` in two dex files alongside a
+  `BuildConfig` that said otherwise. Everything *about* the build was correct; only the code
+  inside it was not.
+
+  Neither the manifest nor the new L1 test could have seen this: both read the constant, and a
+  test that reads the constant is just one more copy of it. It was caught by
+  `AboutScreenTest.aboutScreenReportsTheBuildIdentityFromBuildConfig`, where the expectation is
+  compiled into the *test* APK and the rendered text comes from the *app* APK — two separately
+  compiled artifacts, which is the only arrangement in which the drift is visible at all. The
+  test was written to guard the About screen and turned out to guard the build.
+
+  Recorded as `FP-STALE-INLINED-CONST`. Any target producing a bundle now runs `./gradlew clean`
+  first: a release is the one build that must never come from an incremental cache, because it
+  is the one build where a version constant has just changed.
+
+- **Thirty-seven L2 failures that were not failures.** The first run returned 69/106, all with
+  `RootViewWithoutFocusException` — the emulator came up without window focus. Re-running
+  against an emulator with the keyguard dismissed and animations disabled gave 105/106, and the
+  one real failure was the version drift above. Worth stating plainly because a wall of red is
+  the easiest thing to mistake for a regression and the easiest thing to wave away; it was
+  neither.
 
 ---
 
