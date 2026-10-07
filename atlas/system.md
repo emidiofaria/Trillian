@@ -522,10 +522,10 @@ a version the binary does not actually report.
 
 ### Release layout
 
-There are **two** release targets, chosen by `package-release.sh --target` or by
-its interactive prompt. They are separate pipelines, not variants: the dev target
-builds a *debug* APK signed with the debug key, which can never be uploaded to
-Play.
+There are **three** release targets, chosen by `package-release.sh --target` or
+by its interactive prompt. The first two are separate pipelines, not variants:
+the dev target builds a *debug* APK signed with the debug key, which can never be
+uploaded to Play. The third produces both artifacts from one commit.
 
 ```
 releases/v2.95-session-analysis/        target: dev
@@ -539,6 +539,14 @@ releases/v2.96-play/                    target: play
 ├── TEST_REPORT.html
 ├── RELEASE_NOTES.md
 └── PLAY_SUBMISSION.md    Console declarations still outstanding
+
+releases/v3.04-coaching-sectors-and-map/   target: both
+├── DrivingCoach-v3.04-coaching-sectors-and-map.apk   debug, for your own phone
+├── Trillian-v3.04.aab    Signed bundle for Google Play
+├── TEST_REPORT.html      One report, covering both artifacts
+├── TEST_REPORT.md
+├── RELEASE_NOTES.md
+└── PLAY_SUBMISSION.md    Names which of the two files to upload
 ```
 
 Written by `05_tests/infra/scripts/package-release.sh`, which reads
@@ -559,10 +567,20 @@ tree, a non-increasing `versionCode`, a failing `lintVitalRelease`, or a test
 report belonging to a different version or commit. All five run *before* the
 build, so a refusal costs seconds and leaves the tree untouched.
 
-Loose `DrivingCoach-v*.apk` files at the top of `releases/` predate this
-convention and are kept for history.
+**`both` inherits every one of those refusals.** The gates attach to the *bundle*,
+not to the target name: a directory holding a signed AAB is held to the AAB's
+standard, and the debug APK rides along rather than lowering the bar. The
+`versionCode` check therefore asks which previous releases **contain a `.aab`**
+rather than which are *named* `-play` — the name was a proxy for the contents
+that `both` invalidates, and a missed collision only surfaces at upload.
 
 **Bump procedure:** edit `appVersionName` only. Never hand-edit `versionCode`.
+`BuildVersionTest` (L1) asserts that the compiled `BuildConfig.VERSION_CODE`
+equals `major*100 + minor` of `VERSION_NAME`, so a hand-edit fails at L1 rather
+than silently disagreeing with the About screen.
+
+Loose `DrivingCoach-v*.apk` files at the top of `releases/` predate this
+convention and are kept for history.
 
 **Known gap (closed in v2.8):** the version is now surfaced in-app on the **About** screen
 (`Profile → About Trillian`), read from `BuildConfig.VERSION_NAME` / `VERSION_CODE` and
