@@ -2502,6 +2502,147 @@ case-insensitive because the style uppercases the label.
 
 ---
 
+## Component: Session Outline (`SessionOutline`)
+
+### Purpose
+
+Produces a drawable shape of the circuit from the driver's own laps, for sessions where no
+surveyed centreline exists. This is the fallback half of the Coach tab's sector map.
+
+### Key Code Areas
+
+| File | Role |
+|------|------|
+| `data/track/SessionOutline.kt` | `build()`, `resample()`, `normalise()` |
+
+### Algorithm
+
+1. Each lap is resampled at `POINTS = 240` equal fractions **of its own distance**.
+2. All laps are projected to local metres about **one shared reference** — using each lap's
+   own first fix would re-centre every lap on itself and silently remove the very
+   differences being averaged.
+3. The **per-index median** is taken across laps.
+4. The result is normalised into the unit box for drawing.
+
+### Why the median and not the mean
+
+One lap off-line — a spin, a gravel excursion, a lost fix — drags a mean toward itself and
+leaves a bulge in a shape the driver never drove. The same reasoning produced OC-17's
+median-based outlier insight. A test proves a 120 m excursion moves the outline by less
+than 0.01 normalised.
+
+### Why normalised-distance space
+
+It is exactly how `SectorSplitter` defines a sector, so indices 80 and 160 **are** the
+sector boundaries rather than approximations of them. Averaging in time or sample-index
+space would mix a fast lap's corner with a slow lap's straight.
+
+### Two floors that are not the same number
+
+`MIN_LAP_DISTANCE_M` (50 m, held equal to `SectorSplitter`'s own floor by a test) asks
+*how far was driven*. `MIN_EXTENT_M` (25 m) asks *how big is the bounding box*. A lap can
+drive 400 m around a 60 m box; conflating them was a real bug found by a failing test.
+
+### Measured lap-to-lap spread
+
+| Circuit | Laps | `spreadM` |
+|---------|------|-----------|
+| S. Mamede | 3 | 1.20 m |
+| Cabo do Mundo | 8 | 5.88 m |
+| Baltar | 12 | 8.90 m |
+
+### Criticality
+
+**LOW** — the map disappears; insights are unaffected.
+
+---
+
+## Component: Coach Map (`CoachMap`)
+
+### Purpose
+
+Decides *what shape gets drawn* on the Coach tab and where its sector boundaries fall.
+
+### Key Code Areas
+
+| File | Role |
+|------|------|
+| `data/track/CoachMap.kt` | `build()`, `fromCentreline()`, `agrees()`, `boundaryIndex()` |
+
+### Dependencies
+
+`SessionOutline`, `TrackStation` (this is `TrackStation`'s **first production caller**),
+`TrackRepository` for the catalogue centreline.
+
+### Behaviour worth knowing
+
+- **A catalogue centreline does not begin at the start/finish line.** Measured origins:
+  Baltar 400.0 m, Cabo do Mundo 770.9 m, S. Mamede 4.6 m. The drawing is **rotated** so
+  index 0 is always the start/finish, giving surveyed and derived shapes one convention.
+  See the remark under OC-21 in the SRS — this is a trap for any future `s` consumer.
+- **A mismatched centreline is detected by median lateral distance** (`MAX_CENTRELINE_OFFSET_M
+  = 60 m`), never by boundary ordering. Ordering wraps legitimately whenever the start/finish
+  falls late in the centreline's numbering, which is the common case. Measured offsets for
+  correctly matched circuits: 2.8 / 6.4 / 2.7 m — about a racing line's width.
+
+### Failure Modes
+
+| Mode | Cause | Result |
+|------|-------|--------|
+| No drawing | Fewer laps than the floor, or spread > 25 m | Card hidden; insights unaffected |
+| Centreline rejected | Median lateral offset > 60 m | Falls back to the derived shape |
+| Single-lap drawing | Fewer than 3 usable laps | Drawn, and labelled as such |
+
+### Criticality
+
+**LOW** — a failure removes the picture, never the coaching.
+
+---
+
+## Component: Sector Map View (`ui/common/SectorMapView`)
+
+### Purpose
+
+Draws the `CoachMap.Drawing`: three coloured polylines, S1/S2/S3 labels, a gold start/finish
+dot at index 0, and a provenance-aware content description.
+
+### What it deliberately does not draw
+
+- **No Dream Lap path.** Its three sectors come from three different laps; a continuous line
+  through them would depict a trajectory nobody drove (OC-28).
+- No speed gradient and no corner markers — there are no corner insights for them to anchor.
+
+### Criticality
+
+**LOW** — view-only.
+
+---
+
+## Component: Coach Map View Model (`CoachMapViewModel`)
+
+### Purpose
+
+Reads telemetry and builds the drawing off the main thread, so the Coach tab's insights —
+already persisted as text — appear immediately and the map arrives behind them.
+
+### Why it is separate from `SessionResultViewModel`
+
+The Coach tab was until now a pure reader of text. The map is the first thing on it that
+needs telemetry. Keeping the work here means the LAPS and CHART tabs do not pay for it.
+
+### Why the drawing is not persisted
+
+It is derived data. Persisting it would add a schema migration and a second source of truth
+that could drift from the telemetry it came from. Telemetry only disappears when the whole
+session is deleted (SM-03), so no surviving session's insights outlive the data their map
+needs.
+
+### Criticality
+
+**LOW**
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -2519,7 +2660,11 @@ case-insensitive because the style uppercases the label.
 | Offline Coaching Engine | MEDIUM | No coaching insights |
 | SectorSplitter | LOW | Sector columns stay zero; sector-derived insights disappear; lap times unaffected |
 | DreamLap | LOW | One insight absent. A *wrong* Dream Lap would instead be a MEDIUM trust failure |
-| TrackStation | LOW (today, unreferenced) | Nothing; becomes HIGH for the position-based coaching slice built on it |
+| TrackStation | LOW | Coach-tab map loses its surveyed shape and falls back to the driven one |
+| SessionOutline | LOW | Coach-tab map absent for captured circuits; insights unaffected |
+| CoachMap | LOW | Coach-tab map absent; insights unaffected |
+| SectorMapView | LOW | Sector map missing from the COACH tab |
+| CoachMapViewModel | LOW | Sector map never populates; insights still render |
 | Session State Machine | MEDIUM | UX confusion |
 | App Startup / Branded Loading Screen | HIGH | App unusable (no cold start) |
 | Stale Upload Detection | LOW | Missing UX warning |

@@ -217,24 +217,30 @@ class ChartFragment : Fragment() {
                     }
                 }
 
+                // The chart is built off the main thread and this continuation resumes
+                // on it. If the driver left the tab meanwhile the view is already gone,
+                // and `binding` would throw rather than simply having nothing to draw.
+                val b = _binding ?: return@launch
+
                 if (dataSets.isEmpty()) {
-                    binding.loadingContainer.visibility = View.GONE
-                    binding.speedChart.visibility = View.GONE
-                    binding.emptyStateText.text = "No speed data available"
-                    binding.emptyStateText.visibility = View.VISIBLE
+                    b.loadingContainer.visibility = View.GONE
+                    b.speedChart.visibility = View.GONE
+                    b.emptyStateText.text = "No speed data available"
+                    b.emptyStateText.visibility = View.VISIBLE
                 } else {
-                    binding.speedChart.data = LineData(dataSets.toList())
-                    binding.speedChart.invalidate()
-                    binding.loadingContainer.visibility = View.GONE
-                    binding.speedChart.visibility = View.VISIBLE
-                    binding.emptyStateText.visibility = View.GONE
+                    b.speedChart.data = LineData(dataSets.toList())
+                    b.speedChart.invalidate()
+                    b.loadingContainer.visibility = View.GONE
+                    b.speedChart.visibility = View.VISIBLE
+                    b.emptyStateText.visibility = View.GONE
                     hasLoadedRealData = true
                 }
             } catch (e: Exception) {
-                binding.loadingContainer.visibility = View.GONE
-                binding.speedChart.visibility = View.GONE
-                binding.emptyStateText.text = "Error loading speed data"
-                binding.emptyStateText.visibility = View.VISIBLE
+                val b = _binding ?: return@launch
+                b.loadingContainer.visibility = View.GONE
+                b.speedChart.visibility = View.GONE
+                b.emptyStateText.text = "Error loading speed data"
+                b.emptyStateText.visibility = View.VISIBLE
             }
         }
     }

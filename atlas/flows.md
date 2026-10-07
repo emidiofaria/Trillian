@@ -1904,3 +1904,77 @@ per second so that 1 Hz archives and 10 Hz recordings analyse identically.
 | Zero sector data | Misleading sector insights |
 | 401 on any API | Session expired, re-login |
 | Room corruption | All local data lost |
+
+---
+
+## Flow: Coach Sector Map (COACH Tab)
+
+### Goal
+
+Give a sentence like *"Sector 2 is costing you the most"* a place to point at, by drawing the
+circuit above the insights with its three sectors coloured — without delaying the insights
+and without ever drawing a shape that misleads.
+
+### Trigger
+
+- `SessionUiState` emits with `rawFilePath`, `laps` and `session.trackId`
+- Only from the **populated** branch of `CoachFragment.updateUI` — a loading or empty tab
+  never asks for a map
+
+### Execution Path
+
+```
+CoachFragment.updateUI(state)  [populated branch only]
+→ mapViewModel.load(state.rawFilePath, state.session?.trackId, state.laps)
+  → Key(filePath, trackId, lapCount) == last key?  → return, no work
+  → rawFilePath null/blank or laps empty?          → MapState.Unavailable
+→ [ASYNC] viewModelScope.launch
+  → laps sorted by lapNumber → List<SessionOutline.LapWindow>
+  → trackId?.let { trackRepository.getTrack(it)?.centreline }   (null is ordinary)
+  → withContext(Dispatchers.Default)
+    → TelemetryFileReader.readAll(path)
+    → CoachMap.build(samples, windows, centreline)
+      → centreline != null?
+        → fromCentreline(): project lap start onto the station, ROTATE so index 0
+          is the start/finish, resample to 240 points
+        → agrees()? median lateral distance <= 60 m      → SURVEYED_CENTRELINE
+        → otherwise fall through to the driven shape
+      → SessionOutline.build(samples, windows)
+        → each lap resampled at 240 equal fractions of its own distance
+        → one shared projection reference
+        → per-index median across laps
+        → spreadM > 25 m → null
+        → < 3 laps → single best lap, isSingleLap = true  → SINGLE_LAP
+        → otherwise                                        → DERIVED_FROM_LAPS
+  → MapState.Ready(drawing) | MapState.Unavailable
+→ CoachFragment.updateSectorMap(mapState)   [repeatOnLifecycle STARTED]
+  → Ready        → sectorMapCard VISIBLE, sectorMap.setDrawing(d), provenance note
+  → Unavailable  → sectorMapCard GONE, insights untouched
+  → Loading      → sectorMapCard GONE
+```
+
+### Async Boundaries
+
+| Boundary | Thread | Why |
+|----------|--------|-----|
+| `TelemetryFileReader.readAll` | `Dispatchers.Default` | File read plus parse of a whole session |
+| `CoachMap.build` | `Dispatchers.Default` | ~240 × laps projections and a median per index |
+| `updateSectorMap` | Main, via `repeatOnLifecycle` | View access only while STARTED |
+
+### Failure Points
+
+| Step | Failure | Result |
+|------|---------|--------|
+| `rawFilePath` missing | Telemetry deleted or never written | Card hidden; **insights still shown** |
+| Fewer than the lap floor | Short session | Single-lap shape, labelled, or nothing |
+| `spreadM > 25 m` | Laps disagree — poor fix, mixed lines | No map at all |
+| Centreline mismatch | Session recorded against the wrong circuit | Falls back to the driven shape |
+| Catalogue lookup fails | Captured circuit, `trackId` null | Derived shape; this is the ordinary path |
+
+### Invariants
+
+- The map is **never** shown half-built. A shape the driver cannot recognise invites them to
+  read corners into GPS noise, which is worse than an absent picture.
+- The insights never wait for the map and never disappear with it.
+- The Dream Lap is never drawn as a path (OC-28).
+- Index 0 is the start/finish on **both** provenances.

@@ -2813,3 +2813,87 @@ not the lap count.
 
 **Where else to look.** Any prior that has a recovery path behind it (`lengthM` vs LD-22, the
 envelope vs LD-21): mutation tests must observe *which path produced the answer*, not only the answer.
+
+---
+
+## Pattern: Documentation That Asserts an Origin Nobody Measured (FP-UNMEASURED-ORIGIN) — ✅ FIXED (2026-10-07)
+
+### Description
+
+`Centreline`'s KDoc stated that its points begin at the start/finish line. Nothing enforced
+it, nothing tested it, and it was true of exactly one of the three shipped circuits.
+Measuring where each circuit's first detected lap crossing actually projects onto its own
+centreline gives **400.0 m** into Baltar, **770.9 m** into Cabo do Mundo and **4.6 m** into
+S. Mamede. S. Mamede's near-zero origin is why the claim survived: the one circuit anybody
+would spot-check agreed with it.
+
+### How It Surfaced
+
+A `CoachMap` test failed in a way that pointed at the *index conversion* — the arithmetic
+turning a distance along the centreline into a point index. A throwaway probe test printed
+the projected origins and showed the projection had been right all along; the assumption
+underneath it was wrong.
+
+### Why It Is Dangerous
+
+The failure is **silent and phase-shaped**. The arithmetic succeeds. The shape produced is
+the correct shape. Every total still adds up. Only the *phase* is wrong — so sector
+boundaries land in the wrong corners, and on S. Mamede they land almost correctly, which
+means a single-circuit check confirms the bug.
+
+### Mitigation
+
+- The Coach map **rotates** every drawing so index 0 is the start/finish, giving surveyed
+  and derived shapes one shared convention (SRS OC-21).
+- A test asserts index 0 is the start/finish on a surveyed circuit.
+- A test draws **every** catalogue circuit, so a single agreeable circuit can no longer
+  stand in for the set.
+
+### Generalisation
+
+Any code converting an absolute `s` into a lap-relative position must subtract the
+start/finish origin and wrap. Treat a documented origin, bound, or ordering as an
+**untested claim** until a test measures it on more than one dataset.
+
+---
+
+## Pattern: A Coroutine That Outlives the View It Writes To (FP-BINDING-AFTER-DESTROY) — ✅ FIXED (2026-10-07)
+
+### Description
+
+`ChartFragment.processAndDisplayChart` launched on `viewLifecycleOwner.lifecycleScope`, did
+its work off the main thread, and then dereferenced `binding` (a `_binding!!`) when it
+resumed. `lifecycleScope` cancels at view destruction, but a continuation already dispatched
+to the main looper can still run before cancellation propagates — at which point `_binding`
+is null and the `!!` takes the process down.
+
+### How It Surfaced
+
+A **new, unrelated** instrumented test (`CoachTabTest`) tore the session screen down while
+the ViewPager's off-screen chart was still processing. The whole instrumentation run died
+with `Process crashed` at test 51 of 103, and the stack trace named a file the change under
+test had never touched.
+
+### Why It Is Dangerous
+
+In production this is a driver leaving the session screen while the chart renders — ordinary
+behaviour on a large session, where processing takes seconds. It had gone unseen because no
+existing test navigated away mid-render.
+
+### Mitigation
+
+Re-read `_binding` after every suspension point and bail out rather than assert:
+
+```kotlin
+val b = _binding ?: return@launch
+```
+
+Applied at both post-suspension UI sites, including the `catch` block — which had the same
+bug and would have converted a recoverable error into a crash.
+
+### Generalisation
+
+`private val binding get() = _binding!!` is safe only on the main thread **before** any
+suspension. Audit every `lifecycleScope.launch` that touches `binding` after an `await`,
+`withContext`, or suspending call. A crash surfacing in an untouched file during a new
+test is evidence of a latent defect, not of a bad test.

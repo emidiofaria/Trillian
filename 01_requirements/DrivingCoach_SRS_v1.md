@@ -606,8 +606,33 @@ no network connection of any kind.
 | OC-17 | The **Outlier Lap** insight shall compare each lap against the **median** lap time (not the mean) and shall require at least 4 laps and a deviation of at least 15%. A mean is dragged toward the outlier by the outlier itself, which is precisely how a bad lap escapes a mean-based test. |
 | OC-18 | The **Pace Trend** insight shall compare the first and second halves of a session of at least 6 laps, and shall be shown only when the difference exceeds 2%. |
 | OC-19 | The COACH tab shall display a caveat stating that sectors are the app's own equal-distance thirds and not the circuit's official sectors, shown only when the session's laps actually carry sector times. |
+| OC-20 | The COACH tab shall display a **sector map** pinned above the insights: the circuit's shape drawn as a closed outline, divided into three contiguously coloured regions corresponding to sectors 1, 2 and 3, with the start/finish marked. An insight naming a sector is an instruction about a place, and without the map the driver is told where they lost time in a vocabulary that points at nothing they can see. |
+| OC-21 | Where the session was recorded against a circuit from the track library, the map shall be drawn from that circuit's **surveyed centreline**, rotated so that the start/finish line is the first drawn point. A catalogue centreline does not begin at the start/finish — measured origins are 400.0 m, 770.9 m and 4.6 m into the three shipped circuits — so the rotation is what makes the surveyed and derived shapes share one convention. |
+| OC-22 | Where no surveyed centreline is available, the map shall be derived from the driver's own laps: each lap resampled at 240 equal fractions of its own distance, and the **per-fraction median** taken across laps. The median is used rather than the mean so that one lap off-line — a spin, a gravel excursion, a lost fix — cannot leave a bulge in a shape the driver never drove. |
+| OC-23 | A derived map shall be computed in **normalised-distance space**, the same space in which sectors are defined, so that the sector boundaries fall at exactly one third and two thirds of the drawn shape by construction rather than by approximation. |
+| OC-24 | A map derived from fewer than 3 laps shall be drawn from the single best lap and labelled as such. A map whose lap-to-lap spread exceeds 25 m, or which is derived from laps shorter than the 50 m floor of LD-25, shall not be drawn at all. |
+| OC-25 | Where a surveyed centreline is available but the driver's laps sit further than 60 m from it, measured as the **median** lateral distance, the centreline shall be rejected as belonging to a different circuit and the derived shape used instead. The measure is lateral distance and not the ordering of the sector boundaries, because that ordering legitimately wraps whenever the start/finish falls late in the centreline's own numbering, which is the common case. |
+| OC-26 | The map shall state its provenance beneath itself whenever that changes what it can be trusted for: a shape derived from laps shall say that it follows the line driven rather than the edges of the road, and a single-lap shape shall say so more strongly. A surveyed shape needs no such note. |
+| OC-27 | Where no map can be drawn honestly, the map shall be **hidden entirely** and the insights shall be shown unaltered. A shape the driver cannot recognise is worse than no shape, because it invites them to read corners into GPS noise. The insights do not depend on telemetry still being readable and shall not be withheld with the picture. |
+| OC-28 | The Dream Lap shall **never** be drawn as a path on the map. Its three sectors come from three different laps, and a continuous line through them would depict a trajectory nobody drove. |
+| OC-29 | The map shall be computed off the main thread and shall not delay the insights, which are already persisted as text and require no telemetry to display. |
 | OC-09 | Offline insights shall be stored with `source="LOCAL"` flag in `coaching_insights` table. |
 | OC-10 | When backend coaching arrives, local insights shall be replaced by backend insights. |
+
+**Remark on OC-21 — a catalogue centreline does not start at the start/finish line.**
+`Centreline`'s own documentation claimed that its points begin at the start/finish. That is
+true of exactly one of the three shipped circuits. Projecting each circuit's first detected
+lap crossing onto its own centreline places the start/finish at **400.0 m** into Baltar
+(length 1020.1 m), **770.9 m** into Cabo do Mundo (length 825.2 m) and **4.6 m** into
+S. Mamede (length 821.6 m). Only the last is near enough to zero to have hidden the problem.
+
+This matters beyond the map. Any code that converts an absolute `s` into a position within
+a lap must subtract the start/finish origin and wrap, or it will place everything at an
+offset that happens to be small on one circuit and two thirds of a lap on another. The
+failure is silent: the arithmetic succeeds, the shape is the right shape, and only its
+*phase* is wrong — so sector boundaries land in the wrong corners while every total still
+adds up. It was found by measurement rather than by reasoning, after a map test failed in a
+way that pointed at the index conversion instead.
 
 ---
 
