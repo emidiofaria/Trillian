@@ -234,6 +234,10 @@ Detects laps locally (offline) from a JSONL telemetry file using start/finish li
 
 - List of `LapEntity` records saved to Room with `isLocalOnly=true`
 - Detection result (Success, InsufficientLaps, NoStartLine, Error)
+- Each `DetectedLap` carries `sector1Ms/2Ms/3Ms`, derived by `SectorSplitter` (LD-10).
+  Sectors are added **after** the plausibility check and after all three detection
+  fallbacks have run, so a discarded attempt's sectors can never reach the driver and
+  detection geometry is provably untouched. A lap the splitter refuses keeps `0L`.
 
 ### Algorithm (since Incident 13)
 
@@ -1435,11 +1439,170 @@ private fun toLocal(lat: Double, lng: Double, refLat: Double, refLng: Double): P
 
 ---
 
+## Component: SectorSplitter
+
+### Purpose
+
+Divides a detected lap into three sectors at one third and two thirds of the distance the
+car actually drove during that lap. This is the component that finally puts real values into
+`LapEntity.sector1Ms/2Ms/3Ms`, which five consumers have been reading as zeroes since the
+columns were created.
+
+### Key Code Areas
+
+- `lap/SectorSplitter.kt` — pure object, no state, no Android dependency
+- `LocalLapDetector.withSectors()` — the only caller
+
+### Why distance and not time
+
+Thirds of a lap's *duration* move with the driver: a lap that lost a second in one corner
+places its boundaries somewhere else than a clean lap, so the two laps' sectors describe
+different stretches of road. Comparing them — the entire purpose — would then be measuring
+the misalignment rather than the driving.
+
+### Why the lap's own distance and not the circuit's
+
+A surveyed centreline would give fixed boundaries identical on every lap of every session,
+and that is the better answer. It is also only available for a circuit in the bundled
+catalogue, and a driver who captured their own start/finish line (TL-01) would get no sectors
+at all. Measuring each lap against itself works everywhere. The cost is that a lap driven on
+a wider line covers more ground, so its third falls fractionally earlier on the circuit —
+measured at a fraction of a percent of a sector on the recorded sessions, far below the
+lap-to-lap differences the sectors exist to show. It is nonetheless a real approximation,
+which is why the COACH tab states these are the app's sectors and not the circuit's (OC-19).
+
+### Configuration Constants
+
+| Constant | Value | Reason |
+|----------|-------|--------|
+| `MIN_SAMPLES_PER_LAP` | 6 | Three sectors need an interior sample each plus two endpoints |
+| `MIN_LAP_DISTANCE_M` | 50.0 | Below this it is GPS scatter between two crossings, not a lap |
+
+### Failure Modes
+
+| Mode | Symptom | Cause | Mitigation |
+|------|---------|-------|------------|
+| Sparse lap | Sectors stay `0L` | <6 samples in the window | Returns null; no sectors shown |
+| Degenerate lap | Sectors stay `0L` | <50 m driven | Returns null |
+| Boundaries out of order | Sectors stay `0L` | Clustered or non-monotonic fixes | Explicit ordering check |
+
+### Criticality
+
+LOW — a lap without sectors loses the sector columns and the sector-derived insights; lap
+times, detection and all existing behaviour are unaffected.
+
+---
+
+## Component: DreamLap
+
+### Purpose
+
+Stitches the fastest sector 1, sector 2 and sector 3 recorded anywhere in a session into the
+lap the driver has already driven in pieces but never in one go, and reports the time left on
+the table. Equally importantly, it refuses to do so when the data cannot support it.
+
+### Key Code Areas
+
+- `coaching/DreamLap.kt` — pure object; `of(laps, mergedLapCaveat)` returns `Result?`
+- `OfflineCoachingEngine.generateDreamLapInsight()` — the only caller
+
+### Dependencies
+
+- `LapEntity` sector columns (written by `SectorSplitter` via the detector)
+- `MergedLapCaveat` output, forwarded from `RecordingViewModel`
+
+### Why the gate exists
+
+See *The Dream Lap gate* under Offline Coaching Engine above. In short: a minimum selects for
+the worst data in the set, so the feature's failure mode is to present detection artefacts as
+achievements, credibly.
+
+### Configuration Constants
+
+| Constant | Value | Reason |
+|----------|-------|--------|
+| `MIN_LAPS` | 3 | With 2 the stitch barely differs from the better lap |
+| `MIN_SECTOR_SHARE` | 0.10 | A 2% sector did not come from a car going round a circuit |
+| `MAX_SECTOR_SHARE` | 0.75 | Deliberately generous; long straights legitimately skew shares |
+| `MAX_GAIN_FRACTION` | 0.25 | Catches the order-of-magnitude error, not honest results |
+
+### Failure Modes
+
+| Mode | Symptom | Cause | Mitigation |
+|------|---------|-------|------------|
+| Artefact stitched in | Impossible "theoretical best" | Double-counted lap | Caveat suppression + gain bound |
+| Silent absence | No Dream Lap card | Any gate rule fired | Intended; silence over an unfounded claim |
+
+### Criticality
+
+LOW — absence costs one insight. A *wrong* Dream Lap, however, would be a MEDIUM-severity
+trust failure, which is why the gate is the larger half of the component.
+
+---
+
+## Component: TrackStation
+
+### Purpose
+
+Places a GPS fix on a circuit: `s`, the distance from the start/finish along the centreline,
+and `d`, the signed lateral offset from it (positive left of the direction of travel). This is
+the coordinate in which every position-based coaching feature — turn-by-turn speed, braking
+points, racing-line comparison — becomes expressible.
+
+Comparing two laps by elapsed time is circular: "20 seconds in" is a different place on a fast
+lap than on a slow one, so a time-aligned comparison largely measures the misalignment. The
+exit of turn 4 is the exit of turn 4 on every lap, whatever the clock says.
+
+### Status
+
+**Ships dark.** No production code calls it. It is the foundation for the next coaching slice,
+tested in isolation; the alternative — writing it alongside its first consumer — is how a
+foundation ends up shaped by one caller's convenience.
+
+### Key Code Areas
+
+- `data/track/TrackStation.kt` — `from(Centreline?)`, `project(lat, lng)`, `forwardDistance()`
+
+### Design Notes
+
+- **Exhaustive segment search**, not a tracked previous match. Tracking carries state across
+  calls, and where two parts of a circuit run close together a stateful search that goes wrong
+  stays wrong for the rest of the lap. Under 200 centreline points, exhaustive is trivial and
+  cannot drift.
+- **The closing segment is appended explicitly**, so a fix just before the start/finish
+  projects onto real track rather than onto the nearest end.
+- **`forwardDistance` handles the wrap**, otherwise a comparison spanning the start line
+  returns almost a whole lap in the wrong direction — an error that still looks like a number.
+
+### Accuracy, honestly
+
+`d` is only as good as the fix, and the reference device reports 5–10 m at a circuit. Measured
+against the recorded sessions, lateral repeatability *between laps* is several times better
+than that absolute figure, because much of the error is a slow session-wide bias that cancels
+when laps are compared to each other. `d` is therefore usable for lap-vs-lap comparison and
+**not** as an absolute statement of where the car was (TL-22). `s` is far more robust: an
+error perpendicular to the track barely moves the projection along it.
+
+### Failure Modes
+
+| Mode | Symptom | Cause | Mitigation |
+|------|---------|-------|------------|
+| No station | Features unavailable for that circuit | Missing or <8-point centreline | `from()` returns null (TL-20) |
+| Wrong `d` sign | Left/right confusion in a future consumer | Centreline ordered against travel | Held by `TrackStationTest` |
+
+### Criticality
+
+LOW today (unreferenced). Will become HIGH for the coaching slice built on it.
+
+---
+
 ## Component: Offline Coaching Engine
 
 ### Purpose
 
-Generates coaching insights locally (offline) from lap data stored in Room. Provides immediate feedback after recording stops without requiring backend AI processing. Produces 3-4 insights: Best Lap Highlight, Top Speed, Consistency Score, and Sector Focus (upsell).
+Generates coaching insights locally (offline) from lap data stored in Room. Provides immediate feedback after recording stops without requiring backend AI processing.
+
+Since the sector slice it produces a **variable number of insights (1–7)**, emitting only those the session's data substantiates. The previous fixed 3–4 quota is what required a slot to be filled whether or not anything was known about it, and the slot that could not be filled honestly was filled with an advertisement ("Sector Analysis Coming Soon"). The engine is now permitted to stay silent, which is the only way a coaching surface can be trusted when it does speak.
 
 ### Key Code Areas
 
@@ -1450,6 +1613,7 @@ Generates coaching insights locally (offline) from lap data stored in Room. Prov
 ### Dependencies
 
 - `LapEntity` from Room — provides lap timing and sector data
+- `DreamLap` — optimal sector stitching plus its artefact gate
 - `CoachingInsightDao` — persists generated insights
 - Telemetry JSONL file — for top speed extraction
 
@@ -1458,20 +1622,56 @@ Generates coaching insights locally (offline) from lap data stored in Room. Prov
 - `List<LapEntity>` — laps from the session (minimum 2 required)
 - Each lap contains: `durationMs`, `sector1Ms`, `sector2Ms`, `sector3Ms`, `startTs`, `endTs`
 - `rawFilePath` — path to telemetry JSONL for top speed extraction
+- `mergedLapCaveat: String?` — the warning raised by `MergedLapCaveat`, forwarded from
+  `RecordingViewModel`. Passed in rather than inferred: nothing in the sector times reveals
+  that two laps were reported as one.
 
 ### Outputs
 
-- `List<OfflineInsight>` — 3-4 insights with `headline` and `detail` strings
+- `List<OfflineInsight>` — 1–7 insights with `headline` and `detail` strings
 - Persisted `CoachingInsightEntity` rows in Room
 
-### Insight Types (v2.1+)
+### Insight Types (since the sector slice)
 
 | Insight | Condition | Example |
 |---------|-----------|---------|
 | Best Lap | Always (if ≥2 laps) | "Lap 3 Was Your Fastest — 2.3s ahead of average" |
 | Top Speed | If telemetry file exists | "🚀 Top Speed: 247 km/h — Hit on Lap 3" |
 | Consistency | Always (if ≥2 laps) | "Laps within 1.2s of each other" |
-| Sector Focus | If sectors unavailable | "Sector Analysis Coming Soon" (upsell) |
+| Dream Lap | If `DreamLap.of()` returns non-null | "Dream Lap: 1:12.345 — 3.5s quicker than your best" |
+| Sector Diagnostic | If laps carry sectors | "Focus on Sector 2" / "All Sectors Strong" |
+| Outlier Lap | ≥4 laps, one ≥15% off the **median** | "Lap 5 Was The Odd One Out" |
+| Pace Trend | ≥6 laps, halves differ by >2% | "You Built Pace Through The Session" |
+
+**Removed:** the "Sector Focus — Coming Soon" upsell (OC-08). An advertisement occupying a
+coaching slot is not a degraded insight, it is a false one, and the quota that demanded it
+has been removed with it.
+
+### The Dream Lap gate
+
+A lap list reports what was detected. The Dream Lap takes a **minimum** over what was
+detected, and a minimum actively seeks out the worst data in the set. A lap counted twice
+(`FP-LAP-DOUBLE-COUNT`, an accepted limitation) yields half-laps whose sectors are roughly
+half as long as they should be — exactly the values `min()` reaches for. The result would be
+a detection artefact presented as an achievement, and it would look entirely credible.
+
+Suppression rules (OC-13, OC-14):
+
+| Rule | Rejects |
+|------|---------|
+| `mergedLapCaveat != null` | Sessions where detection itself suspects a merged or split lap |
+| ≥3 laps with believable sectors | Sets too small for a minimum to mean anything |
+| Sectors sum to their own lap | Arithmetic that has come apart upstream |
+| Each sector in 10%–75% of its lap | The signature of boundaries in the wrong place |
+| Total ≤ fastest real lap | Impossible stitches |
+| Gain ≤ 25% of that lap | Order-of-magnitude errors, i.e. half-laps |
+
+**What the arithmetic cannot do:** a half-lap's sectors are internally consistent and evenly
+shared, because half a lap driven normally looks like a lap driven normally, only shorter.
+Every one of its sectors therefore wins, it becomes the "best lap" itself, and the Dream Lap
+restates it with a gain of zero — claiming nothing the lap list does not already show. That
+is the floor of what the gate guarantees: **no fabricated gain**. `MergedLapCaveat` is the
+actual defence, which is why it is a parameter rather than something inferred here.
 
 ### Failure Modes
 
@@ -2302,6 +2502,261 @@ case-insensitive because the style uppercases the label.
 
 ---
 
+## Component: Session Outline (`SessionOutline`)
+
+### Purpose
+
+Produces a drawable shape of the circuit from the driver's own laps, for sessions where no
+surveyed centreline exists. This is the fallback half of the Coach tab's sector map.
+
+### Key Code Areas
+
+| File | Role |
+|------|------|
+| `data/track/SessionOutline.kt` | `build()`, `resample()`, `normalise()` |
+
+### Algorithm
+
+1. Each lap is resampled at `POINTS = 240` equal fractions **of its own distance**.
+2. All laps are projected to local metres about **one shared reference** — using each lap's
+   own first fix would re-centre every lap on itself and silently remove the very
+   differences being averaged.
+3. The **per-index median** is taken across laps.
+4. The result is normalised into the unit box for drawing.
+
+### Why the median and not the mean
+
+One lap off-line — a spin, a gravel excursion, a lost fix — drags a mean toward itself and
+leaves a bulge in a shape the driver never drove. The same reasoning produced OC-17's
+median-based outlier insight. A test proves a 120 m excursion moves the outline by less
+than 0.01 normalised.
+
+### Why normalised-distance space
+
+It is exactly how `SectorSplitter` defines a sector, so indices 80 and 160 **are** the
+sector boundaries rather than approximations of them. Averaging in time or sample-index
+space would mix a fast lap's corner with a slow lap's straight.
+
+### Two floors that are not the same number
+
+`MIN_LAP_DISTANCE_M` (50 m, held equal to `SectorSplitter`'s own floor by a test) asks
+*how far was driven*. `MIN_EXTENT_M` (25 m) asks *how big is the bounding box*. A lap can
+drive 400 m around a 60 m box; conflating them was a real bug found by a failing test.
+
+### Measured lap-to-lap spread
+
+| Circuit | Laps | `spreadM` |
+|---------|------|-----------|
+| S. Mamede | 3 | 1.20 m |
+| Cabo do Mundo | 8 | 5.88 m |
+| Baltar | 12 | 8.90 m |
+
+### Criticality
+
+**LOW** — the map disappears; insights are unaffected.
+
+---
+
+## Component: Coach Map (`CoachMap`)
+
+### Purpose
+
+Decides *what shape gets drawn* on the Coach tab and where its sector boundaries fall.
+
+### Key Code Areas
+
+| File | Role |
+|------|------|
+| `data/track/CoachMap.kt` | `build()`, `fromCentreline()`, `agrees()`, `boundaryIndex()` |
+
+### Dependencies
+
+`SessionOutline`, `TrackStation` (this is `TrackStation`'s **first production caller**),
+`TrackRepository` for the catalogue centreline.
+
+### Behaviour worth knowing
+
+- **A catalogue centreline does not begin at the start/finish line.** Measured origins:
+  Baltar 400.0 m, Cabo do Mundo 770.9 m, S. Mamede 4.6 m. The drawing is **rotated** so
+  index 0 is always the start/finish, giving surveyed and derived shapes one convention.
+  See the remark under OC-21 in the SRS — this is a trap for any future `s` consumer.
+- **A mismatched centreline is detected by median lateral distance** (`MAX_CENTRELINE_OFFSET_M
+  = 60 m`), never by boundary ordering. Ordering wraps legitimately whenever the start/finish
+  falls late in the centreline's numbering, which is the common case. Measured offsets for
+  correctly matched circuits: 2.8 / 6.4 / 2.7 m — about a racing line's width.
+
+### Failure Modes
+
+| Mode | Cause | Result |
+|------|-------|--------|
+| No drawing | Fewer laps than the floor, or spread > 25 m | Card hidden; insights unaffected |
+| Centreline rejected | Median lateral offset > 60 m | Falls back to the derived shape |
+| Single-lap drawing | Fewer than 3 usable laps | Drawn, and labelled as such |
+
+### Criticality
+
+**LOW** — a failure removes the picture, never the coaching.
+
+---
+
+## Component: Sector Map View (`ui/common/SectorMapView`)
+
+### Purpose
+
+Draws the `CoachMap.Drawing`: three coloured polylines, S1/S2/S3 labels, a gold start/finish
+dot at index 0, and a provenance-aware content description.
+
+### What it deliberately does not draw
+
+- **No Dream Lap path.** Its three sectors come from three different laps; a continuous line
+  through them would depict a trajectory nobody drove (OC-28).
+- No speed gradient and no corner markers — there are no corner insights for them to anchor.
+
+### Criticality
+
+**LOW** — view-only.
+
+---
+
+## Component: Coach Telemetry View Model (`CoachTelemetryViewModel`)
+
+*Named `CoachMapViewModel` until the sector repair joined it.*
+
+### Purpose
+
+Reads telemetry and builds the drawing off the main thread, so the Coach tab's insights —
+already persisted as text — appear immediately and the map arrives behind them. It then
+runs `SectorRepair` over the samples it has just loaded.
+
+### Why the repair rides along here
+
+`SectorRepair` needs the whole session's telemetry, which this view model has already read
+in order to draw. Running it anywhere else would mean reading the same file a second time
+on every session open, purely to keep a class name accurate. The name was changed instead.
+
+Because the repair writes through Room, the LAPS tab — observing the same query — corrects
+itself without being told. A repair confined to the Coach tab would leave two tabs of the
+same screen quoting different numbers for the same lap.
+
+### Why it is separate from `SessionResultViewModel`
+
+The Coach tab was until now a pure reader of text. The map is the first thing on it that
+needs telemetry. Keeping the work here means the LAPS and CHART tabs do not pay for it.
+
+### Why the drawing is not persisted
+
+It is derived data. Persisting it would add a schema migration and a second source of truth
+that could drift from the telemetry it came from. Telemetry only disappears when the whole
+session is deleted (SM-03), so no surviving session's insights outlive the data their map
+needs.
+
+### Criticality
+
+**LOW**
+
+---
+
+## Component: Lap Anchor (`lap/LapAnchor`)
+
+### Purpose
+
+Recovers where the car was at a given instant by interpolating between the two fixes either
+side of it. Its one real use is recovering the start/finish crossing *position* from the
+crossing *instant* that lap detection persisted.
+
+### Why it is an inversion and not a second opinion
+
+`LocalLapDetector` derives the crossing position and the crossing timestamp from a single
+interpolation fraction of a single segment, keeps the timestamp, and discards the position.
+Given the timestamp, that fraction is recoverable by proportion and the position follows
+exactly — lossless to the detector's millisecond rounding, about two centimetres at racing
+speed.
+
+This is deliberately *not* a reimplementation of the detector's start-line plane geometry,
+which would be a second opinion liable to disagree with the first (`FP-REIMPLEMENTED-GEOMETRY`).
+The dependency is noted at the crossing site in `LocalLapDetector`: if the two ever stop
+sharing a fraction, this inversion silently degrades from exact to approximate.
+
+### Refusals
+
+Returns null for an instant outside the recorded range. Extrapolating past the end of the
+data would be inventing a position rather than recovering one.
+
+### Key Files
+
+| File | Responsibility |
+|------|----------------|
+| `lap/LapAnchor.kt` | `positionAt()` |
+
+### Criticality
+
+**MEDIUM** — everything that measures distance along a lap depends on it.
+
+---
+
+## Component: Sector Repair (`coaching/SectorRepair`)
+
+### Purpose
+
+Brings a session's stored sector times up to date with the current measurement when the
+session is opened, and regenerates the coaching text when — and only when — that can be
+done safely.
+
+### Why repair on read rather than migrate
+
+A Room migration cannot do this work: it would have to re-read every telemetry file from
+inside a schema upgrade, on a device that may be low on time and battery, for sessions the
+driver may never open again. Repairing lazily costs nothing for sessions nobody looks at
+and needs no schema change — the database stays at **version 5**.
+
+It is also naturally idempotent. There is no "has been migrated" flag to drift out of step
+with reality, because the check *is* the recomputation: recompute, compare, write only on
+difference.
+
+### The dangerous part: regenerating insights
+
+Sector times are numbers and can be replaced. Insights are *sentences* built from those
+numbers, so correcting the numbers leaves the text stale — and regenerating it is where this
+could do real harm.
+
+`DreamLap` must be suppressed when lap detection suspected it had merged two laps into one
+(OC-14), and that signal comes from detection diagnostics, not from the sector times. OC-14
+is explicit that it must be *passed in* rather than inferred, so inferring it here is not
+available. Regenerating without it would silently resurrect a dream lap that was correctly
+withheld.
+
+The diagnostics are written to a `.lapdiag.json` sidecar beside the telemetry (LD-16), so
+the signal is usually recoverable:
+
+| Sidecar | Sectors | Insight text |
+|---------|---------|--------------|
+| Present and parseable | Corrected | Regenerated with the recovered caveat |
+| Absent, unreadable, or no telemetry path | Corrected | **Left exactly as recorded** |
+
+Only `isLocalOnly` insights are ever removed (OC-09, OC-10): insights that came from the
+backend cannot be regenerated locally, so a local recalculation must never take them along.
+
+### Backfill
+
+A lap stored with zero sectors is treated as differing, so a session recorded before sectors
+existed gains them on first open. A lap the road genuinely cannot be divided for yields null
+from `SectorSplitter` and keeps whatever it had, rather than being blanked.
+
+### Key Files
+
+| File | Responsibility |
+|------|----------------|
+| `coaching/SectorRepair.kt` | `repair()`, `regenerateInsights()` |
+| `data/db/dao/LapDao.kt` | `updateSectors()` |
+| `data/db/dao/CoachingInsightDao.kt` | `deleteLocalInsightsForSession()` |
+| `lap/LapDiagnosticsWriter.kt` | `read()` |
+
+### Criticality
+
+**LOW** — failure leaves old sessions with their old numbers; new sessions are unaffected.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -2317,6 +2772,15 @@ case-insensitive because the style uppercases the label.
 | Track Repository | MEDIUM | SELECT TRACK unavailable and saved circuits lost; NEW CIRCUIT unaffected |
 | Lap & Coaching Sync | MEDIUM | Delayed insights |
 | Offline Coaching Engine | MEDIUM | No coaching insights |
+| SectorSplitter | LOW | Sector columns stay zero; sector-derived insights disappear; lap times unaffected |
+| DreamLap | LOW | One insight absent. A *wrong* Dream Lap would instead be a MEDIUM trust failure |
+| TrackStation | LOW | Coach-tab map loses its surveyed shape and falls back to the driven one |
+| SessionOutline | LOW | Coach-tab map absent for captured circuits; insights unaffected |
+| CoachMap | LOW | Coach-tab map absent; insights unaffected |
+| SectorMapView | LOW | Sector map missing from the COACH tab |
+| CoachTelemetryViewModel | LOW | Sector map never populates and stored sectors are never repaired; insights still render |
+| LapAnchor | MEDIUM | Sectors and the drawn outline lose their start/finish anchor; every boundary drifts by one sample gap |
+| SectorRepair | LOW | Sessions recorded before the ruler was anchored keep their old sector times; new sessions are unaffected |
 | Session State Machine | MEDIUM | UX confusion |
 | App Startup / Branded Loading Screen | HIGH | App unusable (no cold start) |
 | Stale Upload Detection | LOW | Missing UX warning |

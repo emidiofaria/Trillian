@@ -347,17 +347,21 @@ class RecordingViewModel @Inject constructor(
                         // Save laps to Room
                         val lapEntities = saveLapsToRoom(sessionId, result.laps)
                         
-                        // Generate offline coaching insights (with telemetry path for top speed)
-                        if (lapEntities.isNotEmpty()) {
-                            generateOfflineCoaching(sessionId, lapEntities, session.rawFilePath)
-                        }
-                        
                         // The count on its own is stated with a confidence the detector
                         // may not have earned: where a crossing was refused just under
                         // the minimum gap, two laps have been timed as one and nothing
                         // downstream can tell, because a merged lap is a credible lap
                         // (LD-23).
                         val caveat = MergedLapCaveat.of(outcome.diagnostics)
+
+                        // Generate offline coaching insights (with telemetry path for top
+                        // speed). The caveat is computed first and passed in, because the
+                        // dream lap stitches minima across laps and must not do so when
+                        // the lap boundaries themselves are in doubt.
+                        if (lapEntities.isNotEmpty()) {
+                            generateOfflineCoaching(sessionId, lapEntities, session.rawFilePath, caveat)
+                        }
+
                         val message = "${result.laps.size} laps detected" +
                             (caveat?.let { ". $it" } ?: "")
                         finishProcessing(message, result.laps.size)
@@ -408,9 +412,9 @@ class RecordingViewModel @Inject constructor(
                 startTs = lap.startTs,
                 endTs = lap.endTs,
                 durationMs = lap.durationMs,
-                sector1Ms = 0L,  // No sectors in Phase 1
-                sector2Ms = 0L,
-                sector3Ms = 0L,
+                sector1Ms = lap.sector1Ms,
+                sector2Ms = lap.sector2Ms,
+                sector3Ms = lap.sector3Ms,
                 isBestLap = lap == bestLap,
                 isLocalOnly = true
             )
@@ -434,10 +438,11 @@ class RecordingViewModel @Inject constructor(
     private suspend fun generateOfflineCoaching(
         sessionId: Long, 
         laps: List<LapEntity>,
-        rawFilePath: String?
+        rawFilePath: String?,
+        mergedLapCaveat: String? = null
     ) {
         try {
-            val insights = OfflineCoachingEngine.generateInsights(laps, rawFilePath)
+            val insights = OfflineCoachingEngine.generateInsights(laps, rawFilePath, mergedLapCaveat)
             
             if (insights.isEmpty()) {
                 Log.d(TAG, "No offline coaching insights generated (insufficient laps)")

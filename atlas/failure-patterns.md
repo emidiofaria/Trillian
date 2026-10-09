@@ -2813,3 +2813,274 @@ not the lap count.
 
 **Where else to look.** Any prior that has a recovery path behind it (`lengthM` vs LD-22, the
 envelope vs LD-21): mutation tests must observe *which path produced the answer*, not only the answer.
+
+---
+
+## Pattern: Documentation That Asserts an Origin Nobody Measured (FP-UNMEASURED-ORIGIN) — ✅ FIXED (2026-10-07)
+
+### Description
+
+`Centreline`'s KDoc stated that its points begin at the start/finish line. Nothing enforced
+it, nothing tested it, and it was true of exactly one of the three shipped circuits.
+Measuring where each circuit's first detected lap crossing actually projects onto its own
+centreline gives **400.0 m** into Baltar, **770.9 m** into Cabo do Mundo and **4.6 m** into
+S. Mamede. S. Mamede's near-zero origin is why the claim survived: the one circuit anybody
+would spot-check agreed with it.
+
+### How It Surfaced
+
+A `CoachMap` test failed in a way that pointed at the *index conversion* — the arithmetic
+turning a distance along the centreline into a point index. A throwaway probe test printed
+the projected origins and showed the projection had been right all along; the assumption
+underneath it was wrong.
+
+### Why It Is Dangerous
+
+The failure is **silent and phase-shaped**. The arithmetic succeeds. The shape produced is
+the correct shape. Every total still adds up. Only the *phase* is wrong — so sector
+boundaries land in the wrong corners, and on S. Mamede they land almost correctly, which
+means a single-circuit check confirms the bug.
+
+### Mitigation
+
+- The Coach map **rotates** every drawing so index 0 is the start/finish, giving surveyed
+  and derived shapes one shared convention (SRS OC-21).
+- A test asserts index 0 is the start/finish on a surveyed circuit.
+- A test draws **every** catalogue circuit, so a single agreeable circuit can no longer
+  stand in for the set.
+
+### Generalisation
+
+Any code converting an absolute `s` into a lap-relative position must subtract the
+start/finish origin and wrap. Treat a documented origin, bound, or ordering as an
+**untested claim** until a test measures it on more than one dataset.
+
+---
+
+## Pattern: A Coroutine That Outlives the View It Writes To (FP-BINDING-AFTER-DESTROY) — ✅ FIXED (2026-10-07)
+
+### Description
+
+`ChartFragment.processAndDisplayChart` launched on `viewLifecycleOwner.lifecycleScope`, did
+its work off the main thread, and then dereferenced `binding` (a `_binding!!`) when it
+resumed. `lifecycleScope` cancels at view destruction, but a continuation already dispatched
+to the main looper can still run before cancellation propagates — at which point `_binding`
+is null and the `!!` takes the process down.
+
+### How It Surfaced
+
+A **new, unrelated** instrumented test (`CoachTabTest`) tore the session screen down while
+the ViewPager's off-screen chart was still processing. The whole instrumentation run died
+with `Process crashed` at test 51 of 103, and the stack trace named a file the change under
+test had never touched.
+
+### Why It Is Dangerous
+
+In production this is a driver leaving the session screen while the chart renders — ordinary
+behaviour on a large session, where processing takes seconds. It had gone unseen because no
+existing test navigated away mid-render.
+
+### Mitigation
+
+Re-read `_binding` after every suspension point and bail out rather than assert:
+
+```kotlin
+val b = _binding ?: return@launch
+```
+
+Applied at both post-suspension UI sites, including the `catch` block — which had the same
+bug and would have converted a recoverable error into a crash.
+
+### Generalisation
+
+`private val binding get() = _binding!!` is safe only on the main thread **before** any
+suspension. Audit every `lifecycleScope.launch` that touches `binding` after an `await`,
+`withContext`, or suspending call. A crash surfacing in an untouched file during a new
+test is evidence of a latent defect, not of a bad test.
+
+---
+
+## Pattern: One Measurement, Two Origins (FP-SPLIT-ORIGIN) — ✅ FIXED (2026-10-07)
+
+### Symptom
+
+Nothing. Sector times summed to the lap exactly, lap times were correct, every test passed,
+and the numbers looked entirely plausible. The only visible trace was that sector 1 wandered
+by a few tenths from lap to lap on a driver who felt consistent.
+
+### What was happening
+
+`SectorSplitter` measured a lap with a **clock** and a **ruler** that started in different
+places:
+
+- the clock started at `startTs`, the interpolated instant the car crossed the start/finish
+  plane — correct, and inherited from LD-15
+- the ruler was zeroed at `lap[0]`, the first GPS *fix* after that instant
+
+All three recorded fixtures sample at a median gap of exactly 1000 ms, and `LocalLapDetector`
+notes that the car covers 15–20 m between samples. So the lap's measured *distance* was short
+by that stretch at each end while its *duration* was not, and the boundaries — defined as
+thirds of distance — landed late on the circuit.
+
+### Why it was so hard to see
+
+Three properties conspired:
+
+1. **The arithmetic stayed perfect.** Sector 3 takes the remainder, so the three always summed
+   to the lap. Every invariant anyone had thought to assert still held.
+2. **The error was a phase shift, not a magnitude.** Nothing was lost or double-counted; the
+   boundaries were simply in the wrong *place*. There is no conservation law that notices.
+3. **It was re-rolled every lap.** `d₀` depends on the GPS clock's arbitrary phase against the
+   crossing, giving sector 1 about **±0.5 s** of artefact — around 2% of a 28 s sector, and of
+   the same order as the differences sectors exist to reveal. Variability reads as driving.
+
+### The part that actually did harm
+
+`DreamLap` takes the *fastest* sector 1, 2 and 3 across the session. A minimum does not
+average an artefact away — it **actively selects for it**, picking whichever lap's phase
+flattered that sector most. This is the identical argument OC-13 already makes, applied to a
+source of error OC-13 did not know about. Plausible inflation: around **1 s**, comfortably
+under OC-13's 25% sanity cap, so it would never have announced itself.
+
+### The irony worth remembering
+
+The codebase had already fought this exact battle and won it. LD-15 exists because quantising
+a lap boundary to the nearest 1 Hz sample was a 4% error. Sectors inherited the interpolated
+*instant* from that fix — and not the interpolated *position*, which the detector computed on
+the same line of code and threw away.
+
+### Root cause
+
+A derived quantity took one of its two endpoints from a corrected source and the other from
+the uncorrected one. The two were never written down side by side, so the inconsistency had
+nowhere to become visible.
+
+### Fix
+
+`LapAnchor` recovers the crossing position by **inverting** the detector's own interpolation
+from the persisted instant, rather than re-deriving the plane geometry (which would have been
+`FP-REIMPLEMENTED-GEOMETRY`). `SectorSplitter` and `SessionOutline` anchor both ends of every
+lap there. `SectorRepair` corrects sessions already stored (OC-31).
+
+### Detection
+
+`SectorSplitterTest.sector 1 does not drift with where the line falls between two fixes`
+sweeps the crossing phase across a whole sample interval at constant pace and requires sector
+1 to stay a true third. Before the fix that sweep moved it by about half a second.
+
+### Generalisable rule
+
+**When a quantity has two endpoints, write down where each one comes from.** A correction
+applied to one end of a measurement and not the other produces an error that conserves
+totals, passes every sum check, and varies like signal.
+
+### Related
+
+- `FP-REIMPLEMENTED-GEOMETRY` — the trap avoided by inverting rather than re-deriving
+- `FP-UNMEASURED-ORIGIN` — the same family: an origin assumed rather than measured
+- OC-13 — a minimum selects for the worst data, including artefacts
+
+---
+
+## Pattern: Correcting the Numbers and Leaving the Sentences (FP-STALE-DERIVED-TEXT) — ⚠️ DESIGN (2026-10-07)
+
+### Symptom
+
+A fix corrects stored values, and the prose generated from those values — already persisted
+as text — silently continues to describe the old ones.
+
+### Where it bit
+
+`SectorRepair` rewrites sector times on read. Coaching insights are sentences built from
+those times at save time and stored in `coaching_insights`. Correcting the numbers without
+regenerating the text leaves the driver reading a paragraph about a sector that has moved.
+
+### Why the obvious fix is the dangerous one
+
+Regenerating looks free. It is not. `DreamLap` must be suppressed when lap detection
+suspected it had merged two laps into one, and OC-14 is explicit that this signal **must be
+passed in from detection rather than inferred from the sector times**. A regeneration pass is
+not re-running detection, so it does not have the signal — and regenerating without it
+silently resurrects a dream lap that was correctly withheld. A stale sentence is a small
+inaccuracy; an unearned dream lap is a trust failure.
+
+### Resolution
+
+The signal turned out to be recoverable after all: LD-16 writes detection diagnostics to a
+`.lapdiag.json` sidecar beside the telemetry. Regeneration happens only when that sidecar
+parses. Otherwise the corrected numbers stand and the wording is left exactly as recorded.
+
+### Generalisable rule
+
+**Persisted prose is derived data with no dependency tracking.** Before correcting a stored
+value, ask what text was generated from it, and what inputs that text needed that are no
+longer in scope. If a suppression rule depended on an input you no longer have, *not*
+regenerating is the safe direction — the failure mode of staleness is mild and the failure
+mode of regenerating blind is not.
+
+### Related
+
+- OC-14 — the merged-lap signal must be passed in, never inferred
+- OC-09 / OC-10 — only locally generated insights may be replaced
+- `FP-SPLIT-ORIGIN` — the correction that raised the question
+
+---
+
+## Pattern: A Constant Changed and Its Readers Did Not (FP-STALE-INLINED-CONST) — ✅ CAUGHT (2026-10-07)
+
+### Symptom
+
+A `const val` is changed in one place, everything compiles, every unit test agrees with the
+new value, and the running app still shows the old one.
+
+### Where it bit
+
+Cutting v3.04. `appVersionName` went 3.03 → 3.04, which regenerates
+`BuildConfig.VERSION_NAME`. The built APK's manifest correctly said `versionName='3.04'`, and
+`BuildConfig` in the dex correctly said `3.04`. The About screen rendered **3.03 (303)**.
+
+Unpacking the APK showed the literal `3.03` still present in two other dex files: Kotlin
+inlines `const val` into every call site at compile time, and incremental compilation had not
+recompiled the classes that read it. The constant and its readers had drifted apart inside a
+single APK.
+
+### Why the usual guards missed it
+
+- **The manifest was right.** `versionName`/`versionCode` come from the Gradle DSL, not from
+  the compiled code, so the APK filename, `aapt2 dump badging`, and Play's view of the build
+  were all correct. Everything *about* the build agreed; only the code *inside* it disagreed.
+- **The new L1 test passed.** `BuildVersionTest` compares `BuildConfig.VERSION_CODE` with
+  `BuildConfig.VERSION_NAME` — both read from the same freshly compiled class. A test that
+  reads the constant can never detect that someone else inlined an older copy of it.
+- **A clean build would have hidden it too.** The bug lives only in the incremental path, so
+  it reproduces on exactly the machine that cuts the release and not in CI-from-scratch.
+
+### What caught it
+
+`AboutScreenTest.aboutScreenReportsTheBuildIdentityFromBuildConfig` (L2, UI-12). It is an
+instrumentation test, so the expectation is compiled into the **test** APK and the rendered
+text comes from the **app** APK. Two separately compiled artifacts, each with its own inlined
+copy, compared at runtime — which is the only arrangement in which the drift is visible at
+all. The test was written to guard the About screen; it turns out to guard the build.
+
+### Resolution
+
+`./gradlew clean` before the release build, then re-run L1 + L2 and package from that. No
+code change: the defect is in the build's incrementality, not in the app.
+
+### Generalisable rule
+
+**An inlined constant has no single source of truth at runtime, only many copies of one.**
+After changing a `const val` that crosses module or artifact boundaries, do not trust an
+incremental build, and do not try to assert the change with a test that reads the same
+constant — that test is one of the copies. Assert it where two independently compiled
+artifacts meet, or build clean.
+
+Corollary for releases: **a version bump is the one edit that must never be packaged from an
+incremental build.**
+
+### Related
+
+- UI-12 — the About screen shows build identity read from `BuildConfig`
+- NF-17 — the packaging gates that stand between a bad build and strangers
+- `BuildVersionTest` (L1) — asserts the derivation; cannot see inlining drift

@@ -157,4 +157,17 @@
     <string name="onboarding_denied_label">Some permissions were denied:</string>
     <string name="onboarding_grant_button">GRANT PERMISSIONS</string>
     <string name="onboarding_permission_location">Location</string>
+    <!-- Coaching: sectors -->
+    <string name="coach_sector_caveat">Sectors are equal thirds of the distance you drove on each lap, measured by this app — not the circuit\'s official timing sectors. A lap driven on a different line moves the boundaries very slightly.</string>
+
+    <!-- Coaching: sector map -->
+    <string name="coach_map_sector_label">S%1$d</string>
+    <string name="coach_map_content_description">Circuit map with the three sectors in three colours and the start/finish marked. %1$s</string>
+    <string name="coach_map_desc_surveyed">Drawn from the surveyed circuit.</string>
+    <string name="coach_map_desc_derived">Drawn from the shape of your own laps.</string>
+    <string name="coach_map_desc_single_lap">Drawn from a single lap, so it carries that lap\'s GPS error.</string>
+    <string name="coach_map_empty">No map — not enough laps recorded</string>
+    <string name="coach_map_note_derived">This shape is drawn from your own laps, so it follows the line you drove rather than the exact edges of the circuit.</string>
+    <string name="coach_map_note_single_lap">Drawn from a single lap. With three or more laps the shape settles down and stops following one lap\'s GPS wobble.</string>
+
 </resources>

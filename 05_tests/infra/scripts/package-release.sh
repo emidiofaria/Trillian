@@ -2,7 +2,7 @@
 # =============================================================================
 # package-release.sh — build a local release and ship its evidence with it
 # =============================================================================
-# Two kinds of release, chosen with --target (or interactively):
+# Three kinds of release, chosen with --target (or interactively):
 #
 #   dev   releases/v<version>-<slug>/
 #           DrivingCoach-v<version>-<slug>.apk   debug build, for your own phone
@@ -15,9 +15,19 @@
 #           RELEASE_NOTES.md                     commits since the last release
 #           PLAY_SUBMISSION.md                   what the Console still needs
 #
+#   both  releases/v<version>-<slug>/            one release, both artifacts
+#           DrivingCoach-v<version>-<slug>.apk   debug build, for your own phone
+#           Trillian-v<version>.aab              SIGNED bundle for Google Play
+#           TEST_REPORT.html / RELEASE_NOTES.md / PLAY_SUBMISSION.md
+#
 # The dev path builds a *debug* APK signed with the debug key. It can never be
 # uploaded to Play, which is why the Play path is a separate pipeline rather than
 # a flag on the same one.
+#
+# `both` is not a relaxation of either. A directory that holds a signed bundle is
+# held to the bundle's standard, so `both` runs the entire Play preflight and
+# inherits every one of its refusals — the APK simply rides along, built from the
+# same commit, verified by the same report.
 #
 # The point of the directory is that an artifact and the evidence for it cannot
 # be separated. A build with no report next to it is a build nobody has checked.
@@ -25,7 +35,7 @@
 # your own phone, but it should not reach strangers.
 #
 # Usage:
-#   package-release.sh [--target dev|play] [--slug NAME] [--report FILE]
+#   package-release.sh [--target dev|play|both] [--slug NAME] [--report FILE]
 #                      [--no-build] [--yes]
 # =============================================================================
 
@@ -54,7 +64,7 @@ while [[ $# -gt 0 ]]; do
         --report)   REPORT="$2"; shift 2 ;;
         --no-build) DO_BUILD=false; shift ;;
         --yes|-y)   ASSUME_YES=true; shift ;;
-        --help)     sed -n '2,30p' "$0"; exit 0 ;;
+        --help)     sed -n '2,39p' "$0"; exit 0 ;;
         *)          log_error "Unknown option: $1"; exit 2 ;;
     esac
 done
@@ -73,11 +83,13 @@ if [ -z "$TARGET" ]; then
         echo ""
         echo "  1) Dev build     debug APK + test report, for your phone   (as before)"
         echo "  2) Play release  signed AAB + submission checklist         (Google Play)"
+        echo "  3) Both          APK and AAB in one directory              (full Play gates)"
         echo ""
-        read -r -p "Choose [1/2]: " choice
+        read -r -p "Choose [1/2/3]: " choice
         case "$choice" in
             1) TARGET="dev" ;;
             2) TARGET="play" ;;
+            3) TARGET="both" ;;
             *) log_error "Not a valid choice."; exit 2 ;;
         esac
     else
@@ -88,8 +100,29 @@ if [ -z "$TARGET" ]; then
 fi
 
 case "$TARGET" in
-    dev|play) ;;
-    *) log_error "--target must be 'dev' or 'play' (got: $TARGET)"; exit 2 ;;
+    dev|play|both) ;;
+    *) log_error "--target must be 'dev', 'play' or 'both' (got: $TARGET)"; exit 2 ;;
+esac
+
+# What the target actually means, stated once.
+#
+# These three questions used to be asked by comparing "$TARGET" to the string
+# "play" in seven separate places, which worked only while there were exactly two
+# targets: every one of those comparisons silently meant "not dev". Naming the
+# intents separates them, so a third target can want an APK *and* an AAB *and*
+# the strict gates without any of the seven having to guess which it meant.
+#
+#   WANT_APK    build and ship the debug APK
+#   WANT_AAB    build, verify the signature of, and ship the release bundle
+#   PLAY_GATES  run every refusal that protects a public upload
+#
+# PLAY_GATES is deliberately not the same question as WANT_AAB even though they
+# currently move together: a directory containing a signed bundle is held to the
+# bundle's standard regardless of what else is in it.
+case "$TARGET" in
+    dev)  WANT_APK=true;  WANT_AAB=false; PLAY_GATES=false ;;
+    play) WANT_APK=false; WANT_AAB=true;  PLAY_GATES=true  ;;
+    both) WANT_APK=true;  WANT_AAB=true;  PLAY_GATES=true  ;;
 esac
 
 # ---------------------------------------------------------------------------
@@ -117,21 +150,25 @@ fi
 
 RELEASE_NAME="v${VERSION}-${SLUG}"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_NAME"
-if [ "$TARGET" = "play" ]; then
-    ARTIFACT_NAME="Trillian-v${VERSION}.aab"
-    ARTIFACT_LABEL="AAB"
-else
-    ARTIFACT_NAME="DrivingCoach-${RELEASE_NAME}.apk"
-    ARTIFACT_LABEL="APK"
-fi
-# Kept for anything downstream that still reads the old name.
-APK_NAME="$ARTIFACT_NAME"
+
+# Play rejects a versionCode it has already seen, so this is needed by the
+# preflight and again by the submission checklist. Derived here, once, with the
+# same arithmetic app/build.gradle.kts uses — BuildVersionTest asserts that the
+# compiled APK agrees with it.
+VERSION_CODE="$(( $(echo "$VERSION" | cut -d. -f1) * 100 + $(echo "$VERSION" | cut -d. -f2) ))"
+
+# The bundle is named for the version alone: a Play release is identified by what
+# it is, not by the branch it was cut from. The APK keeps the slug because a
+# phone may well hold several at once.
+AAB_NAME="Trillian-v${VERSION}.aab"
+APK_NAME="DrivingCoach-${RELEASE_NAME}.apk"
 
 echo ""
 log_step "Release: $RELEASE_NAME  (target: $TARGET)"
-echo "  Version:   $VERSION"
+echo "  Version:   $VERSION ($VERSION_CODE)"
 echo "  Directory: releases/$RELEASE_NAME/"
-echo "  $ARTIFACT_LABEL:       $ARTIFACT_NAME"
+[ "$WANT_APK" = true ] && echo "  APK:       $APK_NAME"
+[ "$WANT_AAB" = true ] && echo "  AAB:       $AAB_NAME"
 echo ""
 
 if [ -d "$RELEASE_DIR" ] && [ "$ASSUME_YES" != true ]; then
@@ -153,7 +190,7 @@ fi
 # ---------------------------------------------------------------------------
 # These run first so a refusal costs seconds rather than a full release build,
 # and so the tree is left exactly as it was found.
-if [ "$TARGET" = "play" ]; then
+if [ "$PLAY_GATES" = true ]; then
     log_step "Play preflight"
 
     # 1. Signing. Without a key the bundle is unsigned and Play rejects it.
@@ -184,19 +221,39 @@ if [ "$TARGET" = "play" ]; then
 
     # 3. versionCode must not repeat. Play rejects a duplicate outright, and
     #    finding that out at upload time wastes the whole build.
-    VERSION_CODE="$(( $(echo "$VERSION" | cut -d. -f1) * 100 + $(echo "$VERSION" | cut -d. -f2) ))"
-    PREV_PLAY="$(ls -d "$RELEASES_DIR"/v*-play/ 2>/dev/null | grep -v "/$RELEASE_NAME/$" || true)"
+    #
+    #    What counts as a previous Play release is "a release directory that
+    #    contains a bundle", not "a directory named -play". The name was a proxy
+    #    for the contents that stopped being accurate the moment a target could
+    #    put an AAB somewhere else: a v3.04-some-slug release holding a bundle
+    #    would have been invisible to this scan, and the collision it caused
+    #    would surface at upload, which is exactly what this gate exists to
+    #    prevent. Ask about the contents instead.
+    PREV_PLAY=""
+    for cand in "$RELEASES_DIR"/v*/; do
+        [ -d "$cand" ] || continue
+        [ "$(basename "$cand")" = "$RELEASE_NAME" ] && continue
+        compgen -G "$cand*.aab" >/dev/null 2>&1 && PREV_PLAY="$PREV_PLAY $cand"
+    done
     for prev in $PREV_PLAY; do
-        prev_v="$(basename "$prev" | sed -E 's/^v(.*)-play$/\1/')"
+        # v3.04-coaching-sectors-and-map and v3.0-play both reduce to their
+        # version: everything from the first hyphen after the digits onward is a
+        # label, not part of the number.
+        prev_v="$(basename "$prev" | sed -E 's/^v([0-9]+\.[0-9]+).*$/\1/')"
+        case "$prev_v" in
+            [0-9]*.[0-9]*) ;;
+            *) log_warn "Skipping unparseable release directory: $(basename "$prev")"; continue ;;
+        esac
         prev_code="$(( $(echo "$prev_v" | cut -d. -f1) * 100 + $(echo "$prev_v" | cut -d. -f2) ))"
         if [ "$VERSION_CODE" -le "$prev_code" ]; then
             log_error "versionCode $VERSION_CODE is not above already-packaged v$prev_v ($prev_code)."
             log_error "  Play only accepts a strictly increasing versionCode."
+            log_error "  Already packaged as a bundle in: releases/$(basename "$prev")/"
             log_error "  Raise appVersionName in app/build.gradle.kts."
             exit 1
         fi
     done
-    log_info "versionCode: $VERSION_CODE (clear of previous Play releases)"
+    log_info "versionCode: $VERSION_CODE (clear of previous bundled releases)"
 
     # 4. Release-blocking lint. lintVitalRelease is the subset Google considers
     #    fatal; it is cheap next to the cost of a rejected submission.
@@ -240,13 +297,24 @@ fi
 # ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
-if [ "$TARGET" = "play" ]; then
+if [ "$WANT_AAB" = true ]; then
     if [ "$DO_BUILD" = true ]; then
+        # Clean first. Kotlin inlines `const val` into every call site, and an
+        # incremental build can leave readers of a changed constant holding the
+        # old copy: v3.04 was first built with a manifest saying 3.04, a
+        # BuildConfig saying 3.04, and an About screen still rendering 3.03 from
+        # a stale inlined literal. Nothing about the build was wrong except the
+        # code inside it (FP-STALE-INLINED-CONST). A release is exactly the case
+        # where a version constant has just changed, so the one build that must
+        # never be incremental is this one.
+        log_step "Cleaning before the release build"
+        ./gradlew clean --quiet || { log_error "Clean failed"; exit 1; }
+
         log_step "Building signed release bundle"
         ./gradlew bundleRelease --quiet || { log_error "Build failed"; exit 1; }
     fi
-    APK_SOURCE="$(ls -t app/build/outputs/bundle/release/*.aab 2>/dev/null | head -1 || true)"
-    if [ -z "$APK_SOURCE" ] || [ ! -f "$APK_SOURCE" ]; then
+    AAB_SOURCE="$(ls -t app/build/outputs/bundle/release/*.aab 2>/dev/null | head -1 || true)"
+    if [ -z "$AAB_SOURCE" ] || [ ! -f "$AAB_SOURCE" ]; then
         log_error "No AAB in app/build/outputs/bundle/release/ (drop --no-build to build one)"
         exit 1
     fi
@@ -254,12 +322,14 @@ if [ "$TARGET" = "play" ]; then
     # An unsigned bundle is indistinguishable from a signed one by size or name,
     # so check rather than assume. This is the last point at which a silent
     # signing misconfiguration can still be caught locally.
-    if ! jarsigner -verify "$APK_SOURCE" >/dev/null 2>&1; then
+    if ! jarsigner -verify "$AAB_SOURCE" >/dev/null 2>&1; then
         log_error "The bundle is NOT signed. Play will reject it."
         exit 1
     fi
     log_info "Bundle signature: verified"
-else
+fi
+
+if [ "$WANT_APK" = true ]; then
     if [ "$DO_BUILD" = true ]; then
         log_step "Building debug APK"
         ./gradlew assembleDebug --quiet || { log_error "Build failed"; exit 1; }
@@ -314,7 +384,7 @@ fi
 
 # A dev build may ship without evidence, loudly. A Play release may not: once it
 # is public, "we never checked" stops being a private problem.
-if [ "$TARGET" = "play" ] && { [ -z "$REPORT" ] || [ ! -f "$REPORT" ]; }; then
+if [ "$PLAY_GATES" = true ] && { [ -z "$REPORT" ] || [ ! -f "$REPORT" ]; }; then
     log_error "Refusing to package a Play release with no test report."
     log_error ""
     log_error "  Run the tests against this build first:"
@@ -323,8 +393,14 @@ if [ "$TARGET" = "play" ] && { [ -z "$REPORT" ] || [ ! -f "$REPORT" ]; }; then
 fi
 
 mkdir -p "$RELEASE_DIR"
-cp "$APK_SOURCE" "$RELEASE_DIR/$ARTIFACT_NAME"
-log_info "$ARTIFACT_LABEL: $(du -h "$RELEASE_DIR/$ARTIFACT_NAME" | cut -f1)"
+if [ "$WANT_APK" = true ]; then
+    cp "$APK_SOURCE" "$RELEASE_DIR/$APK_NAME"
+    log_info "APK: $(du -h "$RELEASE_DIR/$APK_NAME" | cut -f1)"
+fi
+if [ "$WANT_AAB" = true ]; then
+    cp "$AAB_SOURCE" "$RELEASE_DIR/$AAB_NAME"
+    log_info "AAB: $(du -h "$RELEASE_DIR/$AAB_NAME" | cut -f1)"
+fi
 
 # ---------------------------------------------------------------------------
 # Test report -- already resolved and verified above
@@ -380,7 +456,8 @@ fi
     echo "| Built | $(date '+%Y-%m-%d %H:%M') |"
     echo "| Commit | \`$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\` |"
     echo "| Branch | $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown) |"
-    echo "| $ARTIFACT_LABEL | \`$ARTIFACT_NAME\` |"
+    [ "$WANT_APK" = true ] && echo "| APK | \`$APK_NAME\` |"
+    [ "$WANT_AAB" = true ] && echo "| AAB | \`$AAB_NAME\` |"
     echo ""
     echo "## What changed"
     echo ""
@@ -413,7 +490,7 @@ log_info "Release notes: RELEASE_NOTES.md"
 # declarations that have nothing to do with Gradle and are easy to get wrong
 # under time pressure, so they are written down next to the artifact they
 # belong to rather than remembered.
-if [ "$TARGET" = "play" ]; then
+if [ "$WANT_AAB" = true ]; then
     log_step "Writing Play submission checklist"
     CERT_SHA="$(keytool -list -v -keystore "$KS_PATH" \
         -storepass "$(grep -oP '^storePassword=\K.*' "$KEYSTORE_PROPS" | head -1)" 2>/dev/null \
@@ -427,7 +504,7 @@ if [ "$TARGET" = "play" ]; then
 | Package | \`io.github.emidiofaria.trillian\` |
 | versionCode | $VERSION_CODE |
 | versionName | $VERSION |
-| Bundle | \`$ARTIFACT_NAME\` |
+| Bundle | \`$AAB_NAME\` |
 | Upload key SHA-256 | \`$CERT_SHA\` |
 | Commit | \`$(git rev-parse --short HEAD 2>/dev/null || echo unknown)\` |
 
@@ -515,6 +592,18 @@ kind of unused sensitive permission that draws review scrutiny.
   is larger and not obfuscated.
 - Test evidence for this exact commit is in \`TEST_REPORT.html\` beside this file.
 EOF
+
+    # A `both` release puts a debug APK in the same directory as the bundle. The
+    # two look interchangeable in a file listing and are not: one is signed with
+    # the debug key and would be rejected, or worse, published with a debug
+    # signature. Say which is which, next to the one being uploaded.
+    if [ "$WANT_APK" = true ]; then
+        cat >> "$RELEASE_DIR/PLAY_SUBMISSION.md" << EOF
+- This directory **also contains a debug APK** (\`$APK_NAME\`), built from the
+  same commit for sideloading onto your own phone. It is signed with the debug
+  key. It is **not** the file to upload — upload \`$AAB_NAME\`.
+EOF
+    fi
     log_info "Play checklist: PLAY_SUBMISSION.md"
 fi
 

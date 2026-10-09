@@ -239,6 +239,10 @@ driver travels through the start/finish, and how long a lap there should take.
 | TL-16 | A bundled circuit shall declare its lap length and its lap time envelope. These are surveyed before the circuit ships, so a bundled entry that omits one shall fail the build's test suite rather than fall back to a default. A circuit saved by a driver has no surveyed length and is exempt. |
 | TL-17 | A requirement shall not name a specific circuit. Requirements state rules that hold for every circuit in the catalogue; evidence for an individual circuit belongs in [Annex A](ANNEX_A_circuit_evidence.md). Illustrative material drawn from a recorded incident is not a circuit reference and is not restricted by this requirement. |
 | TL-18 | Every circuit in the bundled catalogue shall have a corresponding entry in Annex A, and Annex A shall describe no circuit absent from the catalogue. A circuit added without its evidence shall fail the build's test suite. |
+| TL-19 | Where a circuit ships a centreline of at least 8 points, the app shall be able to express any GPS fix as a **station** on that circuit: `s`, the distance travelled from the start/finish along the centreline, and `d`, the signed lateral offset from it. Comparing two laps by elapsed time is circular — "20 seconds in" is a different place on a fast lap than on a slow one — whereas `s` makes "the same place on both laps" expressible. |
+| TL-20 | A missing or too-thin centreline shall yield no station rather than an error. A driver who captured their own start/finish line has no centreline at all (TL-01), and the correct response is to offer fewer features, not to fail. |
+| TL-21 | The station projection shall **not** be used by lap detection. Detection has its own crossing geometry, it works, and `FP-REIMPLEMENTED-GEOMETRY` records what happens when a second implementation of the same idea is introduced beside the first. |
+| TL-22 | `d` shall be treated as valid for comparing one lap against another and **not** as an absolute statement of where the car was on the road. Measured against recorded sessions, lateral repeatability between laps is several times better than the device's absolute accuracy, because much of the error is a slow session-wide bias that cancels when laps are compared to each other. |
 
 **Remark on TL-05 — why provenance is split.**
 The start/finish line and the centreline of a circuit are two measurements, and they are
@@ -414,7 +418,12 @@ recoverable from git at `0216475`.
 | LD-07 | The last incomplete lap (started after the final boundary, session ends before re-crossing) shall be discarded. Only complete laps shall be stored. |
 | LD-08 | If fewer than 50 telemetry samples are present in the file, the app shall report insufficient telemetry data and detect no laps. |
 | LD-09 | If fewer than 2 complete laps are detected, the app shall store no laps and shall tell the user how many laps were found. |
-| LD-10 | Each detected lap shall be divided into 3 equal-time sectors. `sector1Ms + sector2Ms + sector3Ms` shall equal `durationMs` exactly (sector 3 absorbs rounding). |
+| LD-10 | Each detected lap shall be divided into 3 sectors at one third and two thirds of the **distance the car drove during that lap** (not of its duration). `sector1Ms + sector2Ms + sector3Ms` shall equal `durationMs` exactly (sector 3 absorbs the remainder). Thirds of *duration* move with the driver, so two laps' sectors would describe different stretches of road and any comparison between them would be measuring the misalignment rather than the driving. |
+| LD-24 | Sector boundary instants shall be **interpolated** between the two samples either side of the boundary. At the ~1 Hz reference sampling rate, snapping to the nearest fix quantises every boundary to a whole second — a ~4% error on a 25 s sector, far larger than the differences sectors exist to reveal. This is the same reasoning as NF-16 applies to lap boundaries. |
+| LD-25 | A lap carrying fewer than 6 telemetry samples, or covering less than 50 m, shall receive **no sectors** (all three remain `0L`) rather than estimated ones. Below these bounds the boundaries would be decided by interpolation alone, and a sector time that is a straight-line guess between two distant fixes is not a measurement. |
+| LD-26 | Sectors shall be derived **only after** a candidate lap set has passed the plausibility check and all detection fallbacks have run, so that sectors belonging to a discarded attempt can never reach the driver and detection geometry is provably unaffected. |
+| LD-27 | The distance ruler used to divide a lap into sectors shall be anchored at the **interpolated start/finish crossing position** at both ends of the lap, not at the first and last recorded fix inside the lap window. The crossing position shall be recovered from the persisted crossing instant by inverting the interpolation lap detection already performed, rather than by re-deriving the start-line geometry. |
+| LD-28 | The minimum-sample floor of LD-25 shall count **recorded fixes only**. The two interpolated anchor points introduced by LD-27 are not measurements and shall not be counted towards it. |
 | LD-11 | The lap with the minimum `durationMs` shall be flagged as `isBestLap=true`. Exactly one lap per session shall have this flag set. |
 | LD-12 | `SessionEntity.processingStatus` shall progress through: `PENDING → PROCESSING → LAPS_DONE → COMPLETE` on success, or `FAILED` on any error. |
 | LD-13 | The lat/lng approximation used for crossing geometry (equirectangular Cartesian) is valid for tracks smaller than 5 km in extent. This is the supported use case. |
@@ -583,15 +592,77 @@ no network connection of any kind.
 | ID | Requirement |
 |---|---|
 | OC-01 | When offline or backend unavailable, the app shall generate local coaching insights immediately after local lap detection completes. |
-| OC-02 | Offline coaching shall produce exactly 3-4 insights: Best Lap, Top Speed (if telemetry available), Consistency, and Sector Focus (upsell). |
+| OC-02 | Offline coaching shall produce a **variable number of insights (1–7)**, emitting only those the session's data supports: Best Lap, Top Speed (telemetry required), Consistency, Dream Lap, Sector Diagnostic, Outlier Lap, Pace Trend. An insight that cannot be substantiated shall be omitted entirely. *(Amended: the previous "exactly 3-4" quota is what required a slot to be filled whether or not anything was known, which is how the fabricated OC-08 upsell came to ship. The engine must be permitted to stay silent.)* |
 | OC-03 | The Best Lap insight shall show "Lap N Was Your Fastest" with time delta vs average. Sector detail shall only be shown if all laps have non-zero sector times. |
 | OC-04 | If sector times are unavailable (sector*Ms = 0), the Best Lap insight shall NOT reference specific sectors. Instead, it shall show "X.Xs ahead of average". |
 | OC-05 | The Top Speed insight shall read telemetry JSONL, extract maximum speed, and display "🚀 Top Speed: X km/h — Hit on Lap N". |
 | OC-06 | GPS noise shall be filtered: speeds > 350 km/h (97.2 m/s) shall be rejected as implausible. |
 | OC-07 | The Consistency insight shall show "Laps within X.Xs of each other" (using stdDev), not "vary by". |
-| OC-08 | When sectors are unavailable, the Sector Focus insight shall show "Coming Soon" upsell message instead of false sector recommendations. |
+| OC-08 | **(Superseded — behaviour removed.)** The "Sector Focus — Coming Soon" upsell shall **not** be displayed. When sectors are unavailable the app shall show no sector insight at all. The ID is retained rather than renumbered to preserve traceability: it records that an advertisement was once presented to the driver in a coaching slot, and that this is now prohibited. |
+| OC-11 | Each lap's sector times shall be persisted to `LapEntity.sector1Ms/2Ms/3Ms` as derived by LD-10. No schema change is required; the columns already existed and were previously written as `0L`. |
+| OC-12 | The app shall compute a **Dream Lap** by stitching the fastest sector 1, sector 2 and sector 3 recorded anywhere in the session, and shall report the time gained against the fastest lap actually driven. |
+| OC-13 | The Dream Lap shall be **suppressed entirely** unless all of the following hold: at least 3 laps carry believable sectors; every sector sums with its siblings to its own lap duration; no sector is below 10% or above 75% of its lap; the stitched total does not exceed the fastest real lap; and the gain does not exceed 25% of that lap. A minimum actively selects for the worst data in a set, so an ungated Dream Lap would preferentially present detection artefacts as achievements. |
+| OC-14 | The Dream Lap shall be suppressed whenever `MergedLapCaveat` has fired for the session. A lap that may be two laps reported as one cannot yield a meaningful sector, and this cannot be detected from the sector times alone — the signal shall therefore be passed in from lap detection rather than inferred. |
+| OC-15 | When a single lap holds all three fastest sectors, the Dream Lap shall report that lap as the driver's complete lap with a gain of zero, rather than being suppressed. "There was nothing left on the table" is a real and useful answer. |
+| OC-16 | The **Sector Diagnostic** insight shall identify the sector with the largest aggregate time loss against that sector's best, or report that all three are strong. It shall never be shown when sectors are absent. |
+| OC-17 | The **Outlier Lap** insight shall compare each lap against the **median** lap time (not the mean) and shall require at least 4 laps and a deviation of at least 15%. A mean is dragged toward the outlier by the outlier itself, which is precisely how a bad lap escapes a mean-based test. |
+| OC-18 | The **Pace Trend** insight shall compare the first and second halves of a session of at least 6 laps, and shall be shown only when the difference exceeds 2%. |
+| OC-19 | The COACH tab shall display a caveat stating that sectors are the app's own equal-distance thirds and not the circuit's official sectors, shown only when the session's laps actually carry sector times. |
+| OC-20 | The COACH tab shall display a **sector map** pinned above the insights: the circuit's shape drawn as a closed outline, divided into three contiguously coloured regions corresponding to sectors 1, 2 and 3, with the start/finish marked. An insight naming a sector is an instruction about a place, and without the map the driver is told where they lost time in a vocabulary that points at nothing they can see. |
+| OC-21 | Where the session was recorded against a circuit from the track library, the map shall be drawn from that circuit's **surveyed centreline**, rotated so that the start/finish line is the first drawn point. A catalogue centreline does not begin at the start/finish — measured origins are 400.0 m, 770.9 m and 4.6 m into the three shipped circuits — so the rotation is what makes the surveyed and derived shapes share one convention. |
+| OC-22 | Where no surveyed centreline is available, the map shall be derived from the driver's own laps: each lap resampled at 240 equal fractions of its own distance, and the **per-fraction median** taken across laps. The median is used rather than the mean so that one lap off-line — a spin, a gravel excursion, a lost fix — cannot leave a bulge in a shape the driver never drove. |
+| OC-23 | A derived map shall be computed in **normalised-distance space**, the same space in which sectors are defined, so that the sector boundaries fall at exactly one third and two thirds of the drawn shape by construction rather than by approximation. |
+| OC-24 | A map derived from fewer than 3 laps shall be drawn from the single best lap and labelled as such. A map whose lap-to-lap spread exceeds 25 m, or which is derived from laps shorter than the 50 m floor of LD-25, shall not be drawn at all. |
+| OC-25 | Where a surveyed centreline is available but the driver's laps sit further than 60 m from it, measured as the **median** lateral distance, the centreline shall be rejected as belonging to a different circuit and the derived shape used instead. The measure is lateral distance and not the ordering of the sector boundaries, because that ordering legitimately wraps whenever the start/finish falls late in the centreline's own numbering, which is the common case. |
+| OC-26 | The map shall state its provenance beneath itself whenever that changes what it can be trusted for: a shape derived from laps shall say that it follows the line driven rather than the edges of the road, and a single-lap shape shall say so more strongly. A surveyed shape needs no such note. |
+| OC-27 | Where no map can be drawn honestly, the map shall be **hidden entirely** and the insights shall be shown unaltered. A shape the driver cannot recognise is worse than no shape, because it invites them to read corners into GPS noise. The insights do not depend on telemetry still being readable and shall not be withheld with the picture. |
+| OC-28 | The Dream Lap shall **never** be drawn as a path on the map. Its three sectors come from three different laps, and a continuous line through them would depict a trajectory nobody drove. |
+| OC-29 | The map shall be computed off the main thread and shall not delay the insights, which are already persisted as text and require no telemetry to display. |
+| OC-30 | The start/finish marker on the map shall be drawn at the start/finish line itself. On a derived outline this follows from LD-27; on a surveyed centreline it follows from the rotation of OC-21. The two shall agree. |
+| OC-31 | When a session is opened, its stored sector times shall be recomputed from its telemetry and rewritten **only where they differ** from the stored values. This includes laps stored with no sector times at all: a session recorded before sectors existed, whose telemetry is still present, shall gain them. A lap the road cannot be divided for shall keep whatever it already had rather than be blanked. No schema migration shall be required, and a session that is never opened shall never be rewritten. |
+| OC-32 | Locally generated insights shall be regenerated after a sector correction **only when the merged-lap signal of OC-14 can be recovered** from the detection diagnostics recorded under LD-16. Where it cannot, the corrected sector times shall stand and the existing insight text shall be left unchanged. Insights not generated locally shall never be removed or replaced by this correction (OC-09, OC-10). |
 | OC-09 | Offline insights shall be stored with `source="LOCAL"` flag in `coaching_insights` table. |
 | OC-10 | When backend coaching arrives, local insights shall be replaced by backend insights. |
+
+**Remark on LD-27 — the clock and the ruler used to start in different places.**
+Lap *times* have been interpolated to the crossing instant since LD-15. Sector boundaries
+inherited that instant but not the matching position: the ruler was zeroed at `lap[0]`, the
+first fix *after* the line. All three recorded fixtures sample at a median gap of exactly
+**1000 ms**, and `LocalLapDetector` notes that the car covers 15–20 m between samples, so
+the lap's measured distance was short by that stretch at each end while its duration was not.
+
+Writing `d₀` for the gap from the line to the first fix and `d_e` for the gap from the last
+fix to the line, the first boundary landed `(2/3)d₀ − (1/3)d_e` late and the second
+`(1/3)d₀ − (2/3)d_e` late. On Cabo do Mundo (825 m at ~14 m/s) that is about **0.34 s**
+moved out of sector 2 and into sector 1. The damaging part is not the size but the
+variability: `d₀` depends on the GPS clock's arbitrary phase against the crossing, so it is
+re-rolled every lap, giving sector 1 roughly **±0.5 s of pure artefact** — about 2% of a
+28 s sector, and of the same order as the differences sectors exist to reveal.
+
+The dream lap is where this did real harm. It takes the *fastest* sector 1, 2 and 3 across
+the session, so it preferentially selects whichever lap's artefact flattered it most — the
+same argument OC-13 makes about a minimum actively selecting for the worst data. The
+plausible inflation is around **1 s**, comfortably under OC-13's 25% cap, so it would never
+have announced itself.
+
+Sector times always summed to the lap exactly, because sector 3 takes the remainder, and lap
+times were never affected. Nothing was lost or double-counted; the *placement* of the two
+boundaries was wrong. That is why OC-31 repairs rather than discards.
+
+**Remark on OC-21 — a catalogue centreline does not start at the start/finish line.**
+`Centreline`'s own documentation claimed that its points begin at the start/finish. That is
+true of exactly one of the three shipped circuits. Projecting each circuit's first detected
+lap crossing onto its own centreline places the start/finish at **400.0 m** into Baltar
+(length 1020.1 m), **770.9 m** into Cabo do Mundo (length 825.2 m) and **4.6 m** into
+S. Mamede (length 821.6 m). Only the last is near enough to zero to have hidden the problem.
+
+This matters beyond the map. Any code that converts an absolute `s` into a position within
+a lap must subtract the start/finish origin and wrap, or it will place everything at an
+offset that happens to be small on one circuit and two thirds of a lap on another. The
+failure is silent: the arithmetic succeeds, the shape is the right shape, and only its
+*phase* is wrong — so sector boundaries land in the wrong corners while every total still
+adds up. It was found by measurement rather than by reasoning, after a map test failed in a
+way that pointed at the index conversion instead.
 
 ---
 

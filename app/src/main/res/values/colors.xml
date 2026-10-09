@@ -47,6 +47,13 @@
     <color name="speedGradientMid">#F39C12</color>
     <color name="speedGradientFast">#2ECC71</color>
 
+    <!-- Sector colours (COACH tab map). Three hues far enough apart to be told
+         apart at a glance and by the most common forms of colour blindness, and
+         distinct from colorGold, which marks the start/finish on the same map. -->
+    <color name="sectorOne">#4FC3F7</color>
+    <color name="sectorTwo">#CE93D8</color>
+    <color name="sectorThree">#FF8A65</color>
+
     <!-- Brand Hero / Splash -->
     <color name="hero_ring_stroke">#8FA9D8</color>
     <color name="hero_emblem_bg">#173B6E</color>

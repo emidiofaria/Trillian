@@ -4,6 +4,414 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-10-07] Release v3.04 — Packaging an APK and a Bundle Together
+
+**Codebase Version:** v3.04 (versionCode 304; no Room migration; DB stays at version 5)
+**Trigger:** Cutting the v3.04 release. The request was for one release directory holding the
+APK, the AAB and the test evidence. The packaging script could not do that: `--target` chose
+between `dev` (APK) and `play` (AAB), and the two produced *separate* directories.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `package-release.sh` | ✅ Updated | New `--target both`; intent flags replace 7 string compares; versionCode scan fixed |
+| `RELEASE.md` | ✅ Updated | Third release shape documented; refusal inheritance stated explicitly |
+| `app/build.gradle.kts` | ✅ Updated | `appVersionName` 3.03 → 3.04 (versionCode 304) |
+| `BuildVersionTest.kt` | ✅ Added | Asserts the About screen's version cannot drift from the build |
+| `system.md` | ✅ Updated | Release layout now three targets; bump procedure cites the L1 guard |
+| `Test_Strategy.md` | ✅ Updated | Script table; the `TEST_REPORT_MISSING` leniency scoped to `dev` |
+| `test_strategy_execution_instructions.md` | ✅ Updated | §1.5 names all three targets |
+| `coverage-map.tsv` | ✅ Updated | +2 claims for UI-12 |
+| `failure-patterns.md` | ✅ Updated | +1 pattern: FP-STALE-INLINED-CONST |
+| `SYNC_REPORT.md` | ✅ Corrected | Slices 2 and 3 were labelled v3.05 and v3.06; both ship in 3.04 |
+| `SRS_v1.md` | ⬜ No change | Packaging change, not a product change; UI-12 and NF-17 already said this |
+| `USER_MANUAL.md` | ⬜ No change | Nothing the driver sees differs, beyond the version string |
+| `components.md` / `flows.md` / `failure-patterns.md` | ⬜ No change | No runtime component, flow or failure mode affected |
+
+### What we learned
+
+- **Seven string comparisons all meant "not dev".** `[ "$TARGET" = "play" ]` was asked in seven
+  places, and each one meant something different: build a bundle, verify a signature, run the
+  preflight, demand a report, write the Console checklist. That worked only while there were
+  exactly two targets. A third makes every one of them ambiguous, so they were replaced with
+  three named intents — `WANT_APK`, `WANT_AAB`, `PLAY_GATES` — stated once at the top.
+
+- **`PLAY_GATES` is kept separate from `WANT_AAB` even though they currently move together.**
+  They answer different questions. Collapsing them would re-create exactly the coupling that
+  made the third target hard to add.
+
+- **A latent gate bug surfaced only because the shape changed.** The duplicate-`versionCode`
+  preflight scanned `releases/v*-play/` — the *name* as a proxy for the contents. A `both`
+  directory holds a bundle under a different slug, so a later Play release at the same version
+  would have passed the gate and been rejected at upload, which is the one thing the gate
+  exists to prevent. It now scans for any release directory containing a `.aab`.
+
+- **`both` is held to the bundle's standard, not the APK's.** A dev release may ship with a
+  `TEST_REPORT_MISSING.txt` and say so honestly. A directory containing a signed bundle may
+  not. The combined target inherits every Play refusal; the APK rides along rather than
+  lowering the bar.
+
+- **Two files that look interchangeable in a listing are not.** `PLAY_SUBMISSION.md` now names
+  which of the two artifacts to upload, because a debug-signed APK and a release bundle differ
+  by key, not by appearance, and the Console is a late place to find that out.
+
+- **The version was in one place, and that was nearly enough.** `AboutFragment` already reads
+  `BuildConfig`, so bumping Gradle fixes the About screen with no second edit. The remaining
+  gap was `versionCode`, derived by arithmetic that nothing checked; a hand-edit would have
+  disagreed with `versionName` silently. `BuildVersionTest` now asserts the derivation rather
+  than a literal version, so it does not need editing every release — a test that must be
+  edited routinely is a test nobody reads.
+
+- **The labels in this very file were wrong.** Slices 2 and 3 were recorded as v3.05 and v3.06,
+  guessed at the time of writing from a version that had not been cut yet. Both ship in 3.04.
+  Writing down a version before deciding it is how provenance rots.
+
+- **The version bump shipped the old version, and an L2 test caught it.** The first v3.04 build
+  had a manifest saying `3.04`, a `BuildConfig` saying `3.04`, and an About screen rendering
+  `3.03`. Kotlin inlines `const val` into every call site, and incremental compilation had not
+  recompiled the readers — the APK carried the literal `3.03` in two dex files alongside a
+  `BuildConfig` that said otherwise. Everything *about* the build was correct; only the code
+  inside it was not.
+
+  Neither the manifest nor the new L1 test could have seen this: both read the constant, and a
+  test that reads the constant is just one more copy of it. It was caught by
+  `AboutScreenTest.aboutScreenReportsTheBuildIdentityFromBuildConfig`, where the expectation is
+  compiled into the *test* APK and the rendered text comes from the *app* APK — two separately
+  compiled artifacts, which is the only arrangement in which the drift is visible at all. The
+  test was written to guard the About screen and turned out to guard the build.
+
+  Recorded as `FP-STALE-INLINED-CONST`. Any target producing a bundle now runs `./gradlew clean`
+  first: a release is the one build that must never come from an incremental cache, because it
+  is the one build where a version constant has just changed.
+
+- **Thirty-seven L2 failures that were not failures.** The first run returned 69/106, all with
+  `RootViewWithoutFocusException` — the emulator came up without window focus. Re-running
+  against an emulator with the keyguard dismissed and animations disabled gave 105/106, and the
+  one real failure was the version drift above. Worth stating plainly because a wall of red is
+  the easiest thing to mistake for a regression and the easiest thing to wave away; it was
+  neither.
+
+---
+
+## [2026-10-07] Coaching Slice 3 — Anchoring Sector 1 at the Start/Finish Line
+
+**Codebase Version:** v3.04 (no Room migration; DB stays at version 5)
+**Trigger:** The driver asked that sector 1 begin right after the start/finish line. It did
+not. A lap's clock started at the interpolated crossing instant, but its distance ruler was
+zeroed at the first GPS fix *after* it — so every sector boundary, and the map's start/finish
+dot, sat fifteen to twenty metres late.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `SRS_v1.md` | ✅ Updated | +5 requirements (LD-27, LD-28, OC-30, OC-31, OC-32) and one remark |
+| `components.md` | ✅ Updated | +2 components, 1 renamed, criticality matrix rows |
+| `flows.md` | ✅ Updated | Coach Sector Map flow extended with the repair pass |
+| `failure-patterns.md` | ✅ Updated | +2 patterns (FP-SPLIT-ORIGIN, FP-STALE-DERIVED-TEXT) |
+| `USER_MANUAL.md` | ✅ Updated | §5.2 — start/finish dot, and a new "Sessions you recorded before this update" |
+| `coverage-map.tsv` | ✅ Updated | +25 claims across the 5 new IDs |
+
+### New Requirement IDs
+
+LD-27, LD-28, OC-30, OC-31, OC-32
+
+### What was built
+
+| File | Role |
+|------|------|
+| `lap/LapAnchor.kt` *(new)* | Recovers the crossing **position** by inverting the detector's own interpolation of the crossing **instant** |
+| `lap/SectorSplitter.kt` | Lap is now `[crossing] + recorded fixes + [crossing]`; the ruler starts at the line |
+| `data/track/SessionOutline.kt` | Same anchoring, so index 0 of the drawn shape *is* the line (OC-30) |
+| `coaching/SectorRepair.kt` *(new)* | Recompute → compare → write only on difference, on session open |
+| `ui/session/tabs/CoachTelemetryViewModel.kt` | Renamed from `CoachMapViewModel`; hosts map build **and** repair |
+| `lap/LapDiagnosticsWriter.kt` | `read()` — makes the merged-lap caveat recoverable at read time |
+
+### Validation
+
+L1 **447/447** (+26) · L2 **106/106** on `Trillian_API36` (+3) · DB still at version 5.
+
+### What we learned
+
+1. **One measurement, two origins.** The error conserved every total — sector 3 takes the
+   remainder, so the three always summed to the lap exactly, and no invariant anyone had
+   thought to assert could see it. It was a *phase shift*, not a magnitude, and it was
+   re-rolled each lap from the arbitrary phase of the GPS clock against the crossing. That
+   gave sector 1 about **±0.5 s** of artefact, which reads as driving. `DreamLap` takes the
+   *fastest* sector, and a minimum does not average an artefact away — it selects for it,
+   for about **1 s** of invented gain, comfortably under OC-13's 25% cap. Recorded as
+   `FP-SPLIT-ORIGIN`.
+
+2. **The codebase had already won this fight once.** LD-15 exists because snapping a lap
+   boundary to the nearest 1 Hz sample was a 4% error. Sectors inherited the interpolated
+   *instant* from that fix and not the interpolated *position* — computed on the same line
+   of `LocalLapDetector` and discarded.
+
+3. **Inverting beat re-deriving.** Because the detector computes crossing position and
+   crossing timestamp from a single shared fraction, the position recovers *exactly* from
+   the persisted timestamp — lossless to about two centimetres. Re-implementing the start-line
+   plane geometry would have been a second opinion liable to disagree with the first
+   (`FP-REIMPLEMENTED-GEOMETRY`). It also meant **no schema migration**: the fix repairs
+   lazily on read instead, with no "has been migrated" flag to drift, because the check *is*
+   the recomputation.
+
+4. **The `MergedLapCaveat` trap.** Correcting the numbers leaves the *sentences* built from
+   them stale, and regenerating them looked free. It is not: `DreamLap` must be suppressed
+   when detection suspected it merged two laps, and OC-14 requires that signal be passed in
+   rather than inferred — a regeneration pass does not have it. Regenerating blind would
+   silently resurrect a dream lap that was correctly withheld. The `.lapdiag.json` sidecar
+   (LD-16) turned out to make it recoverable; where the sidecar is missing or unreadable,
+   the numbers are corrected and the wording is left exactly as recorded. Recorded as
+   `FP-STALE-DERIVED-TEXT`.
+
+5. **A failing L2 test found an unplanned behaviour.** `sectorCaveatIsHiddenWhenLapsCarryNoSectorTimes`
+   broke because the repair treats zeroed sectors as differing, so a session recorded before
+   sectors existed now *gains* them. That is desirable, and it was not in the plan. The
+   fixture was made coherent (no telemetry) and **OC-31 was widened** to state the backfill
+   explicitly, rather than the behaviour being quietly left undocumented.
+
+6. **A fixture, not the product, broke the other two.** The synthetic oval generator never
+   emitted a sample at or after the final lap's `endTs`, so the newly strict `resample`
+   dropped the last lap and two Slice 2 tests fell over. Real lap windows always fall between
+   recorded fixes — detection derived them from the same file — so the fixture was wrong, not
+   the strictness. Worth stating plainly: the temptation was to relax the production code.
+
+7. **Three stale requirement IDs were hiding in test comments.** `CoachTabTest` cited
+   LD-27/28/29 as sector-map requirements. They never existed as such — `coverage-map.tsv`
+   correctly claimed OC-19/20/26/27 — and they now collide with the real new LD-27/LD-28.
+   Corrected. Note that lines ~4295 and ~4309 of *this* file reference LD-27/LD-28 with
+   **different, older meanings** ("Offline indicator", "Start line from header"); those are
+   append-only history for IDs no longer in the SRS and were deliberately left alone.
+
+### Known gaps
+
+- The repair's write-back is not synchronised against another writer touching the same laps.
+  Single-user app, single screen; judged acceptable, untested.
+
+---
+
+## [2026-10-07] Coaching Slice 2 — The Sector Map on the Coach Tab
+
+**Codebase Version:** v3.04 (no Room migration; DB stays at version 5)
+**Trigger:** *"Sector 2 is costing you the most"* is a sentence about a place the driver
+cannot locate. Slice 1 gave the Coach tab a vocabulary of sectors; this slice gives that
+vocabulary something visible to point at.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `SRS_v1.md` | ✅ Updated | +10 requirements (OC-20..OC-29) and one remark |
+| `components.md` | ✅ Updated | +4 components, criticality matrix rows |
+| `flows.md` | ✅ Updated | +1 flow (Coach Sector Map) |
+| `failure-patterns.md` | ✅ Updated | +2 patterns |
+| `USER_MANUAL.md` | ✅ Updated | §5.2 — new "The sector map" subsection |
+| `coverage-map.tsv` | ✅ Updated | OC-19 retargeted; +11 claims |
+
+### New Requirement IDs
+
+OC-20, OC-21, OC-22, OC-23, OC-24, OC-25, OC-26, OC-27, OC-28, OC-29
+
+### What was built
+
+| File | Role |
+|------|------|
+| `data/track/SessionOutline.kt` | Per-fraction **median** shape from the driver's own laps |
+| `data/track/CoachMap.kt` | Chooses surveyed vs derived; owns the start/finish rotation |
+| `ui/common/SectorMapView.kt` | Three coloured polylines, S1/S2/S3, gold start/finish dot |
+| `ui/session/tabs/CoachMapViewModel.kt` | Reads telemetry off the main thread |
+
+### What we learned
+
+1. **A catalogue centreline does not start at the start/finish line.** Measured origins:
+   Baltar 400.0 m, Cabo do Mundo 770.9 m, S. Mamede 4.6 m. `Centreline`'s KDoc claimed
+   otherwise and was true of one circuit in three. Recorded as FP-UNMEASURED-ORIGIN and in
+   the remark under OC-21 — it is a trap for any future `s`-coordinate consumer.
+
+2. **A mismatched centreline must be detected by lateral distance, not boundary ordering.**
+   The ordering wraps legitimately whenever the start/finish falls late in the centreline's
+   own numbering, which is the common case. Measured offsets for correct matches: 2.8 / 6.4
+   / 2.7 m.
+
+3. **One constant was answering two questions.** `MIN_EXTENT_M` guarded both *metres driven*
+   and *metres across the bounding box*. A lap can drive 400 m round a 60 m box. Split, with
+   a test pinning the distance floor equal to `SectorSplitter`'s, so a lap that earns sector
+   times is always drawable.
+
+4. **A new test found a crash in a file the slice never touched.** `ChartFragment` wrote to
+   `binding` after its view was destroyed; `CoachTabTest` tore the screen down mid-render and
+   killed the whole instrumentation run. Fixed, and recorded as FP-BINDING-AFTER-DESTROY.
+   In production this is a driver leaving the screen while a large chart renders.
+
+5. **The map is not persisted.** An earlier plan justified a schema change by claiming SM-03
+   deletes telemetry. It does not — it deletes telemetry only as part of deleting the whole
+   session, so no surviving session's insights outlive the data their map needs. Checking the
+   claim removed a migration.
+
+6. **Espresso's `isDisplayed()` means on screen, not present.** With a 220 dp map pinned
+   above them, the insights now start entirely below the fold, so four tests waited for a
+   visibility that could never arrive. The fix was to scroll, and the symptom was itself
+   confirmation that the map had landed where it was meant to.
+
+### Deferred, deliberately
+
+**Per-insight sector dots.** `CoachingInsightEntity` has no sector field, so colouring an
+insight by sector would mean string-matching its wording — exactly the fragility
+`updateSectorCaveat` was written to avoid, and it would fail by pointing at the wrong place.
+Doing it honestly needs a schema change and is its own slice.
+
+### Validation
+
+| Level | Result |
+|-------|--------|
+| L1 (SWE.4) | **421 / 421** — was 390 before the slice |
+| L2 (SWE.5) | **103 / 103** on `Trillian_API36` (API 36, per NF-19) — was 98 |
+
+### Files Modified
+
+```
+A  app/src/main/java/com/drivingcoach/data/track/SessionOutline.kt
+A  app/src/main/java/com/drivingcoach/data/track/CoachMap.kt
+A  app/src/main/java/com/drivingcoach/ui/common/SectorMapView.kt
+A  app/src/main/java/com/drivingcoach/ui/session/tabs/CoachMapViewModel.kt
+A  app/src/test/java/com/drivingcoach/data/track/SessionOutlineTest.kt      (17 tests)
+A  app/src/test/java/com/drivingcoach/data/track/CoachMapTest.kt            (14 tests)
+A  app/src/androidTest/java/com/drivingcoach/ui/session/CoachTabTest.kt     ( 5 tests)
+M  app/src/main/java/com/drivingcoach/ui/session/tabs/CoachFragment.kt
+M  app/src/main/java/com/drivingcoach/ui/session/tabs/ChartFragment.kt      (crash fix)
+M  app/src/main/res/layout/fragment_coach.xml
+M  app/src/main/res/values/colors.xml
+M  app/src/main/res/values/strings.xml
+M  01_requirements/DrivingCoach_SRS_v1.md
+M  05_tests/coverage-map.tsv
+M  atlas/components.md
+M  atlas/flows.md
+M  atlas/failure-patterns.md
+M  docs/USER_MANUAL.md
+```
+
+---
+
+## [2026-10-07] Coaching Slice 1 — Sectors, Dream Lap & Honest Insights
+
+**Codebase Version:** v3.04 (no Room migration; DB stays at version 5)
+**Trigger:** Coaching slice implementation. The sector pipeline had been fully built and fed
+zeroes since the columns were created — `RecordingViewModel` literally wrote
+`sector1Ms = 0L, // No sectors in Phase 1` while five consumers read the columns. This slice
+writes real values and turns the existing wiring into working coaching.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `lap/SectorSplitter.kt` | ✅ Created | Equal-distance thirds with interpolated boundaries (+140) |
+| `coaching/DreamLap.kt` | ✅ Created | Optimal sector stitching + artefact gate (+150) |
+| `data/track/TrackStation.kt` | ✅ Created | s/d curvilinear coordinate, **ships dark** (+175) |
+| `lap/LocalLapDetector.kt` | ✅ Updated | `DetectedLap` carries sectors; `withSectors()` post-acceptance (+39, -5) |
+| `ui/recording/RecordingViewModel.kt` | ✅ Updated | Carries sectors to Room; caveat computed before coaching (+25, -8) |
+| `coaching/OfflineCoachingEngine.kt` | ✅ Updated | Variable-length 1–7 insights; upsell deleted (+177, -40) |
+| `ui/session/tabs/CoachFragment.kt` | ✅ Updated | Derived-sector caveat (+19) |
+| `res/layout/fragment_coach.xml` | ✅ Updated | `@+id/sectorCaveat` (+14) |
+| `res/values/strings.xml` | ✅ Updated | `coach_sector_caveat` (+3) |
+| `SectorSplitterTest.kt` | ✅ Created | 9 tests, incl. 2 real-fixture replays |
+| `DreamLapTest.kt` | ✅ Created | 10 tests, incl. real-fixture end-to-end |
+| `TrackStationTest.kt` | ✅ Created | 9 tests against surveyed lengths |
+| `OfflineCoachingEngineTest.kt` | ✅ Updated | Role-based lookups replace positional indices (+101, -36) |
+| `atlas/components.md` | ✅ Updated | +3 components, 2 revised, +3 matrix rows (+211, -14) |
+| `atlas/flows.md` | ✅ Updated | Offline coaching flow rewritten (+55, -22) |
+| `01_requirements/DrivingCoach_SRS_v1.md` | ✅ Updated | +16 IDs, LD-10 and OC-02 amended, OC-08 superseded |
+| `docs/USER_MANUAL.md` | ✅ Updated | §5.1 sectors, §5.2 rewritten, +3 FAQ entries (+74, -11) |
+| `05_tests/coverage-map.tsv` | ✅ Updated | +33 traceability rows; OC-02 and OC-08 descriptions corrected |
+
+### New Requirement IDs
+
+- **LD-24, LD-25, LD-26** — boundary interpolation, refusal bounds, post-acceptance derivation
+- **OC-11 … OC-19** — sector persistence, Dream Lap + gate + caveat suppression + complete-lap case, sector diagnostic, median-based outlier, pace trend, UI caveat
+- **TL-19 … TL-22** — station projection, null on thin centreline, prohibition on use by lap detection, `d` valid only lap-vs-lap
+
+### Amended / Superseded
+
+| ID | Change |
+|----|--------|
+| **LD-10** | Was "3 equal-**time** sectors" — stale and wrong. Now equal-**distance** thirds. Time thirds move with the driver, so two laps' sectors would describe different stretches of road and the comparison would measure the misalignment. |
+| **OC-02** | Was "exactly 3-4 insights". Now 1–7, variable. The fixed quota is what required a slot to be filled whether or not anything was known — and the slot that couldn't be filled honestly was filled with an advertisement. |
+| **OC-08** | **Superseded.** The "Sector Analysis Coming Soon" upsell is now prohibited. ID retained rather than renumbered, to record that an advertisement once occupied a coaching slot. |
+
+### Findings During Implementation
+
+1. **No migration needed.** `LapEntity.sector1/2/3Ms` already existed; `LapsFragment`,
+   `LapDetailViewModel`, `OfflineCoachingEngine` and `SessionShareBuilder` already consumed
+   them. The entire feature was one assignment away from working.
+2. **SRS LD-10 contradicted the only sane implementation** and had done so silently, because
+   nothing wrote sectors at all and so nothing could disagree with it.
+3. **The Dream Lap gate cannot catch a half-lap by arithmetic.** A half-lap's sectors are
+   internally consistent and evenly shared — half a lap driven normally looks like a lap
+   driven normally, only shorter. Every sector wins, it becomes the "best lap" itself, and the
+   stitch restates it with a gain of **zero**. The guarantee is therefore *no fabricated
+   gain*, and `MergedLapCaveat` is the actual defence. A test asserting the stronger claim was
+   written, failed, and was corrected to the claim that is true.
+4. **`baltar2` is not a broken session.** The repaired detector finds the 12 laps of 72–85 s
+   the driver drove; the "2 laps" in Incident 15 was what the app of the day *recorded*. A test
+   written on the wrong premise (expecting Dream Lap suppression) was inverted into an
+   end-to-end assertion that the session produces an *honest* Dream Lap.
+5. **One test was deleted rather than made to pass.** "A half-lap quick in only one sector"
+   describes a shape a half-lap cannot have; contriving data to fit the name would have been a
+   test of nothing.
+6. **Requirement IDs cannot carry letter suffixes.** `LD-10a/b/c` were silently unrecognised by
+   the coverage generator (`REQ_ROW_RE` matches `[A-Z]{2,4}-\d{2}`), so three requirements
+   would have been documented but untraceable. Renumbered to **LD-24, LD-25, LD-26**. The
+   generator caught this only because the new tests were added to `coverage-map.tsv` — had
+   traceability been skipped, the IDs would have looked fine and covered nothing.
+
+### Validation
+
+| Level | ASPICE | Result |
+|-------|--------|--------|
+| L1 unit | SWE.4 | ✅ **390 tests, 0 failures** |
+| L2 integration | SWE.5 | ✅ **98 tests, 0 failures** on `Trillian_API36` (API 36, per NF-19) |
+
+**Total: 488/488 passing.** Requirements coverage 101/237 V1 claimed (43%), 55 deferred to V2
+— up from 85/234 (36%) before this slice.
+
+**Regression evidence:** `LapDetectionIncident14Test`, `LapDetectionIncident15Test`,
+`LapDetectionRealSessionTest`, `LocalLapDetectorGuardsTest`, `OneTapStartFinishCaptureTest`
+and `MergedLapCaveatTest` all pass unchanged. Detection geometry was not touched — sectors are
+derived strictly after the plausibility check and all three fallbacks.
+
+### Files Modified
+
+```
+A  app/src/main/java/com/drivingcoach/lap/SectorSplitter.kt
+A  app/src/main/java/com/drivingcoach/coaching/DreamLap.kt
+A  app/src/main/java/com/drivingcoach/data/track/TrackStation.kt
+A  app/src/test/java/com/drivingcoach/lap/SectorSplitterTest.kt
+A  app/src/test/java/com/drivingcoach/coaching/DreamLapTest.kt
+A  app/src/test/java/com/drivingcoach/data/track/TrackStationTest.kt
+M  app/src/main/java/com/drivingcoach/lap/LocalLapDetector.kt            (+39, -5)
+M  app/src/main/java/com/drivingcoach/ui/recording/RecordingViewModel.kt (+25, -8)
+M  app/src/main/java/com/drivingcoach/coaching/OfflineCoachingEngine.kt  (+177, -40)
+M  app/src/main/java/com/drivingcoach/ui/session/tabs/CoachFragment.kt   (+19, -0)
+M  app/src/main/res/layout/fragment_coach.xml                            (+14, -0)
+M  app/src/main/res/values/strings.xml                                   (+3, -0)
+M  app/src/test/java/com/drivingcoach/coaching/OfflineCoachingEngineTest.kt (+101, -36)
+M  atlas/components.md                                                   (+211, -14)
+M  atlas/flows.md                                                        (+55, -22)
+M  01_requirements/DrivingCoach_SRS_v1.md                                (+22, -3)
+M  docs/USER_MANUAL.md                                                   (+74, -11)
+M  05_tests/coverage-map.tsv                                             (+33, -2)
+```
+
+### Recommendations
+
+- [ ] Run L2 on a device: the COACH tab now renders a variable number of cards plus the caveat
+- [ ] `TrackStation` ships dark — Slice 2 (turn-by-turn speed, braking points) is its first consumer
+- [ ] Route A (fixed s-thirds from the surveyed centreline) can replace Route B later behind the
+      same columns with no schema change, for catalogue circuits only
+- [ ] L4 acceptance checklist needs sector and Dream Lap scenarios
+
+---
+
 ## [2026-10-06] Third Built-in Circuit — Test Circuit S.Mamede (Tier C)
 
 **Codebase Version:** v3.03 (catalogue data only; no production code changed; +17 L1, +L2 tests)

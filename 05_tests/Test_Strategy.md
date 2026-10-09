@@ -282,7 +282,7 @@ Configuration in `05_tests/infra/config/`:
 | `generate-report.sh` | Generate the Markdown test report |
 | `generate-html-report.py` | Generate the HTML test report (evidence + coverage) |
 | `test_generate_html_report.py` | Unit tests for the HTML generator |
-| `package-release.sh` | Package an APK with its test report and release notes |
+| `package-release.sh` | Package an APK and/or a signed bundle with its test report and release notes |
 
 See `05_tests/infra/README.md` for detailed setup and usage instructions.
 
@@ -470,6 +470,12 @@ If no test report can be found, the release still gets made but a
 `TEST_REPORT_MISSING.txt` is written into the directory saying so. An APK with
 no evidence beside it is an APK nobody has checked, and that fact is recorded
 rather than left to be assumed.
+
+That leniency belongs to the `dev` shape alone. `--target play` and
+`--target both` also put a **signed bundle** in the directory, and a build that
+may reach strangers does not get to be unverified: those targets refuse to
+package at all when the report is missing, or when it names a different version
+or commit. See `docs/RELEASE.md` for the full list of refusals.
 
 ---
 

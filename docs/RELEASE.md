@@ -1,11 +1,12 @@
 # Releasing Trillian
 
-There are two kinds of release, and they are not variations of each other. One
-builds a **debug** APK signed with the debug key for your own phone; the other
-builds a **signed** Android App Bundle for Google Play. They use different build
-types, different keys, and different rules about what may be shipped.
+There are three kinds of release, and the first two are not variations of each
+other. One builds a **debug** APK signed with the debug key for your own phone;
+the other builds a **signed** Android App Bundle for Google Play. They use
+different build types, different keys, and different rules about what may be
+shipped. The third produces both at once, from one commit, into one directory.
 
-Both are produced by the same script, which asks which one you want:
+All are produced by the same script, which asks which one you want:
 
 ```bash
 ./05_tests/infra/scripts/package-release.sh
@@ -16,6 +17,7 @@ or non-interactively:
 ```bash
 ./05_tests/infra/scripts/package-release.sh --target dev
 ./05_tests/infra/scripts/package-release.sh --target play
+./05_tests/infra/scripts/package-release.sh --target both
 ```
 
 Without `--target` and without a terminal, it defaults to `dev`. Publishing to
@@ -60,12 +62,68 @@ Builds `bundleRelease`, signed with the upload key.
 |---|---|
 | No signing configured | Play rejects unsigned uploads |
 | Working tree not clean | The recorded commit would not describe what you built |
-| `versionCode` not above a previously packaged Play release | Play rejects duplicates outright |
+| `versionCode` not above a previously packaged bundle | Play rejects duplicates outright |
 | `lintVitalRelease` fails | This is the lint subset Google treats as fatal |
 | No test report, or one from a different version or commit | An unverified build may sit on your phone; it should not reach strangers |
 
 These run **before** the build, so a refusal costs seconds rather than a full
 release build, and leaves the tree exactly as it found it.
+
+The duplicate-`versionCode` check asks which previous releases **contain a
+bundle**, not which are *named* `-play`. The name was a proxy for the contents,
+and `--target both` is exactly the case that breaks it: a bundle can now live in
+a directory with any slug, and a collision missed here surfaces at upload, which
+is the thing the check exists to prevent.
+
+---
+
+## Combined release
+
+```
+releases/v<version>-<slug>/
+  DrivingCoach-v<version>-<slug>.apk    debug build, for your own phone
+  Trillian-v<version>.aab               SIGNED bundle for Google Play
+  TEST_REPORT.html
+  TEST_REPORT.md
+  RELEASE_NOTES.md
+  PLAY_SUBMISSION.md
+```
+
+Builds both `assembleDebug` and `bundleRelease` from the same commit, verified by
+the same test report, and puts them in one directory. Use it when a version is
+both something you want on your own phone and something you intend to submit —
+which is most of them.
+
+**It is not a relaxation of either path.** A directory that holds a signed bundle
+is held to the bundle's standard, so `--target both` runs the **entire Play
+preflight** and inherits **every refusal in the table above**, including the one
+a dev release is allowed to survive: there is no `TEST_REPORT_MISSING.txt`
+escape hatch here. If the evidence is missing or stale, nothing is packaged.
+
+The debug APK rides along; it does not lower the bar. `PLAY_SUBMISSION.md` says
+in writing which of the two files is the one to upload, because in a file listing
+they are easy to confuse and uploading the debug-signed one is not a mistake you
+want to discover in the Console.
+
+### A release build is never incremental
+
+Any target that produces a bundle runs `./gradlew clean` first.
+
+Kotlin inlines `const val` into every call site, so changing `appVersionName`
+regenerates `BuildConfig` but does not necessarily recompile the classes that
+*read* it. v3.04 was first built with a manifest saying `3.04`, a `BuildConfig`
+saying `3.04`, and an About screen still rendering `3.03` from a stale inlined
+literal. The APK filename, `aapt2 dump badging` and Play's view of the build were
+all correct; only the code inside it disagreed.
+
+A release is precisely the moment a version constant has just changed, which
+makes it the one build that must not be taken from an incremental cache. See
+`FP-STALE-INLINED-CONST` in `atlas/failure-patterns.md`.
+
+**Run the tests clean too when the version changed.** The gate above protects the
+packaged artifact; it cannot protect an artifact the tests already ran against.
+After a version bump, run `./gradlew clean` before `run-all-tests.sh`, so that
+the build the evidence describes is the build that is shipped.
 
 ### Built-in circuits gate the channel
 

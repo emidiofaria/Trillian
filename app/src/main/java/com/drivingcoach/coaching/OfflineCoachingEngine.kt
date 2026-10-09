@@ -18,6 +18,16 @@ object OfflineCoachingEngine {
     
     // Sector delta threshold (ms) - below this, all sectors are considered strong
     private const val SECTOR_STRONG_THRESHOLD_MS = 100
+
+    // Outlier lap: fewest laps before one can be called unusual, and how far off the
+    // median it must be. Below 4 laps there is no "typical" lap to be unusual against.
+    private const val MIN_LAPS_FOR_OUTLIER = 4
+    private const val OUTLIER_THRESHOLD_FRACTION = 0.15
+
+    // Pace trend: fewest laps before halves can be compared (3 per half), and the
+    // smallest difference between halves worth reporting as a trend rather than scatter.
+    private const val MIN_LAPS_FOR_TREND = 6
+    private const val TREND_THRESHOLD_FRACTION = 0.02
     
     // Speed limits for filtering GPS noise (m/s)
     private const val MAX_PLAUSIBLE_SPEED_MS = 97.2  // 350 km/h - covers fastest track cars
@@ -40,21 +50,30 @@ object OfflineCoachingEngine {
     )
 
     /**
-     * Generates 4 coaching insights from lap data.
-     * 
+     * Generates coaching insights from lap data.
+     *
      * @param laps List of laps from the session (minimum 2 required)
      * @param telemetryFilePath Optional path to JSONL telemetry file for top speed extraction
-     * @return List of insights, or empty list if insufficient laps
-     * 
-     * Insights generated:
+     * @param mergedLapCaveat Warning from `MergedLapCaveat` when detection suspects two
+     *   laps were reported as one, or null. Passed through to the dream lap, which must
+     *   stay silent when the lap boundaries themselves are in doubt.
+     * @return The insights the data supports, which may be fewer than the maximum and
+     *   may be empty. Nothing here pads the list to a fixed length: an insight that
+     *   exists only to fill a slot teaches the driver to skim past all of them.
+     *
+     * Insights generated, where the data supports each:
      * 1. Best Lap Highlight (always positive)
      * 2. Top Speed (always positive) - requires telemetry file
      * 3. Consistency Score (positive or constructive based on score)
-     * 4. Sector Focus (upsell if sectors unavailable)
+     * 4. Dream Lap - requires trustworthy sectors across at least 3 laps
+     * 5. Sector Diagnostic - requires sectors
+     * 6. Outlier Lap - requires a lap far enough off the pace to be worth naming
+     * 7. Pace Trend - requires at least 6 laps
      */
     fun generateInsights(
         laps: List<LapEntity>,
-        telemetryFilePath: String? = null
+        telemetryFilePath: String? = null,
+        mergedLapCaveat: String? = null
     ): List<OfflineInsight> {
         if (laps.size < 2) return emptyList()
         
@@ -76,8 +95,20 @@ object OfflineCoachingEngine {
         // 3. Consistency
         insights.add(generateConsistencyInsight(laps))
         
-        // 4. Sector Focus (or upsell if sectors unavailable)
-        insights.add(generateSectorFocusInsight(laps, bestLap, sectorsAvailable))
+        // 4. Dream Lap - omitted entirely when the sectors cannot carry it
+        DreamLap.of(laps, mergedLapCaveat)?.let { insights.add(generateDreamLapInsight(it)) }
+        
+        // 5. Sector Diagnostic - omitted when there are no sectors, rather than
+        //    replaced by an advertisement for a feature that does not exist
+        if (sectorsAvailable) {
+            insights.add(generateSectorDiagnosticInsight(laps, bestLap))
+        }
+        
+        // 6. Outlier Lap
+        generateOutlierLapInsight(laps)?.let { insights.add(it) }
+        
+        // 7. Pace Trend
+        generatePaceTrendInsight(laps)?.let { insights.add(it) }
         
         return insights
     }
@@ -225,21 +256,40 @@ object OfflineCoachingEngine {
     }
 
     /**
-     * Insight 3: Sector Focus
-     * Shows sector analysis when available, otherwise shows upsell message.
+     * Insight: Dream Lap.
+     *
+     * Deliberately worded as a lap the driver has already driven in pieces, not as a
+     * prediction. The sectors are real and were each recorded on a named lap; what is
+     * theoretical is only putting them together.
      */
-    private fun generateSectorFocusInsight(
-        laps: List<LapEntity>, 
-        bestLap: LapEntity,
-        sectorsAvailable: Boolean
-    ): OfflineInsight {
-        if (!sectorsAvailable) {
+    private fun generateDreamLapInsight(dream: DreamLap.Result): OfflineInsight {
+        if (dream.isCompleteLap) {
             return OfflineInsight(
-                headline = "Sector Analysis Coming Soon",
-                detail = "Upload when online for detailed sector breakdown and braking points."
+                headline = "Lap ${dream.sector1LapNumber} Was Your Complete Lap",
+                detail = "Your best sector 1, 2 and 3 all came from the same lap. " +
+                         "There was nothing left on the table — now repeat it."
             )
         }
-        
+
+        return OfflineInsight(
+            headline = "Dream Lap: ${formatLapTime(dream.totalMs)}",
+            detail = "Your best sectors came from laps ${dream.sector1LapNumber}, " +
+                     "${dream.sector2LapNumber} and ${dream.sector3LapNumber}. Put them together and " +
+                     "you'd be ${formatTime(dream.gainMs.toDouble())} under your best lap — that's time " +
+                     "you've already proven you can find."
+        )
+    }
+
+    /**
+     * Insight: Sector Diagnostic.
+     *
+     * Reports where time is being lost against the driver's own best, in the sector
+     * where the loss is largest. Only ever shown when sectors exist.
+     */
+    private fun generateSectorDiagnosticInsight(
+        laps: List<LapEntity>, 
+        bestLap: LapEntity
+    ): OfflineInsight {
         // Calculate average delta vs best lap for each sector
         val avgDeltaS1 = laps.map { it.sector1Ms - bestLap.sector1Ms }.average()
         val avgDeltaS2 = laps.map { it.sector2Ms - bestLap.sector2Ms }.average()
@@ -263,6 +313,93 @@ object OfflineCoachingEngine {
                 headline = "Focus on Sector $worstSectorNum",
                 detail = "You lose ${worstDelta.toLong()}ms here on average. Small gains here will drop your lap time."
             )
+        }
+    }
+
+    /**
+     * Insight: Outlier Lap.
+     *
+     * Names the one lap furthest off the driver's median pace, so that a single
+     * spin, a lift for traffic or an off can be set aside instead of quietly
+     * dragging down the session's averages.
+     *
+     * Uses the **median** as the reference, not the mean: the outlier itself pulls the
+     * mean towards it, which is how a bad lap hides from a test that uses the mean.
+     *
+     * Deliberately silent when nothing stands out. "No outliers" is not news, and
+     * reporting it every session trains the driver to stop reading.
+     */
+    private fun generateOutlierLapInsight(laps: List<LapEntity>): OfflineInsight? {
+        if (laps.size < MIN_LAPS_FOR_OUTLIER) return null
+
+        val sorted = laps.map { it.durationMs }.sorted()
+        val median = if (sorted.size % 2 == 0) {
+            (sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2]) / 2.0
+        } else {
+            sorted[sorted.size / 2].toDouble()
+        }
+        if (median <= 0.0) return null
+
+        val slowest = laps.maxByOrNull { it.durationMs } ?: return null
+        val excess = slowest.durationMs - median
+        if (excess <= 0.0) return null
+        if (excess / median < OUTLIER_THRESHOLD_FRACTION) return null
+
+        return OfflineInsight(
+            headline = "Lap ${slowest.lapNumber} Was The Odd One Out",
+            detail = "It was ${formatTime(excess)} slower than your typical lap. If something " +
+                     "happened out there — traffic, a missed apex, an off — set it aside and judge " +
+                     "the session on the rest."
+        )
+    }
+
+    /**
+     * Insight: Pace Trend.
+     *
+     * Compares the first and second half of the session to say whether the driver
+     * built pace, held it, or faded.
+     *
+     * Needs enough laps that each half is more than a couple of laps, otherwise one
+     * bad lap decides the verdict. Silent when the two halves are close, because a
+     * difference smaller than normal lap-to-lap scatter is not a trend.
+     */
+    private fun generatePaceTrendInsight(laps: List<LapEntity>): OfflineInsight? {
+        if (laps.size < MIN_LAPS_FOR_TREND) return null
+
+        val ordered = laps.sortedBy { it.lapNumber }
+        val half = ordered.size / 2
+        val firstHalf = ordered.take(half).map { it.durationMs.toDouble() }.average()
+        val secondHalf = ordered.takeLast(half).map { it.durationMs.toDouble() }.average()
+        if (firstHalf <= 0.0) return null
+
+        val delta = firstHalf - secondHalf
+        if (kotlin.math.abs(delta) / firstHalf < TREND_THRESHOLD_FRACTION) return null
+
+        return if (delta > 0) {
+            OfflineInsight(
+                headline = "You Built Pace Through The Session",
+                detail = "Your second half averaged ${formatTime(delta)} quicker than your first. " +
+                         "You were still learning the circuit — there's likely more to come."
+            )
+        } else {
+            OfflineInsight(
+                headline = "Your Pace Faded Late On",
+                detail = "Your second half averaged ${formatTime(-delta)} slower than your first. " +
+                         "Tyres, fuel load, or concentration — worth knowing which before next time."
+            )
+        }
+    }
+
+    /**
+     * Formats a lap time as m:ss.SSS, which is how lap times are read.
+     */
+    private fun formatLapTime(ms: Long): String {
+        val minutes = ms / 60_000
+        val seconds = (ms % 60_000) / 1000.0
+        return if (minutes > 0) {
+            String.format("%d:%06.3f", minutes, seconds)
+        } else {
+            String.format("%.3fs", seconds)
         }
     }
 

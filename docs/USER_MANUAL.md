@@ -344,8 +344,27 @@ The **Laps** tab shows all detected laps:
 |--------|---------|
 | Lap # | Which lap (1, 2, 3...) |
 | Time | Lap time in minutes:seconds.milliseconds |
+| S1 / S2 / S3 | Your three sector times (see "What are sectors?" below) |
 | Delta | Difference from your best lap (+0.5 = slower, -0.5 = faster) |
 | ⭐ | Star marks your best lap |
+
+**What are sectors?**
+
+Each lap is split into three roughly equal parts — not by time, but by *distance driven*.
+Sector 1 is the first third of the way round, sector 2 the middle third, sector 3 the last.
+
+These are **the app's own sectors, not the circuit's official ones.** A real circuit's timing
+sectors are set by the organisers and usually sit at particular corners; the app has no way of
+knowing where those are, so it divides each lap into even thirds instead. That is still
+perfectly useful for comparing *your* laps against *each other*, which is what matters for
+improving — just don't expect them to line up with a race timing screen.
+
+Sectors are split by distance rather than by time on purpose. If the app used thirds of the
+*clock*, then on a lap where you lost a second somewhere, the boundaries would shift to a
+different part of the track — and you'd be comparing the wrong bits of road to each other.
+
+Occasionally a lap shows no sector times. That means the GPS gave the app too few fixes for
+that lap to divide it honestly, so it shows nothing rather than guessing.
 
 **What counts as a lap?**
 - Crossing the start/finish line you set up
@@ -357,16 +376,102 @@ The **Laps** tab shows all detected laps:
 - Local detection shows lap times immediately after stopping
 - Server results are authoritative and replace local results when available
 
-### 5.2 AI Coaching Feedback
+### 5.2 Coaching Feedback
 
-The **Coach** tab provides personalized driving tips:
+At the top of the **Coach** tab you'll find a map of the circuit, split into three coloured
+parts — see "The sector map" just below. Underneath it, the tab reads your laps and tells you
+what it can see in them. You'll get between
+one and seven cards, depending on what your session actually supports:
 
-- Analysis of your driving style
-- Specific corners or sections to work on
-- Comparison between your fast and slow laps
-- Tips for consistency and speed
+| Card | When you'll see it |
+|------|--------------------|
+| **Your fastest lap** | Always — which lap it was and how far ahead of your average |
+| **🚀 Top speed** | When telemetry was recorded — your highest speed and the lap you hit it on |
+| **Consistency** | Always — how tightly your lap times cluster together |
+| **Dream Lap** | When your sector times support it (see below) |
+| **Sector focus** | When your laps have sectors — which third of the track is costing you most |
+| **The odd one out** | 4+ laps, when one was far off your usual pace |
+| **Pace trend** | 6+ laps, when you clearly got quicker or slower through the session |
 
-The AI looks at your speed profiles, braking points, and corner entry/exit to give relevant feedback.
+**The app will show fewer cards rather than make something up.** If your session doesn't
+support a particular piece of analysis, that card simply isn't there. A missing card is the
+app being honest, not the app being broken.
+
+#### The sector map
+
+When the coaching says *"Sector 2 is costing you the most"*, the obvious next question is
+**where is sector 2?** The map at the top of the Coach tab answers it.
+
+It shows the shape of the circuit you drove, coloured in three parts:
+
+| Colour | Part of the lap |
+|--------|-----------------|
+| 🔵 Blue | **Sector 1** — the first third after the start/finish line |
+| 🟣 Purple | **Sector 2** — the middle third |
+| 🟠 Orange | **Sector 3** — the final third, back to the start/finish |
+
+The gold dot is your start/finish line. The sectors run in the direction you drove. The dot
+sits **on the line itself**, not at the first spot your phone happened to take a reading after
+it — your phone only samples your position about once a second, and at racing speed that is
+fifteen to twenty metres of track.
+
+That same correction is why sector 1 now **begins at the start/finish line**. Sectors are
+equal thirds of the lap measured from the line, so the thirds — and the colours on the map —
+now line up with where you actually crossed it.
+
+**Where the shape comes from.** If you chose your circuit from Trillian's library, the map is
+the surveyed shape of that circuit. If you set up your own start/finish line, Trillian draws
+the circuit from your own laps instead — it takes all of them and finds the line down the
+middle, so one scrappy lap can't bend the picture. In that case you'll see a short note under
+the map saying so, because a shape drawn from your laps follows **the line you drove**, not
+the edges of the road. If Trillian only had one usable lap to work with, the note says that
+too, and you should trust the shape a little less.
+
+**If there's no map**, your laps weren't consistent enough to draw a circuit from, or the
+telemetry file is no longer on your phone. The coaching cards below are unaffected — they
+don't depend on the map, and you'll still get every one your session supports. Trillian would
+rather show you nothing than show you a shape you can't recognise.
+
+#### Sessions you recorded before this update
+
+The first time you open an older session, Trillian quietly re-measures its sectors from the
+telemetry it already saved and corrects them. You don't have to do anything, and nothing is
+lost — **your lap times never change**, because only the *boundaries between* sectors were in
+the wrong place, never the laps themselves. Sessions recorded before sectors existed at all
+will gain them, as long as the telemetry file is still on your phone.
+
+The wording of the coaching cards is usually refreshed to match. For a few of the oldest
+sessions Trillian can correct the numbers but can't safely re-write the text, so the cards
+stay as they were — it would rather leave a slightly out-of-date sentence than risk showing
+you a Dream Lap it had good reason to hold back.
+
+> **Why not show the Dream Lap on the map?** Your Dream Lap is three sectors from three
+> different laps. Drawing it as one continuous line would show you a path round the circuit
+> that you never actually drove. The sector times are real; that line wouldn't be.
+
+#### Your Dream Lap
+
+The **Dream Lap** takes your fastest sector 1, your fastest sector 2 and your fastest sector 3
+— from any laps of the session — and adds them together. That's the lap you've already driven
+in pieces but never strung together in one go, and the difference from your actual best lap is
+the time sitting on the table.
+
+For example: your best lap was 1:12.4, but your best S1 came on lap 3, your best S2 on lap 7
+and your best S3 on lap 5. Stitched together they make 1:10.9 — so there's 1.5 seconds
+available without driving anything you haven't already driven.
+
+If one single lap happened to hold all three of your best sectors, the app says so. That's a
+genuinely good result: it means you put the whole thing together.
+
+**Why the Dream Lap sometimes doesn't appear.** This is deliberate. The Dream Lap works by
+picking the *quickest* of everything, and that means if anything went wrong with lap detection
+— say a lap got split in two — the resulting half-lap would have impossibly quick sectors, and
+they'd win every time. You'd be shown a fantastic-looking lap time that you never drove.
+
+So the app checks its own working first: there must be at least 3 good laps, the sectors must
+add up properly, none of them can be an absurd fraction of the lap, and the stitched time has
+to be a believable improvement rather than a miracle. If anything looks off — or if the app
+already warned you that two laps may have been recorded as one — it shows no Dream Lap at all.
 
 ### 5.3 Speed Charts
 
@@ -835,6 +940,15 @@ A: We analyze your telemetry data — speed, acceleration, position — and comp
 
 **Q: Is my data private?**  
 A: Yes. In this version your sessions never leave your phone unless you deliberately share or export them, and the name you enter is stored locally only. We don't share individual data with third parties.
+
+**Q: My sector times don't match the circuit's timing screen. Why?**  
+A: They're not the same sectors. The circuit's sectors are set by the organisers at particular corners; Trillian has no way of knowing where those are, so it splits each lap into three equal thirds by distance instead. They're for comparing your own laps to each other, not for comparing against official timing.
+
+**Q: Why has one of my laps got no sector times?**  
+A: The GPS didn't give enough fixes during that lap to divide it up honestly — usually a weak signal, or a very short lap. Rather than estimate three numbers that look real but aren't, the app leaves them blank.
+
+**Q: Why don't I get a Dream Lap?**  
+A: The Dream Lap only appears when the app is confident the data behind it is sound. It needs at least 3 laps with good sector times, and it refuses if anything looks wrong — most often when it suspects two laps were recorded as one, which would produce an impossibly quick "best" sector. A missing Dream Lap means the app wasn't willing to show you a time you never drove.
 
 **Q: The corner numbers in the Analysis tab don't match the circuit's map. Why?**  
 A: Trillian works out corners from the way your car actually changed direction, and numbers them in the order you drove through them. It has no knowledge of the circuit's official layout — a chicane the circuit calls one corner may show up as two, and a gentle kink they number may not register at all.

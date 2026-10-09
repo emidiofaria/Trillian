@@ -955,31 +955,50 @@ Generate coaching insights locally from detected laps. Provides immediate feedba
 
 ```
 RecordingViewModel.processLapsLocally()
-→ LocalLapDetector.detectLaps() returns Success
+→ LocalLapDetector.detectLapsWithDiagnostics() returns Success + diagnostics
+  → (inside the detector, after the plausibility check and all three fallbacks)
+    withSectors(laps, samples)
+      → SectorSplitter.split(samples, startTs, endTs) per lap
+        → cumulative haversine distance along the lap
+        → interpolate the instants at 1/3 and 2/3 of that distance
+        → refuse (null) if <6 samples, <50 m, or boundaries out of order
+      → lap.copy(sector1Ms, sector2Ms, sector3Ms)   // or leave 0L on refusal
+→ caveat = MergedLapCaveat.of(diagnostics)          // computed BEFORE coaching
 → saveLapsToRoom(sessionId, detectedLaps)
-  → Map DetectedLap to LapEntity
-  → Set sector1Ms = 0L, sector2Ms = 0L, sector3Ms = 0L  // ⚠️ No sector data
+  → Map DetectedLap to LapEntity, carrying sector1Ms/2Ms/3Ms through
   → lapDao.insertLaps(lapEntities)
-→ generateOfflineCoaching(sessionId, lapEntities)
-  → OfflineCoachingEngine.generateInsights(laps)
+→ generateOfflineCoaching(sessionId, lapEntities, caveat)
+  → OfflineCoachingEngine.generateInsights(laps, rawFilePath, mergedLapCaveat)
     → Check laps.size >= 2
-    → generateBestLapInsight(laps, bestLap)
-      → avgS1 = laps.map { it.sector1Ms }.average()  // All 0 → avgS1 = 0.0
-      → gainS1 = avgS1 - bestLap.sector1Ms           // 0.0 - 0 = 0
-      → Select "best" sector (all gains equal at 0)
-      → Return "Lap X Was Your Fastest" + sector detail
+    → generateBestLapInsight(laps, bestLap)          // sector detail now real
+    → generateTopSpeedInsight(rawFilePath)           // omitted without telemetry
     → generateConsistencyInsight(laps)
-      → Calculate stdDev of durationMs
-      → Map to Excellent/Solid/Work thresholds
-      → Return headline + "Laps vary by {stdDev}" detail
-    → generateSectorFocusInsight(laps, bestLap)
-      → Calculate avg delta vs best for each sector
-      → Select weakest or "All Sectors Strong"
-  → Return List<OfflineInsight>
+    → generateDreamLapInsight(laps, mergedLapCaveat)
+      → DreamLap.of(laps, caveat)
+        → null if caveat present, <3 usable laps, sectors not summing,
+          implausible shares, total > best lap, or gain > 25%
+    → generateSectorDiagnosticInsight(laps, bestLap) // omitted when sectors are 0L
+    → generateOutlierLapInsight(laps)                // ≥4 laps, ≥15% off the MEDIAN
+    → generatePaceTrendInsight(laps)                 // ≥6 laps, halves differ >2%
+  → Return List<OfflineInsight>   // variable length, 1–7; each may be omitted
 → Map to CoachingInsightEntity with isLocalOnly=true
 → coachingInsightDao.insertInsights(insightEntities)
 → Log "Generated X offline coaching insights"
 ```
+
+### Why the caveat is computed before coaching
+
+`MergedLapCaveat` is derived from detection *diagnostics*, not from the laps. The Dream Lap
+cannot tell from sector times alone that two laps were reported as one — a half-lap's sectors
+are internally consistent and evenly shared. The signal therefore has to be carried forward
+from the detector and passed in. Computing it after coaching, or not at all, is what would
+let an artefact through.
+
+### Why sectors are derived inside the detector and not here
+
+So that sectors can only exist for a lap set that was actually accepted. The derivation sits
+after the plausibility check and after all three detection fallbacks, which means a discarded
+attempt's sectors are never built, and no sector logic can influence which laps are chosen.
 
 ### Async Boundaries
 
@@ -992,7 +1011,7 @@ RecordingViewModel.processLapsLocally()
 
 | Storage | Data | Trigger |
 |---------|------|---------|
-| Room `laps` | LapEntity with sector*Ms = 0L | Input to generation |
+| Room `laps` | LapEntity with real sector*Ms (or 0L when the splitter refused) | Input to generation |
 | Room `coaching_insights` | CoachingInsightEntity | Successful generation |
 
 ### External Dependencies
@@ -1885,3 +1904,101 @@ per second so that 1 Hz archives and 10 Hz recordings analyse identically.
 | Zero sector data | Misleading sector insights |
 | 401 on any API | Session expired, re-login |
 | Room corruption | All local data lost |
+
+---
+
+## Flow: Coach Sector Map (COACH Tab)
+
+### Goal
+
+Give a sentence like *"Sector 2 is costing you the most"* a place to point at, by drawing the
+circuit above the insights with its three sectors coloured — without delaying the insights
+and without ever drawing a shape that misleads.
+
+### Trigger
+
+- `SessionUiState` emits with `rawFilePath`, `laps` and `session.trackId`
+- Asked for whenever the state is **not loading**, deliberately outside the populated
+  branch: a session with no insights yet still has laps whose sectors may need repairing
+  (OC-31), and the LAPS tab is already showing them
+
+### Execution Path
+
+```
+CoachFragment.updateUI(state)  [populated branch only]
+→ mapViewModel.load(sessionId, rawFilePath, trackId, laps)   [CoachTelemetryViewModel]
+  → Key(filePath, trackId, lapCount) == last key?  → return, no work
+  → rawFilePath null/blank or laps empty?          → MapState.Unavailable
+→ [ASYNC] viewModelScope.launch
+  → laps sorted by lapNumber → List<SessionOutline.LapWindow>
+  → trackId?.let { trackRepository.getTrack(it)?.centreline }   (null is ordinary)
+  → withContext(Dispatchers.Default)
+    → TelemetryFileReader.readAll(path)
+    → CoachMap.build(samples, windows, centreline)
+      → centreline != null?
+        → fromCentreline(): project lap start onto the station, ROTATE so index 0
+          is the start/finish, resample to 240 points
+        → agrees()? median lateral distance <= 60 m      → SURVEYED_CENTRELINE
+        → otherwise fall through to the driven shape
+      → SessionOutline.build(samples, windows)
+        → each lap resampled at 240 equal fractions of its own distance
+        → one shared projection reference
+        → per-index median across laps
+        → spreadM > 25 m → null
+        → < 3 laps → single best lap, isSingleLap = true  → SINGLE_LAP
+        → otherwise                                        → DERIVED_FROM_LAPS
+  → MapState.Ready(drawing) | MapState.Unavailable
+  → MapState published FIRST — the map is what the driver is waiting for
+  → [ASYNC] SectorRepair.repair(sessionId, laps, samples, telemetryFile)   [Dispatchers.IO]
+    → per lap: SectorSplitter.split(samples, startTs, endTs)
+      → null  → leave the lap alone (not proof the stored value is wrong)
+      → differs by >= 1 ms → lapDao.updateSectors(...)
+    → nothing changed → stop, no insight work
+    → lapDiagnosticsWriter.read(telemetryFile)
+      → null (absent / unparseable)  → STOP. Sectors corrected, wording left as recorded
+      → diagnostics → MergedLapCaveat.of(it)
+        → OfflineCoachingEngine.generateInsights(laps, path, caveat)
+        → empty → keep existing rather than replace real insights with none
+        → deleteLocalInsightsForSession (NEVER the indiscriminate delete)
+        → insertInsights(isLocalOnly = true)
+→ CoachFragment.updateSectorMap(mapState)   [repeatOnLifecycle STARTED]
+  → Ready        → sectorMapCard VISIBLE, sectorMap.setDrawing(d), provenance note
+  → Unavailable  → sectorMapCard GONE, insights untouched
+  → Loading      → sectorMapCard GONE
+→ Room re-emits laps and insights → LAPS tab corrects itself without being told
+```
+
+### Async Boundaries
+
+| Boundary | Thread | Why |
+|----------|--------|-----|
+| `TelemetryFileReader.readAll` | `Dispatchers.IO` | File read plus parse of a whole session |
+| `SectorRepair.repair` | `Dispatchers.IO` | Recomputation plus database writes, after the map is on screen |
+| `CoachMap.build` | `Dispatchers.Default` | ~240 × laps projections and a median per index |
+| `updateSectorMap` | Main, via `repeatOnLifecycle` | View access only while STARTED |
+
+### Failure Points
+
+| Step | Failure | Result |
+|------|---------|--------|
+| `rawFilePath` missing | Telemetry deleted or never written | Card hidden; **insights still shown** |
+| Fewer than the lap floor | Short session | Single-lap shape, labelled, or nothing |
+| `spreadM > 25 m` | Laps disagree — poor fix, mixed lines | No map at all |
+| Centreline mismatch | Session recorded against the wrong circuit | Falls back to the driven shape |
+| Catalogue lookup fails | Captured circuit, `trackId` null | Derived shape; this is the ordinary path |
+| Boundary instant outside telemetry | Truncated file | That lap gets no sectors and is dropped from the outline; no guessed ruler |
+| Diagnostics sidecar missing | Older session, or a failed write | Sectors corrected, insight wording left stale — never regenerated blind |
+| `SectorRepair` throws | Anything | Swallowed. A session must not fail to open because its coaching text could not be refreshed |
+
+### Invariants
+
+- The map is **never** shown half-built. A shape the driver cannot recognise invites them to
+  read corners into GPS noise, which is worse than an absent picture.
+- The insights never wait for the map and never disappear with it.
+- The Dream Lap is never drawn as a path (OC-28).
+- Index 0 is the start/finish on **both** provenances — on the derived shape because the
+  resampling is anchored at the interpolated crossing (LD-27), on the surveyed one because
+  of the rotation in `fromCentreline` (OC-21). OC-30 is the requirement that they agree.
+- The repair writes **only on difference**, so opening a correct session is read-only.
+- The repair never regenerates insights without the merged-lap signal (OC-14, OC-32), and
+  never removes an insight it did not generate (OC-09, OC-10).

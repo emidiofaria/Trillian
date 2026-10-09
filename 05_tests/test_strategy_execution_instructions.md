@@ -115,6 +115,11 @@ can be done by hand:
 This produces `releases/v<version>-<slug>/` containing the APK, the HTML test
 report from the run, and `RELEASE_NOTES.md` generated from `git log`.
 
+That is the `dev` shape, which is the default. `--target play` produces a signed
+bundle instead, and `--target both` produces both artifacts in one directory;
+both of those run the full Play preflight and will refuse to package against a
+stale or missing report. See `docs/RELEASE.md`.
+
 ### 1.6 Self-tests for the report generator
 
 The generator has its own tests. Run them after changing it:

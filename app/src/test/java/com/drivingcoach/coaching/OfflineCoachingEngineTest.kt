@@ -36,18 +36,27 @@ class OfflineCoachingEngineTest {
     }
 
     @Test
-    fun `generateInsights returns 3 insights without telemetry file`() {
+    fun `generateInsights omits top speed without telemetry file`() {
         val laps = listOf(
             createLap(1, 45000),
             createLap(2, 46000),
             createLap(3, 44500)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        assertEquals("Expected 3 insights without telemetry", 3, insights.size)
+
+        assertTrue(
+            "Expected a best lap insight in ${insights.map { it.headline }}",
+            insights.any { it.headline.contains("Was Your Fastest") }
+        )
+        insights.consistency()
+        assertTrue(
+            "Top speed needs telemetry, so it must be absent in ${insights.map { it.headline }}",
+            insights.none { it.headline.contains("Top Speed") }
+        )
     }
     
     @Test
-    fun `generateInsights returns 4 insights with telemetry file`() {
+    fun `generateInsights adds top speed with telemetry file`() {
         val file = createTelemetryFile(listOf(
             TelemetrySample(1000, 25.0),  // ~90 kmh
             TelemetrySample(2000, 50.0),  // ~180 kmh
@@ -58,7 +67,15 @@ class OfflineCoachingEngineTest {
             createLap(2, 46000, startTs = 45000, endTs = 91000)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps, file.absolutePath)
-        assertEquals("Expected 4 insights with telemetry", 4, insights.size)
+
+        assertTrue(
+            "Expected a top speed insight in ${insights.map { it.headline }}",
+            insights.any { it.headline.contains("Top Speed") }
+        )
+        assertTrue(
+            "Expected a best lap insight in ${insights.map { it.headline }}",
+            insights.any { it.headline.contains("Was Your Fastest") }
+        )
     }
 
     // ==================== Best Lap Insight ====================
@@ -121,7 +138,7 @@ class OfflineCoachingEngineTest {
             createLap(4, 45080)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val consistencyInsight = insights[1]
+        val consistencyInsight = insights.consistency()
         assertTrue("Headline should contain 'Excellent'", consistencyInsight.headline.contains("Excellent"))
     }
 
@@ -136,7 +153,7 @@ class OfflineCoachingEngineTest {
             createLap(4, 48000)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val consistencyInsight = insights[1]
+        val consistencyInsight = insights.consistency()
         assertTrue("Headline should contain 'Solid', got: ${consistencyInsight.headline}", 
             consistencyInsight.headline.contains("Solid"))
     }
@@ -151,7 +168,7 @@ class OfflineCoachingEngineTest {
             createLap(4, 49000)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val consistencyInsight = insights[1]
+        val consistencyInsight = insights.consistency()
         assertTrue("Headline should mention consistency work", 
             consistencyInsight.headline.contains("Consistency") || consistencyInsight.headline.contains("Work"))
     }
@@ -164,7 +181,7 @@ class OfflineCoachingEngineTest {
             createLap(3, 44500)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val consistencyInsight = insights[1]
+        val consistencyInsight = insights.consistency()
         assertTrue("Detail should contain a number", consistencyInsight.detail.any { it.isDigit() })
     }
 
@@ -178,7 +195,7 @@ class OfflineCoachingEngineTest {
             createLap(3, 47000, s1 = 14800, s2 = 18200, s3 = 14000)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val sectorInsight = insights[2]
+        val sectorInsight = insights.sectorDiagnostic()
         assertTrue("Headline should contain 'Sector 2'", sectorInsight.headline.contains("Sector 2"))
     }
 
@@ -190,7 +207,7 @@ class OfflineCoachingEngineTest {
             createLap(3, 45060, s1 = 15020, s2 = 15020, s3 = 15020)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val sectorInsight = insights[2]
+        val sectorInsight = insights.sectorDiagnostic()
         assertTrue("Headline should mention all sectors", sectorInsight.headline.contains("All Sectors"))
     }
 
@@ -202,7 +219,7 @@ class OfflineCoachingEngineTest {
             createLap(3, 47000, s1 = 15200, s2 = 17500, s3 = 14300)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val sectorInsight = insights[2]
+        val sectorInsight = insights.sectorDiagnostic()
         assertTrue("Detail should contain time in ms", sectorInsight.detail.contains("ms"))
     }
 
@@ -214,7 +231,7 @@ class OfflineCoachingEngineTest {
             createLap(3, 47000, s1 = 17500, s2 = 14750, s3 = 14750)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val sectorInsight = insights[2]
+        val sectorInsight = insights.sectorDiagnostic()
         assertTrue("Headline should contain 'Sector 1'", sectorInsight.headline.contains("Sector 1"))
     }
 
@@ -226,7 +243,7 @@ class OfflineCoachingEngineTest {
             createLap(3, 47000, s1 = 14750, s2 = 14750, s3 = 17500)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val sectorInsight = insights[2]
+        val sectorInsight = insights.sectorDiagnostic()
         assertTrue("Headline should contain 'Sector 3'", sectorInsight.headline.contains("Sector 3"))
     }
 
@@ -275,10 +292,8 @@ class OfflineCoachingEngineTest {
             insights[1].headline.contains("Consistency") || 
             insights[1].headline.contains("Excellent") || 
             insights[1].headline.contains("Solid"))
-        assertTrue("Third insight should be about sectors",
-            insights[2].headline.contains("Sector") || 
-            insights[2].headline.contains("All Sectors") ||
-            insights[2].headline.contains("Coming Soon"))
+        assertTrue("A sector insight should be present",
+            insights.any { it.headline.contains("Sector") })
     }
     
     // ==================== Zero Sectors Tests (Bug Fix) ====================
@@ -298,20 +313,36 @@ class OfflineCoachingEngineTest {
         assertTrue("Detail should mention ahead of average", bestLapInsight.detail.contains("ahead"))
     }
     
+    /**
+     * Replaces the former "Sector Analysis Coming Soon" test.
+     *
+     * That insight advertised a server-side breakdown to a driver who may never be
+     * online, and it occupied a slot on every single session that had no sectors - so
+     * the one place where a real finding could have gone was permanently spent on an
+     * advertisement. Now sectors are derived on device, so the honest behaviour when
+     * they are nonetheless unavailable is to say nothing at all.
+     */
     @Test
-    fun `zero sectors - sector focus shows Coming Soon upsell`() {
+    fun `zero sectors - no sector insight and no upsell`() {
         val laps = listOf(
             createLapZeroSectors(1, 45000),
             createLapZeroSectors(2, 46000),
             createLapZeroSectors(3, 44500)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val sectorInsight = insights.last()
         
-        assertTrue("Headline should say Coming Soon: ${sectorInsight.headline}", 
-            sectorInsight.headline.contains("Coming Soon"))
-        assertTrue("Detail should mention upload", sectorInsight.detail.contains("Upload") || 
-            sectorInsight.detail.contains("online"))
+        assertTrue(
+            "No insight should advertise a future feature: ${insights.map { it.headline }}",
+            insights.none { it.headline.contains("Coming Soon") }
+        )
+        assertTrue(
+            "No insight should ask the driver to upload: ${insights.map { it.detail }}",
+            insights.none { it.detail.contains("Upload") }
+        )
+        assertTrue(
+            "No sector insight without sectors: ${insights.map { it.headline }}",
+            insights.none { it.headline.contains("Sector") }
+        )
     }
     
     @Test
@@ -341,7 +372,7 @@ class OfflineCoachingEngineTest {
             createLap(3, 45050)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        val consistencyInsight = insights[1]
+        val consistencyInsight = insights.consistency()
         
         assertTrue("Detail should contain 'within': ${consistencyInsight.detail}", 
             consistencyInsight.detail.contains("within"))
@@ -449,6 +480,28 @@ class OfflineCoachingEngineTest {
     }
 
     // ==================== Helper Functions ====================
+
+    /**
+     * Finds an insight by what it is about rather than by its position.
+     *
+     * The engine now emits a variable number of insights - a session may or may not
+     * support a dream lap, an outlier or a pace trend - so a fixed index no longer
+     * identifies a fixed insight. Worse, an index that has silently shifted does not
+     * fail loudly; it asserts the wrong insight and can pass by accident.
+     */
+    private fun List<OfflineCoachingEngine.OfflineInsight>.consistency() =
+        requireNotNull(
+            firstOrNull {
+                it.headline.contains("Consistency") ||
+                    it.headline.contains("Excellent") ||
+                    it.headline.contains("Solid")
+            }
+        ) { "No consistency insight in ${map { it.headline }}" }
+
+    private fun List<OfflineCoachingEngine.OfflineInsight>.sectorDiagnostic() =
+        requireNotNull(
+            firstOrNull { it.headline.contains("Sector") || it.headline.contains("All Sectors") }
+        ) { "No sector insight in ${map { it.headline }}" }
 
     private fun countPositiveInsights(insights: List<OfflineCoachingEngine.OfflineInsight>): Int {
         val positiveKeywords = listOf(

@@ -134,6 +134,46 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Where the sectors are. Pinned above the insight cards because the cards
+             below talk about sectors by number, and a number is not a place until the
+             driver can see which part of the circuit it names. -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/sectorMapCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/colorSurface"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/colorOutline"
+            app:strokeWidth="1dp"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <com.drivingcoach.ui.common.SectorMapView
+                    android:id="@+id/sectorMap"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp" />
+
+                <TextView
+                    android:id="@+id/sectorMapNote"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:textColor="@color/colorOnSurfaceVariant"
+                    android:visibility="gone"
+                    tools:text="This shape is drawn from your own laps."
+                    tools:visibility="visible" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Insights container -->
         <LinearLayout
             android:id="@+id/insightsContainer"
@@ -141,6 +181,20 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_md"
             android:orientation="vertical" />
+
+        <!-- How sectors were derived. Shown whenever an insight rests on sector times,
+             because the driver is entitled to know these are the app's own thirds of
+             the lap and not the circuit's official timing sectors. -->
+        <TextView
+            android:id="@+id/sectorCaveat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_sm"
+            android:text="@string/coach_sector_caveat"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textColor="?android:attr/textColorSecondary"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <!-- Loading state -->
         <LinearLayout
