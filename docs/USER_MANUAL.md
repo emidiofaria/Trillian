@@ -432,6 +432,30 @@ telemetry file is no longer on your phone. The coaching cards below are unaffect
 don't depend on the map, and you'll still get every one your session supports. Trillian would
 rather show you nothing than show you a shape you can't recognise.
 
+#### Driving fundamentals
+
+Below the map there are always four basic tips, in this order:
+
+| Tip | Can it turn green? |
+|-----|--------------------|
+| **Master the final corner** — exit speed is king | Yes: when your speed over the start/finish line is close to your best on most laps |
+| **Use fixed braking reference points** | Yes: when your time in every sector is steady from lap to lap |
+| **Slow in, fast out** | No — always shown as advice |
+| **Smooth steering inputs** | No — always shown as advice |
+
+A tip can be in one of three states:
+- **Green card with a ✓** — your laps show you already do this well.
+- **Amber outline** — this is where you have time to find. The braking tip names the sector
+  that varies the most, so you know where to pick a fixed braking marker (a board, a kerb,
+  a mark on the track).
+- **Plain** — the tip is shown as general advice.
+
+Only the first two tips can be checked. Your phone records your position about once a
+second, which is not enough to see when you release the brake or how you move the wheel.
+Trillian won't guess at those two. It also needs at least **3 laps close to your typical lap
+time** before it judges anything; out-laps and in-laps don't count. The final-corner check
+assumes your start/finish line is on the straight after the last corner.
+
 #### Sessions you recorded before this update
 
 The first time you open an older session, Trillian quietly re-measures its sectors from the
@@ -440,10 +464,17 @@ lost — **your lap times never change**, because only the *boundaries between* 
 the wrong place, never the laps themselves. Sessions recorded before sectors existed at all
 will gain them, as long as the telemetry file is still on your phone.
 
-The wording of the coaching cards is usually refreshed to match. For a few of the oldest
-sessions Trillian can correct the numbers but can't safely re-write the text, so the cards
-stay as they were — it would rather leave a slightly out-of-date sentence than risk showing
-you a Dream Lap it had good reason to hold back.
+The coaching cards are also refreshed every time you open a session, so older sessions now
+get the **Dream Lap**, **The odd one out** and **Pace trend** cards too, along with the latest
+fixes. For the oldest sessions, the Dream Lap only uses laps close to your typical lap time
+(within 15 %). That way a lap that was split in two, or two laps merged into one, can't give
+you a fantasy time. You need at least 3 such laps.
+
+**Fixes in this version:**
+- **Top speed** now names the right lap. Before, it always said "Lap 1". If your top speed
+  came on an out-lap or in-lap, the card names no lap at all.
+- **Sector focus** now compares each sector with *your own best time in that sector*. Before,
+  it just repeated the fastest-lap card in different words.
 
 > **Why not show the Dream Lap on the map?** Your Dream Lap is three sectors from three
 > different laps. Drawing it as one continuous line would show you a path round the circuit

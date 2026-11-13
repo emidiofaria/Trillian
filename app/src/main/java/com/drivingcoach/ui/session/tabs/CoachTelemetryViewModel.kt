@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drivingcoach.data.db.entity.LapEntity
+import com.drivingcoach.coaching.FundamentalsAnalyzer
 import com.drivingcoach.coaching.SectorRepair
 import com.drivingcoach.data.telemetry.TelemetryFileReader
 import com.drivingcoach.data.telemetry.TelemetrySample
@@ -75,6 +76,13 @@ class CoachTelemetryViewModel @Inject constructor(
     private val _state = MutableStateFlow<MapState>(MapState.Loading)
     val state: StateFlow<MapState> = _state.asStateFlow()
 
+    /**
+     * The four driving fundamentals (CF-01). Starts unassessed so the tips are on screen
+     * at once; verdicts arrive once the telemetry has been read for the map.
+     */
+    private val _fundamentals = MutableStateFlow(FundamentalsAnalyzer.DEFAULT)
+    val fundamentals: StateFlow<List<FundamentalsAnalyzer.Fundamental>> = _fundamentals.asStateFlow()
+
     private var job: Job? = null
     private var loadedFor: Key? = null
 
@@ -85,7 +93,7 @@ class CoachTelemetryViewModel @Inject constructor(
         val key = Key(telemetryFilePath, trackId, laps.size)
         if (key == loadedFor) return
         loadedFor = key
-
+        _fundamentals.value = FundamentalsAnalyzer.DEFAULT
         if (telemetryFilePath.isNullOrBlank() || laps.isEmpty()) {
             _state.value = MapState.Unavailable
             return
@@ -116,6 +124,15 @@ class CoachTelemetryViewModel @Inject constructor(
             // only writes to a database that will push its own update when it does.
             _state.value = drawing?.let { MapState.Ready(it) } ?: MapState.Unavailable
 
+            _fundamentals.value = withContext(Dispatchers.Default) {
+                try {
+                    FundamentalsAnalyzer.analyze(laps, samples)
+                } catch (e: Exception) {
+                    // The tips are still worth showing without a verdict.
+                    Log.w(TAG, "Fundamentals assessment failed for session $sessionId", e)
+                    FundamentalsAnalyzer.DEFAULT
+                }
+            }
             repairSectors(sessionId, laps, samples, telemetryFilePath)
         }
     }
@@ -138,7 +155,7 @@ class CoachTelemetryViewModel @Inject constructor(
             val outcome = withContext(Dispatchers.IO) {
                 sectorRepair.repair(sessionId, laps, samples, File(telemetryFilePath))
             }
-            if (outcome.changedAnything) {
+            if (outcome.changedAnything || outcome.insightsRegenerated) {
                 Log.d(TAG, "Session $sessionId: $outcome")
             }
         } catch (e: Exception) {

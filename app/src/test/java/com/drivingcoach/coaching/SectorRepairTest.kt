@@ -27,10 +27,10 @@ import java.io.File
  * about arithmetic.
  *
  * Three of them guard a specific way this could do harm: writing when nothing changed,
- * deleting insights the driver paid for, and regenerating coaching text without the
- * merged-lap signal that decides whether a dream lap may be shown at all. The last is
- * the subtle one - regenerating looks like an improvement right up to the moment it
- * resurrects a dream lap that lap detection had correctly withheld.
+ * deleting insights the driver paid for, and replacing coaching text with nothing. The
+ * insight text is refreshed on every open (OC-32); without the merged-lap signal the
+ * dream lap is built only from laps near the median, so a merged lap cannot inflate it
+ * (OC-33).
  */
 class SectorRepairTest {
 
@@ -88,7 +88,6 @@ class SectorRepairTest {
             "recomputation is deterministic, so a correct session must cause no writes",
             lapDao.sectorWrites.isEmpty()
         )
-        assertTrue(insightDao.deletedLocalFor.isEmpty())
     }
 
     @Test
@@ -136,24 +135,49 @@ class SectorRepairTest {
         assertTrue(lapDao.sectorWrites.isEmpty())
     }
 
-    // ==================== The merged-lap signal ====================
+    // ==================== Refreshing the insight text (OC-32) ====================
 
     @Test
-    fun `without diagnostics the sectors are corrected and the wording is left alone`() = runBlocking {
-        val session = replay("s_mamede")
-        val stale = session.laps.map { it.copy(sector1Ms = it.sector1Ms + 700L) }
-        // No sidecar written: the merged-lap signal of OC-14 cannot be recovered.
+    fun `a session recorded before the current insights gets them on open`() = runBlocking {
+        val session = replay("cabo_do_mundo")
+        // No sidecar: the session predates detection diagnostics. Its stored text is the
+        // old engine's, with the Sector Diagnostic echoing the Best Lap.
+        insightDao.inserted.add(localInsight("Focus on Sector 2", "You lose 1126ms here on average."))
 
-        val outcome = repair.repair(SESSION_ID, stale, session.samples, session.telemetryFile)
+        val outcome = repair.repair(SESSION_ID, session.laps, session.samples, session.telemetryFile)
 
-        assertTrue("sectors should still be corrected", outcome.lapsCorrected > 0)
-        assertFalse(outcome.insightsRegenerated)
+        assertTrue("old wording must be replaced with today's", outcome.insightsRegenerated)
+        val headlines = insightDao.inserted.map { it.headline }
+        assertFalse(insightDao.inserted.any { it.detail == "You lose 1126ms here on average." })
         assertTrue(
-            "regenerating without the merged-lap signal could resurrect a suppressed dream lap",
-            outcome.insightsLeftStale
+            "without a sidecar the dream lap is still offered, built from laps near the median",
+            headlines.any { it.contains("Dream Lap") }
         )
+        assertTrue(insightDao.inserted.all { it.isLocalOnly })
+    }
+
+    @Test
+    fun `insights already up to date are not rewritten`() = runBlocking {
+        val session = replay("s_mamede")
+
+        repair.repair(SESSION_ID, session.laps, session.samples, session.telemetryFile)
+        insightDao.deletedLocalFor.clear()
+        val second = repair.repair(SESSION_ID, session.laps, session.samples, session.telemetryFile)
+
+        assertFalse("identical text must cause no writes on every open", second.insightsRegenerated)
         assertTrue(insightDao.deletedLocalFor.isEmpty())
-        assertTrue(insightDao.inserted.isEmpty())
+    }
+
+    @Test
+    fun `stored insights are kept when the laps no longer support any`() = runBlocking {
+        val session = replay("s_mamede")
+        val existing = localInsight("Best Lap", "kept")
+        insightDao.inserted.add(existing)
+
+        val outcome = repair.repair(SESSION_ID, session.laps.take(1), session.samples, session.telemetryFile)
+
+        assertFalse(outcome.insightsRegenerated)
+        assertEquals(listOf(existing), insightDao.inserted)
     }
 
     @Test
@@ -165,8 +189,7 @@ class SectorRepairTest {
         val outcome = repair.repair(SESSION_ID, stale, session.samples, session.telemetryFile)
 
         assertTrue(outcome.lapsCorrected > 0)
-        assertTrue("the sidecar makes the signal recoverable", outcome.insightsRegenerated)
-        assertFalse(outcome.insightsLeftStale)
+        assertTrue(outcome.insightsRegenerated)
         assertTrue(insightDao.inserted.isNotEmpty())
         assertTrue(
             "regenerated insights must be marked local",
@@ -199,24 +222,31 @@ class SectorRepairTest {
         diagnosticsWriter.sidecarFor(session.telemetryFile).writeText("{ this is not json")
         val stale = session.laps.map { it.copy(sector1Ms = it.sector1Ms + 700L) }
 
-        val outcome = repair.repair(SESSION_ID, stale, session.samples, session.telemetryFile)
+        repair.repair(SESSION_ID, stale, session.samples, session.telemetryFile)
+        val withGarbage = insightDao.inserted.map { it.headline to it.detail }
 
-        assertTrue(outcome.lapsCorrected > 0)
-        assertFalse(
+        // The same session with no sidecar at all, in a fresh store.
+        diagnosticsWriter.sidecarFor(session.telemetryFile).delete()
+        insightDao = FakeInsightDao()
+        SectorRepair(FakeLapDao(), insightDao, diagnosticsWriter)
+            .repair(SESSION_ID, stale, session.samples, session.telemetryFile)
+
+        assertEquals(
             "a sidecar that will not parse tells us nothing, and nothing is not 'no caveat'",
-            outcome.insightsRegenerated
+            insightDao.inserted.map { it.headline to it.detail }, withGarbage
         )
     }
 
     @Test
-    fun `a null telemetry file does not regenerate`() = runBlocking {
+    fun `a null telemetry file still refreshes, without a top speed`() = runBlocking {
         val session = replay("s_mamede")
         val stale = session.laps.map { it.copy(sector1Ms = it.sector1Ms + 700L) }
 
         val outcome = repair.repair(SESSION_ID, stale, session.samples, telemetryFile = null)
 
         assertTrue(outcome.lapsCorrected > 0)
-        assertFalse(outcome.insightsRegenerated)
+        assertTrue(outcome.insightsRegenerated)
+        assertTrue(insightDao.inserted.none { it.headline.contains("Top Speed") })
     }
 
     // ==================== Helpers ====================
@@ -302,7 +332,15 @@ class SectorRepairTest {
             deletedLocalFor.add(sessionId)
             inserted.removeAll { it.sessionId == sessionId && it.isLocalOnly }
         }
+
+        override suspend fun getInsightsForSessionOnce(sessionId: Long): List<CoachingInsightEntity> =
+            inserted.filter { it.sessionId == sessionId }
     }
+
+    private fun localInsight(headline: String, detail: String) = CoachingInsightEntity(
+        sessionId = SESSION_ID, headline = headline, detail = detail,
+        generatedAt = 0L, isLocalOnly = true
+    )
 
     private companion object {
         const val SESSION_ID = 42L

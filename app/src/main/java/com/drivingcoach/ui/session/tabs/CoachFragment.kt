@@ -4,17 +4,22 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.drivingcoach.R
+import com.drivingcoach.coaching.FundamentalsAnalyzer
+import com.drivingcoach.coaching.FundamentalsAnalyzer.Tip
+import com.drivingcoach.coaching.FundamentalsAnalyzer.Verdict
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
 import com.drivingcoach.data.db.entity.CoachingPreference
 import com.drivingcoach.data.track.CoachMap
 import com.drivingcoach.databinding.FragmentCoachBinding
 import com.drivingcoach.databinding.ItemCoachingInsightBinding
+import com.drivingcoach.databinding.ItemFundamentalTipBinding
 import com.drivingcoach.ui.session.SessionResultViewModel
 import com.drivingcoach.ui.session.SessionUiState
 import dagger.hilt.android.AndroidEntryPoint
@@ -72,6 +77,67 @@ class CoachFragment : Fragment() {
                     updateSectorMap(mapState)
                 }
             }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mapViewModel.fundamentals.collect { populateFundamentals(it) }
+            }
+        }
+    }
+
+    /**
+     * Renders the four driving fundamentals (CF-01). Every tip is always shown; a verdict
+     * changes the card only where the session could support one (CF-03 to CF-06).
+     */
+    private fun populateFundamentals(fundamentals: List<FundamentalsAnalyzer.Fundamental>) {
+        val container = binding.fundamentalsContainer
+        container.removeAllViews()
+        val context = requireContext()
+
+        fundamentals.forEach { fundamental ->
+            val item = ItemFundamentalTipBinding.inflate(layoutInflater, container, false)
+            val (title, body) = when (fundamental.tip) {
+                Tip.FINAL_CORNER -> R.string.coach_tip_final_corner_title to R.string.coach_tip_final_corner_body
+                Tip.BRAKING_REFERENCES -> R.string.coach_tip_braking_title to R.string.coach_tip_braking_body
+                Tip.SLOW_IN_FAST_OUT -> R.string.coach_tip_slow_in_title to R.string.coach_tip_slow_in_body
+                Tip.SMOOTH_STEERING -> R.string.coach_tip_steering_title to R.string.coach_tip_steering_body
+            }
+            item.tipTitle.setText(title)
+            item.tipBody.setText(body)
+
+            val status: String? = when (fundamental.verdict) {
+                Verdict.GOOD -> when (fundamental.tip) {
+                    Tip.FINAL_CORNER -> getString(R.string.coach_tip_final_corner_good)
+                    Tip.BRAKING_REFERENCES -> getString(R.string.coach_tip_braking_good)
+                    else -> null
+                }
+                Verdict.NEEDS_WORK -> when (fundamental.tip) {
+                    Tip.FINAL_CORNER -> getString(R.string.coach_tip_final_corner_needs_work)
+                    Tip.BRAKING_REFERENCES ->
+                        getString(R.string.coach_tip_braking_needs_work, fundamental.focusSector ?: 1)
+                    else -> null
+                }
+                Verdict.NOT_ASSESSED -> null
+            }
+
+            when {
+                status != null && fundamental.verdict == Verdict.GOOD -> {
+                    item.tipCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.fundamentalGoodSurface))
+                    item.tipCard.strokeColor = ContextCompat.getColor(context, R.color.colorSuccess)
+                    item.tipStatus.setTextColor(ContextCompat.getColor(context, R.color.colorSuccess))
+                    item.tipCheck.visibility = View.VISIBLE
+                }
+                status != null -> {
+                    item.tipCard.strokeColor = ContextCompat.getColor(context, R.color.colorWarning)
+                    item.tipStatus.setTextColor(ContextCompat.getColor(context, R.color.colorWarning))
+                }
+            }
+            if (status != null) {
+                item.tipStatus.text = status
+                item.tipStatus.visibility = View.VISIBLE
+            }
+            container.addView(item.root)
         }
     }
 
@@ -164,6 +230,10 @@ class CoachFragment : Fragment() {
                 laps = state.laps
             )
         }
+
+        // The fundamentals stand on their own, so they are shown whatever the insights
+        // are doing - only hidden while the session itself is still loading.
+        binding.fundamentalsSection.visibility = if (state.isLoading) View.GONE else View.VISIBLE
 
         // Handle loading/empty states
         when {

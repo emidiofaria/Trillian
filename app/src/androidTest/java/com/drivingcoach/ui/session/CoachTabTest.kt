@@ -40,6 +40,7 @@ import kotlin.math.sin
 
 /**
  * L2 (ASPICE SWE.5) coverage for the COACH tab — SRS OC-19, OC-20, OC-26, OC-27,
+ * CF-01, CF-02, CF-04, CF-05,
  * OC-31 and OC-32.
  *
  * ### Why this class exists
@@ -127,6 +128,7 @@ class CoachTabTest {
     fun missingTelemetryHidesTheMapAndKeepsTheInsights() {
         seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = false)
         launchCoachTab()
+        awaitSeededInsight()
 
         onView(withText(HEADLINE)).perform(scrollTo()).check(matches(isDisplayed()))
         awaitUntil("the sector map card to be hidden") {
@@ -161,6 +163,7 @@ class CoachTabTest {
     fun sectorCaveatIsHiddenWhenLapsCarryNoSectorTimes() {
         seedSession(lapCount = 3, withSectorTimes = false, withTelemetryFile = false)
         launchCoachTab()
+        awaitSeededInsight()
 
         onView(withText(HEADLINE)).perform(scrollTo()).check(matches(isDisplayed()))
         awaitUntil("the sector caveat to be hidden") {
@@ -202,27 +205,62 @@ class CoachTabTest {
     }
 
     /**
-     * No diagnostics sidecar was written beside this telemetry, so the merged-lap
-     * signal of OC-14 cannot be recovered. The numbers are corrected; the wording the
-     * driver already had must survive untouched, because regenerating it without that
-     * signal could resurrect a dream lap detection had deliberately withheld.
+     * No diagnostics sidecar was written beside this telemetry - a session recorded
+     * before detection diagnostics existed. Its stored text is replaced with today's
+     * engine output (OC-32), and only the local rows are touched.
      */
     @Test
-    fun correctingSectorsWithoutDiagnosticsLeavesTheInsightTextAlone() {
+    fun openingAnOldSessionRefreshesItsInsightText() {
         seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true, staleSectors = true)
         launchCoachTab()
 
-        awaitUntil("the stored sector times to be recomputed") {
-            val lap = storedLaps().firstOrNull { it.lapNumber == 1 } ?: return@awaitUntil false
-            lap.sector1Ms != LAP_MS / 2
+        awaitUntil("the stored insights to be regenerated") {
+            storedInsights().none { it.headline == HEADLINE }
         }
-
-        onView(withText(HEADLINE)).perform(scrollTo()).check(matches(isDisplayed()))
-        assertEquals(
-            "the seeded insight should neither have been removed nor duplicated",
-            1,
-            storedInsights().count { it.headline == HEADLINE }
+        val refreshed = storedInsights()
+        assertTrue("regenerated insights must exist", refreshed.isNotEmpty())
+        assertTrue("regenerated insights must be local", refreshed.all { it.isLocalOnly })
+        assertTrue(
+            "today's best-lap insight should be among them: ${refreshed.map { it.headline }}",
+            refreshed.any { it.headline.contains("Was Your Fastest") }
         )
+    }
+
+    // --- Driving fundamentals (SRS CF-01 .. CF-08) ---
+
+    /** The tips stand alone: a session with no insights at all still shows all four. */
+    @Test
+    fun allFourFundamentalsAreShownEvenWithoutInsights() {
+        seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = false, withInsight = false)
+        launchCoachTab()
+
+        listOf(
+            R.string.coach_tip_final_corner_title,
+            R.string.coach_tip_braking_title,
+            R.string.coach_tip_slow_in_title,
+            R.string.coach_tip_steering_title
+        ).forEach { title ->
+            onView(withText(title)).perform(scrollTo()).check(matches(isDisplayed()))
+        }
+    }
+
+    /**
+     * Identical laps cross the line at the same speed and split into identical sectors,
+     * so both assessable tips turn green with their status line - colour is never the
+     * only cue.
+     */
+    @Test
+    fun consistentLapsTurnTheAssessableTipsGreen() {
+        seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true)
+        launchCoachTab()
+
+        awaitUntil("the final-corner tip to be assessed") {
+            runCatching {
+                onView(withText(R.string.coach_tip_final_corner_good)).perform(scrollTo())
+            }.isSuccess
+        }
+        onView(withText(R.string.coach_tip_braking_good)).perform(scrollTo())
+            .check(matches(isDisplayed()))
     }
 
     /**
@@ -266,12 +304,19 @@ class CoachTabTest {
         )
         onView(withText(COACH_TAB)).check(matches(isDisplayed()))
         onView(withText(COACH_TAB)).perform(click())
-        // The insights come from the database and the map from a file read, so the tab
-        // is briefly empty. The wait scrolls rather than merely looking, because with
-        // the map pinned above them the insights now start entirely below the fold:
-        // `isDisplayed()` would never become true on a tall enough map, which is the
-        // ordinary case rather than a failure.
-        awaitUntil("the coaching insights to be rendered") {
+        // The fundamentals are on screen as soon as the session has loaded, whatever
+        // the insights are doing, which makes them the one thing every test can wait
+        // for. Insights stored as seeded may be replaced by today's wording once the
+        // telemetry is read (OC-32), so tests that need them wait for them explicitly.
+        awaitUntil("the Coach tab to be rendered") {
+            runCatching {
+                onView(withId(R.id.fundamentalsSection)).perform(scrollTo())
+            }.isSuccess
+        }
+    }
+
+    private fun awaitSeededInsight() {
+        awaitUntil("the seeded insight to be rendered") {
             runCatching {
                 onView(withText(HEADLINE)).perform(scrollTo())
             }.isSuccess
@@ -282,7 +327,8 @@ class CoachTabTest {
         lapCount: Int,
         withSectorTimes: Boolean,
         withTelemetryFile: Boolean,
-        staleSectors: Boolean = false
+        staleSectors: Boolean = false,
+        withInsight: Boolean = true
     ) = runBlocking {
         val telemetryDir = File(context().filesDir, "telemetry").apply { mkdirs() }
         telemetryFile = File(telemetryDir, "coach_tab_test.jsonl")
@@ -337,7 +383,7 @@ class CoachTabTest {
             }
         )
 
-        insightDao.insertInsight(
+        if (withInsight) insightDao.insertInsight(
             CoachingInsightEntity(
                 sessionId = sessionId,
                 headline = HEADLINE,

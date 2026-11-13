@@ -1953,14 +1953,25 @@ CoachFragment.updateUI(state)  [populated branch only]
     → per lap: SectorSplitter.split(samples, startTs, endTs)
       → null  → leave the lap alone (not proof the stored value is wrong)
       → differs by >= 1 ms → lapDao.updateSectors(...)
-    → nothing changed → stop, no insight work
+    → ALWAYS refresh insight text (OC-32), whether or not sectors moved
     → lapDiagnosticsWriter.read(telemetryFile)
-      → null (absent / unparseable)  → STOP. Sectors corrected, wording left as recorded
-      → diagnostics → MergedLapCaveat.of(it)
-        → OfflineCoachingEngine.generateInsights(laps, path, caveat)
-        → empty → keep existing rather than replace real insights with none
-        → deleteLocalInsightsForSession (NEVER the indiscriminate delete)
-        → insertInsights(isLocalOnly = true)
+      → diagnostics → MergedLapCaveat.of(it), mergedSignalKnown = true
+      → null (absent / unparseable / no path) → mergedSignalKnown = false
+        → Dream Lap built from CleanLaps only (median ±15 %, >= 3 laps) (OC-33)
+    → OfflineCoachingEngine.generateInsights(laps, path, caveat, mergedSignalKnown)
+    → empty → keep existing rather than replace real insights with none
+    → getInsightsForSessionOnce → local (headline, detail) list == fresh? → no writes
+    → deleteLocalInsightsForSession (NEVER the indiscriminate delete)
+    → insertInsights(isLocalOnly = true)
+  → [ASYNC] FundamentalsAnalyzer.analyze(laps, samples)   [Dispatchers.Default]
+    → CleanLaps.of(laps) (< 3 → every tip NOT_ASSESSED)
+    → FINAL_CORNER: speed of fix nearest each lap end (<= 2 s); max − median
+    → BRAKING_REFERENCES: SectorSplitter per clean lap; stdev/mean per sector
+    → SLOW_IN_FAST_OUT, SMOOTH_STEERING: always NOT_ASSESSED (CF-06)
+    → fundamentals StateFlow (starts at DEFAULT = all NOT_ASSESSED)
+→ CoachFragment.populateFundamentals(list)   [repeatOnLifecycle STARTED]
+  → fundamentalsSection VISIBLE whenever !state.isLoading (with or without insights)
+  → GOOD → green card + ✓ + status; NEEDS_WORK → amber stroke + status
 → CoachFragment.updateSectorMap(mapState)   [repeatOnLifecycle STARTED]
   → Ready        → sectorMapCard VISIBLE, sectorMap.setDrawing(d), provenance note
   → Unavailable  → sectorMapCard GONE, insights untouched
@@ -1987,7 +1998,8 @@ CoachFragment.updateUI(state)  [populated branch only]
 | Centreline mismatch | Session recorded against the wrong circuit | Falls back to the driven shape |
 | Catalogue lookup fails | Captured circuit, `trackId` null | Derived shape; this is the ordinary path |
 | Boundary instant outside telemetry | Truncated file | That lap gets no sectors and is dropped from the outline; no guessed ruler |
-| Diagnostics sidecar missing | Older session, or a failed write | Sectors corrected, insight wording left stale — never regenerated blind |
+| Diagnostics sidecar missing | Older session, or a failed write | Insights refreshed anyway; Dream Lap built from laps near the median only (OC-33) |
+| Fewer than 3 clean laps | Short session, or erratic laps | Fundamentals shown as plain tips, no verdicts |
 | `SectorRepair` throws | Anything | Swallowed. A session must not fail to open because its coaching text could not be refreshed |
 
 ### Invariants

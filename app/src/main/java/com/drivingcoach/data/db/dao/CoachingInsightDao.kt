@@ -31,4 +31,8 @@ interface CoachingInsightDao {
      */
     @Query("DELETE FROM coaching_insights WHERE sessionId = :sessionId AND isLocalOnly = 1")
     suspend fun deleteLocalInsightsForSession(sessionId: Long)
+
+    /** One-shot read, for comparing stored insights against freshly generated ones. */
+    @Query("SELECT * FROM coaching_insights WHERE sessionId = :sessionId ORDER BY id ASC")
+    suspend fun getInsightsForSessionOnce(sessionId: Long): List<CoachingInsightEntity>
 }

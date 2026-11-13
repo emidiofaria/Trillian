@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One driving fundamental (CF-01). Green stroke and tick when the session shows the
+     driver already does it; amber stroke when it shows this is where to work. The tick
+     and the status line carry the meaning too, so colour is never the only cue. -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tipCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/spacing_sm"
+    app:cardBackgroundColor="@color/colorSurface"
+    app:cardCornerRadius="@dimen/card_corner_radius"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/colorOutline"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="@dimen/spacing_md">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tipTitle"
+                style="@style/TextAppearance.DrivingCoach.H3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="Master the final corner" />
+
+            <TextView
+                android:id="@+id/tipBody"
+                style="@style/TextAppearance.DrivingCoach.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:textColor="@color/colorOnSurfaceVariant"
+                tools:text="Exit speed is king." />
+
+            <TextView
+                android:id="@+id/tipStatus"
+                style="@style/TextAppearance.DrivingCoach.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="You're already doing this well."
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/tipCheck"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:contentDescription="@string/coach_fundamental_good_cd"
+            android:src="@drawable/ic_check"
+            android:visibility="gone"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

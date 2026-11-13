@@ -21,6 +21,8 @@
     <color name="colorError">#CF3A3A</color>
     <color name="colorSuccess">#2ECC71</color>
     <color name="colorWarning">#F39C12</color>
+    <!-- Driving fundamentals: card fill when the driver already does the tip well -->
+    <color name="fundamentalGoodSurface">#14301F</color>
     
     <!-- Lap Delta Colors -->
     <color name="colorDeltaPositive">#2ECC71</color>

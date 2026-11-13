@@ -247,6 +247,52 @@ class OfflineCoachingEngineTest {
         assertTrue("Headline should contain 'Sector 3'", sectorInsight.headline.contains("Sector 3"))
     }
 
+    @Test
+    fun `sector focus measures against each sector's own best, not the best lap's`() {
+        // The best lap (2) has the session's slowest sector 3, so the old reference -
+        // the best lap's sectors - hid sector 3 entirely and named sector 2.
+        val laps = listOf(
+            createLap(1, 57000, s1 = 21000, s2 = 19000, s3 = 17000),
+            createLap(2, 56900, s1 = 18900, s2 = 18000, s3 = 20000),
+            createLap(3, 59500, s1 = 19000, s2 = 19500, s3 = 21000)
+        )
+        val sectorInsight = OfflineCoachingEngine.generateInsights(laps).sectorDiagnostic()
+        assertEquals("Focus on Sector 3", sectorInsight.headline)
+        assertTrue(sectorInsight.detail, sectorInsight.detail.contains("2333ms"))
+    }
+
+    @Test
+    fun `sector focus ignores an out-lap`() {
+        val laps = listOf(
+            createLap(1, 90000, s1 = 40000, s2 = 25000, s3 = 25000), // out-lap
+            createLap(2, 45000, s1 = 15000, s2 = 15000, s3 = 15000),
+            createLap(3, 46000, s1 = 15000, s2 = 16000, s3 = 15000),
+            createLap(4, 45500, s1 = 15000, s2 = 15500, s3 = 15000)
+        )
+        val sectorInsight = OfflineCoachingEngine.generateInsights(laps).sectorDiagnostic()
+        assertEquals("Focus on Sector 2", sectorInsight.headline)
+    }
+
+    // ==================== Dream Lap median guard (OC-33) ====================
+
+    @Test
+    fun `without the merged-lap signal the dream lap ignores laps far from the median`() {
+        val laps = listOf(
+            createLap(1, 60000, s1 = 20000, s2 = 20000, s3 = 20000),
+            createLap(2, 60200, s1 = 20500, s2 = 19500, s3 = 20200),
+            createLap(3, 60200, s1 = 19800, s2 = 20400, s3 = 20000),
+            createLap(4, 50000, s1 = 11000, s2 = 19000, s3 = 20000) // mis-detected lap
+        )
+
+        val trusted = OfflineCoachingEngine.generateInsights(laps)
+            .first { it.headline.startsWith("Dream Lap") }
+        val guarded = OfflineCoachingEngine.generateInsights(laps, mergedSignalKnown = false)
+            .first { it.headline.startsWith("Dream Lap") }
+
+        assertTrue(trusted.headline, trusted.headline.contains("50.000"))
+        assertTrue(guarded.headline, guarded.headline.contains("59.300"))
+    }
+
     // ==================== Tone Validation (70/30 Rule) ====================
 
     @Test
@@ -436,6 +482,35 @@ class OfflineCoachingEngineTest {
             topSpeedInsight.detail.contains("Lap 2"))
     }
     
+    @Test
+    fun `top speed reads the recorder's timestampMs key`() {
+        val file = tempFolder.newFile("recorder.jsonl")
+        file.writeText(
+            """{"timestampMs":1000,"speedMs":20.0}""" + "\n" +
+            """{"timestampMs":50000,"speedMs":30.0}"""
+        )
+        val laps = listOf(
+            createLap(1, 45000, startTs = 0, endTs = 45000),
+            createLap(2, 46000, startTs = 45000, endTs = 91000)
+        )
+        assertEquals(2, OfflineCoachingEngine.findTopSpeed(file.absolutePath, laps)?.lapNumber)
+    }
+
+    @Test
+    fun `top speed outside every lap names no lap`() {
+        val file = createTelemetryFile(listOf(
+            TelemetrySample(1000, 20.0),
+            TelemetrySample(200000, 40.0) // after the last lap ended
+        ))
+        val laps = listOf(
+            createLap(1, 45000, startTs = 0, endTs = 45000),
+            createLap(2, 46000, startTs = 45000, endTs = 91000)
+        )
+        val topSpeed = OfflineCoachingEngine.generateInsights(laps, file.absolutePath)
+            .first { it.headline.contains("Top Speed") }
+        assertTrue(topSpeed.detail, !topSpeed.detail.contains("Lap "))
+    }
+
     @Test
     fun `top speed filters out GPS noise above 350 kmh`() {
         val file = createTelemetryFile(listOf(

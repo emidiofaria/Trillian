@@ -4,6 +4,56 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-11-13] COACH tab — Insight Fixes and Driving Fundamentals
+
+**Codebase Version:** v3.04+ (unreleased; no Room migration; DB stays at version 5)
+**Trigger:** Drivers reported Dream Lap, Sector focus, The odd one out and Pace trend as "not
+working". A request was also made for four beginner tips that turn green when already mastered.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `OfflineCoachingEngine.kt` | ✅ Updated | Sector diagnostic vs own-best sector on clean laps; top speed reads `timestampMs`; `mergedSignalKnown` median guard |
+| `SectorRepair.kt` | ✅ Updated | Insights refreshed on every open, written only on difference |
+| `CleanLaps.kt` | ✅ Added | Median ±15 % lap filter |
+| `FundamentalsAnalyzer.kt` | ✅ Added | Final-corner and braking-reference verdicts; two static tips |
+| `CoachTelemetryViewModel.kt` / `CoachFragment.kt` / layouts / strings / colors | ✅ Updated | Driving Fundamentals section |
+| `CoachingInsightDao.kt` | ✅ Updated | `getInsightsForSessionOnce()` |
+| L1 tests | ✅ Updated | `FundamentalsAnalyzerTest` (new), `OfflineCoachingEngineTest` (+5), `SectorRepairTest` (OC-32 rewritten) |
+| L2 tests | ✅ Updated | `CoachTabTest` (+2, 1 replaced) |
+| `SRS_v1.md` | ✅ Updated | OC-05, OC-16, OC-32 amended; OC-33 added; §10.2 CF-01…CF-08 added |
+| `components.md` | ✅ Updated | SectorRepair rewritten; new Driving Fundamentals component |
+| `flows.md` | ✅ Updated | Session-open flow: always refresh insights, compute fundamentals |
+| `USER_MANUAL.md` | ✅ Updated | Driving fundamentals section; old-session refresh; fixes listed |
+| `coverage-map.tsv` | ✅ Updated | OC-32 claims re-pointed; OC-05/OC-33/CF claims added |
+| `failure-patterns.md` | ⬜ No change | No new failure pattern beyond those already documented |
+
+### Root causes found
+
+- **Old sessions never got new insights.** Insights are persisted once, at stop. They were
+  regenerated only after a sector correction *and* only with a diagnostics sidecar, so
+  every session from before v2.96 kept the insights its version produced — no Dream Lap,
+  Outlier or Pace Trend. That is what drivers saw as "not working".
+- **Sector focus restated the Best Lap card.** It compared each lap with the best lap's
+  sectors, so it always named the same sector with the same number as the card above it.
+- **Top speed always said "Lap 1".** The reader looked for `ts`; the recorder writes
+  `timestampMs`. Every timestamp read as 0.
+
+### New requirement IDs
+
+OC-33, CF-01 … CF-08.
+
+### What we learned
+
+- **1 Hz GPS cannot see brake release or steering**, so two of the four tips are deliberately
+  never judged. The braking tip is judged by sector-time consistency rather than braking
+  points, which would move 15–20 m between laps purely from GPS clock phase.
+- **Thresholds come from 5 fixtures.** Revisit the 6/10 km/h and 5 %/10 % bands once more
+  sessions are available.
+
+---
+
 ## [2026-10-07] Release v3.04 — Packaging an APK and a Bundle Together
 
 **Codebase Version:** v3.04 (versionCode 304; no Room migration; DB stays at version 5)

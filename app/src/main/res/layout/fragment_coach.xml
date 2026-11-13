@@ -174,6 +174,31 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Driving fundamentals (CF-01). Always shown once the session has loaded,
+             even when there are no insights: the tips are useful to any beginner, and
+             a verdict is added only where the session can support one. -->
+        <LinearLayout
+            android:id="@+id/fundamentalsSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                style="@style/TextAppearance.DrivingCoach.H3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/coach_fundamentals_title" />
+
+            <LinearLayout
+                android:id="@+id/fundamentalsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+
         <!-- Insights container -->
         <LinearLayout
             android:id="@+id/insightsContainer"

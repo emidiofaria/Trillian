@@ -2699,8 +2699,8 @@ data would be inventing a position rather than recovering one.
 ### Purpose
 
 Brings a session's stored sector times up to date with the current measurement when the
-session is opened, and regenerates the coaching text when — and only when — that can be
-done safely.
+session is opened, and refreshes the locally generated coaching text with today's engine
+(OC-32).
 
 ### Why repair on read rather than migrate
 
@@ -2713,28 +2713,29 @@ It is also naturally idempotent. There is no "has been migrated" flag to drift o
 with reality, because the check *is* the recomputation: recompute, compare, write only on
 difference.
 
-### The dangerous part: regenerating insights
+### Refreshing insights (amended v3.05)
 
-Sector times are numbers and can be replaced. Insights are *sentences* built from those
-numbers, so correcting the numbers leaves the text stale — and regenerating it is where this
-could do real harm.
+Insights are *sentences* built from the laps, and they were persisted once, at stop. Until
+v3.05 they were regenerated only after a sector correction, and only with a diagnostics
+sidecar — so sessions recorded before v2.96, or whose sectors were already right, kept the
+wording of whatever version recorded them and never showed Dream Lap, Outlier, Pace Trend
+or any later fix. Drivers reported those features as "not working".
 
-`DreamLap` must be suppressed when lap detection suspected it had merged two laps into one
-(OC-14), and that signal comes from detection diagnostics, not from the sector times. OC-14
-is explicit that it must be *passed in* rather than inferred, so inferring it here is not
-available. Regenerating without it would silently resurrect a dream lap that was correctly
-withheld.
+Now every open recomputes the insights and compares `(headline, detail)` against the
+stored local ones; it writes only on difference, so a steady session costs no writes.
 
-The diagnostics are written to a `.lapdiag.json` sidecar beside the telemetry (LD-16), so
-the signal is usually recoverable:
+`DreamLap` must still not be resurrected over a merged lap (OC-14). The signal comes from
+the `.lapdiag.json` sidecar (LD-16):
 
 | Sidecar | Sectors | Insight text |
 |---------|---------|--------------|
-| Present and parseable | Corrected | Regenerated with the recovered caveat |
-| Absent, unreadable, or no telemetry path | Corrected | **Left exactly as recorded** |
+| Present and parseable | Corrected | Refreshed with the recovered caveat |
+| Absent, unreadable, or no telemetry path | Corrected | Refreshed; Dream Lap built from `CleanLaps` only — laps within ±15 % of the median, at least 3 (OC-33) |
 
-Only `isLocalOnly` insights are ever removed (OC-09, OC-10): insights that came from the
-backend cannot be regenerated locally, so a local recalculation must never take them along.
+A merged lap is ~2× the median and a half-lap ~0.5×, so neither survives the guard.
+
+Only `isLocalOnly` insights are ever removed (OC-09, OC-10), and an empty regeneration never
+replaces existing insights.
 
 ### Backfill
 
@@ -2746,14 +2747,59 @@ from `SectorSplitter` and keeps whatever it had, rather than being blanked.
 
 | File | Responsibility |
 |------|----------------|
-| `coaching/SectorRepair.kt` | `repair()`, `regenerateInsights()` |
+| `coaching/SectorRepair.kt` | `repair()`, `refreshInsights()` |
+| `coaching/CleanLaps.kt` | Median ±15 % lap filter shared with Sector Diagnostic and Fundamentals |
 | `data/db/dao/LapDao.kt` | `updateSectors()` |
-| `data/db/dao/CoachingInsightDao.kt` | `deleteLocalInsightsForSession()` |
+| `data/db/dao/CoachingInsightDao.kt` | `deleteLocalInsightsForSession()`, `getInsightsForSessionOnce()` |
 | `lap/LapDiagnosticsWriter.kt` | `read()` |
 
 ### Criticality
 
-**LOW** — failure leaves old sessions with their old numbers; new sessions are unaffected.
+**LOW** — failure leaves old sessions with their old numbers and wording; new sessions are unaffected.
+
+---
+
+## Component: Driving Fundamentals (`coaching/FundamentalsAnalyzer`)
+
+### Purpose
+
+Four fixed beginner tips on the COACH tab (CF-01), each turned green with a ✓ when the
+session shows the driver already does it, or amber when it shows where to work. Only what
+1 Hz GPS can honestly see is assessed:
+
+| Tip | Signal | Good | Needs work |
+|-----|--------|------|------------|
+| Master the final corner | Speed of the fix nearest each clean lap's end (≤ 2 s) | median within 6 km/h of best | ≥ 10 km/h below best |
+| Fixed braking references | Sector-time stdev / mean per sector (SectorSplitter) | every sector ≤ 5 % | any sector ≥ 10 % (names it) |
+| Slow in, fast out | — (not visible at 1 Hz) | never | never |
+| Smooth steering | — (not visible at 1 Hz) | never | never |
+
+Needs at least 3 clean laps (`CleanLaps`); otherwise every tip is shown unassessed.
+Sectors are recomputed from telemetry rather than read from the database, so stale zero
+sectors on old sessions cannot affect the verdict.
+
+### Calibration (fixtures)
+
+| Fixture | Final corner | Braking references |
+|---------|--------------|--------------------|
+| cabo_do_mundo | needs work (gap ≈ 14 km/h) | good (≤ 4.6 %) |
+| s_mamede | not assessed (gap ≈ 9 km/h) | needs work, S2 |
+| baltar2 | good | needs work, S2 |
+| ines3 | good | needs work, S2 |
+| teste3 | needs work | needs work, S1 |
+
+### Key Files
+
+| File | Responsibility |
+|------|----------------|
+| `coaching/FundamentalsAnalyzer.kt` | `analyze()`, `DEFAULT` |
+| `ui/session/tabs/CoachTelemetryViewModel.kt` | `fundamentals` StateFlow, computed after the telemetry read |
+| `ui/session/tabs/CoachFragment.kt` | `populateFundamentals()` |
+| `res/layout/item_fundamental_tip.xml` | Tip card |
+
+### Criticality
+
+**LOW** — failure shows the four tips without verdicts.
 
 ---
 
@@ -2780,7 +2826,8 @@ from `SectorSplitter` and keeps whatever it had, rather than being blanked.
 | SectorMapView | LOW | Sector map missing from the COACH tab |
 | CoachTelemetryViewModel | LOW | Sector map never populates and stored sectors are never repaired; insights still render |
 | LapAnchor | MEDIUM | Sectors and the drawn outline lose their start/finish anchor; every boundary drifts by one sample gap |
-| SectorRepair | LOW | Sessions recorded before the ruler was anchored keep their old sector times; new sessions are unaffected |
+| SectorRepair | LOW | Sessions recorded before the ruler was anchored keep their old sector times and insight wording; new sessions are unaffected |
+| FundamentalsAnalyzer | LOW | Fundamentals tips shown without verdicts |
 | Session State Machine | MEDIUM | UX confusion |
 | App Startup / Branded Loading Screen | HIGH | App unusable (no cold start) |
 | Stale Upload Detection | LOW | Missing UX warning |

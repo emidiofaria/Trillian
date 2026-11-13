@@ -177,12 +177,26 @@ OC-31	SectorRepairTest.repairing twice writes only once	Idempotent
 OC-31	SectorRepairTest.a session with no telemetry is left exactly as it was	No telemetry, no repair
 OC-31	CoachTabTest.staleSectorTimesAreCorrectedWhenTheSessionIsOpened	Repair reaches the screen when the session is opened
 OC-31	CoachTabTest.missingTelemetryLeavesTheStoredSectorsUntouched	Stored sectors untouched without telemetry
-OC-32	SectorRepairTest.without diagnostics the sectors are corrected and the wording is left alone	No blind regeneration
-OC-32	SectorRepairTest.with diagnostics the insights are regenerated	Regeneration when the caveat is recoverable
-OC-32	SectorRepairTest.an unreadable sidecar is treated as no sidecar rather than as no caveat	Unreadable is unknowable, not absent
+OC-32	SectorRepairTest.a session recorded before the current insights gets them on open	Old sessions refreshed on open
+OC-32	SectorRepairTest.insights already up to date are not rewritten	Write only on difference
+OC-32	SectorRepairTest.stored insights are kept when the laps no longer support any	Never replaced by an empty result
+OC-32	SectorRepairTest.with diagnostics the insights are regenerated	Regeneration with the recovered caveat
 OC-32	SectorRepairTest.regeneration removes only the locally generated insights	Backend insights never removed
-OC-32	SectorRepairTest.a null telemetry file does not regenerate	No path, no regeneration
-OC-32	CoachTabTest.correctingSectorsWithoutDiagnosticsLeavesTheInsightTextAlone	Insight text preserved end to end
+OC-32	SectorRepairTest.a null telemetry file still refreshes, without a top speed	No path still refreshes
+OC-32	CoachTabTest.openingAnOldSessionRefreshesItsInsightText	Refresh reaches the screen
+OC-33	SectorRepairTest.an unreadable sidecar is treated as no sidecar rather than as no caveat	Unknown signal uses the median guard
+OC-33	OfflineCoachingEngineTest	Dream Lap median guard
+OC-05	OfflineCoachingEngineTest.top speed reads the recorder's timestampMs key	Recorder timestamp key read
+OC-05	OfflineCoachingEngineTest.top speed outside every lap names no lap	No lap named outside laps
+CF-01	FundamentalsAnalyzerTest.tips are always all four, in display order	Four tips in order
+CF-01	CoachTabTest.allFourFundamentalsAreShownEvenWithoutInsights	Tips on screen
+CF-02	CoachTabTest.allFourFundamentalsAreShownEvenWithoutInsights	Shown without insights
+CF-03	CoachTabTest.consistentLapsTurnTheAssessableTipsGreen	Green card with tick
+CF-04	FundamentalsAnalyzerTest.final corner verdicts follow the line-speed gap	Line-speed thresholds
+CF-05	FundamentalsAnalyzerTest.a consistent driver gets the braking-references tick	Consistent sectors good
+CF-05	FundamentalsAnalyzerTest.a wandering sector is named	Worst sector named
+CF-06	FundamentalsAnalyzerTest.tips that 1 Hz GPS cannot see are never assessed	Static tips
+CF-07	FundamentalsAnalyzerTest.fewer than three clean laps are not assessed	Clean-lap floor
 
 # --- Session Management ---
 SM-01	HomeViewModelTest	Delete session

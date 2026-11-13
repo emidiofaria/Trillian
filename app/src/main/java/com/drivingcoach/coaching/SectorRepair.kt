@@ -37,26 +37,19 @@ import javax.inject.Singleton
  * flag to get out of step with reality, because the check *is* the recomputation:
  * recompute, compare, and write only on difference.
  *
- * ### Why insights are regenerated only sometimes
+ * ### Why insights are refreshed on every open (OC-32)
  *
- * Sector times are numbers and can simply be replaced. Insights are *sentences* built
- * from those numbers, so correcting the numbers leaves the text stale. Regenerating
- * it looks obvious and is the dangerous part of this class.
+ * Insights are *sentences* persisted once, at stop. Refreshing them only after a sector
+ * correction left every session recorded before v2.96 - or whose sectors were already
+ * right - with the wording of the version that recorded it: no Dream Lap, Outlier or
+ * Pace Trend, and none of the later fixes. So every open regenerates them, compares
+ * `(headline, detail)` with the stored local ones, and writes only on difference.
  *
- * The dream lap must be suppressed when lap detection suspected it had merged two laps
- * into one (OC-14), and that signal is derived from detection diagnostics that this
- * pass does not have - it is not re-running detection. OC-14 is explicit that the
- * signal has to be passed in from detection rather than inferred from sector times,
- * so inferring it here is not available. Regenerating insights without it would
- * silently resurrect a dream lap that was correctly withheld, which is a trust
- * failure and strictly worse than slightly stale wording.
- *
- * The diagnostics are, however, written to a sidecar beside the telemetry, so the
- * signal is usually recoverable. When the sidecar is present, insights are
- * regenerated. When it is absent - an older session, or a write that failed, both of
- * which look identical from here - sectors are corrected and the insight text is left
- * exactly as it was (OC-32). The driver sees corrected numbers and the wording they
- * already had, which is honest; they do not see a dream lap that was never earned.
+ * The dream lap must still not be resurrected over a merged lap (OC-14). When the
+ * diagnostics sidecar is readable, its caveat is passed in. When it is not - an older
+ * session, or a failed write - the engine builds the dream lap from laps within ±15 %
+ * of the median only (OC-33), which neither a merged lap nor a half-lap survives.
+ * Only `isLocalOnly` insights are replaced, and never by an empty result.
  */
 @Singleton
 class SectorRepair @Inject constructor(
@@ -83,22 +76,22 @@ class SectorRepair @Inject constructor(
     data class Outcome(
         val lapsExamined: Int,
         val lapsCorrected: Int,
-        val insightsRegenerated: Boolean,
-        /** True when sectors moved but the insight wording had to be left stale. */
-        val insightsLeftStale: Boolean
+        /** True when the stored local insights differed from today's and were replaced. */
+        val insightsRegenerated: Boolean
     ) {
         val changedAnything: Boolean get() = lapsCorrected > 0
     }
 
     /**
-     * Recomputes [laps] from [samples] and persists any that have moved.
+     * Recomputes [laps] from [samples], persists any that have moved, then refreshes
+     * the session's local insights.
      *
      * @param samples the session's telemetry, already in memory. This is deliberately
      *   taken as a parameter rather than read here: the caller loads the file anyway to
      *   draw the map, and reading it twice to save one argument would double the cost
      *   of opening a session.
-     * @param telemetryFile used only to find the diagnostics sidecar. Null means the
-     *   merged-lap signal is unknowable, which is treated the same as a missing sidecar.
+     * @param telemetryFile used to find the diagnostics sidecar and the top speed. Null
+     *   means the merged-lap signal is unknown, so the OC-33 median guard applies.
      */
     suspend fun repair(
         sessionId: Long,
@@ -107,7 +100,7 @@ class SectorRepair @Inject constructor(
         telemetryFile: File?
     ): Outcome {
         if (laps.isEmpty() || samples.isEmpty()) {
-            return Outcome(laps.size, 0, insightsRegenerated = false, insightsLeftStale = false)
+            return Outcome(laps.size, 0, insightsRegenerated = false)
         }
 
         val corrected = ArrayList<LapEntity>(laps.size)
@@ -143,18 +136,15 @@ class SectorRepair @Inject constructor(
             changed++
         }
 
-        if (changed == 0) {
-            return Outcome(laps.size, 0, insightsRegenerated = false, insightsLeftStale = false)
+        if (changed > 0) {
+            Log.d(TAG, "Corrected sectors on $changed of ${laps.size} laps for session $sessionId")
         }
 
-        Log.d(TAG, "Corrected sectors on $changed of ${laps.size} laps for session $sessionId")
-
-        val regenerated = regenerateInsights(sessionId, corrected, telemetryFile)
+        val regenerated = refreshInsights(sessionId, corrected, telemetryFile)
         return Outcome(
             lapsExamined = laps.size,
             lapsCorrected = changed,
-            insightsRegenerated = regenerated,
-            insightsLeftStale = !regenerated
+            insightsRegenerated = regenerated
         )
     }
 
@@ -162,41 +152,39 @@ class SectorRepair @Inject constructor(
         Math.abs(stored - computed) >= TOLERANCE_MS
 
     /**
-     * Rebuilds the locally generated insights, if and only if the merged-lap signal
-     * can be recovered.
+     * Rebuilds the locally generated insights with today's engine and replaces the
+     * stored ones only when the wording differs (OC-32).
      *
-     * @return true when the insights were regenerated.
+     * Without a diagnostics sidecar the merged-lap signal is unknown, so the engine is
+     * told so and builds the dream lap only from laps near the median (OC-33).
+     *
+     * @return true when the stored insights were replaced.
      */
-    private suspend fun regenerateInsights(
+    private suspend fun refreshInsights(
         sessionId: Long,
         laps: List<LapEntity>,
         telemetryFile: File?
     ): Boolean {
-        val diagnostics = telemetryFile?.let { lapDiagnosticsWriter.read(it) }
-        if (diagnostics == null) {
-            Log.d(
-                TAG,
-                "No lap diagnostics for session $sessionId: sectors corrected, insight " +
-                    "wording left as recorded rather than regenerated without the " +
-                    "merged-lap signal"
-            )
-            return false
-        }
-
         return try {
-            val caveat = MergedLapCaveat.of(diagnostics)
+            val diagnostics = telemetryFile?.let { lapDiagnosticsWriter.read(it) }
             val insights = OfflineCoachingEngine.generateInsights(
                 laps = laps,
-                telemetryFilePath = telemetryFile.absolutePath,
-                mergedLapCaveat = caveat
+                telemetryFilePath = telemetryFile?.takeIf { it.exists() }?.absolutePath,
+                mergedLapCaveat = diagnostics?.let { MergedLapCaveat.of(it) },
+                mergedSignalKnown = diagnostics != null
             )
             if (insights.isEmpty()) {
                 // Replacing real insights with none would be a visible loss, and an
                 // empty result here means the laps no longer support any statement
                 // rather than that the stored ones were wrong.
-                Log.d(TAG, "Regeneration produced no insights for session $sessionId; keeping existing")
                 return false
             }
+
+            val stored = coachingInsightDao.getInsightsForSessionOnce(sessionId)
+                .filter { it.isLocalOnly }
+                .map { it.headline to it.detail }
+            val fresh = insights.map { it.headline to it.detail }
+            if (stored == fresh) return false
 
             val now = System.currentTimeMillis()
             coachingInsightDao.deleteLocalInsightsForSession(sessionId)

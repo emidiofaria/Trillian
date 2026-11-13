@@ -170,4 +170,24 @@
     <string name="coach_map_note_derived">This shape is drawn from your own laps, so it follows the line you drove rather than the exact edges of the circuit.</string>
     <string name="coach_map_note_single_lap">Drawn from a single lap. With three or more laps the shape settles down and stops following one lap\'s GPS wobble.</string>
 
+    <!-- Coaching: driving fundamentals (CF-01..CF-08) -->
+    <string name="coach_fundamentals_title">Driving Fundamentals</string>
+    <string name="coach_fundamental_good_cd">You already do this well</string>
+
+    <string name="coach_tip_final_corner_title">Master the final corner</string>
+    <string name="coach_tip_final_corner_body">Exit speed is king. The last corner before the main straight decides your speed all the way down it. Brake in a straight line, aim for a smooth, late apex and get back on the throttle early to carry maximum momentum onto the straight.</string>
+    <string name="coach_tip_final_corner_good">✓ You cross the line at much the same speed lap after lap — you\'re getting the last corner right.</string>
+    <string name="coach_tip_final_corner_needs_work">Your speed over the line drops well below your best on most laps. The exit of the last corner is costing you time down the whole straight.</string>
+
+    <string name="coach_tip_braking_title">Use fixed braking reference points</string>
+    <string name="coach_tip_braking_body">Don\'t guess when to brake. For each major corner pick a fixed landmark — a marker board, a kerb, a cone, a tree — and start braking at exactly that point every lap. Only move it closer once you hit it consistently.</string>
+    <string name="coach_tip_braking_good">✓ Your sector times are tight from lap to lap — your references are working.</string>
+    <string name="coach_tip_braking_needs_work">Your times in Sector %1$d vary a lot from lap to lap. Pick a fixed braking landmark for each corner there and stick to it.</string>
+
+    <string name="coach_tip_slow_in_title">Slow in, fast out</string>
+    <string name="coach_tip_slow_in_body">Do most of your braking in a straight line before the turn, then release the brake progressively as you turn in — don\'t drag it to the apex. Let the car roll its speed through the corner and be back on the throttle as you unwind the steering.</string>
+
+    <string name="coach_tip_steering_title">Smooth steering inputs</string>
+    <string name="coach_tip_steering_body">Turn the wheel in one fluid, progressive movement and unwind it the same way. Sharp, jerky inputs upset the car\'s balance and scrub off speed. If you find yourself constantly correcting, slow your hands down and look further ahead.</string>
+
 </resources>

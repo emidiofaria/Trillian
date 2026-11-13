@@ -46,7 +46,8 @@ object OfflineCoachingEngine {
      */
     data class TopSpeedData(
         val speedKmh: Int,
-        val lapNumber: Int
+        /** Null when the top speed was reached outside every timed lap. */
+        val lapNumber: Int?
     )
 
     /**
@@ -57,6 +58,10 @@ object OfflineCoachingEngine {
      * @param mergedLapCaveat Warning from `MergedLapCaveat` when detection suspects two
      *   laps were reported as one, or null. Passed through to the dream lap, which must
      *   stay silent when the lap boundaries themselves are in doubt.
+     * @param mergedSignalKnown false when the merged-lap signal could not be recovered
+     *   (a session recorded before detection diagnostics existed). A null caveat then
+     *   means "unknown" rather than "no doubt", so the dream lap is built only from
+     *   laps near the median lap time, where a merged lap or half-lap cannot hide (OC-33).
      * @return The insights the data supports, which may be fewer than the maximum and
      *   may be empty. Nothing here pads the list to a fixed length: an insight that
      *   exists only to fill a slot teaches the driver to skim past all of them.
@@ -73,7 +78,8 @@ object OfflineCoachingEngine {
     fun generateInsights(
         laps: List<LapEntity>,
         telemetryFilePath: String? = null,
-        mergedLapCaveat: String? = null
+        mergedLapCaveat: String? = null,
+        mergedSignalKnown: Boolean = true
     ): List<OfflineInsight> {
         if (laps.size < 2) return emptyList()
         
@@ -96,12 +102,13 @@ object OfflineCoachingEngine {
         insights.add(generateConsistencyInsight(laps))
         
         // 4. Dream Lap - omitted entirely when the sectors cannot carry it
-        DreamLap.of(laps, mergedLapCaveat)?.let { insights.add(generateDreamLapInsight(it)) }
+        val dreamLapSource = if (mergedSignalKnown) laps else CleanLaps.of(laps)
+        DreamLap.of(dreamLapSource, mergedLapCaveat)?.let { insights.add(generateDreamLapInsight(it)) }
         
         // 5. Sector Diagnostic - omitted when there are no sectors, rather than
         //    replaced by an advertisement for a feature that does not exist
         if (sectorsAvailable) {
-            insights.add(generateSectorDiagnosticInsight(laps, bestLap))
+            generateSectorDiagnosticInsight(laps)?.let { insights.add(it) }
         }
         
         // 6. Outlier Lap
@@ -139,7 +146,9 @@ object OfflineCoachingEngine {
                     try {
                         val json = JSONObject(line)
                         val speedMs = json.optDouble("speedMs", 0.0)
-                        val timestamp = json.optLong("ts", 0L)
+                        // The recorder writes "timestampMs"; "ts" is kept for files
+                        // written by older tooling.
+                        val timestamp = json.optLong("timestampMs", json.optLong("ts", 0L))
                         
                         // Filter out GPS noise and implausible values
                         if (speedMs > MIN_MEANINGFUL_SPEED_MS && 
@@ -159,10 +168,11 @@ object OfflineCoachingEngine {
         
         if (maxSpeedMs <= MIN_MEANINGFUL_SPEED_MS) return null
         
-        // Find which lap the top speed occurred in
+        // Name a lap only when the top speed really fell inside one. Guessing "Lap 1"
+        // credited every out-lap and in-lap top speed to the first lap.
         val lapNumber = laps.find { lap ->
             maxSpeedTs >= lap.startTs && maxSpeedTs <= lap.endTs
-        }?.lapNumber ?: laps.firstOrNull()?.lapNumber ?: 1
+        }?.lapNumber
         
         val speedKmh = (maxSpeedMs * 3.6).toInt()
         
@@ -173,9 +183,12 @@ object OfflineCoachingEngine {
      * Insight: Top Speed (always positive)
      */
     private fun generateTopSpeedInsight(topSpeed: TopSpeedData): OfflineInsight {
+        val detail = topSpeed.lapNumber
+            ?.let { "Hit on Lap $it — you were flying! Can you beat it next session?" }
+            ?: "Your fastest moment of the session — can you beat it next time?"
         return OfflineInsight(
             headline = "🚀 Top Speed: ${topSpeed.speedKmh} km/h",
-            detail = "Hit on Lap ${topSpeed.lapNumber} — you were flying! Can you beat it next session?"
+            detail = detail
         )
     }
 
@@ -281,29 +294,33 @@ object OfflineCoachingEngine {
     }
 
     /**
-     * Insight: Sector Diagnostic.
+     * Insight: Sector Diagnostic (OC-16).
      *
-     * Reports where time is being lost against the driver's own best, in the sector
-     * where the loss is largest. Only ever shown when sectors exist.
+     * For each sector, the average time lost against **that sector's own best** across
+     * the session, and the sector where that loss is largest. Measured on clean laps
+     * only, so an out-lap or in-lap cannot decide which sector the driver is told to
+     * work on.
+     *
+     * The reference used to be the best *lap's* sectors. That made this the Best Lap
+     * insight's arithmetic restated - average minus best-lap sector, maximised - so it
+     * always named the same sector with the same number, praising and criticising it in
+     * consecutive cards.
      */
-    private fun generateSectorDiagnosticInsight(
-        laps: List<LapEntity>, 
-        bestLap: LapEntity
-    ): OfflineInsight {
-        // Calculate average delta vs best lap for each sector
-        val avgDeltaS1 = laps.map { it.sector1Ms - bestLap.sector1Ms }.average()
-        val avgDeltaS2 = laps.map { it.sector2Ms - bestLap.sector2Ms }.average()
-        val avgDeltaS3 = laps.map { it.sector3Ms - bestLap.sector3Ms }.average()
-        
-        val deltas = listOf(
-            avgDeltaS1 to 1,
-            avgDeltaS2 to 2,
-            avgDeltaS3 to 3
+    private fun generateSectorDiagnosticInsight(laps: List<LapEntity>): OfflineInsight? {
+        val clean = CleanLaps.of(laps)
+        if (clean.size < 2) return null
+
+        val sectorTimes = listOf<(LapEntity) -> Long>(
+            { it.sector1Ms }, { it.sector2Ms }, { it.sector3Ms }
         )
-        
-        val (worstDelta, worstSectorNum) = deltas.maxByOrNull { it.first } ?: (avgDeltaS1 to 1)
-        
-        return if (worstDelta < SECTOR_STRONG_THRESHOLD_MS) {
+        val losses = sectorTimes.mapIndexed { index, sectorOf ->
+            val best = clean.minOf(sectorOf)
+            clean.map { sectorOf(it) - best }.average() to index + 1
+        }
+
+        val (worstLoss, worstSectorNum) = losses.maxByOrNull { it.first } ?: return null
+
+        return if (worstLoss < SECTOR_STRONG_THRESHOLD_MS) {
             OfflineInsight(
                 headline = "All Sectors Strong",
                 detail = "No single sector is holding you back. Solid all-round pace!"
@@ -311,7 +328,8 @@ object OfflineCoachingEngine {
         } else {
             OfflineInsight(
                 headline = "Focus on Sector $worstSectorNum",
-                detail = "You lose ${worstDelta.toLong()}ms here on average. Small gains here will drop your lap time."
+                detail = "You lose ${worstLoss.toLong()}ms here on average against your own best " +
+                         "Sector $worstSectorNum. Small gains here will drop your lap time."
             )
         }
     }
