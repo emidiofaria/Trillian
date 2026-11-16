@@ -147,7 +147,12 @@ class CoachTabTest {
         seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true)
         launchCoachTab()
 
-        onView(withId(R.id.sectorCaveat)).perform(scrollTo()).check(matches(isDisplayed()))
+        // The caveat is bound with the insights, asynchronously: wait for it like its
+        // hidden-case sibling does, instead of racing the first render.
+        awaitUntil("the sector caveat to be shown") {
+            runCatching { onView(withId(R.id.sectorCaveat)).perform(scrollTo()) }.isSuccess
+        }
+        onView(withId(R.id.sectorCaveat)).check(matches(isDisplayed()))
     }
 
     /**
