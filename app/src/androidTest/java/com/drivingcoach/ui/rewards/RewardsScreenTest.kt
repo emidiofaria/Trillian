@@ -31,6 +31,7 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Rule
@@ -147,6 +148,47 @@ class RewardsScreenTest {
         )
         onView(withId(R.id.continueButton)).perform(click())
         assertEquals(R.id.sessionResultFragment, navController.currentDestination?.id)
+    }
+
+    /**
+     * PG-19: system Back on the Rewards screen behaves like Continue. Rewards is reached
+     * from Recording, so a Back that simply popped would land on a finished recording.
+     */
+    @Test
+    fun backActsLikeContinue() {
+        val sessionId = seedSecondVisit()
+        val args = bundleOf("sessionId" to sessionId)
+        val navController = TestNavHostController(context)
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            navController.setGraph(R.navigation.nav_graph)
+            navController.setCurrentDestination(R.id.homeFragment)
+            navController.navigate(R.id.action_home_to_recording, args)
+            navController.navigate(R.id.action_recording_to_rewards, args)
+        }
+        assertEquals(R.id.rewardsFragment, navController.currentDestination?.id)
+        launchFragmentInHiltContainer<RewardsFragment>(args) {
+            Navigation.setViewNavController(requireView(), navController)
+            this@RewardsScreenTest.activity = requireActivity()
+        }
+
+        awaitUntil("the first pop-up") { overlayVisible() }
+        repeat(POPUPS) {
+            onView(withId(R.id.popupDismiss)).perform(click())
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        }
+        awaitOverlayGone()
+        assertEquals("dismissing pop-ups does not leave", R.id.rewardsFragment, navController.currentDestination?.id)
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            activity!!.onBackPressedDispatcher.onBackPressed()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        assertEquals(R.id.sessionResultFragment, navController.currentDestination?.id)
+        val stack = navController.currentBackStack.value.map { it.destination.id }
+        assertFalse("never back to Recording: $stack", R.id.recordingFragment in stack)
+        assertFalse("Rewards is gone from the stack: $stack", R.id.rewardsFragment in stack)
+        assertEquals(R.id.homeFragment, navController.previousBackStackEntry?.destination?.id)
     }
 
     private var activity: androidx.fragment.app.FragmentActivity? = null

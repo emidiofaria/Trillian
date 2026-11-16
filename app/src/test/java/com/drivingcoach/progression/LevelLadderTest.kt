@@ -76,4 +76,18 @@ class LevelLadderTest {
         assertEquals(listOf(Tier.BEGINNER, Tier.BEGINNER, Tier.MID, Tier.MID, Tier.PRO, Tier.PRO),
             LevelLadder.levels.map { it.tier })
     }
+
+    @Test
+    fun levelSixHasNoNextAndFullBar() {
+        val atThreshold = LevelLadder.progress(350.0, counts(bronze = 3, silver = 3, gold = 1))
+        assertEquals(6, atThreshold.current.number)
+        assertTrue(atThreshold.isMaxLevel)
+        assertNull(atThreshold.next)
+        assertTrue(atThreshold.requirements.isEmpty())
+        assertEquals("the bar is full at the top, not empty", 1.0, atThreshold.kmFraction, 0.0)
+        // One metre short of 350 km is still Level 5, with a bar just short of full.
+        val justShort = LevelLadder.progress(349.999, counts(bronze = 3, silver = 3, gold = 1))
+        assertEquals(5, justShort.current.number)
+        assertTrue(justShort.kmFraction < 1.0)
+    }
 }

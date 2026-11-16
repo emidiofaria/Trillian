@@ -10,6 +10,7 @@ import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.dao.SessionPreferenceDao
 import com.drivingcoach.data.db.dao.TrackDao
 import com.drivingcoach.data.db.dao.TrophyDao
+import com.drivingcoach.testing.FaultInjectingTrophyDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -62,6 +63,7 @@ object TestDatabaseModule {
 
     @Provides
     fun provideTrophyDao(database: DrivingCoachDatabase): TrophyDao {
-        return database.trophyDao()
+        // Behaves exactly like the real DAO unless a test sets ProgressionFaults.
+        return FaultInjectingTrophyDao(database.trophyDao())
     }
 }

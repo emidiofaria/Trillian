@@ -387,3 +387,36 @@ PG-22	TrophyRulesTest.laterSessionsAreNotHistory	Only earlier sessions are histo
 PG-23	ProgressionFormatTest.drivenKmRoundsDown	Driven km floored
 PG-23	ProgressionFormatTest.remainingKmRoundsUp	Remaining km rounded up
 PG-23	ProgressionFormatTest.secondsHaveThreeDecimals	Seconds with 3 decimals
+PG-05	TrophyRulesTest.exactlyFiveKmAndFiveLapsEarnsFinisher	Finisher at exactly 5 km and 5 laps
+PG-05	TrophyRulesTest.zeroOrOneLapAwardsNothingAndDoesNotCrash	Zero or one lap awards nothing, no crash
+PG-08	TrophyRulesTest.spreadExactlyAtThresholdIsNotAwarded	A spread exactly at 3.000/1.500/0.750 s is not that tier
+PG-08	TrophyRulesTest.fourLapsEarnNoConsistency	Fewer than 5 laps earn no consistency trophy
+PG-02	ProgressionGoalsTest.oneSessionCanCrossTwoLevels	One session can cross two levels; the final level is shown
+PG-15	LevelLadderTest.levelSixHasNoNextAndFullBar	Level 6 has no next level and a full bar
+PG-18	ProgressionGoalsTest.nextGoalAtLevelSixSaysMax	Career at Level 6 gives the top-level goal
+PG-07	CleanLapsTest.medianOddAndEven	Median for odd and even lap counts
+PG-07	CleanLapsTest.zeroDurationsIgnored	Zero-duration laps ignored
+PG-07	CleanLapsTest.fifteenPercentEdgeIsInclusive	15% of the median is inclusive
+OC-33	CleanLapsTest.emptyListReturnsEmpty	No laps gives no representative laps
+OC-33	CleanLapsTest.fifteenPercentEdgeIsInclusive	Shared median guard boundary
+PG-23	ProgressionTextTest.checklistLineShowsTickAndValue	Checklist km row with tick and driven value
+PG-23	ProgressionTextTest.checklistLineShowsMissingTrophyWithHowTo	Checklist trophy row with count and how-to
+PG-23	ProgressionTextTest.finisherHintSentence	Finisher hint wording
+PG-23	ProgressionTextTest.personalBestHintNamesTrackAndTime	PB hint names track and lap time
+PG-23	ProgressionTextTest.nextGoalSentencesForKmTrophyAndMax	Next-goal wording for km, trophy and max
+PG-23	ProgressionTextTest.recentProgressFasterSlowerFirstVisit	Recent-progress wording
+OC-34	ProgressionTextTest.consistencyHintUsesThreeDecimals	Spreads in seconds, 3 decimals
+OC-34	ProgressionTextTest.noDashBeforeAnyNumber	No dash directly before a number in any progression string
+OC-34	ProgressionTextTest.usesLocaleUsUnderGermanDefault	'.' decimals under a German locale
+PG-04	ProgressionRepositoryTest.missingTelemetryFallsBackToTrackLength	No trace: laps x catalogued track length
+PG-04	ProgressionRepositoryTest.customTrackWithoutLengthIsZeroKm	No trace and no track length: 0 km, no Finisher
+PG-10	ProgressionRepositoryTest.sidecarMergedCaveatLeavesOnlyFinisher	Merged-lap sidecar evidence leaves only The Finisher
+PG-21	ProgressionRepositoryTest.deletingSessionRemovesItsTrophies	Deleting a session cascades to its trophies and career
+PG-14	ProfileCareerTest.clearDataResetsCareerToRookie	Clear data resets to Rookie, 0 km, cabinet locked
+PG-15	ProfileCareerTest.clearDataResetsCareerToRookie	Checklist all unmet after Clear data
+PG-19	RewardsScreenTest.backActsLikeContinue	System Back acts as Continue, never back to Recording
+PG-18	HomeLevelCardTest.showsLevelAndNextGoal	Home shows level, km and next goal
+PG-18	HomeLevelCardTest.tappingLevelCardOpensProfile	Level card opens Profile
+PG-13	HomeLevelCardTest.openingHomeRunsHistoryReplayOnce	Opening Home replays history once only
+PG-12	StopToRewardsEndToEndTest.stopOpensRewardsWithTheFinisherAndContinueReachesSessionResult	Stop on a real replay opens Rewards with The Finisher, then Session Result
+PG-12	StopToRewardsEndToEndTest.awardFailureStillReachesSessionResult	Award failure: no trophies shown, Session Result still reached

@@ -61,6 +61,12 @@ M  docs/USER_MANUAL.md                      (+99, -1)
 M  docs/SYNC_REPORT.md                      (this entry)
 ```
 
+### Gap tests added (tests only, no production change)
+- **L1** — `TrophyRulesTest`: spreadExactlyAtThresholdIsNotAwarded, exactlyFiveKmAndFiveLapsEarnsFinisher, fourLapsEarnNoConsistency, zeroOrOneLapAwardsNothingAndDoesNotCrash. `LevelLadderTest`: levelSixHasNoNextAndFullBar. `ProgressionGoalsTest`: oneSessionCanCrossTwoLevels, nextGoalAtLevelSixSaysMax. New `CleanLapsTest`: medianOddAndEven, zeroDurationsIgnored, fifteenPercentEdgeIsInclusive, emptyListReturnsEmpty.
+- **L2** — New `ProgressionTextTest` (instrumented, since it needs real string resources and the project has no Robolectric): 9 tests covering checklist rows, the hint/next-goal/recent-progress wording, no dash before any number, and Locale.US under a German default. New `StopToRewardsEndToEndTest`: the Baltar replay from Stop to Rewards (The Finisher) to Session Result, and an award failure that still reaches the Session Result. New `HomeLevelCardTest`: showsLevelAndNextGoal, tappingLevelCardOpensProfile, openingHomeRunsHistoryReplayOnce. `ProgressionRepositoryTest`: missingTelemetryFallsBackToTrackLength, customTrackWithoutLengthIsZeroKm, sidecarMergedCaveatLeavesOnlyFinisher, deletingSessionRemovesItsTrophies. `ProfileCareerTest.clearDataResetsCareerToRookie`. `RewardsScreenTest.backActsLikeContinue`.
+- **Test infra** — `ProgressionSeed` takes `trackId` and `withTelemetry`. New `ProgressionFaults` with `FaultInjectingTrophyDao`, which `TestDatabaseModule` wraps around the real trophy DAO.
+- **Coverage map** — 33 claims added (PG-02/04/05/07/08/10/12/13/14/15/18/19/21/23, OC-33, OC-34).
+
 ---
 
 ## [2026-11-13] COACH tab — Tester Feedback: Dream Lap Always Shown, Gaps in Seconds

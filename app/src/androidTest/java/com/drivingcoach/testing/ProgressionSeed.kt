@@ -19,16 +19,28 @@ class ProgressionSeed(
 ) {
     val files = mutableListOf<File>()
 
-    suspend fun session(startedAt: Long, lapTimesMs: List<Long>, trackName: String = TRACK): Long {
+    /**
+     * @param trackId catalogue or saved-circuit id recorded on the session, if any
+     * @param withTelemetry false points the session at a telemetry file that does not
+     *   exist, as after the file was deleted, so distance must come from the fallback
+     */
+    suspend fun session(
+        startedAt: Long,
+        lapTimesMs: List<Long>,
+        trackName: String = TRACK,
+        trackId: String? = null,
+        withTelemetry: Boolean = true
+    ): Long {
         val durationMs = lapTimesMs.sum()
         val file = File(telemetryDir.apply { mkdirs() }, "progression_$startedAt.jsonl")
-        file.writeText(straightRun(startedAt, durationMs))
+        if (withTelemetry) file.writeText(straightRun(startedAt, durationMs)) else file.delete()
         files += file
 
         val id = sessionDao.insertSession(
             SessionEntity(
                 userId = "instrumented-user",
                 trackName = trackName,
+                trackId = trackId,
                 startedAt = startedAt,
                 endedAt = startedAt + durationMs,
                 rawFilePath = file.path,
@@ -56,6 +68,9 @@ class ProgressionSeed(
         )
         return id
     }
+
+    /** The session's telemetry file, whether or not it was written. */
+    fun telemetryFileFor(startedAt: Long): File = File(telemetryDir, "progression_$startedAt.jsonl")
 
     fun cleanUp() = files.forEach { it.delete() }
 

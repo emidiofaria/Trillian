@@ -1,5 +1,8 @@
 package com.drivingcoach.progression
 
+import com.drivingcoach.data.repository.SessionRewards
+import com.drivingcoach.ui.rewards.RewardPopup
+import com.drivingcoach.ui.rewards.RewardsViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -126,5 +129,50 @@ class ProgressionGoalsTest {
         assertEquals(RecentProgress.Slower("Baltar", 300L), ProgressionGoals.recentProgress(slower, listOf(first, faster)))
 
         assertEquals(RecentProgress.NoLaps, ProgressionGoals.recentProgress(session(4, emptyList()), listOf(first)))
+    }
+
+    /**
+     * Two Finishers and 20 km is a Rookie; one long session adding 31 km and a third
+     * Finisher clears both Novice (25 km, 1 Bronze) and Challenger (50 km, 3 Bronze).
+     * The level after is the final one, and the driver sees one LEVEL UP for it, not two.
+     */
+    @Test
+    fun oneSessionCanCrossTwoLevels() {
+        val earlier = listOf(session(1, emptyList(), 10_000.0), session(2, emptyList(), 10_000.0))
+        val earlierTrophies = listOf(trophy(1, TrophyType.FINISHER_BRONZE), trophy(2, TrophyType.FINISHER_BRONZE))
+        val long = session(3, emptyList(), 31_000.0)
+        val allTrophies = earlierTrophies + trophy(3, TrophyType.FINISHER_BRONZE)
+
+        val before = ProgressionGoals.career(earlier, earlierTrophies)
+        val after = ProgressionGoals.career(earlier + long, allTrophies)
+        assertEquals(1, before.progress.current.number)
+        assertEquals(3, after.progress.current.number)
+        assertEquals(NextGoal.DriveKm(4, 49.0), after.nextGoal)
+
+        val rewards = SessionRewards(
+            sessionId = 3, trackName = "Baltar", distanceKm = 31.0, lapCount = 0, bestLapMs = null,
+            consistencyStdDevMs = null, newTrophies = listOf(TrophyType.FINISHER_BRONZE),
+            before = before, after = after, recentProgress = RecentProgress.NoLaps
+        )
+        assertTrue(rewards.levelUp)
+        val popups = RewardsViewModel.popupsFor(rewards)
+        assertEquals(
+            listOf(RewardPopup.Trophy(TrophyType.FINISHER_BRONZE), RewardPopup.LevelUp(LevelLadder.levels[2])),
+            popups
+        )
+    }
+
+    @Test
+    fun nextGoalAtLevelSixSaysMax() {
+        val sessions = listOf(session(1, emptyList(), 400_000.0))
+        val trophies = List(3) { trophy(1, TrophyType.FINISHER_BRONZE) } +
+            List(3) { trophy(1, TrophyType.PB_SILVER) } + trophy(1, TrophyType.TRACK_MASTER_GOLD)
+        val career = ProgressionGoals.career(sessions, trophies)
+        assertEquals(6, career.progress.current.number)
+        assertEquals(NextGoal.MaxLevel, career.nextGoal)
+
+        // Without the Gold the same driver is Level 5 and is told exactly that one is missing.
+        val noGold = ProgressionGoals.career(sessions, trophies.filter { it.type != TrophyType.TRACK_MASTER_GOLD })
+        assertEquals(NextGoal.EarnTrophies(6, TrophyType.TRACK_MASTER_GOLD, 1), noGold.nextGoal)
     }
 }

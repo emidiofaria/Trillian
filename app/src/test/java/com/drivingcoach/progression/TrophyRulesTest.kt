@@ -132,4 +132,62 @@ class TrophyRulesTest {
         val counting = TrophyType.values().filter { it.countsTowardLevels }.toSet()
         assertEquals(setOf(TrophyType.FINISHER_BRONZE, TrophyType.PB_SILVER, TrophyType.TRACK_MASTER_GOLD), counting)
     }
+
+    /**
+     * Five laps whose deviations from a 60 s mean are ±1.5σ, ±0.5σ and 0, so the
+     * population stdDev is exactly σ (2·2.25σ² + 2·0.25σ² = 5σ²) with every term exact
+     * in floating point. The tiers are "under" a threshold, so σ itself must not qualify.
+     */
+    private fun lapsWithStdDev(sigmaMs: Long): List<Long> {
+        val big = sigmaMs * 3 / 2
+        val small = sigmaMs / 2
+        return listOf(60_000L + big, 60_000L - small, 60_000L, 60_000L + small, 60_000L - big)
+    }
+
+    @Test
+    fun spreadExactlyAtThresholdIsNotAwarded() {
+        listOf(3_000L, 1_500L, 750L).forEach { sigma ->
+            assertEquals(sigma.toDouble(), TrophyRules.populationStdDev(lapsWithStdDev(sigma)), 0.0)
+        }
+        val atBronze = types(session(1, lapsWithStdDev(3_000L)))
+        assertTrue("exactly 3.000 s earns no consistency trophy: $atBronze",
+            atBronze.none { !it.countsTowardLevels })
+        assertEquals(setOf(TrophyType.CONSISTENCY_BRONZE) + TrophyType.FINISHER_BRONZE,
+            types(session(1, lapsWithStdDev(1_500L))))
+        assertEquals(setOf(TrophyType.CONSISTENCY_SILVER) + TrophyType.FINISHER_BRONZE,
+            types(session(1, lapsWithStdDev(750L))))
+        // One millisecond under each threshold reaches the tier, so the boundary is the only cause.
+        assertEquals(TrophyType.CONSISTENCY_BRONZE, TrophyRules.consistencyTierFor(
+            TrophyRules.populationStdDev(lapsWithStdDev(3_000L)) - 1.0))
+    }
+
+    @Test
+    fun exactlyFiveKmAndFiveLapsEarnsFinisher() {
+        val awarded = TrophyRules.evaluate(session(1, ragged, distanceM = 5_000.0), emptyList())
+        val finisher = awarded.single { it.type == TrophyType.FINISHER_BRONZE }
+        assertEquals("the Finisher records the distance in metres", 5_000L, finisher.value)
+        assertTrue(TrophyType.FINISHER_BRONZE !in types(session(1, ragged.take(4), distanceM = 5_000.0)))
+    }
+
+    @Test
+    fun fourLapsEarnNoConsistency() {
+        val four = List(4) { 60_000L }
+        assertNull(TrophyRules.steadiestWindowStdDevMs(four))
+        assertTrue(types(session(1, four)).isEmpty())
+        // The same identical laps, one more of them, are Gold: only the count withheld it.
+        assertTrue(TrophyType.CONSISTENCY_GOLD in types(session(1, four + 60_000L)))
+    }
+
+    @Test
+    fun zeroOrOneLapAwardsNothingAndDoesNotCrash() {
+        val none = session(1, emptyList(), distanceM = 12_000.0)
+        assertNull(none.credibleBestMs)
+        assertNull(TrophyRules.steadiestWindowStdDevMs(none.lapDurationsMs))
+        assertTrue(TrophyRules.evaluate(none, emptyList()).isEmpty())
+        assertTrue(TrophyRules.evaluate(none, listOf(session(0, ragged))).isEmpty())
+
+        val one = session(2, listOf(61_000L), distanceM = 12_000.0)
+        assertEquals(61_000L, one.credibleBestMs)
+        assertTrue(TrophyRules.evaluate(one, emptyList()).isEmpty())
+    }
 }
