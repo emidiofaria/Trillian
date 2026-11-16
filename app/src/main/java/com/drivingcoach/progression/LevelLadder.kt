@@ -5,19 +5,33 @@ enum class Tier { BEGINNER, MID, PRO }
 
 /**
  * One rung. A driver holds it when lifetime distance reaches [minKm] **and** they own at
- * least [trophyCount] of [trophy] — and every rung below is held too.
+ * least [trophyCount] trophies of [metal] or better — and every rung below is held too.
  */
 data class LevelDef(
     val number: Int,
     val tier: Tier,
     val minKm: Double,
-    val trophy: TrophyType?,
+    val metal: TrophyType.Metal?,
     val trophyCount: Int
 )
 
-/** Cumulative counts of each trophy type the driver owns. */
+/** Cumulative counts of each trophy type the driver owns (medals included, never counted). */
 data class TrophyCounts(val counts: Map<TrophyType, Int> = emptyMap()) {
     operator fun get(type: TrophyType): Int = counts[type] ?: 0
+
+    /**
+     * Level trophies of [metal] or a higher metal (PG-02 upward compatibility): a Gold counts
+     * as a Silver or a Bronze. Each trophy counts once, so this is a plain count, never a sum
+     * over requirements. Medals have no metal and never count.
+     */
+    fun atLeast(metal: TrophyType.Metal): Int =
+        counts.entries.sumOf { (type, n) ->
+            val m = type.metal
+            if (type.countsTowardLevels && m != null && m.ordinal >= metal.ordinal) n else 0
+        }
+
+    /** Every level trophy owned, any metal. */
+    val levelTrophies: Int get() = atLeast(TrophyType.Metal.BRONZE)
 
     companion object {
         fun of(types: Iterable<TrophyType>): TrophyCounts =
@@ -33,7 +47,7 @@ sealed class Requirement {
         override val met: Boolean get() = currentKm >= targetKm
     }
 
-    data class Trophies(val type: TrophyType, val target: Int, val current: Int) : Requirement() {
+    data class Trophies(val metal: TrophyType.Metal, val target: Int, val current: Int) : Requirement() {
         override val met: Boolean get() = current >= target
     }
 }
@@ -56,18 +70,19 @@ data class LevelProgress(
 }
 
 /**
- * The six-level ladder (SRS PG-01, PG-02). The level is never stored: it is recomputed
+ * The seven-level ladder (SRS PG-01, PG-02). The level is never stored: it is recomputed
  * from lifetime distance and trophy counts, so it can never disagree with them.
  */
 object LevelLadder {
 
     val levels: List<LevelDef> = listOf(
         LevelDef(1, Tier.BEGINNER, 0.0, null, 0),
-        LevelDef(2, Tier.BEGINNER, 25.0, TrophyType.FINISHER_BRONZE, 1),
-        LevelDef(3, Tier.MID, 50.0, TrophyType.FINISHER_BRONZE, 3),
-        LevelDef(4, Tier.MID, 100.0, TrophyType.PB_SILVER, 1),
-        LevelDef(5, Tier.PRO, 200.0, TrophyType.PB_SILVER, 3),
-        LevelDef(6, Tier.PRO, 350.0, TrophyType.TRACK_MASTER_GOLD, 1)
+        LevelDef(2, Tier.BEGINNER, 8.0, null, 0),
+        LevelDef(3, Tier.MID, 24.0, TrophyType.Metal.BRONZE, 1),
+        LevelDef(4, Tier.MID, 56.0, TrophyType.Metal.BRONZE, 3),
+        LevelDef(5, Tier.PRO, 120.0, TrophyType.Metal.SILVER, 1),
+        LevelDef(6, Tier.PRO, 240.0, TrophyType.Metal.SILVER, 3),
+        LevelDef(7, Tier.PRO, 450.0, TrophyType.Metal.GOLD, 1)
     )
 
     val maxLevel: Int get() = levels.last().number
@@ -78,7 +93,7 @@ object LevelLadder {
     fun requirementsOf(level: LevelDef, lifetimeKm: Double, counts: TrophyCounts): List<Requirement> {
         val list = ArrayList<Requirement>(2)
         if (level.minKm > 0.0) list += Requirement.Distance(level.minKm, lifetimeKm)
-        level.trophy?.let { list += Requirement.Trophies(it, level.trophyCount, counts[it]) }
+        level.metal?.let { list += Requirement.Trophies(it, level.trophyCount, counts.atLeast(it)) }
         return list
     }
 

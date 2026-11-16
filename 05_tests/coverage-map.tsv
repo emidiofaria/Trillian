@@ -327,13 +327,20 @@ UI-12	BuildVersionTest.the version code is derived from the version name	The Abo
 UI-12	BuildVersionTest.the minor component leaves room for the next release	The major*100 scheme is not silently overrun
 
 # --- Progression (v3.07) ---
-PG-01	LevelLadderTest.ladderDefinition	Six levels, tiers and thresholds as specified
-PG-01	LevelLadderTest.eachLevelAtItsThresholds	Each level reached exactly at its km and trophy thresholds
-PG-02	LevelLadderTest.kmMetButTrophyMissingStaysLower	Distance alone does not promote
-PG-02	LevelLadderTest.trophyMetButKmMissingStaysLower	Trophies alone do not promote
-PG-02	LevelLadderTest.ladderIsSequential	A higher level's conditions cannot skip a lower one
-PG-02	TrophyRulesTest.onlyMainTrophiesCountTowardLevels	Consistency trophies never count
-PG-02	ProgressionGoalsTest.consistencyTrophiesDoNotUnlockLevels	Career ignores consistency trophies for levels
+PG-21	DrivingCoachDatabaseMigrationTest.migrate5To6_keepsSessionsWithNoDistanceAndAnEmptyCabinet	5 to 6 keeps sessions
+PG-21	DrivingCoachDatabaseMigrationTest.migrateAllTheWayFrom1	Full chain to version 6
+PG-01	LevelLadderTest.ladderDefinition	Seven levels, tiers, km and trophy gates as specified
+PG-01	LevelLadderTest.distanceOnlyLevelsAtTheirThreshold	Cadet at 8 km with no trophy
+PG-01	LevelLadderTest.eachLevelOnBothSidesOfItsDistanceGate	Every km gate, both sides
+PG-01	LevelLadderTest.eachLevelOnBothSidesOfItsTrophyGate	Every trophy gate, both sides
+PG-01	ProgressionTextTest.roadmapNamesSevenLevelsAndTheirGates	Seven names and gates as shown
+PG-02	LevelLadderTest.higherMetalCountsTowardLowerRequirements	Upward compatibility: Gold counts as Silver or Bronze
+PG-02	LevelLadderTest.eachTrophyCountsOnceNotOncePerRequirement	450 km and one Gold is Novice
+PG-02	LevelLadderTest.medalsNeverCount	Medals never unlock levels
+PG-02	LevelLadderTest.kmMetButTrophyMissingShowsWhatIsMissing	Distance alone does not promote
+PG-02	ProgressionGoalsTest.medalsAloneDoNotUnlockTrophyLevels	Career ignores medals for levels
+PG-02	ProgressionGoalsTest.oneSessionCanCrossTwoLevels	One session can cross two levels
+PG-02	TrophyRulesTest.trophiesAndMedalsAreTwoCategories	Category and metal derived from the type
 PG-03	SessionDistanceTest.sumsMovingSegments	Haversine sum of moving segments
 PG-03	SessionDistanceTest.ignoresStationaryJitter	Under 5 km/h adds nothing
 PG-03	SessionDistanceTest.ignoresStationaryJitterWithoutReportedSpeed	Implied speed used when none reported
@@ -345,81 +352,135 @@ PG-03	SessionDistanceTest.realBaltarSessionMeasuresPlausibly	Real recorded sessi
 PG-03	ProgressionRepositoryTest.awardingTwiceStoresEachTrophyOnce	Distance stored on the session in Room
 PG-04	SessionDistanceTest.missingFileIsNull	Missing telemetry yields no trace distance
 PG-04	SessionDistanceTest.fallbackUsesTrackLength	Laps x track length, else 0
-PG-05	TrophyRulesTest.finisherNeedsFiveKmAndFiveLaps	Both thresholds required
-PG-06	TrophyRulesTest.noPersonalBestOnFirstVisit	No PB without a previous time
-PG-06	TrophyRulesTest.personalBestBeatsEarlierSessionsOnSameTrackOnly	Same track key only
-PG-06	TrophyRulesTest.equalTimeIsNotAPersonalBest	Strictly faster
-PG-06	TrophyRulesTest.trackKeyPrefersIdAndNormalisesName	Track key normalisation
-PG-06	ProgressionRepositoryTest.theFirstVisitToATrackIsNeverAPersonalBest	First visit, end to end against Room
-PG-07	TrophyRulesTest.splitHalfLapCannotFakePersonalBest	Credible best within 15% of the median
-PG-08	TrophyRulesTest.consistencyAwardsHighestTierOnly	One consistency trophy per session
-PG-08	TrophyRulesTest.consistencyTiers	3.000 s, 1.500 s, 0.750 s tiers
-PG-08	TrophyRulesTest.consistencyUsesSteadiestFiveConsecutiveLaps	Steadiest 5-lap window
-PG-08	TrophyRulesTest.stdDevIsPopulation	Population standard deviation
-PG-09	TrophyRulesTest.trackMasterIsPersonalBestPlusConsistencyGold	Gold needs PB and Consistency Gold
-PG-10	TrophyRulesTest.mergedLapCaveatKeepsOnlyFinisher	Untrusted lap boundaries keep only The Finisher
+PG-04	ProgressionRepositoryTest.missingTelemetryFallsBackToTrackLength	No trace: laps x catalogued track length
+PG-04	ProgressionRepositoryTest.customTrackWithoutLengthIsZeroKm	No trace and no track length: 0 km, no Finisher
+PG-05	TrophyRulesTest.finisherNeedsFiveKmAndFiveValidLaps	5 km and 5 valid laps, both sides
+PG-05	TrophyRulesTest.finisherDoesNotCountInvalidLaps	Invalid laps do not count
+PG-05	TrophyRulesTest.validBandIsInclusiveAt85And115Percent	Valid lap band 85/115 %, both sides
+PG-05	TrophyRulesTest.validLapsAreJudgedAgainstTheSessionMedian	Median of the session
+PG-06	TrophyRulesTest.noPaceSetterOnFirstVisit	No Pace Setter without a previous time
+PG-06	TrophyRulesTest.paceSetterBeatsEarlierSessionsOnSameTrackOnly	Same track key only
+PG-06	TrophyRulesTest.equalTimeIsNotAPaceSetter	Strictly faster
+PG-06	TrophyRulesTest.splitHalfLapCannotFakePaceSetter	Only valid laps can set a PB
+PG-06	ProgressionRepositoryTest.theFirstVisitToATrackHasNoComparisonAwards	First visit, end to end against Room
+PG-06	ProgressionRepositoryTest.aSecondVisitEarnsPaceSetterAndTopGun	Second visit, end to end against Room
+PG-07	TrophyRulesTest.plateauBreakerNeedsThePbToHaveStoodFor15ValidLaps	15 vs 14 laps
+PG-07	TrophyRulesTest.plateauCountsLapsInSessionsBetween	Laps of sessions in between count
+PG-07	TrophyRulesTest.plateauNeedsAPbToBreak	Needs an earlier PB
+PG-07	TrophyRulesTest.invalidLapsDoNotExtendThePlateau	Only valid laps count
+PG-08	TrophyRulesTest.cvIsPopulationStdDevOverMean	CV definition
+PG-08	TrophyRulesTest.steadyHandBoundaryAt3Percent	3.0 %, both sides
+PG-08	TrophyRulesTest.metronomeBoundaryAt1Point5Percent	1.5 %, both sides
+PG-08	TrophyRulesTest.surgicalBoundaryAt0Point75Percent	0.75 %, both sides
+PG-08	TrophyRulesTest.onlyTheHighestConsistencyTierIsAwarded	One consistency trophy per session
+PG-08	TrophyRulesTest.cvUsesTheBestWindowOfFiveConsecutiveValidLaps	Best window of 5 consecutive valid laps
+PG-08	TrophyRulesTest.consistencyValueIsCvInHundredthsOfAPercent	Stored evidence
+PG-09	TrophyRulesTest.apexExitBoundaryAt1PercentOfSessionTop	Apex Exit 1.0 %, both sides
+PG-09	TrophyRulesTest.apexExitNeedsFiveConsecutiveLapsWithSpeed	Five consecutive laps with a speed
+PG-09	TrophyRulesTest.apexExitWindowNeedNotContainTheTopLap	Window vs session top
+PG-09	ApexExitFixtureMeasurementTest.apexExitOnRealRecordings	Measured on the five real recordings
+PG-09	TrophyRulesTest.theoreticalBestIsTheSumOfBestSectors	TBL definition
+PG-09	TrophyRulesTest.optimalLapBoundaryAtHalfAPercentOfTheoreticalBest	Optimal Lap 0.5 %, both sides
+PG-09	TrophyRulesTest.optimalLapNeeds20LifetimeValidLapsOnTheTrack	20 lifetime valid laps, both sides
+PG-09	TrophyRulesTest.sectorsThatDoNotAddUpAreIgnored	Inconsistent sectors ignored
+PG-10	TrophyRulesTest.untrustedSessionEarnsOnlyTheFinisher	Untrusted lap boundaries keep only The Finisher
+PG-10	TrophyRulesTest.untrustedHistoryIsNotAPersonalBest	Untrusted sessions are not history
+PG-10	MedalRulesTest.untrustedSessionEarnsNoMedals	No medals for untrusted sessions
+PG-10	ProgressionRepositoryTest.sidecarMergedCaveatLeavesOnlyFinisher	Merged-lap sidecar evidence leaves only The Finisher
 PG-11	ProgressionRepositoryTest.awardingTwiceStoresEachTrophyOnce	Idempotent awarding
-PG-12	RewardsScreenTest.trophiesPopOneAtATimeThenLevelUpThenTheSummary	Awarded session shown on Rewards
-PG-13	ProgressionRepositoryTest.historyReplayIsSilentChronologicalAndOneOff	One-off replay; sessions without laps get distance only
-PG-22	ProgressionRepositoryTest.historyReplayIsSilentChronologicalAndOneOff	Replay is chronological, not insertion order
-PG-14	ProgressionGoalsTest.careerSumsDistanceAndCountsOnlyMainTrophies	Lifetime km is the sum of sessions
-PG-14	ProgressionRepositoryTest.careerSumsDistanceAndCountsOnlyMainTrophies	Lifetime km from Room
+PG-12	RewardsScreenTest.trophiesPopOneAtATimeThenMilestoneThenLevelUpThenTheSummary	Awarded session shown on Rewards
+PG-12	StopToRewardsEndToEndTest.stopOpensRewardsWithTheFinisherAndContinueReachesSessionResult	Stop on a real replay opens Rewards with The Finisher
+PG-12	StopToRewardsEndToEndTest.awardFailureStillReachesSessionResult	Award failure: no trophies shown, Session Result still reached
+PG-13	ProgressionRepositoryTest.recomputeReplacesOldTrophiesChronologicallyAndOnce	Old types deleted, re-awarded oldest first, once
+PG-13	CareerRecomputeTest.recomputeIsIdempotent	Same input, same rows
+PG-13	HomeLevelCardTest.openingHomeRunsRecomputeOnce	Opening Home recomputes once only
+PG-14	ProgressionGoalsTest.careerSumsDistanceAndCountsOnlyLevelTrophies	Lifetime km is the sum of sessions
+PG-14	ProgressionRepositoryTest.careerSumsDistanceAndCountsOnlyLevelTrophies	Lifetime km from Room
+PG-14	ProfileCareerTest.clearDataResetsCareerToRookie	Clear data resets to Rookie, 0 km, cabinet locked
 PG-15	ProfileCareerTest.levelCardShowsTheNextLevelChecklist	Checklist with met and unmet rows
-PG-15	ProfileCareerTest.roadmapListsAllSixLevels	Six-level roadmap
+PG-15	ProfileCareerTest.roadmapListsAllSevenLevels	Seven-level roadmap
+PG-15	ProfileCareerTest.clearDataResetsCareerToRookie	Checklist all unmet after Clear data
 PG-15	LevelLadderTest.progressFractionWithinBand	Progress bar between thresholds
-PG-15	LevelLadderTest.progressFractionClampsWhenKmBeyondNextThreshold	Bar clamps when km is ahead of trophies
-PG-15	LevelLadderTest.maxLevelHasNoNext	No next level at Master
+PG-15	LevelLadderTest.levelSevenHasNoNextAndFullBar	No next level at Track Legend
+PG-15	ProgressionTextTest.checklistLineShowsMissingMetalWithExamples	Trophy checklist row
+PG-16	ProgressionGoalsTest.everyLevelTrophyHasAHint	A hint for each of the eight trophies
 PG-16	ProgressionGoalsTest.finisherHintIsBestAttempt	Best Finisher attempt
 PG-16	ProgressionGoalsTest.finisherHintEmptyWithoutSessions	No hint without history
-PG-16	ProgressionGoalsTest.consistencyHintUsesSteadiestTrustedWindow	Steadiest window vs next tier
+PG-16	ProgressionGoalsTest.consistencyHintIsBestTrustedCvAgainstEachThreshold	Best CV vs each tier
 PG-16	ProgressionGoalsTest.personalBestHintIsBestAtMostRecentTrack	Best lap to beat
-PG-17	ProgressionGoalsTest.cabinetHasSixTilesWithLastAward	Six tiles with count, date and track
-PG-17	ProfileCareerTest.cabinetShowsEarnedAndLockedTrophies	Earned count and how-to-win on screen
+PG-16	ProgressionGoalsTest.plateauHintCountsValidLapsSinceThePb	Laps since the PB vs 15
+PG-16	ProgressionGoalsTest.optimalHintCountsLifetimeValidLapsAtTheLatestTrack	Valid laps vs 20 and gap to TBL
+PG-16	ProgressionGoalsTest.apexHintWithoutSpeedsIsEmpty	No speeds, no Apex reading
+PG-16	ProgressionTextTest.consistencyHintQuotesBestCvAgainstTheTier	"Your best CV 2.10% · need under 1.50%"
+PG-16	ProgressionTextTest.personalBestPlateauApexAndOptimalHints	Hint wording
+PG-17	ProgressionGoalsTest.cabinetHasEveryTrophyAndMedalWithLastAward	14 entries with count, date and track
+PG-17	ProfileCareerTest.cabinetShowsEightTrophiesThenSixMedals	Eight trophies, medals header, six medals on screen
 PG-18	ProgressionGoalsTest.nextGoalIsKmWhenKmShort	Kilometres first when short
-PG-18	ProgressionGoalsTest.nextGoalIsMissingTrophyWhenKmMet	Missing trophy when km met
+PG-18	ProgressionGoalsTest.nextGoalIsMissingTrophyWhenKmMet	Missing trophies when km met
+PG-18	ProgressionGoalsTest.nextGoalTrophyCountUsesUpwardCompatibility	Remaining count uses metal or better
 PG-18	ProgressionGoalsTest.nextGoalPrefersKmWhenBothMissing	Deterministic order
 PG-18	ProgressionGoalsTest.nextGoalAtMaxLevel	Top-level message
-PG-19	RewardsScreenTest.trophiesPopOneAtATimeThenLevelUpThenTheSummary	Pop-ups in turn, level up, summary
+PG-18	ProgressionGoalsTest.nextGoalAtLevelSevenSaysMax	Career at Level 7 gives the top-level goal
+PG-18	HomeLevelCardTest.showsLevelAndNextGoal	Home shows level, km and next goal
+PG-18	HomeLevelCardTest.nextGoalAsksForTheMissingTrophyWhenTheKmAreThere	Home asks for the missing Bronze
+PG-18	HomeLevelCardTest.tappingLevelCardOpensProfile	Level card opens Profile
+PG-18	ProgressionTextTest.nextGoalSentencesForKmTrophyAndMax	Next-goal wording
+PG-19	RewardsScreenTest.trophiesPopOneAtATimeThenMilestoneThenLevelUpThenTheSummary	Trophy pop-ups, milestone, level up, medals, summary
 PG-19	RewardsScreenTest.continueReplacesRewardsWithTheSessionResult	Continue reaches Session Result, Rewards popped
-PG-19	RewardsScreenTest.aSessionWithoutTrophiesSaysSoAndStillContinues	No-trophy session
+PG-19	RewardsScreenTest.aSessionWithoutTrophiesSaysSoAndStillContinues	No-trophy, no-medal session
+PG-19	RewardsScreenTest.backActsLikeContinue	System Back acts as Continue, never back to Recording
+PG-19	ProgressionGoalsTest.medalsAndNoLevelUpGiveNoPopups	Medals never pop up
+PG-19	ProgressionRepositoryTest.rewardsSeparateTrophiesMedalsAndMilestones	Rewards data from Room
 PG-20	ProgressionGoalsTest.recentProgressFasterSlowerFirst	Faster, slower, first time
-PG-20	RewardsScreenTest.trophiesPopOneAtATimeThenLevelUpThenTheSummary	Faster message on screen
-PG-21	DrivingCoachDatabaseMigrationTest.migrate5To6_keepsSessionsWithNoDistanceAndAnEmptyCabinet	5 to 6 keeps sessions
-PG-21	DrivingCoachDatabaseMigrationTest.migrateAllTheWayFrom1	Full chain to version 6
+PG-20	ProgressionTextTest.recentProgressFasterSlowerFirstVisit	Recent-progress wording
+PG-20	RewardsScreenTest.trophiesPopOneAtATimeThenMilestoneThenLevelUpThenTheSummary	Faster message on screen
+PG-21	ProgressionRepositoryTest.deletingSessionRemovesItsTrophies	Deleting a session cascades to its trophies and career
 PG-22	TrophyRulesTest.laterSessionsAreNotHistory	Only earlier sessions are history
+PG-22	CareerRecomputeTest.everySessionIsAwardedAgainstOnlyItsPast	Recompute equals award-at-stop
+PG-22	CareerRecomputeTest.inputOrderDoesNotMatter	Chronological, not insertion order
+PG-22	CareerRecomputeTest.aLaterSessionNeverChangesEarlierAwards	Later sessions never rewrite earlier awards
 PG-23	ProgressionFormatTest.drivenKmRoundsDown	Driven km floored
 PG-23	ProgressionFormatTest.remainingKmRoundsUp	Remaining km rounded up
 PG-23	ProgressionFormatTest.secondsHaveThreeDecimals	Seconds with 3 decimals
-PG-05	TrophyRulesTest.exactlyFiveKmAndFiveLapsEarnsFinisher	Finisher at exactly 5 km and 5 laps
-PG-05	TrophyRulesTest.zeroOrOneLapAwardsNothingAndDoesNotCrash	Zero or one lap awards nothing, no crash
-PG-08	TrophyRulesTest.spreadExactlyAtThresholdIsNotAwarded	A spread exactly at 3.000/1.500/0.750 s is not that tier
-PG-08	TrophyRulesTest.fourLapsEarnNoConsistency	Fewer than 5 laps earn no consistency trophy
-PG-02	ProgressionGoalsTest.oneSessionCanCrossTwoLevels	One session can cross two levels; the final level is shown
-PG-15	LevelLadderTest.levelSixHasNoNextAndFullBar	Level 6 has no next level and a full bar
-PG-18	ProgressionGoalsTest.nextGoalAtLevelSixSaysMax	Career at Level 6 gives the top-level goal
-PG-07	CleanLapsTest.medianOddAndEven	Median for odd and even lap counts
-PG-07	CleanLapsTest.zeroDurationsIgnored	Zero-duration laps ignored
-PG-07	CleanLapsTest.fifteenPercentEdgeIsInclusive	15% of the median is inclusive
+PG-23	ProgressionFormatTest.percentHasTwoDecimals	CV and spreads with 2 decimals
+PG-23	ProgressionTextTest.checklistLineShowsTickAndValue	Checklist km row with tick and driven value
+PG-23	ProgressionTextTest.howToWinCarriesEveryThresholdFromTheRules	Every threshold quoted from the rules
+PG-23	ProgressionTextTest.trophyNamesCarryTheirMetalAndMedalsDoNot	Name with metal
+PG-23	ProgressionTextTest.finisherHintSentence	Finisher hint wording
+PG-24	MedalRulesTest.purpleSectorIsANewAllTimeBestSector	New best sector
+PG-24	MedalRulesTest.equalSectorIsNotPurple	Strictly faster
+PG-24	MedalRulesTest.noPurpleSectorOnFirstVisit	From the second visit
+PG-25	MedalRulesTest.carbonCopyBoundaryAt0Point75Percent	0.75 %, both sides
+PG-25	MedalRulesTest.carbonCopyNeedsConsecutiveValidLaps	Consecutive valid laps
+PG-25	MedalRulesTest.cleanAirBoundaryAt5PercentOfTheMedian	5.0 %, both sides
+PG-25	MedalRulesTest.cleanAirNeedsFiveInARow	Five in a row
+PG-26	MedalRulesTest.topGunBoundaryAtHalfAKmhBelowTheTrackRecord	0.5 km/h, both sides
+PG-26	MedalRulesTest.noTopGunOnFirstVisitOrOverAnotherTrack	From the second visit, same track
+PG-26	MedalRulesTest.untrustedSessionIsNotATopSpeedRecord	Untrusted sessions are not history
+PG-26	ProgressionRepositoryTest.aSecondVisitEarnsPaceSetterAndTopGun	Top Gun from Room telemetry
+PG-27	MedalRulesTest.lateChargerIsTheFastestLapInTheLastThree	Fastest in the last 3
+PG-27	MedalRulesTest.lateChargerNeedsFiveValidLaps	At least 5 valid laps
+PG-27	MedalRulesTest.anInLapDoesNotHideALateCharge	Invalid in-lap ignored
+PG-27	MedalRulesTest.fullStintBoundaryAt8Km	8.0 km, both sides
+PG-28	MedalRulesTest.medalsNeverCountTowardLevels	Medals are not level trophies
+PG-28	ProfileViewModelTest.the trophies stat counts level trophies only	Profile trophy count excludes medals
+PG-29	OdometerMilestonesTest.stepIsEightKm	8 km step
+PG-29	OdometerMilestonesTest.crossingTheFirstBoundary	Crossing 8 km
+PG-29	OdometerMilestonesTest.aBoundaryIsCelebratedOnlyOnce	Each boundary once
+PG-29	OdometerMilestonesTest.oneLongSessionCrossesSeveral	Several in one session
+PG-29	OdometerMilestonesTest.noDistanceNoMilestone	No distance, no milestone
+PG-29	ProgressionRepositoryTest.rewardsSeparateTrophiesMedalsAndMilestones	Milestones 8, then 16 and 24
+DP-07	ProfileViewModelTest.the shared user id is the one the recorder has always written	LocalUser.ID pinned to the recorder's value
+DP-07	ProfileViewModelTest.stats come from the sessions the recorder wrote	Fails with the old demo_user id
+DP-07	ProfileViewModelTest.sessions of another user are not counted	The user filter is live
+DP-07	ProfileCareerTest.statsShowDrivenKmHoursAndTrophies	Real Room rows under LocalUser.ID show on Profile
+DP-11	ProfileCareerTest.statsShowDrivenKmHoursAndTrophies	Driven km, hours driven, trophies on screen
+DP-11	ProfileViewModelTest.the trophies stat counts level trophies only	Medals excluded
+DP-11	ProgressionFormatTest.underAnHourIsWholeMinutesRoundedDown	Minutes below one hour
+DP-11	ProgressionFormatTest.anHourOrMoreIsHoursWithOneDecimalRoundedDown	Hours with one decimal
+DP-11	ProgressionTextTest.drivenTimeIsMinutesThenHours	"59 min", "2.4 h"
+OC-34	ProgressionTextTest.consistencyHintQuotesBestCvAgainstTheTier	Percent with 2 decimals, Locale.US
 OC-33	CleanLapsTest.emptyListReturnsEmpty	No laps gives no representative laps
 OC-33	CleanLapsTest.fifteenPercentEdgeIsInclusive	Shared median guard boundary
-PG-23	ProgressionTextTest.checklistLineShowsTickAndValue	Checklist km row with tick and driven value
-PG-23	ProgressionTextTest.checklistLineShowsMissingTrophyWithHowTo	Checklist trophy row with count and how-to
-PG-23	ProgressionTextTest.finisherHintSentence	Finisher hint wording
-PG-23	ProgressionTextTest.personalBestHintNamesTrackAndTime	PB hint names track and lap time
-PG-23	ProgressionTextTest.nextGoalSentencesForKmTrophyAndMax	Next-goal wording for km, trophy and max
-PG-23	ProgressionTextTest.recentProgressFasterSlowerFirstVisit	Recent-progress wording
-OC-34	ProgressionTextTest.consistencyHintUsesThreeDecimals	Spreads in seconds, 3 decimals
 OC-34	ProgressionTextTest.noDashBeforeAnyNumber	No dash directly before a number in any progression string
 OC-34	ProgressionTextTest.usesLocaleUsUnderGermanDefault	'.' decimals under a German locale
-PG-04	ProgressionRepositoryTest.missingTelemetryFallsBackToTrackLength	No trace: laps x catalogued track length
-PG-04	ProgressionRepositoryTest.customTrackWithoutLengthIsZeroKm	No trace and no track length: 0 km, no Finisher
-PG-10	ProgressionRepositoryTest.sidecarMergedCaveatLeavesOnlyFinisher	Merged-lap sidecar evidence leaves only The Finisher
-PG-21	ProgressionRepositoryTest.deletingSessionRemovesItsTrophies	Deleting a session cascades to its trophies and career
-PG-14	ProfileCareerTest.clearDataResetsCareerToRookie	Clear data resets to Rookie, 0 km, cabinet locked
-PG-15	ProfileCareerTest.clearDataResetsCareerToRookie	Checklist all unmet after Clear data
-PG-19	RewardsScreenTest.backActsLikeContinue	System Back acts as Continue, never back to Recording
-PG-18	HomeLevelCardTest.showsLevelAndNextGoal	Home shows level, km and next goal
-PG-18	HomeLevelCardTest.tappingLevelCardOpensProfile	Level card opens Profile
-PG-13	HomeLevelCardTest.openingHomeRunsHistoryReplayOnce	Opening Home replays history once only
-PG-12	StopToRewardsEndToEndTest.stopOpensRewardsWithTheFinisherAndContinueReachesSessionResult	Stop on a real replay opens Rewards with The Finisher, then Session Result
-PG-12	StopToRewardsEndToEndTest.awardFailureStillReachesSessionResult	Award failure: no trophies shown, Session Result still reached

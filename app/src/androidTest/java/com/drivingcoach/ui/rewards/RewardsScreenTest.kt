@@ -10,7 +10,9 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.scrollTo
 import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.Visibility
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -41,11 +43,12 @@ import java.io.File
 import javax.inject.Inject
 
 /**
- * L2 (ASPICE SWE.5) coverage for the Rewards screen: SRS PG-12, PG-19, PG-20.
+ * L2 (ASPICE SWE.5) coverage for the Rewards screen: SRS PG-12, PG-19, PG-20, PG-28 … PG-31.
  *
- * The second visit to a track beats the first by two seconds with six identical laps,
- * which earns The Finisher, Personal Best, Consistency Gold and Track Master, and
- * crosses 25 km with a Bronze already in hand, so Novice is reached too.
+ * The second visit to a track beats the first by two seconds with six identical laps at the
+ * same top speed. That earns The Finisher, Pace Setter, Surgical and Apex Exit; the Carbon
+ * Copy, Top Gun, Clean Air and Full Stint medals; it takes the odometer from 14.4 to 28.3 km,
+ * past the 16 and 24 km milestones, and with a Bronze in hand reaches Level 3 · Novice.
  */
 @LargeTest
 @HiltAndroidTest
@@ -73,27 +76,34 @@ class RewardsScreenTest {
     fun tearDown() = seed.cleanUp()
 
     @Test
-    fun trophiesPopOneAtATimeThenLevelUpThenTheSummary() {
+    fun trophiesPopOneAtATimeThenMilestoneThenLevelUpThenTheSummary() {
         val sessionId = seedSecondVisit()
         val rewards = runBlocking { progression.rewards(sessionId)!! }
         val awarded = rewards.newTrophies
         assertEquals(
-            setOf(
-                TrophyType.FINISHER_BRONZE, TrophyType.PB_SILVER,
-                TrophyType.CONSISTENCY_GOLD, TrophyType.TRACK_MASTER_GOLD
-            ),
-            awarded.toSet()
+            listOf(TrophyType.FINISHER, TrophyType.PACE_SETTER, TrophyType.APEX_EXIT, TrophyType.SURGICAL)
+                .sortedBy { it.ordinal },
+            awarded
         )
+        assertEquals(
+            setOf(TrophyType.CARBON_COPY, TrophyType.TOP_GUN, TrophyType.CLEAN_AIR, TrophyType.FULL_STINT),
+            rewards.newMedals.toSet()
+        )
+        assertEquals(listOf(16, 24), rewards.milestonesKm)
+        assertEquals(POPUPS, RewardsViewModel.popupsFor(rewards).size)
 
         launchRewards(sessionId)
 
         awarded.forEach { type ->
-            awaitText(R.id.popupName, text.trophyName(type))
+            awaitText(R.id.popupName, text.trophyWithMetal(type))
             onView(withId(R.id.popupHeadline)).check(matches(withText(R.string.rewards_popup_trophy)))
             onView(withId(R.id.popupDismiss)).perform(click())
         }
+        awaitText(R.id.popupHeadline, context.getString(R.string.rewards_popup_milestone))
+        onView(withId(R.id.popupName)).check(matches(withText(context.getString(R.string.rewards_milestone, 24))))
+        onView(withId(R.id.popupDismiss)).perform(click())
         awaitText(R.id.popupHeadline, context.getString(R.string.rewards_popup_level_up))
-        onView(withId(R.id.popupName)).check(matches(withText(context.getString(R.string.progression_level_title, 2, "Novice"))))
+        onView(withId(R.id.popupName)).check(matches(withText(context.getString(R.string.progression_level_title, 3, "Novice"))))
         onView(withId(R.id.popupDismiss)).perform(click())
         awaitOverlayGone()
 
@@ -102,10 +112,20 @@ class RewardsScreenTest {
         val km = { value: Double -> ProgressionFormat.drivenKm(value) }
         onView(withId(R.id.summaryDistance)).check(matches(withText("${km(rewards.distanceKm)} km")))
         onView(withId(R.id.summaryBestLap)).check(matches(withText("0:58.000")))
-        onView(withId(R.id.summaryConsistency)).check(matches(withText("0.000s")))
+        onView(withId(R.id.summaryConsistency)).check(matches(withText("0.00%")))
         onView(withId(R.id.rewardsKmBeforeAfter)).check(matches(withText("${km(rewards.before.lifetimeKm)} km → ${km(rewards.after.lifetimeKm)} km")))
         onView(withId(R.id.rewardsRecentProgress)).perform(scrollTo()).check(
             matches(withText(context.getString(R.string.rewards_progress_faster, "2.000s", ProgressionSeed.TRACK)))
+        )
+
+        // Medals and milestones are listed on the screen, apart from the trophies.
+        onView(withId(R.id.rewardsMedals)).perform(scrollTo()).check(matches(isDisplayed()))
+        assertEquals(rewards.newMedals.map { it.name }, childTags(R.id.rewardsMedals))
+        onView(withId(R.id.rewardsNoMedals)).check(matches(withEffectiveVisibility(Visibility.GONE)))
+        onView(withId(R.id.rewardsMilestones)).perform(scrollTo()).check(matches(isDisplayed()))
+        assertEquals(
+            listOf(16, 24).map { context.getString(R.string.rewards_milestone, it) },
+            childTexts(R.id.rewardsMilestones)
         )
     }
 
@@ -143,6 +163,8 @@ class RewardsScreenTest {
         val navController = launchRewards(sessionId)
 
         onView(withId(R.id.rewardsNoTrophies)).perform(scrollTo()).check(matches(isDisplayed()))
+        onView(withId(R.id.rewardsNoMedals)).perform(scrollTo()).check(matches(isDisplayed()))
+        onView(withId(R.id.rewardsMilestonesTitle)).check(matches(withEffectiveVisibility(Visibility.GONE)))
         onView(withId(R.id.rewardsRecentProgress)).perform(scrollTo()).check(
             matches(withText(context.getString(R.string.rewards_progress_first, ProgressionSeed.TRACK)))
         )
@@ -215,6 +237,24 @@ class RewardsScreenTest {
         return navController
     }
 
+    private fun childTags(id: Int): List<String> {
+        val tags = mutableListOf<String>()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val group = activity!!.findViewById<android.view.ViewGroup>(id)
+            for (i in 0 until group.childCount) (group.getChildAt(i).tag as? String)?.let { tags += it }
+        }
+        return tags
+    }
+
+    private fun childTexts(id: Int): List<String> {
+        val texts = mutableListOf<String>()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val group = activity!!.findViewById<android.view.ViewGroup>(id)
+            for (i in 0 until group.childCount) (group.getChildAt(i) as? android.widget.TextView)?.let { texts += it.text.toString() }
+        }
+        return texts
+    }
+
     private fun overlayVisible(): Boolean {
         var visible = false
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
@@ -232,6 +272,7 @@ class RewardsScreenTest {
     private companion object {
         const val START = 1_700_000_000_000L
         const val DAY = 86_400_000L
-        const val POPUPS = 5
+        /** Four trophies, the 24 km milestone and the level up. */
+        const val POPUPS = 6
     }
 }

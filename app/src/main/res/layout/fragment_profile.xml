@@ -82,7 +82,7 @@
                 android:layout_marginTop="@dimen/spacing_xl"
                 android:orientation="horizontal">
 
-                <!-- Total Sessions -->
+                <!-- Driven km (SRS DP-11) -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -100,22 +100,22 @@
                         android:padding="@dimen/spacing_md">
 
                         <TextView
-                            android:id="@+id/totalSessions"
+                            android:id="@+id/statDrivenKm"
                             style="@style/TextAppearance.DrivingCoach.H2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textColor="@color/colorPrimary"
-                            tools:text="42" />
+                            tools:text="137.4" />
 
                         <TextView
                             style="@style/TextAppearance.DrivingCoach.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="SESSIONS" />
+                            android:text="@string/profile_stat_driven_km" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Total Laps -->
+                <!-- Hours driven -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -133,22 +133,22 @@
                         android:padding="@dimen/spacing_md">
 
                         <TextView
-                            android:id="@+id/totalLaps"
+                            android:id="@+id/statHoursDriven"
                             style="@style/TextAppearance.DrivingCoach.H2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textColor="@color/colorPrimary"
-                            tools:text="387" />
+                            tools:text="2.4 h" />
 
                         <TextView
                             style="@style/TextAppearance.DrivingCoach.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="LAPS" />
+                            android:text="@string/profile_stat_hours_driven" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Best Lap -->
+                <!-- Level trophies -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -166,19 +166,18 @@
                         android:padding="@dimen/spacing_md">
 
                         <TextView
-                            android:id="@+id/bestLapTime"
-                            style="@style/TextAppearance.DrivingCoach.H3"
+                            android:id="@+id/statTrophies"
+                            style="@style/TextAppearance.DrivingCoach.H2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
                             android:textColor="@color/colorGold"
-                            tools:text="1:41.5" />
+                            tools:text="5" />
 
                         <TextView
                             style="@style/TextAppearance.DrivingCoach.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="BEST LAP" />
+                            android:text="@string/profile_stat_trophies" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>

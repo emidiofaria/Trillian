@@ -22,7 +22,7 @@ import javax.inject.Singleton
  *
  * **The name is cosmetic.** It is displayed on the Profile screen and reduced to avatar
  * initials, and it is used for nothing else. Session ownership deliberately continues to use
- * the hardcoded `demo_user` id (SRS DP-01, single-user MVP), because keying rows to a
+ * the fixed [LocalUser.ID] (SRS DP-01, single-user MVP), because keying rows to a
  * user-editable string would orphan a driver's entire history the moment they corrected a
  * typo in their own name.
  *

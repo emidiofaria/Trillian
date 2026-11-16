@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.drivingcoach.coaching.OfflineCoachingEngine
+import com.drivingcoach.data.profile.LocalUser
 import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
@@ -157,7 +158,7 @@ class RecordingViewModel @Inject constructor(
                 } ?: startLine
 
                 val session = SessionEntity(
-                    userId = "default_user", // TODO: Get from auth/preferences
+                    userId = LocalUser.ID,
                     trackName = trackName,
                     startedAt = timestamp,
                     rawFilePath = rawFilePath,

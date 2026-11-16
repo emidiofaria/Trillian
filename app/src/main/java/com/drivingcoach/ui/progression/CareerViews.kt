@@ -1,11 +1,13 @@
 package com.drivingcoach.ui.progression
 
+import android.content.Context
 import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.widget.TextViewCompat
 import com.drivingcoach.R
 import com.drivingcoach.databinding.ItemLevelRequirementBinding
 import com.drivingcoach.databinding.ItemLevelRoadmapBinding
@@ -16,6 +18,7 @@ import com.drivingcoach.progression.CareerSnapshot
 import com.drivingcoach.progression.LevelLadder
 import com.drivingcoach.progression.LevelProgress
 import com.drivingcoach.progression.TrophyHint
+import com.drivingcoach.progression.ValidLaps
 import java.text.DateFormat
 import java.util.Date
 import kotlin.math.roundToInt
@@ -92,43 +95,75 @@ object CareerViews {
         }
     }
 
+    /**
+     * The eight level trophies, then the six session medals under their own header (SRS
+     * PG-17, PG-28). Medals never count towards levels, so they are kept visibly apart.
+     */
     fun bindCabinet(container: LinearLayout, career: CareerSnapshot) {
         val context = container.context
-        val text = ProgressionText(context)
-        val inflater = LayoutInflater.from(context)
-        val dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM)
         container.removeAllViews()
-        career.cabinet.forEach { entry: CabinetEntry ->
-            val tile = ItemTrophyTileBinding.inflate(inflater, container, false)
-            val name = text.trophyName(entry.type)
-            tile.root.tag = entry.type.name
-            tile.trophyName.text = name
-            tile.trophyMedal.backgroundTintList = ColorStateList.valueOf(
-                ContextCompat.getColor(context, if (entry.earned) ProgressionText.metalColor(entry.type) else R.color.colorMedalLocked)
-            )
-            if (entry.earned) {
-                tile.trophyCount.text = context.getString(R.string.trophy_count, entry.count)
-                tile.trophyCount.setTextColor(ContextCompat.getColor(context, ProgressionText.metalColor(entry.type)))
-                tile.trophyStatus.text = context.getString(
-                    R.string.trophy_last_earned,
-                    entry.lastAwardedAt?.let { dateFormat.format(Date(it)) }.orEmpty(),
-                    entry.lastTrackName.orEmpty()
-                )
-                tile.trophyHowToWin.visibility = View.GONE
-                tile.trophyHint.visibility = View.GONE
-                tile.root.contentDescription = context.getString(R.string.trophy_tile_cd_earned, name, entry.count)
-            } else {
-                tile.trophyCount.visibility = View.GONE
-                tile.trophyStatus.text = context.getString(R.string.trophy_not_earned)
-                tile.trophyName.alpha = LOCKED_ALPHA
-                tile.trophyHowToWin.text = context.getString(R.string.trophy_how_to_win, text.howToWin(entry.type))
-                val hint: TrophyHint? = career.hints[entry.type]
-                setOrHide(tile.trophyHint, text.hint(hint))
-                tile.root.contentDescription = context.getString(R.string.trophy_tile_cd_locked, name)
-            }
-            container.addView(tile.root)
-        }
+        container.addView(caption(context, context.getString(
+            R.string.progression_valid_lap_note, ValidLaps.MIN_PERCENT.toInt(), ValidLaps.MAX_PERCENT.toInt()
+        ), header = false))
+        career.cabinet.filter { it.type.countsTowardLevels }.forEach { container.addView(tile(container, career, it)) }
+        container.addView(caption(context, context.getString(R.string.progression_medals_title), header = true).apply {
+            tag = MEDALS_HEADER_TAG
+        })
+        container.addView(caption(context, context.getString(R.string.progression_medals_note), header = false))
+        career.cabinet.filter { it.type.isMedal }.forEach { container.addView(tile(container, career, it)) }
     }
+
+    private fun tile(container: LinearLayout, career: CareerSnapshot, entry: CabinetEntry): View {
+        val context = container.context
+        val text = ProgressionText(context)
+        val dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM)
+        val tile = ItemTrophyTileBinding.inflate(LayoutInflater.from(context), container, false)
+        val name = text.trophyName(entry.type)
+        val medal = entry.type.isMedal
+        tile.root.tag = entry.type.name
+        tile.trophyName.text = if (medal) name else text.trophyWithMetal(entry.type)
+        tile.trophyMedal.backgroundTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(context, if (entry.earned) ProgressionText.metalColor(entry.type) else R.color.colorMedalLocked)
+        )
+        if (entry.earned) {
+            tile.trophyCount.text = context.getString(R.string.trophy_count, entry.count)
+            tile.trophyCount.setTextColor(ContextCompat.getColor(context, ProgressionText.metalColor(entry.type)))
+            tile.trophyStatus.text = context.getString(
+                R.string.trophy_last_earned,
+                entry.lastAwardedAt?.let { dateFormat.format(Date(it)) }.orEmpty(),
+                entry.lastTrackName.orEmpty()
+            )
+            tile.trophyHowToWin.visibility = View.GONE
+            tile.trophyHint.visibility = View.GONE
+            tile.root.contentDescription = context.getString(
+                if (medal) R.string.medal_tile_cd_earned else R.string.trophy_tile_cd_earned, name, entry.count
+            )
+        } else {
+            tile.trophyCount.visibility = View.GONE
+            tile.trophyStatus.text = context.getString(R.string.trophy_not_earned)
+            tile.trophyName.alpha = LOCKED_ALPHA
+            tile.trophyHowToWin.text = context.getString(R.string.trophy_how_to_win, text.howToWin(entry.type))
+            val hint: TrophyHint? = career.hints[entry.type]
+            setOrHide(tile.trophyHint, text.hint(hint))
+            tile.root.contentDescription = context.getString(
+                if (medal) R.string.medal_tile_cd_locked else R.string.trophy_tile_cd_locked, name
+            )
+        }
+        return tile.root
+    }
+
+    private fun caption(context: Context, value: String, header: Boolean): TextView =
+        TextView(context).apply {
+            TextViewCompat.setTextAppearance(
+                this, if (header) R.style.TextAppearance_DrivingCoach_Caption else R.style.TextAppearance_DrivingCoach_Body_Secondary
+            )
+            if (header) setTextColor(ContextCompat.getColor(context, R.color.colorPrimary))
+            text = value
+            val top = context.resources.getDimensionPixelSize(if (header) R.dimen.spacing_lg else R.dimen.spacing_xs)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = top }
+        }
 
     private fun setOrHide(view: TextView, value: String?) {
         view.text = value
@@ -136,4 +171,5 @@ object CareerViews {
     }
 
     private const val LOCKED_ALPHA = 0.45f
+    const val MEDALS_HEADER_TAG = "cabinet_medals_header"
 }

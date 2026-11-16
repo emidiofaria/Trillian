@@ -24,6 +24,7 @@ import com.drivingcoach.R
 import com.drivingcoach.data.repository.SessionRewards
 import com.drivingcoach.databinding.FragmentRewardsBinding
 import com.drivingcoach.databinding.ItemLevelRequirementBinding
+import com.drivingcoach.progression.OdometerMilestones
 import com.drivingcoach.progression.ProgressionFormat
 import com.drivingcoach.ui.progression.CareerViews
 import com.drivingcoach.ui.progression.ProgressionText
@@ -106,7 +107,7 @@ class RewardsFragment : Fragment() {
         binding.summaryLaps.text = rewards.lapCount.toString()
         binding.summaryBestLap.text = rewards.bestLapMs?.let { LapTimeFormatter.formatLapTime(it) }
             ?: getString(R.string.rewards_value_none)
-        binding.summaryConsistency.text = rewards.consistencyStdDevMs?.let { ProgressionFormat.seconds(it) }
+        binding.summaryConsistency.text = rewards.cvPercent?.let { getString(R.string.rewards_cv_value, ProgressionFormat.percent(it)) }
             ?: getString(R.string.rewards_value_none)
 
         binding.rewardsTrophies.removeAllViews()
@@ -121,6 +122,30 @@ class RewardsFragment : Fragment() {
             binding.rewardsTrophies.addView(row.root)
         }
         binding.rewardsNoTrophies.visibility = if (rewards.newTrophies.isEmpty()) View.VISIBLE else View.GONE
+
+        binding.rewardsMedals.removeAllViews()
+        rewards.newMedals.forEach { type ->
+            val row = ItemLevelRequirementBinding.inflate(layoutInflater, binding.rewardsMedals, false)
+            row.root.text = getString(R.string.rewards_medal_row, text.trophyName(type), text.howToWin(type))
+            row.root.tag = type.name
+            row.root.setTextColor(ContextCompat.getColor(requireContext(), ProgressionText.metalColor(type)))
+            row.root.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_trophy, 0, 0, 0)
+            row.root.compoundDrawablePadding = resources.getDimensionPixelSize(R.dimen.spacing_sm)
+            row.root.compoundDrawableTintList =
+                ColorStateList.valueOf(ContextCompat.getColor(requireContext(), ProgressionText.metalColor(type)))
+            binding.rewardsMedals.addView(row.root)
+        }
+        binding.rewardsNoMedals.visibility = if (rewards.newMedals.isEmpty()) View.VISIBLE else View.GONE
+
+        binding.rewardsMilestones.removeAllViews()
+        rewards.milestonesKm.forEach { km ->
+            val row = ItemLevelRequirementBinding.inflate(layoutInflater, binding.rewardsMilestones, false)
+            row.root.text = getString(R.string.rewards_milestone, km)
+            binding.rewardsMilestones.addView(row.root)
+        }
+        val milestones = if (rewards.milestonesKm.isEmpty()) View.GONE else View.VISIBLE
+        binding.rewardsMilestonesTitle.visibility = milestones
+        binding.rewardsMilestones.visibility = milestones
 
         binding.rewardsRecentProgress.text = text.recentProgress(rewards.recentProgress)
         binding.rewardsNextGoal.nextGoalText.text = text.nextGoal(rewards.after.nextGoal)
@@ -163,8 +188,16 @@ class RewardsFragment : Fragment() {
             is RewardPopup.Trophy -> {
                 colorRes = ProgressionText.metalColor(popup.type)
                 binding.popupHeadline.text = getString(R.string.rewards_popup_trophy)
-                binding.popupName.text = text.trophyName(popup.type)
+                binding.popupName.text = text.trophyWithMetal(popup.type)
                 binding.popupDescription.text = text.howToWin(popup.type)
+                binding.popupIcon.visibility = View.VISIBLE
+                binding.popupLevelNumber.visibility = View.GONE
+            }
+            is RewardPopup.Milestone -> {
+                colorRes = R.color.colorPrimary
+                binding.popupHeadline.text = getString(R.string.rewards_popup_milestone)
+                binding.popupName.text = getString(R.string.rewards_milestone, popup.km)
+                binding.popupDescription.text = getString(R.string.rewards_milestone_description, OdometerMilestones.STEP_KM)
                 binding.popupIcon.visibility = View.VISIBLE
                 binding.popupLevelNumber.visibility = View.GONE
             }

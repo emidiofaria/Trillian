@@ -29,12 +29,14 @@ import com.drivingcoach.R
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.dao.TrophyDao
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.profile.LocalUser
 import com.drivingcoach.data.repository.ProgressionRepository
 import com.drivingcoach.data.repository.SessionRepository
 import com.drivingcoach.data.track.TrackRepository
 import com.drivingcoach.di.DataStoreModule
 import com.drivingcoach.di.SplashModule
 import com.drivingcoach.lap.LapDiagnosticsWriter
+import com.drivingcoach.progression.LevelLadder
 import com.drivingcoach.progression.TrophyType
 import com.drivingcoach.service.TelemetryForegroundService
 import com.drivingcoach.testing.MutablePreferencesDataStore
@@ -44,6 +46,8 @@ import com.drivingcoach.testing.awaitUntil
 import com.drivingcoach.testing.currentDestinationId
 import com.drivingcoach.ui.MainActivity
 import com.drivingcoach.ui.progression.ProgressionText
+import com.drivingcoach.ui.rewards.RewardPopup
+import com.drivingcoach.ui.rewards.RewardsViewModel
 import com.drivingcoach.ui.splash.SplashTimings
 import dagger.Module
 import dagger.Provides
@@ -93,8 +97,8 @@ class StopToRewardsEndToEndTest {
                 booleanPreferencesKey("onboarding_complete") to true,
                 stringPreferencesKey("user_name") to "Instrumented Driver",
                 booleanPreferencesKey("driver_profile_complete") to true,
-                // No history to replay: only the stop is to award anything.
-                ProgressionRepository.BACKFILL_DONE to true
+                // No history to recompute: only the stop is to award anything.
+                ProgressionRepository.RULES_V2_APPLIED to true
             )
         )
 
@@ -121,6 +125,7 @@ class StopToRewardsEndToEndTest {
     @Inject lateinit var trackRepository: TrackRepository
     @Inject lateinit var sessionDao: SessionDao
     @Inject lateinit var trophyDao: TrophyDao
+    @Inject lateinit var progression: ProgressionRepository
     @Inject lateinit var lapDiagnosticsWriter: LapDiagnosticsWriter
 
     private lateinit var telemetry: File
@@ -154,14 +159,22 @@ class StopToRewardsEndToEndTest {
         val distanceM = runBlocking { sessionDao.getSessionByIdSync(sessionId)!!.distanceM }
         assertTrue("the replay measures about 13.7 km, was $distanceM", distanceM != null && distanceM in 12_000.0..15_500.0)
         val awarded = runBlocking { trophyDao.getForSession(sessionId).mapNotNull { TrophyType.fromName(it.type) } }
-        assertTrue("12 laps over 5 km earn The Finisher: $awarded", TrophyType.FINISHER_BRONZE in awarded)
-        assertFalse("a first visit cannot be a personal best", TrophyType.PB_SILVER in awarded)
+        assertTrue("12 laps over 5 km earn The Finisher: $awarded", TrophyType.FINISHER in awarded)
+        assertFalse("a first visit cannot be a Pace Setter", TrophyType.PACE_SETTER in awarded)
+        assertFalse("nor a Top Gun", TrophyType.TOP_GUN in awarded)
+
+        val rewards = runBlocking { progression.rewards(sessionId)!! }
+        assertEquals("0 → 13.7 km crosses the 8 km milestone", listOf(8), rewards.milestonesKm)
+        assertTrue("8 km makes a Cadet", rewards.levelUp)
+        val popups = RewardsViewModel.popupsFor(rewards)
+        assertEquals(RewardPopup.Milestone(8), popups[popups.size - 2])
+        assertEquals(RewardPopup.LevelUp(LevelLadder.levels[1]), popups.last())
 
         // The cabinet order puts The Finisher first.
         awaitUntil("the first pop-up") { overlayVisible() }
-        onView(withId(R.id.popupName)).check(matches(withText(ProgressionText(context).trophyName(TrophyType.FINISHER_BRONZE))))
+        onView(withId(R.id.popupName)).check(matches(withText(ProgressionText(context).trophyWithMetal(TrophyType.FINISHER))))
         onView(withId(R.id.popupHeadline)).check(matches(withText(R.string.rewards_popup_trophy)))
-        dismissAllPopups(expected = awarded.size)
+        dismissAllPopups(expected = popups.size)
 
         continueToSessionResult()
     }
@@ -192,7 +205,7 @@ class StopToRewardsEndToEndTest {
         val baltar = trackRepository.getTrack("baltar")!!
         sessionRepository.createSession(
             SessionEntity(
-                userId = "default_user",
+                userId = LocalUser.ID,
                 trackName = baltar.name,
                 startedAt = System.currentTimeMillis(),
                 rawFilePath = telemetry.absolutePath,
@@ -247,7 +260,7 @@ class StopToRewardsEndToEndTest {
             dismissed++
         }
         assertFalse("the pop-ups should all close", overlayVisible())
-        assertEquals("one pop-up per new trophy, and no level-up below 25 km", expected, dismissed)
+        assertEquals("one pop-up per new level trophy, the milestone and the level up", expected, dismissed)
     }
 
     private fun overlayVisible(): Boolean {

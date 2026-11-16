@@ -19,6 +19,8 @@ import javax.inject.Inject
 /** One celebration shown over the Rewards screen, in order (SRS PG-19). */
 sealed class RewardPopup {
     data class Trophy(val type: TrophyType) : RewardPopup()
+    /** The highest 8 km odometer milestone the session crossed (SRS PG-31). */
+    data class Milestone(val km: Int) : RewardPopup()
     data class LevelUp(val level: LevelDef) : RewardPopup()
 }
 
@@ -80,9 +82,14 @@ class RewardsViewModel @Inject constructor(
         const val ARG_SESSION_ID = "sessionId"
         private const val KEY_POPUPS_SHOWN = "popupsShown"
 
-        /** Trophies first, in cabinet order, then the level up they may have caused. */
+        /**
+         * Trophies first, in cabinet order, then one milestone pop-up for the highest 8 km
+         * crossing, then the level up they may have caused. Medals are listed on the screen
+         * but get no pop-up: they are frequent by design and would bury the trophies.
+         */
         fun popupsFor(rewards: SessionRewards): List<RewardPopup> =
             rewards.newTrophies.map { RewardPopup.Trophy(it) } +
+                listOfNotNull(rewards.milestonesKm.maxOrNull()?.let { RewardPopup.Milestone(it) }) +
                 if (rewards.levelUp) listOf(RewardPopup.LevelUp(rewards.after.progress.current)) else emptyList()
     }
 }

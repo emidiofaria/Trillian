@@ -4,6 +4,61 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-11-16] Progression v2 (7 levels, 8 trophies, 6 medals, 8 km milestones) and Profile Stats Fix
+
+**Codebase Version:** v3.08 (versionCode 308; no Room migration; DB stays at version 6)
+**Trigger:** Approved plan: new progression rules with a one-off career recompute, plus the Profile showing 0 sessions / 0 laps (user-id mismatch).
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `progression/*` | ✅ Rewritten | `TrophyRules` (valid laps 85–115 %, CV, 8 trophies with metal, 6 medals, `recompute`), `LevelLadder` (7 levels, dual gate, upward-compatible counts), `ProgressionGoals`, `ProgressionFormat` (percent, hours driven); new `LapTopSpeeds`, `OdometerMilestones` |
+| `ProgressionRepository` | ✅ Updated | `recomputeIfNeeded()` (flag `progression_rules_v2_applied`, delete + re-award in one transaction) replaces the v3.07 backfill; `SessionRewards` gains medals, milestones, CV |
+| Profile | ✅ Fixed | `LocalUser.ID` shared by recorder and Profile; stats row = Driven km / Hours driven / Trophies |
+| Rewards / Career / Home UI | ✅ Updated | Medal and milestone lists, milestone pop-up, 7-level roadmap, cabinet 8 trophies + 6 medals, CV hints, Next goal by metal |
+| `SRS_v1.md` | ✅ Updated | §11.2 rewritten (PG-01 … PG-23 amended, PG-24 … PG-29 new); DP-07, DP-11 new; UM-18, §2a, TrophyEntity amended |
+| `components.md` | ✅ Updated | Progression component rewritten; Driver profile: one shared user id |
+| `flows.md` | ✅ Updated | Award & Rewards flow; "History Replay" replaced by "Progression Recompute" |
+| `failure-patterns.md` | ✅ Updated | FP-HARDCODED-ID-DRIFT |
+| `USER_MANUAL.md` | ✅ Updated | §4 stop step, §6.2 stats, §6.5 rewritten (valid lap, CV, trophies, medals, milestones, levels, 3.08 recompute), FAQ |
+| `coverage-map.tsv` | ✅ Updated | PG claims rebuilt against the new tests; DP-07, DP-11, PG-24 … PG-29 claims |
+
+### Root cause (Profile)
+
+`RecordingViewModel` wrote `userId = "default_user"`; `ProfileViewModel` read `"demo_user"`.
+The L1 test mocked the DAO with `any()`, so nothing noticed. The shared constant keeps the
+value every stored row already has, so no data migration is needed.
+
+### New Requirement IDs
+
+- PG-24 Purple Sector, PG-25 Carbon Copy / Clean Air, PG-26 Top Gun, PG-27 Late Charger / Full Stint, PG-28 medals never count, PG-29 Pit-Box milestones
+- DP-07 shared single-user id, DP-11 Profile stats row
+
+### Apex Exit on real recordings (threshold kept at 1.0 %)
+
+| Recording | Valid laps | 5-lap windows | Tightest spread | Awarded |
+|---|---|---|---|---|
+| baltar2 | 12 | 8 | 6.42 % | No |
+| cabo_do_mundo | 8 | 4 | 17.23 % | No |
+| ines3, s_mamede, teste3 | 3 / 3 / 4 | 0 | — | Not eligible |
+
+0 of 2 eligible sessions. On phone GPS the per-lap top speed varies by several percent, so
+Apex Exit is very hard to win as specified.
+
+### Files Modified
+
+```
+M  01_requirements/DrivingCoach_SRS_v1.md   (+35, -25)
+M  atlas/components.md                      (+36, -25)
+M  atlas/flows.md                           (+36, -21)
+M  atlas/failure-patterns.md                (+51)
+M  docs/USER_MANUAL.md                      (+95, -45)
+M  05_tests/coverage-map.tsv                (+127, -66)
+```
+
+---
+
 ## [2026-11-16] Profile — Clear User Data Fixed (Main-Thread Wipe) and Sidecars Deleted
 
 **Codebase Version:** v3.07 (versionCode 307; no Room migration; DB stays at version 6)

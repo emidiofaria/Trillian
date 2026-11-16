@@ -24,10 +24,12 @@ import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.repository.ProgressionRepository
 import com.drivingcoach.progression.LevelLadder
+import com.drivingcoach.progression.ProgressionFormat
 import com.drivingcoach.progression.TrophyType
 import com.drivingcoach.testing.ProgressionSeed
 import com.drivingcoach.testing.awaitUntil
 import com.drivingcoach.testing.launchFragmentInHiltContainer
+import com.drivingcoach.ui.progression.CareerViews
 import com.drivingcoach.ui.progression.ProgressionText
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -44,10 +46,12 @@ import java.io.File
 import javax.inject.Inject
 
 /**
- * L2 (ASPICE SWE.5) coverage for the Career section of Profile: SRS PG-15, PG-16, PG-17.
+ * L2 (ASPICE SWE.5) coverage for the Career section of Profile (SRS PG-15, PG-16, PG-17) and
+ * the Profile stats row (DP-11).
  *
- * One steady session at a new track: 14.4 km, The Finisher and Consistency Gold. That is
- * a Rookie who has the Bronze for Novice but not yet the distance.
+ * One steady session at a new track, recorded under the recorder's user id: 14.4 km in six
+ * minutes; The Finisher, Surgical and Apex Exit; the Carbon Copy, Clean Air and Full Stint
+ * medals. That is a Level 2 Cadet who has the Bronze for Novice but not yet the 24 km.
  */
 @LargeTest
 @HiltAndroidTest
@@ -82,7 +86,7 @@ class ProfileCareerTest {
         launchFragmentInHiltContainer<ProfileFragment> { root = requireView() }
         awaitUntil("the career to load") {
             runCatching {
-                onView(withId(R.id.levelName)).check(matches(withText(context.getString(R.string.progression_level_title, 1, "Rookie"))))
+                onView(withId(R.id.levelName)).check(matches(withText(context.getString(R.string.progression_level_title, 2, "Cadet"))))
             }.isSuccess
         }
     }
@@ -98,37 +102,73 @@ class ProfileCareerTest {
         onView(withId(R.id.levelName)).perform(scrollTo()).check(matches(isDisplayed()))
         val rows = childTexts(R.id.levelRequirements)
         assertEquals("Novice needs a distance and a Bronze", 2, rows.size)
-        assertTrue("distance not met yet: ${rows[0]}", rows[0].startsWith("⬜") && rows[0].contains("25 km"))
+        assertTrue("distance not met yet: ${rows[0]}", rows[0].startsWith("⬜") && rows[0].contains("24 km"))
         assertTrue("the Finisher is already in hand: ${rows[1]}", rows[1].startsWith("✅"))
     }
 
     @Test
-    fun roadmapListsAllSixLevels() {
-        assertEquals(6, childCount(R.id.levelRoadmap))
+    fun roadmapListsAllSevenLevels() {
+        assertEquals(7, childCount(R.id.levelRoadmap))
+        val rows = allTexts(R.id.levelRoadmap)
+        val text = ProgressionText(context)
+        (1..7).forEach { n -> assertTrue("roadmap names Level $n: $rows", rows.contains(text.levelName(n))) }
+        assertTrue("Level 7 asks for a Gold: $rows", rows.contains("450 km"))
+    }
+
+    /**
+     * DP-11 with the v3.07 user-id fix: the session was written under the id the recorder
+     * uses, and the Profile shows its distance, time and level trophies. Under v3.07 the
+     * Profile queried another id and showed zeros.
+     */
+    @Test
+    fun statsShowDrivenKmHoursAndTrophies() {
+        val km = runBlocking { progression.career().first().lifetimeKm }
+        val expectedKm = ProgressionFormat.drivenKm(km)
+        awaitUntil("the stats row to load") {
+            runCatching { onView(withId(R.id.statDrivenKm)).check(matches(withText(expectedKm))) }.isSuccess
+        }
+        onView(withId(R.id.statHoursDriven)).check(matches(withText(ProgressionText(context).drivenTime(6 * 60_000L))))
+        onView(withId(R.id.statHoursDriven)).check(matches(withText("6 min")))
+        onView(withId(R.id.statTrophies)).check(matches(withText("3")))
     }
 
     @Test
-    fun cabinetShowsEarnedAndLockedTrophies() {
-        assertEquals(6, childCount(R.id.trophyCabinet))
+    fun cabinetShowsEightTrophiesThenSixMedals() {
+        assertEquals(
+            "8 trophies, then the medals header, then 6 medals",
+            TrophyType.trophies.map { it.name } + CareerViews.MEDALS_HEADER_TAG + TrophyType.medals.map { it.name },
+            childTags(R.id.trophyCabinet)
+        )
 
-        val text = ProgressionText(context)
         var finisherCount = ""
-        var pbHowToWinShown = false
+        var paceHowToWin = ""
+        var steadyHint = ""
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val cabinet = root!!.findViewById<LinearLayout>(R.id.trophyCabinet)
-            val finisher = cabinet.findViewWithTag<View>(TrophyType.FINISHER_BRONZE.name)
+            val finisher = cabinet.findViewWithTag<View>(TrophyType.FINISHER.name)
             finisherCount = finisher.findViewById<android.widget.TextView>(R.id.trophyCount).text.toString()
-            val pb = cabinet.findViewWithTag<View>(TrophyType.PB_SILVER.name)
-            pbHowToWinShown = pb.findViewById<View>(R.id.trophyHowToWin).visibility == View.VISIBLE
+            val pace = cabinet.findViewWithTag<View>(TrophyType.PACE_SETTER.name)
+            paceHowToWin = pace.findViewById<android.widget.TextView>(R.id.trophyHowToWin)
+                .takeIf { it.visibility == View.VISIBLE }?.text?.toString().orEmpty()
+            val plateau = cabinet.findViewWithTag<View>(TrophyType.PLATEAU_BREAKER.name)
+            steadyHint = plateau.findViewById<android.widget.TextView>(R.id.trophyHint)
+                .takeIf { it.visibility == View.VISIBLE }?.text?.toString().orEmpty()
         }
         assertEquals(context.getString(R.string.trophy_count, 1), finisherCount)
-        assertTrue("an unearned trophy explains how to win it", pbHowToWinShown)
-        onView(withText(text.trophyName(TrophyType.CONSISTENCY_GOLD))).perform(scrollTo()).check(matches(isDisplayed()))
+        assertTrue("an unearned trophy explains how to win it", paceHowToWin.isNotBlank())
+        assertTrue("and gives a personal hint: $steadyHint", steadyHint.contains("5") && steadyHint.contains("15"))
+        assertEquals(
+            listOf(TrophyType.FINISHER, TrophyType.SURGICAL, TrophyType.APEX_EXIT,
+                TrophyType.CARBON_COPY, TrophyType.CLEAN_AIR, TrophyType.FULL_STINT).map { it.name }.sorted(),
+            earnedTiles().sorted()
+        )
+        onView(withText(ProgressionText(context).trophyName(TrophyType.FULL_STINT))).perform(scrollTo()).check(matches(isDisplayed()))
     }
 
     /**
      * PG-14 with DR-07: Clear data wipes the sessions, so the career is recomputed from
-     * nothing. 14.4 km and two trophies before; Rookie, 0 km and a locked cabinet after.
+     * nothing. 14.4 km, three trophies and three medals before; Rookie, 0 km and a locked
+     * cabinet after.
      */
     @Test
     fun clearDataResetsCareerToRookie() {
@@ -141,7 +181,7 @@ class ProfileCareerTest {
         val text = ProgressionText(context)
         val zeroKm = text.kmLabel(0.0, LevelLadder.levels[1])
         assertTrue("precondition: the seeded distance shows", levelKmLabel() != zeroKm)
-        assertEquals("precondition", 2, earnedTiles().size)
+        assertEquals("precondition", 6, earnedTiles().size)
 
         onView(withId(R.id.clearDataButton)).perform(click())
         onView(withText(R.string.clear_data_confirm)).inRoot(isDialog()).perform(click())
@@ -185,6 +225,26 @@ class ProfileCareerTest {
             }
         }
         return earned
+    }
+
+    /** Every TextView text under [id], depth first, joined by newlines. */
+    private fun allTexts(id: Int): String {
+        val texts = mutableListOf<String>()
+        fun walk(view: View) {
+            if (view is android.widget.TextView) texts += view.text.toString()
+            if (view is android.view.ViewGroup) for (i in 0 until view.childCount) walk(view.getChildAt(i))
+        }
+        InstrumentationRegistry.getInstrumentation().runOnMainSync { walk(root!!.findViewById(id)) }
+        return texts.joinToString("\n")
+    }
+
+    private fun childTags(id: Int): List<String> {
+        val tags = mutableListOf<String>()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val group = root!!.findViewById<LinearLayout>(id)
+            for (i in 0 until group.childCount) (group.getChildAt(i).tag as? String)?.let { tags += it }
+        }
+        return tags
     }
 
     private fun childCount(id: Int): Int {

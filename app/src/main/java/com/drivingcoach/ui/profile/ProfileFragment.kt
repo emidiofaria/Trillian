@@ -19,10 +19,10 @@ import com.drivingcoach.R
 import com.drivingcoach.data.profile.DriverProfileStore
 import com.drivingcoach.databinding.FragmentProfileBinding
 import com.drivingcoach.progression.CareerSnapshot
+import com.drivingcoach.progression.ProgressionFormat
 import com.drivingcoach.ui.progression.CareerViewModel
 import com.drivingcoach.ui.progression.CareerViews
 import com.drivingcoach.ui.progression.ProgressionText
-import com.drivingcoach.util.LapTimeFormatter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
@@ -167,12 +167,11 @@ class ProfileFragment : Fragment() {
             binding.userName.text = profile.displayName
         }
 
-        // Update stats
-        binding.totalSessions.text = state.stats.totalSessions.toString()
-        binding.totalLaps.text = state.stats.totalLaps.toString()
-        binding.bestLapTime.text = state.stats.bestLapMs?.let { 
-            formatShortLapTime(it)
-        } ?: "—"
+        // Update stats (SRS DP-11)
+        val text = ProgressionText(requireContext())
+        binding.statDrivenKm.text = ProgressionFormat.drivenKm(state.stats.drivenKm)
+        binding.statHoursDriven.text = text.drivenTime(state.stats.drivenMs)
+        binding.statTrophies.text = state.stats.trophies.toString()
     }
 
     private fun updateCareer(career: CareerSnapshot) {
@@ -180,14 +179,6 @@ class ProfileFragment : Fragment() {
         binding.profileNextGoal.nextGoalText.text = ProgressionText(requireContext()).nextGoal(career.nextGoal)
         CareerViews.bindRoadmap(binding.levelRoadmap, career.progress)
         CareerViews.bindCabinet(binding.trophyCabinet, career)
-    }
-
-    private fun formatShortLapTime(ms: Long): String {
-        val totalSeconds = ms / 1000
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        val tenths = (ms % 1000) / 100
-        return String.format("%d:%02d.%d", minutes, seconds, tenths)
     }
 
     private fun handleEvent(event: ProfileEvent) {

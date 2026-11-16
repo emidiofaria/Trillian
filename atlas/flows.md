@@ -2021,8 +2021,8 @@ CoachFragment.updateUI(state)  [populated branch only]
 
 ### Goal
 
-Measure the session's distance, award its trophies and show the driver what changed in their
-career, once, before the Session Result (SRS PG-12, PG-19, PG-20).
+Measure the session's distance, award its trophies and medals and show the driver what changed
+in their career, once, before the Session Result (SRS PG-12, PG-19, PG-20, PG-24 … PG-29).
 
 ### Trigger
 
@@ -2037,8 +2037,12 @@ RecordingViewModel.finishProcessing(sessionId)   [suspend, after laps + coaching
   → lapDao.getLapsForSessionSync(id)
   → SessionDistance.ofTelemetryFile(rawFilePath)   ?: laps × track lengthM ?: 0
   → LapDiagnosticsWriter.read + MergedLapCaveat     → lapBoundariesTrusted
-  → history = every other session (TrophyRules keeps only earlier startedAt)
-  → TrophyRules.evaluate(facts, history)
+  → LapTopSpeeds.of(rawFilePath, laps)              → per-lap top speed (null without trace)
+  → facts = laps (duration, s1/s2/s3, top speed), distance, trackKey, trusted
+  → history = every other session (TrophyRules keeps only earlier, trusted startedAt)
+  → TrophyRules.evaluate(facts, history)            → trophies + medals
+      valid laps 85–115 % of median; best 5-lap CV → highest consistency tier only;
+      Pace Setter / Plateau Breaker / Purple Sector / Top Gun only from the 2nd visit
   → [ROOM TRANSACTION] updateDistance + trophyDao.insertAll (IGNORE duplicates)
   → errors other than cancellation: logged, never block the result
 → RecordingFragment.navigateToSessionResult(sessionId)
@@ -2046,9 +2050,11 @@ RecordingViewModel.finishProcessing(sessionId)   [suspend, after laps + coaching
 → RewardsFragment / RewardsViewModel(sessionId)
   → progressionRepository.rewards(sessionId)
     → before = career without this session; after = career with it
-    → newTrophies = this session's trophies; recentProgress vs latest earlier session on track
-  → Ready(popups = trophies…, LEVEL UP if level rose)
-  → render: km before → after, level bar animates, summary, recent progress, Next goal
+    → newTrophies (level trophies) / newMedals; milestonesKm = OdometerMilestones.crossed(before, after)
+    → cvPercent; recentProgress vs latest earlier session on track
+  → Ready(popups = trophies…, highest milestone, LEVEL UP if level rose)   [no medal pop-ups]
+  → render: km before → after, level bar animates, trophies, medals, milestones,
+    summary (CV %), recent progress, Next goal
   → each pop-up: scale + glow, performHapticFeedback; NICE!/Back → onPopupDismissed()
 → CONTINUE (or Back with no pop-up)
   → action_rewards_to_session_result (popUpTo rewardsFragment inclusive)
@@ -2065,29 +2071,38 @@ RecordingViewModel.finishProcessing(sessionId)   [suspend, after laps + coaching
 
 ---
 
-## Flow: Progression History Replay (Backfill)
+## Flow: Progression Recompute (v3.08 rules)
 
 ### Goal
 
-Give sessions recorded before v3.07 their distance and trophies, silently, in the order they
-were driven so Personal Bests are chronological (SRS PG-13, PG-22).
+Re-award every existing session under the v3.08 rules, silently, in the order the sessions
+were driven, replacing the v3.07 trophies (SRS PG-13, PG-22). Sessions recorded before
+progression existed also get their distance here. Levels may go down.
 
 ### Execution Path
 
 ```
 HomeFragment / ProfileFragment → CareerViewModel.init
-→ [viewModelScope] progressionRepository.backfillIfNeeded()
-  → DataStore[progression_backfill_v1_done] == true?  → return
-  → Mutex
-    → for session in sessionDao.getAllSessionsOldestFirst()
-      → award(session, remeasure = false)   (keeps a stored distanceM)
-    → DataStore[progression_backfill_v1_done] = true
-→ career() Flow (sessions + laps + trophies combined) re-emits as rows land
-→ level card, Next goal, roadmap, cabinet rebind
+→ [viewModelScope] progressionRepository.recomputeIfNeeded()     [IO]
+  → DataStore[progression_rules_v2_applied] == true?  → return
+  → Mutex (re-checks the flag)
+    → sessions = sessionDao.getAllSessionsOldestFirst(); laps = lapDao.getAllLaps()
+    → distance = stored distanceM ?: measure (telemetry, else laps × track length, else 0)
+    → facts per session (laps, sectors, top speeds, trusted)
+    → TrophyRules.recompute(facts)     [pure; each session vs earlier trusted ones]
+    → [ROOM TRANSACTION]
+        trophyDao.deleteAll()          (removes v3.07 FINISHER_BRONZE, PB_SILVER, … rows)
+        sessionDao.updateDistance(...) for sessions without one
+        trophyDao.insertAll(rows)
+    → DataStore[progression_rules_v2_applied] = true      (only after commit)
+→ career() Flow (sessions + laps + trophies combined) re-emits once
+→ level card, Next goal, roadmap, cabinet, Profile stats rebind
 ```
 
 ### Invariants
 
-- No pop-ups: the replay writes rows; only the Rewards screen celebrates.
-- Idempotent: unique (sessionId, type) and earlier-only history make a re-run a no-op.
-- The flag is set only after the whole replay; clearing user data clears it with the sessions.
+- No pop-ups: the recompute writes rows; only the Rewards screen celebrates.
+- Idempotent: the same input gives the same rows; a second run is skipped by the flag, and
+  even without it would delete and insert the same set.
+- Atomic: the career Flow sees either the old rows or the new ones, never a mix.
+- The flag is set only after the transaction; clearing user data clears it with the sessions.

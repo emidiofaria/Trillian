@@ -21,6 +21,10 @@ interface TrophyDao {
     @Query("SELECT * FROM trophies ORDER BY awardedAt ASC, id ASC")
     suspend fun getAll(): List<TrophyEntity>
 
+    /** Only for the v3.08 recompute, inside the same transaction as the re-insert (SRS PG-13). */
+    @Query("DELETE FROM trophies")
+    suspend fun deleteAll()
+
     @Query("SELECT * FROM trophies WHERE sessionId = :sessionId ORDER BY id ASC")
     suspend fun getForSession(sessionId: Long): List<TrophyEntity>
 }

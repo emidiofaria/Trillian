@@ -33,6 +33,8 @@
     <color name="colorBronze">#CD7F32</color>
     <color name="colorSilver">#C0C0C0</color>
     <color name="colorMedalLocked">#4A4A4A</color>
+    <!-- Session medals (SRS PG-28): purple, the timing-screen colour for a best sector -->
+    <color name="colorMedalPurple">#A259FF</color>
     <color name="colorRewardsScrim">#E60D0D0D</color>
     
     <!-- Theme Colors -->

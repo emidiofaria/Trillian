@@ -30,7 +30,7 @@ class CareerViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             try {
-                progressionRepository.backfillIfNeeded()
+                progressionRepository.recomputeIfNeeded()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

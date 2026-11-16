@@ -25,6 +25,7 @@ import com.drivingcoach.data.repository.ProgressionRepository
 import com.drivingcoach.di.DataStoreModule
 import com.drivingcoach.di.SplashModule
 import com.drivingcoach.progression.LevelLadder
+import com.drivingcoach.progression.NextGoal
 import com.drivingcoach.progression.ProgressionFormat
 import com.drivingcoach.progression.TrophyType
 import com.drivingcoach.testing.MutablePreferencesDataStore
@@ -120,7 +121,7 @@ class HomeLevelCardTest {
     }
 
     /**
-     * About 14.4 + 13.9 km and two Finishers: Novice, with 50 km the next thing missing.
+     * About 14.4 + 13.9 km and seven level trophies: Level 3 Novice, with 56 km the next thing missing.
      * The figures come from the measured career, since great-circle distance on the seeded
      * trace is a little under speed × time.
      */
@@ -135,13 +136,34 @@ class HomeLevelCardTest {
         assertEquals("precondition", 28.3, km, 0.1)
         launchHome()
 
-        awaitText(R.id.levelName, R.id.homeLevelCard, context.getString(R.string.progression_level_title, 2, "Novice"))
-        onCard(R.id.levelBadge).check(matches(withText(context.getString(R.string.progression_level_badge, 2))))
+        awaitText(R.id.levelName, R.id.homeLevelCard, context.getString(R.string.progression_level_title, 3, "Novice"))
+        onCard(R.id.levelBadge).check(matches(withText(context.getString(R.string.progression_level_badge, 3))))
         onCard(R.id.levelKmLabel).check(
-            matches(withText("${ProgressionFormat.drivenKm(km)} km driven · next level at 50 km"))
+            matches(withText("${ProgressionFormat.drivenKm(km)} km driven · next level at 56 km"))
         )
         onView(allOf(withId(R.id.nextGoalText), isDescendantOfA(withId(R.id.homeNextGoal))))
-            .check(matches(withText("Drive ${ProgressionFormat.remainingKm(50.0 - km)} km more to reach Level 3 · Challenger.")))
+            .check(matches(withText("Drive ${ProgressionFormat.remainingKm(56.0 - km)} km more to reach Level 4 · Challenger.")))
+    }
+
+    /**
+     * 25.8 km but no level trophy is Level 2 · Cadet: Level 3's distance is there, so Home
+     * asks for the missing Bronze instead (PG-18). Four ragged laps of ~160 s earn no
+     * Finisher and no consistency trophy; the Full Stint medal they do earn never counts.
+     */
+    @Test
+    fun nextGoalAsksForTheMissingTrophyWhenTheKmAreThere() {
+        runBlocking {
+            markReplayDone()
+            val awarded = progression.awardSession(seed.session(START, listOf(150_000L, 170_000L, 160_000L, 165_000L)))
+            assertEquals("precondition", listOf(TrophyType.FULL_STINT), awarded)
+        }
+        launchHome()
+
+        awaitText(R.id.levelName, R.id.homeLevelCard, context.getString(R.string.progression_level_title, 2, "Cadet"))
+        val expected = text.nextGoal(NextGoal.EarnTrophies(3, TrophyType.Metal.BRONZE, 1))
+        assertTrue(expected, expected.startsWith("Win 1 × Bronze"))
+        onView(allOf(withId(R.id.nextGoalText), isDescendantOfA(withId(R.id.homeNextGoal))))
+            .check(matches(withText(expected)))
     }
 
     @Test
@@ -156,31 +178,35 @@ class HomeLevelCardTest {
     }
 
     /**
-     * PG-13: a session recorded before progression existed is replayed the first time Home
-     * opens, and only then. A session that appears after the replay is left alone by the
+     * PG-13: the first time Home opens on v3.08, every earlier session is re-awarded under the
+     * new rules (and measured if it never was), and only then. A session that appears after the replay is left alone by the
      * next launch; it would be awarded when its own recording finishes, not by a replay.
      */
     @Test
-    fun openingHomeRunsHistoryReplayOnce() {
+    fun openingHomeRunsRecomputeOnce() {
         val earlier = runBlocking { seed.session(START, ProgressionSeed.STEADY_MINUTES) }
         runBlocking {
             assertTrue("precondition: never awarded", trophyDao.getAll().isEmpty())
-            assertTrue("precondition: replay pending", dataStore.data.first()[ProgressionRepository.BACKFILL_DONE] != true)
+            assertTrue("precondition: recompute pending", dataStore.data.first()[ProgressionRepository.RULES_V2_APPLIED] != true)
         }
 
         launchHome()
         awaitUntil("the replay to mark itself done") {
-            runBlocking { dataStore.data.first()[ProgressionRepository.BACKFILL_DONE] == true }
+            runBlocking { dataStore.data.first()[ProgressionRepository.RULES_V2_APPLIED] == true }
         }
         runBlocking {
             assertEquals(
-                setOf(TrophyType.FINISHER_BRONZE, TrophyType.CONSISTENCY_GOLD),
+                setOf(
+                    TrophyType.FINISHER, TrophyType.SURGICAL, TrophyType.APEX_EXIT,
+                    TrophyType.CARBON_COPY, TrophyType.CLEAN_AIR, TrophyType.FULL_STINT
+                ),
                 trophyDao.getForSession(earlier).map { TrophyType.fromName(it.type) }.toSet()
             )
         }
         val km = runBlocking { progression.career().first().lifetimeKm }
         assertEquals("the replay measured the earlier trace", 14.4, km, 0.05)
-        val label = text.kmLabel(km, LevelLadder.levels[1])
+        // 14.4 km and a Bronze clear Level 2 (8 km); Level 3 wants 24 km.
+        val label = text.kmLabel(km, LevelLadder.levels[2])
         awaitText(R.id.levelKmLabel, R.id.homeLevelCard, label)
         scenario!!.close()
 
@@ -192,13 +218,13 @@ class HomeLevelCardTest {
 
         runBlocking {
             assertTrue("no replay of the later session", trophyDao.getForSession(later).isEmpty())
-            assertEquals("the earlier session is not awarded twice", 2, trophyDao.getAll().size)
+            assertEquals("the earlier session is not awarded twice", 6, trophyDao.getAll().size)
             assertEquals(null, sessionDao.getSessionByIdSync(later)!!.distanceM)
         }
     }
 
     private suspend fun markReplayDone() {
-        dataStore.edit { it[ProgressionRepository.BACKFILL_DONE] = true }
+        dataStore.edit { it[ProgressionRepository.RULES_V2_APPLIED] = true }
     }
 
     private fun launchHome() {

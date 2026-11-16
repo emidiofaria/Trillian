@@ -658,7 +658,8 @@ every relaunch bounced the driver back to a login screen they could not use.
 - `data/profile/DriverProfileStore.kt` — validation, persistence, initials derivation
 - `ui/driver/DriverNameViewModel.kt` — first-run naming state machine
 - `ui/driver/DriverNameFragment.kt` + `res/layout/fragment_driver_name.xml` — the "LET'S RACE!!" screen
-- `ui/profile/ProfileViewModel.kt` — rename and Clear User Data
+- `ui/profile/ProfileViewModel.kt` — rename, Clear User Data and the stats row (driven km, hours driven, trophies; SRS DP-11)
+- `data/profile/LocalUser.kt` — the single shared user id (SRS DP-07)
 - `ui/splash/SplashViewModel.kt` — consumer; resolves the startup destination
 
 ### Dependencies
@@ -683,7 +684,8 @@ every relaunch bounced the driver back to a login screen they could not use.
 | Constraint | Reason |
 |---|---|
 | Two keys, not one | An interrupted rename must never look like "first run". Inferring completion from `user_name != null` would drop an established driver into setup with history apparently gone. |
-| Name is cosmetic only | Sessions stay keyed to `demo_user` (SRS DP-01). Keying on an editable name would orphan history on a typo fix. |
+| Name is cosmetic only | Sessions stay keyed to `LocalUser.ID` = `default_user` (SRS DP-07). Keying on an editable name would orphan history on a typo fix. |
+| One shared user id | `data/profile/LocalUser.ID` is the only single-user id: `RecordingViewModel` writes it and `ProfileViewModel` reads with it. v3.07 had Profile query `demo_user` while the recorder wrote `default_user`, so Profile showed 0 sessions (FP-HARDCODED-ID-DRIFT). The value stays `default_user` because that is what every existing row holds. |
 | `profileFrom(Preferences)` overload | Lets `SplashViewModel` reuse its single startup preferences snapshot instead of a second DataStore read on the cold-start critical path (SRS UI-04). |
 | Code-point-safe initials | Emoji and astral-plane names must not produce mojibake in the avatar. |
 
@@ -709,7 +711,7 @@ every relaunch bounced the driver back to a login screen they could not use.
 |---|---|---|
 | L1 | `DriverProfileStoreTest` (22) | Bounds 1/2/100/101, trimming, round-trip, flag independence, degraded read, initials |
 | L1 | `DriverNameViewModelTest` (12) | Submit gating, double-tap, failed-save containment |
-| L1 | `ProfileViewModelTest` (11) | Rename never touches the database; `clearUserData` ordering |
+| L1 | `ProfileViewModelTest` | Rename never touches the database; `clearUserData` ordering; stats read under the recorder's user id (fails with the old `demo_user`), level trophies only |
 | L1 | `SplashViewModelTest` | Destination resolution across all profile states |
 | L2 | `DriverNameFlowTest` (6) | First-run naming, **relaunch remembers the driver**, trimming, demo-mode shortcut absent |
 
@@ -2809,44 +2811,51 @@ sectors on old sessions cannot affect the verdict.
 
 ### Purpose
 
-Turns the driver's own sessions into a career (SRS §11.2, PG-01 … PG-23): a lifetime
-distance, a six-level ladder that needs **both** kilometres and main trophies, six trophy
-types per session, a single Next goal, and personal hints for unearned trophies. Added in
-v3.07 with database version 6.
+Turns the driver's own sessions into a career (SRS §11.2, PG-01 … PG-29): a lifetime
+distance, a seven-level ladder that needs **both** kilometres and level trophies of a
+metal or better, eight level trophies, six session medals that never count towards levels,
+an odometer milestone every 8 km, a single Next goal, and personal hints for unearned
+trophies. Added in v3.07 with database version 6; rules rewritten in v3.08 (no schema
+change: medals share the `trophies` table and the category and metal are derived from
+`type` in code).
 
 ### Structure
 
 | Layer | Class | Responsibility |
 |-------|-------|----------------|
 | Pure logic (no Android) | `progression/SessionDistance` | Jitter-filtered haversine distance from the telemetry JSONL (accuracy > 20 m, < 5 km/h, > 250 km/h or > 30 s gap rejected); `fallback()` = laps × track length |
-| | `progression/TrophyRules` | `TrophyType`, `SessionFacts`, `evaluate(session, history)`; Finisher, PB (credible best vs earlier sessions on the same track key), highest consistency tier over the steadiest 5-lap window (population stdDev), Track Master = PB + Consistency Gold; merged-lap caveat keeps only Finisher |
-| | `progression/LevelLadder` | Six `LevelDef`s, sequential `levelFor()`, `progress()` with next-level `Requirement` checklist and distance-only `kmFraction` |
-| | `progression/ProgressionGoals` | `career()` → `CareerSnapshot` (lifetime km, level progress, counts, cabinet, next goal, hints); `recentProgress()` |
-| | `progression/ProgressionFormat` | Locale.US km (driven floored, remaining ceiled) and `"%.3fs"` seconds |
-| Persistence | `data/db/entity/TrophyEntity`, `data/db/dao/TrophyDao` | `trophies` table, unique (sessionId, type), FK CASCADE to sessions; `insertAll` IGNORE returns −1 for duplicates |
+| | `progression/TrophyRules` | `TrophyType` (8 trophies with `Metal` BRONZE/SILVER/GOLD, 6 medals with no metal; `countsTowardLevels`; `fromName` maps retired v3.07 names to null), `LapFacts`, `SessionFacts`, `ValidLaps` (85–115 % of median), `SessionMetrics` (best 5-lap CV, Apex spread, consecutive runs), `evaluate(session, history)` and `recompute(sessions)` (oldest first, each session judged only against earlier trusted ones). Merged-lap caveat keeps only The Finisher and no medals |
+| | `progression/LapTopSpeeds` | Per-lap top speed from the telemetry JSONL between each lap's start and end (Apex Exit, Top Gun) |
+| | `progression/LevelLadder` | Seven `LevelDef`s (km + metal + count), `TrophyCounts.atLeast(metal)` (upward compatible, each trophy once, medals excluded), sequential `levelFor()`, `progress()` with checklist and distance-only `kmFraction` |
+| | `progression/ProgressionGoals` | `career()` → `CareerSnapshot` (lifetime km, level progress, counts, 14-entry cabinet, next goal, hints); `recentProgress()`; `popups` order trophies → highest milestone → level up |
+| | `progression/OdometerMilestones` | `crossed(beforeM, afterM)`: every 8 km boundary passed by a session |
+| | `progression/ProgressionFormat` | Locale.US km (driven floored, remaining ceiled), `"%.3fs"` seconds, two-decimal percent, `drivenTime` (minutes below 1 h, else floored tenths of an hour) |
+| Persistence | `data/db/entity/TrophyEntity`, `data/db/dao/TrophyDao` | `trophies` table, unique (sessionId, type), FK CASCADE to sessions; `insertAll` IGNORE returns −1 for duplicates; `deleteAll` for the recompute |
 | | `SessionEntity.distanceM` | Metres, nullable until measured |
-| Repository | `data/repository/ProgressionRepository` (@Singleton) | `awardSession()` (stop), `backfillIfNeeded()` (one-off replay, DataStore key `progression_backfill_v1_done`), `career()` Flow, `rewards(sessionId)` → `SessionRewards` (before/after snapshots, new trophies, recent progress) |
-| UI | `ui/rewards/RewardsFragment` + `RewardsViewModel` | Rewards screen: km before → after, animated level bar, sequential trophy and LEVEL UP pop-ups (scale + glow, `performHapticFeedback`), summary, recent progress, Next goal; Continue → Session Result |
-| | `ui/progression/CareerViewModel` | Shared by Home and Profile; starts the backfill and exposes `career` |
-| | `ui/progression/CareerViews`, `ProgressionText` | Binds the level card, roadmap and trophy cabinet; all words from `strings.xml` |
-| | `ProfileFragment`, `HomeFragment` | Career section (level card with checklist, roadmap, cabinet); Home level badge + Next goal |
+| Repository | `data/repository/ProgressionRepository` (@Singleton) | `awardSession()` (stop), `recomputeIfNeeded()` (one-off: delete every trophy row and re-award all sessions oldest first in one transaction; DataStore key `progression_rules_v2_applied`), `career()` Flow, `rewards(sessionId)` → `SessionRewards` (before/after snapshots, new trophies, new medals, milestones, CV, recent progress) |
+| UI | `ui/rewards/RewardsFragment` + `RewardsViewModel` | Rewards screen: km before → after, animated level bar, sequential trophy, milestone and LEVEL UP pop-ups (scale + glow, `performHapticFeedback`), medal and milestone lists, summary with CV %, recent progress, Next goal; Continue → Session Result |
+| | `ui/progression/CareerViewModel` | Shared by Home and Profile; starts the recompute and exposes `career` |
+| | `ui/progression/CareerViews`, `ProgressionText` | Binds the level card, 7-level roadmap and cabinet (8 trophies, then the Session medals header and 6 medals); all words from `strings.xml` |
+| | `ProfileFragment`, `HomeFragment` | Career section (level card with checklist, roadmap, cabinet) and the stats row (driven km, hours driven, trophies); Home level badge + Next goal |
 
 ### Dependencies
 
 - `SessionDao`, `LapDao`, `TrophyDao`, `DrivingCoachDatabase.withTransaction`
 - `TrackRepository.getTrack()` for the distance fallback
 - `LapDiagnosticsWriter` + `MergedLapCaveat` (`.lapdiag.json`) for lap-boundary trust
-- `CleanLaps` (±15% of median) for the credible best and the summary consistency
-- Preferences `DataStore` for the backfill flag
+- Lap sectors `s1/s2/s3` (`SectorSplitter`) for Purple Sector and the theoretical best lap
+- Preferences `DataStore` for the recompute flag
 
 ### Concurrency & consistency
 
-- One `Mutex` serialises the stop-time award and the replay.
+- One `Mutex` serialises the stop-time award and the recompute.
 - Distance and trophies for a session are written in a single Room transaction, so the
   career Flow never sees one without the other.
-- Evaluation only looks at sessions that started earlier, so replaying history oldest first
-  gives the same trophies as awarding at stop (PG-22). Awarding is idempotent.
-- The stop-time award always remeasures the distance, in case the replay ran mid-session.
+- Evaluation only looks at trusted sessions that started earlier, so recomputing history
+  oldest first gives the same awards as awarding at stop (PG-22). Awarding is idempotent.
+- The recompute deletes and re-inserts inside one `withTransaction`; the flag is written
+  only after it commits.
+- The stop-time award always remeasures the distance, in case the recompute ran mid-session.
 
 ### Failure Modes
 
@@ -2854,7 +2863,9 @@ v3.07 with database version 6.
 |---------|--------|--------|
 | Telemetry file missing/corrupt | Distance falls back to laps × track length, else 0 | Lower lifetime km |
 | `awardSession` throws | Logged (`RecordingViewModel`), Rewards shows the session without new trophies, Session Result still reachable | Log `Could not update progression` |
-| Replay interrupted | Flag not set, replay runs again on the next Home/Profile open (idempotent) | — |
+| Recompute interrupted | Transaction rolls back, flag not set, recompute runs again on the next Home/Profile open (idempotent) | — |
+| Retired v3.07 type rows before recompute | `TrophyType.fromName` returns null, the row is ignored | — |
+| No telemetry speeds | No Apex Exit or Top Gun for that session; other awards unaffected | Apex hint "Drive 5 consecutive valid laps with a recorded trace…" |
 | GPS jitter not filtered | Inflated distance | Lifetime km grows while stationary |
 
 ### Key Files
@@ -2862,7 +2873,7 @@ v3.07 with database version 6.
 | File | Responsibility |
 |------|----------------|
 | `progression/*.kt` | Pure rules, unit-tested in `app/src/test/.../progression/` |
-| `data/repository/ProgressionRepository.kt` | Award, replay, career, rewards |
+| `data/repository/ProgressionRepository.kt` | Award, recompute, career, rewards |
 | `ui/rewards/RewardsFragment.kt`, `res/layout/fragment_rewards.xml` | Rewards screen |
 | `ui/progression/*.kt`, `res/layout/view_level_card.xml`, `item_trophy_tile.xml`, `item_level_roadmap.xml`, `view_next_goal_card.xml` | Career views |
 

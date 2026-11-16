@@ -4,13 +4,17 @@ import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.profile.LocalUser
 import java.io.File
 
 /**
  * Seeds finished sessions for the progression tests (SRS §11.2).
  *
  * The telemetry is a straight run at [SPEED_MS] with one clean fix a second, so the
- * measured distance is exactly speed × duration: 6 laps of a minute come to 14.4 km.
+ * measured distance is exactly speed × duration: 6 laps of a minute come to 14.4 km, and
+ * every lap's top speed is 144 km/h (so five or more valid laps also earn Apex Exit, and a
+ * second visit earns Top Gun). Sessions are written under [LocalUser.ID], as the recorder
+ * writes them, so the Profile stats see them (SRS DP-11).
  */
 class ProgressionSeed(
     private val sessionDao: SessionDao,
@@ -38,7 +42,7 @@ class ProgressionSeed(
 
         val id = sessionDao.insertSession(
             SessionEntity(
-                userId = "instrumented-user",
+                userId = LocalUser.ID,
                 trackName = trackName,
                 trackId = trackId,
                 startedAt = startedAt,
@@ -92,10 +96,16 @@ class ProgressionSeed(
         private const val BASE_LAT = 41.0
         private const val BASE_LNG = -8.0
 
-        /** Six identical minute laps: Finisher plus Consistency Gold, and 14.4 km. */
+        /**
+         * Six identical minute laps, 14.4 km, 6 minutes driven. On a first visit:
+         * The Finisher, Surgical (CV 0) and Apex Exit; medals Carbon Copy, Clean Air and Full Stint.
+         */
         val STEADY_MINUTES = List(6) { 60_000L }
 
-        /** Six identical laps two seconds quicker, 13.9 km: a personal best on a second visit. */
+        /**
+         * Six identical laps two seconds quicker, 13.9 km. On a second visit it adds Pace
+         * Setter and the Top Gun medal to everything [STEADY_MINUTES] earns.
+         */
         val STEADY_QUICKER = List(6) { 58_000L }
     }
 }

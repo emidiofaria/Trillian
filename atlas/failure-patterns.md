@@ -3121,3 +3121,54 @@ Any Room call that is not a `suspend` DAO method or a `Flow` (e.g. `clearAllTabl
 `runInTransaction`, raw `openHelper` access) must be explicitly dispatched off the main thread,
 and at least one test must exercise it against a database configured like production.
 
+
+---
+
+## Pattern: Two Hard-Coded Copies of One Identifier Drift Apart (FP-HARDCODED-ID-DRIFT) — ✅ FIXED (v3.08)
+
+### Symptoms
+
+- Profile shows **0 sessions and 0 laps** although Home lists the driver's sessions and every
+  Session Result opens fine.
+- Nothing crashes and nothing is logged: the query is valid, it just matches no row.
+
+### Signals
+
+| Signal | Location | Meaning |
+|--------|----------|---------|
+| `sessions.userId = 'default_user'` on every row | Room DB dump | What the recorder writes |
+| `ProfileViewModel` queried `getStatsForUser("demo_user")` | Source | What the reader asked for |
+| Two string literals for "the user" in different packages | `grep -rn '"default_user"\|"demo_user"'` | The tell |
+
+### Root Cause
+
+`RecordingViewModel` created sessions with the literal `userId = "default_user"`;
+`ProfileViewModel` read them with its own literal `currentUserId = "demo_user"`, copied from
+the SRS wording of the single-user MVP. Both were "the one user" and nothing tied them
+together. L1 mocked the DAO with `any()` user id, so the mismatch never reached an assertion.
+
+### Mitigation
+
+One constant, `data/profile/LocalUser.ID`, used by the writer and the reader. Its value is
+`default_user`, the one every existing row already holds, so no data migration was needed
+and real history shows up immediately. The SRS (DP-07) names the constant instead of a value.
+
+### Lesson
+
+**An identifier written in one place and read in another must come from one declaration.**
+When the value is already persisted, the constant takes the persisted value, not the
+documented one. A test of the reader must use the writer's value (or the shared constant)
+and a fake that filters by it; `any()` matchers on keys hide exactly this bug.
+
+### Automated Guard
+
+- L1 `ProfileViewModelTest.the shared user id is the one the recorder has always written`
+  pins `LocalUser.ID == "default_user"`; `stats come from the sessions the recorder wrote`
+  uses a DAO stub that filters by user id, so the old `demo_user` returns zero and fails;
+  `sessions of another user are not counted` proves the filter is live.
+- L2 `ProfileCareerTest.statsShowDrivenKmHoursAndTrophies` seeds sessions under
+  `LocalUser.ID` through the real Room database and reads the Profile stats row.
+
+### Confidence
+
+**HIGH** — root cause confirmed in code, fixed and guarded on both levels.

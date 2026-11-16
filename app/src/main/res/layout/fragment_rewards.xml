@@ -107,6 +107,48 @@
                     android:text="@string/rewards_no_trophies"
                     android:visibility="gone" />
 
+                <!-- Session medals (SRS PG-28): shown, never counted towards levels -->
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/rewards_medals_title"
+                    android:textColor="@color/colorPrimary" />
+
+                <LinearLayout
+                    android:id="@+id/rewardsMedals"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/rewardsNoMedals"
+                    style="@style/TextAppearance.DrivingCoach.Body.Secondary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:text="@string/rewards_no_medals"
+                    android:visibility="gone" />
+
+                <!-- 8 km odometer milestones (SRS PG-31): celebration only -->
+                <TextView
+                    android:id="@+id/rewardsMilestonesTitle"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/rewards_milestones_title"
+                    android:textColor="@color/colorPrimary"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/rewardsMilestones"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
+
                 <TextView
                     style="@style/TextAppearance.DrivingCoach.Caption"
                     android:layout_width="wrap_content"

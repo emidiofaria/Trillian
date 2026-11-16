@@ -318,8 +318,8 @@ When your session is done:
 
 1. Open the app and tap **Stop Recording**
 2. **Lap times appear immediately** — the app detects laps locally from your GPS trace
-3. The **Rewards** screen opens: the distance you just drove, any trophies you won and how
-   your level moved (§6.5)
+3. The **Rewards** screen opens: the distance you just drove, any trophies and medals you
+   won, any 8 km milestone you passed and how your level moved (§6.5)
 4. Tap **CONTINUE** to open the session and see your lap breakdown, speed trace and track map
 
 **Everything happens on your phone.** Trillian has no server and no account.
@@ -686,9 +686,11 @@ this feature existed may not have a file to share.
 Tap your **Profile** (top right icon) to see:
 
 - Your driver name and initials
-- Total sessions recorded
-- Total laps driven
-- All-time best lap time
+- Your stats row:
+  - **Driven km** — your lifetime distance
+  - **Hours driven** — the time of all your laps added up: "45 min" under an hour, then
+    hours with one decimal, for example "2.4 h"
+  - **Trophies** — how many level trophies you have won (medals are not counted here)
 - Your **Career**: level card with the next-level checklist, the level roadmap and your
   trophy cabinet (§6.5)
 
@@ -726,10 +728,10 @@ trophies). The app returns to the very first screen, as if freshly installed.
 Use it when handing the phone to someone else, or to start completely fresh.
 
 
-### 6.5 Your Career: Levels, Trophies and Rewards
+### 6.5 Your Career: Levels, Trophies, Medals and Rewards
 
 Every session you drive counts towards your **career**. Trillian measures how far you drove
-and awards trophies for what you achieved, all on your phone.
+and awards trophies and medals for what you achieved, all on your phone.
 
 #### Distance
 
@@ -738,45 +740,80 @@ wobble and the odd wild fix are filtered out, so the number reflects real drivin
 session has no readable GPS file, Trillian uses laps × the circuit's length when the circuit
 is from the library. Your **lifetime distance** is the total over all your sessions.
 
-#### Trophies
+#### Two words you'll see
+
+- A **valid lap** is a lap between 85% and 115% of your session's typical (median) lap
+  time. Out-laps, in-laps and a half lap from a missed line crossing don't count.
+- **CV** (coefficient of variation) says how much 5 valid laps in a row varied, as a
+  percentage of their average time. Lower is steadier: 1.0% on a 60 s lap is about 0.6 s.
+  Trillian uses your steadiest 5 in the session.
+
+#### Trophies (they unlock levels)
 
 | Trophy | How to win it |
 |---|---|
-| 🥉 **The Finisher** (Bronze) | Drive at least 5 km and at least 5 laps in one session |
-| 🥈 **Personal Best** (Silver) | Beat your best lap on a circuit you have driven before. Your first visit to a circuit sets the time to beat, so it cannot win this one |
-| 🥇 **Track Master** (Gold) | Set a Personal Best **and** win Consistency Gold in the same session |
-| **Consistency** Bronze / Silver / Gold | Drive 5 laps in a row whose times vary by less than 3.000s / 1.500s / 0.750s. You get the highest one you reach, not all three |
+| 🥉 **The Finisher** | Drive at least 5 km with at least 5 valid laps in one session |
+| 🥉 **Pace Setter** | Beat your best lap on a circuit you have driven before. Your first visit sets the time to beat |
+| 🥉 **Steady Hand** | 5 valid laps in a row with a CV under 3.0% |
+| 🥈 **Metronome** | 5 valid laps in a row with a CV under 1.5% |
+| 🥈 **Plateau Breaker** | Beat a best lap that has stood for at least 15 valid laps on that circuit |
+| 🥈 **Apex Exit** | On 5 valid laps in a row, reach a top speed within 1.0% of the session's fastest every lap |
+| 🥇 **Surgical** | 5 valid laps in a row with a CV under 0.75% |
+| 🥇 **Optimal Lap** | Drive a real lap within 0.5% of your theoretical best (your best three sectors on that circuit added up), once you have 20 valid laps there |
 
-Lap times only count for a Personal Best when the lap is a believable lap (within 15% of the
-session's typical lap), so a half lap from a missed line crossing cannot fake a record. If a
-session's laps could not be split cleanly (the "laps may have been merged" note), it can
-still win The Finisher but not the time-based trophies.
+Steady Hand, Metronome and Surgical are one family: a session wins only the highest one it
+reaches. If a session's laps could not be split cleanly (the "laps may have been merged"
+note), it can still win The Finisher but nothing else, and it is left out when your records
+are compared.
+
+#### Medals (just for the session)
+
+Medals celebrate a good session. They are listed on the Rewards screen and in your Profile,
+but they **don't** count towards levels or your trophy count.
+
+| Medal | How to win it |
+|---|---|
+| **Purple Sector** | Set your all-time best in sector 1, 2 or 3 on a circuit you have driven before |
+| **Carbon Copy** | Two valid laps in a row within 0.75% of each other |
+| **Top Gun** | Set or match (within 0.5 km/h) your top speed record on a circuit you have driven before |
+| **Clean Air** | 5 laps in a row each within 5.0% of the session's typical lap |
+| **Late Charger** | Your fastest lap comes in the last 3 valid laps of a session with at least 5 valid laps |
+| **Full Stint** | Drive at least 8 km in one session |
+
+#### Pit-Box milestones
+
+Every 8 km of lifetime distance is a **Pit-Box milestone** (8 km, 16 km, 24 km …). The
+Rewards screen lists the ones a session took you past and celebrates the highest. They are
+just for fun: they don't unlock anything.
 
 #### Levels
 
 | Level | Tier | Lifetime distance | And |
 |---|---|---|---|
 | 1 Rookie | Beginner | 0 km | — |
-| 2 Novice | Beginner | 25 km | 1 Finisher (Bronze) |
-| 3 Challenger | Mid | 50 km | 3 Finisher (Bronze) |
-| 4 Competitor | Mid | 100 km | 1 Personal Best (Silver) |
-| 5 Expert | Pro | 200 km | 3 Personal Best (Silver) |
-| 6 Master | Pro | 350 km | 1 Track Master (Gold) |
+| 2 Cadet | Beginner | 8 km | — |
+| 3 Novice | Mid | 24 km | 1 Bronze trophy or better |
+| 4 Challenger | Mid | 56 km | 3 Bronze trophies or better |
+| 5 Competitor | Pro | 120 km | 1 Silver trophy or better |
+| 6 Expert | Pro | 240 km | 3 Silver trophies or better |
+| 7 Track Legend | Pro | 450 km | 1 Gold trophy or better |
 
-You need **both** the distance **and** the trophy, and you climb one level at a time. If
-you have driven 120 km but not yet set a Personal Best, you stay at Challenger and the
-checklist shows what is missing. Consistency trophies are for your cabinet; they do not
-unlock levels.
+You need **both** the distance **and** the trophies, and you climb one level at a time.
+Trophies from every circuit count together, and a better metal always counts: a Gold
+trophy counts as a Silver or a Bronze. Each trophy counts once, though: with 450 km and a
+single Gold you are a Novice, because Challenger needs three trophies.
 
 #### The Rewards screen
 
 Right after you stop a session you see:
 
 - Your lifetime distance before → after, and the level bar filling up
-- A pop-up for each new trophy (with a short buzz), then a **LEVEL UP!** pop-up if you
-  moved up. Tap **NICE!** (or Back) to move on
-- The session in numbers: distance, laps, best lap and consistency (how much your clean
-  laps varied, in seconds — lower is steadier)
+- A pop-up for each new trophy (with a short buzz), then one for the highest Pit-Box
+  milestone you passed, then a **LEVEL UP!** pop-up if you moved up. Tap **NICE!** (or
+  Back) to move on
+- Your new trophies, your new medals and the milestones you passed
+- The session in numbers: distance, laps, best lap and consistency (the session's CV in
+  percent — lower is steadier)
 - **Recent progress**: how your best lap compares with your last session at the same
   circuit, for example "You were 0.800s faster than your last session at Baltar!"
 - Your **Next goal**
@@ -787,24 +824,28 @@ screen is shown once.
 #### Career on your Profile
 
 - **Level card** — your level, tier, the distance bar and a checklist for the next level,
-  for example "✅ 100 km (124.6 km driven)" and "⬜ 1 × Personal Best (you have 0)"
-- **Roadmap** — all six levels: done ones ticked, your current one highlighted, the rest
+  for example "✅ 120 km (124.6 km driven)" and "⬜ 1 × Silver trophy or better (you have 0)"
+- **Roadmap** — all seven levels: done ones ticked, your current one highlighted, the rest
   greyed with what they need
-- **Trophy cabinet** — six tiles. A trophy you have shows its colour, how many times you won
-  it and when and where you last did. One you don't have yet is greyed, says how to win it
-  and gives a personal hint from your own driving, for example "Your steadiest 5 laps varied
-  by 1.820s — get under 1.500s for Consistency Silver"
+- **Trophy cabinet** — the eight trophies, then a **Session medals** section with the six
+  medals. One you have shows its colour, how many times you won it and when and where you
+  last did. One you don't have yet is greyed and says how to win it; trophies also give a
+  personal hint from your own driving, for example "Your best CV 2.10% · need under 1.50%
+  for Metronome"
 
 #### Next goal
 
 One line telling you the single most reachable step towards your next level: kilometres
-still to drive if you are short of them, otherwise the trophy you still need.
+still to drive if you are short of them, otherwise how many trophies of which metal you
+still need, with examples.
 
-#### Sessions from before this update
+#### After updating to 3.08
 
-The first time you open Home or Profile after updating, Trillian quietly goes through your
-earlier sessions, oldest first, and measures them and awards their trophies. There are no
-pop-ups for these; they simply appear in your cabinet and count towards your level.
+The first time you open Home or Profile after updating to 3.08, Trillian quietly
+re-scores all your earlier sessions, oldest first, under the new rules. The old trophies
+(Personal Best, Track Master, Consistency Bronze/Silver/Gold) are replaced by the new ones,
+and your level is worked out again. It can be lower than before, because the ladder
+changed. There are no pop-ups for this.
 
 ---
 
@@ -1022,12 +1063,21 @@ does not have permission to use the internet, so it could not send your data
 even if it tried. The only way anything leaves your phone is if you export or
 share it yourself (§6).
 
-**Q: Why didn't my first session at a circuit win a Personal Best?**  
-A: A Personal Best needs a previous time at the same circuit to beat. Your first session
-there sets that time; beat it next time.
+**Q: Why didn't my first session at a circuit win Pace Setter (or Top Gun, or Purple Sector)?**  
+A: Those need a previous time or speed at the same circuit to beat. Your first session
+there sets them; beat them next time.
+
+**Q: My level went down after updating to 3.08. Why?**  
+A: 3.08 changed the ladder and the trophies, and re-scored all your sessions under the new
+rules. Nothing was deleted: your sessions, laps and distance are all still there.
+
+**Q: My Profile used to show 0 sessions. Is my history gone?**  
+A: No. Before 3.08 the Profile looked your sessions up under the wrong name, so its numbers
+stayed at zero. 3.08 fixes it: Driven km, Hours driven and Trophies now count every session
+you recorded.
 
 **Q: I have the kilometres but my level didn't go up. Why?**  
-A: Each level needs a trophy as well as distance. Open Profile: the checklist marks what is
+A: From Level 3 up, each level needs trophies as well as distance. Open Profile: the checklist marks what is
 still missing with ⬜, and Next goal tells you what to do.
 
 **Q: How do I delete my data?**  

@@ -11,8 +11,11 @@ import com.drivingcoach.R
 import com.drivingcoach.data.db.DrivingCoachDatabase
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
+import com.drivingcoach.data.db.dao.TrophyDao
 import com.drivingcoach.data.profile.DriverProfileStore
 import com.drivingcoach.data.profile.DriverProfileStore.NameValidation
+import com.drivingcoach.data.profile.LocalUser
+import com.drivingcoach.progression.TrophyType
 import com.drivingcoach.di.IoDispatcher
 import com.drivingcoach.lap.LapDiagnosticsWriter
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +26,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -34,16 +39,19 @@ data class UserProfile(
     val initials: String
 )
 
+/** The Profile stats row (SRS DP-11): career distance, time on track, level trophies. */
 data class UserStats(
-    val totalSessions: Int,
-    val totalLaps: Int,
-    val bestLapMs: Long?
+    val drivenKm: Double,
+    /** Sum of every recorded lap's duration. */
+    val drivenMs: Long,
+    /** Level trophies only; session medals are not counted here. */
+    val trophies: Int
 )
 
 data class ProfileUiState(
     val isLoading: Boolean = true,
     val profile: UserProfile? = null,
-    val stats: UserStats = UserStats(0, 0, null),
+    val stats: UserStats = UserStats(0.0, 0L, 0),
     val error: String? = null
 )
 
@@ -58,6 +66,7 @@ sealed class ProfileEvent {
 class ProfileViewModel @Inject constructor(
     private val sessionDao: SessionDao,
     private val lapDao: LapDao,
+    private val trophyDao: TrophyDao,
     private val database: DrivingCoachDatabase,
     private val dataStore: DataStore<Preferences>,
     private val driverProfileStore: DriverProfileStore,
@@ -73,9 +82,10 @@ class ProfileViewModel @Inject constructor(
     /**
      * Session ownership key. Intentionally *not* derived from the driver's display name
      * (SRS DP-01, DR-06): the name is editable, and keying rows to it would orphan a
-     * driver's entire history the moment they corrected a typo.
+     * driver's entire history the moment they corrected a typo. Shared with the recorder
+     * through [LocalUser], so the two can never drift apart again.
      */
-    private val currentUserId = "demo_user"
+    private val currentUserId = LocalUser.ID
 
     init {
         loadProfile()
@@ -92,37 +102,32 @@ class ProfileViewModel @Inject constructor(
                     initials = driverProfileStore.initialsOf(displayName)
                 )
 
-                // Load aggregate stats
-                val sessions = sessionDao.getAllSessionsForUser(currentUserId).first()
-                var totalLaps = 0
-                var bestLapMs: Long? = null
-
-                for (session in sessions) {
-                    val laps = lapDao.getLapsForSession(session.id).first()
-                    totalLaps += laps.size
-                    val sessionBest = laps.minByOrNull { it.durationMs }
-                    if (sessionBest != null && (bestLapMs == null || sessionBest.durationMs < bestLapMs)) {
-                        bestLapMs = sessionBest.durationMs
-                    }
-                }
-
-                val stats = UserStats(
-                    totalSessions = sessions.size,
-                    totalLaps = totalLaps,
-                    bestLapMs = bestLapMs
-                )
-
-                _uiState.value = ProfileUiState(
-                    isLoading = false,
-                    profile = profile,
-                    stats = stats
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false, profile = profile, error = null)
             } catch (e: Exception) {
                 _uiState.value = ProfileUiState(
                     isLoading = false,
                     error = e.message ?: "Failed to load profile"
                 )
+                return@launch
             }
+
+            // Kept live, so a session finished while Profile is open is counted at once.
+            combine(
+                sessionDao.getAllSessionsForUser(currentUserId),
+                lapDao.observeAllLaps(),
+                trophyDao.observeAll()
+            ) { sessions, laps, trophies ->
+                val ids = sessions.map { it.id }.toSet()
+                UserStats(
+                    drivenKm = sessions.sumOf { it.distanceM ?: 0.0 } / 1000.0,
+                    drivenMs = laps.filter { it.sessionId in ids }.sumOf { it.durationMs.coerceAtLeast(0L) },
+                    trophies = trophies.count {
+                        it.sessionId in ids && TrophyType.fromName(it.type)?.countsTowardLevels == true
+                    }
+                )
+            }.flowOn(ioDispatcher)
+                .catch { Log.e(TAG, "profile stats failed", it) }
+                .collect { stats -> _uiState.value = _uiState.value.copy(isLoading = false, stats = stats) }
         }
     }
 

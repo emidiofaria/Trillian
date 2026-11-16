@@ -23,7 +23,8 @@ data class CabinetEntry(
 sealed class NextGoal {
     object MaxLevel : NextGoal()
     data class DriveKm(val nextLevel: Int, val remainingKm: Double) : NextGoal()
-    data class EarnTrophies(val nextLevel: Int, val type: TrophyType, val remaining: Int) : NextGoal()
+    /** [remaining] more trophies of [metal] or better (PG-02 upward compatibility). */
+    data class EarnTrophies(val nextLevel: Int, val metal: TrophyType.Metal, val remaining: Int) : NextGoal()
 }
 
 /**
@@ -32,15 +33,31 @@ sealed class NextGoal {
  */
 sealed class TrophyHint {
     /** Best attempt so far, or null fields when no session has been recorded. */
-    data class Finisher(val bestDistanceKm: Double?, val bestLaps: Int?) : TrophyHint()
+    data class Finisher(val bestDistanceKm: Double?, val bestValidLaps: Int?) : TrophyHint()
 
-    /** Steadiest five-lap run so far, against [type]'s threshold. Null when never five laps. */
-    data class Consistency(val type: TrophyType, val steadiestMs: Double?, val thresholdMs: Double) : TrophyHint()
+    /** Lowest 5-lap CV so far, in percent, against [type]'s threshold. Null when never five valid laps. */
+    data class Consistency(val type: TrophyType, val bestCvPercent: Double?, val thresholdPercent: Double) : TrophyHint()
 
     /** The driver's best at the track they drove most recently; null when no laps yet. */
     data class PersonalBest(val trackName: String?, val bestMs: Long?) : TrophyHint()
 
-    data class TrackMaster(val personalBest: PersonalBest, val steadiestMs: Double?) : TrophyHint()
+    /** Valid laps the PB at the latest track has stood for, against [needed]. */
+    data class Plateau(val trackName: String?, val lapsSincePb: Int?, val needed: Int) : TrophyHint()
+
+    /** Tightest five-lap top-speed spread so far, percent, against [thresholdPercent]. */
+    data class Apex(val bestSpreadPercent: Double?, val thresholdPercent: Double) : TrophyHint()
+
+    /**
+     * At the latest track: lifetime valid laps against [neededLaps], and how far the best real
+     * lap is above the theoretical best, in percent (null without sector data).
+     */
+    data class Optimal(
+        val trackName: String?,
+        val validLaps: Int,
+        val neededLaps: Int,
+        val gapPercent: Double?,
+        val thresholdPercent: Double
+    ) : TrophyHint()
 }
 
 data class CareerSnapshot(
@@ -90,7 +107,7 @@ object ProgressionGoals {
             distance != null && !distance.met ->
                 NextGoal.DriveKm(next.number, distance.targetKm - distance.currentKm)
             trophy != null && !trophy.met ->
-                NextGoal.EarnTrophies(next.number, trophy.type, trophy.target - trophy.current)
+                NextGoal.EarnTrophies(next.number, trophy.metal, trophy.target - trophy.current)
             // Unreachable while levelFor is consistent with requirementsOf; kept total.
             else -> NextGoal.DriveKm(next.number, 0.0)
         }
@@ -107,33 +124,50 @@ object ProgressionGoals {
 
     fun hints(sessions: List<SessionFacts>): Map<TrophyType, TrophyHint> {
         val ordered = sessions.sortedWith(compareBy({ it.startedAt }, { it.sessionId }))
+        val trusted = ordered.filter { it.lapBoundariesTrusted }
 
         val bestAttempt = ordered.maxWithOrNull(compareBy({ finisherScore(it) }, { it.startedAt }, { it.sessionId }))
-        val finisher = TrophyHint.Finisher(bestAttempt?.distanceM?.div(1000.0), bestAttempt?.lapCount)
+        val finisher = TrophyHint.Finisher(bestAttempt?.distanceM?.div(1000.0), bestAttempt?.validLapCount)
 
-        val steadiest = ordered.filter { it.lapBoundariesTrusted }
-            .mapNotNull { TrophyRules.steadiestWindowStdDevMs(it.lapDurationsMs) }
-            .minOrNull()
+        val bestCv = trusted.mapNotNull { it.bestCvPercent }.minOrNull()
+        val bestSpread = trusted.mapNotNull { SessionMetrics.bestApexSpreadPercent(it) }.minOrNull()
 
-        val pb = personalBestHint(ordered)
+        val pb = personalBestHint(trusted)
+        val latestTrack = trusted.lastOrNull { it.credibleBestMs != null }
+        val onLatest = latestTrack?.let { l -> trusted.filter { it.trackKey == l.trackKey } }.orEmpty()
+
+        val plateau = TrophyHint.Plateau(
+            latestTrack?.trackName,
+            if (latestTrack == null) null else SessionMetrics.lapsSincePb(onLatest),
+            TrophyRules.PLATEAU_MIN_LAPS
+        )
+
+        val tbl = SessionMetrics.theoreticalBestMs(onLatest)
+        val bestReal = onLatest.mapNotNull { it.credibleBestMs }.minOrNull()
+        val optimal = TrophyHint.Optimal(
+            trackName = latestTrack?.trackName,
+            validLaps = onLatest.sumOf { it.validLapCount },
+            neededLaps = TrophyRules.OPTIMAL_MIN_LIFETIME_VALID_LAPS,
+            gapPercent = if (tbl != null && tbl > 0 && bestReal != null) (bestReal - tbl) * 100.0 / tbl else null,
+            thresholdPercent = TrophyRules.OPTIMAL_MAX_GAP_PER_MILLE / 10.0
+        )
 
         return mapOf(
-            TrophyType.FINISHER_BRONZE to finisher,
-            TrophyType.PB_SILVER to pb,
-            TrophyType.TRACK_MASTER_GOLD to TrophyHint.TrackMaster(pb, steadiest),
-            TrophyType.CONSISTENCY_BRONZE to
-                TrophyHint.Consistency(TrophyType.CONSISTENCY_BRONZE, steadiest, TrophyRules.CONSISTENCY_BRONZE_MS),
-            TrophyType.CONSISTENCY_SILVER to
-                TrophyHint.Consistency(TrophyType.CONSISTENCY_SILVER, steadiest, TrophyRules.CONSISTENCY_SILVER_MS),
-            TrophyType.CONSISTENCY_GOLD to
-                TrophyHint.Consistency(TrophyType.CONSISTENCY_GOLD, steadiest, TrophyRules.CONSISTENCY_GOLD_MS)
+            TrophyType.FINISHER to finisher,
+            TrophyType.PACE_SETTER to pb,
+            TrophyType.STEADY_HAND to TrophyHint.Consistency(TrophyType.STEADY_HAND, bestCv, TrophyRules.STEADY_HAND_CV),
+            TrophyType.METRONOME to TrophyHint.Consistency(TrophyType.METRONOME, bestCv, TrophyRules.METRONOME_CV),
+            TrophyType.SURGICAL to TrophyHint.Consistency(TrophyType.SURGICAL, bestCv, TrophyRules.SURGICAL_CV),
+            TrophyType.PLATEAU_BREAKER to plateau,
+            TrophyType.APEX_EXIT to TrophyHint.Apex(bestSpread, TrophyRules.APEX_MAX_SPREAD_PERCENT),
+            TrophyType.OPTIMAL_LAP to optimal
         )
     }
 
     /** Each condition counts up to half; a session meeting both scores 2. */
     private fun finisherScore(session: SessionFacts): Double =
         (session.distanceM / TrophyRules.FINISHER_MIN_DISTANCE_M).coerceAtMost(1.0) +
-            (session.lapCount.toDouble() / TrophyRules.FINISHER_MIN_LAPS).coerceAtMost(1.0)
+            (session.validLapCount.toDouble() / TrophyRules.FINISHER_MIN_VALID_LAPS).coerceAtMost(1.0)
 
     /** The best credible lap at the most recently driven track that has one. */
     private fun personalBestHint(ordered: List<SessionFacts>): TrophyHint.PersonalBest {

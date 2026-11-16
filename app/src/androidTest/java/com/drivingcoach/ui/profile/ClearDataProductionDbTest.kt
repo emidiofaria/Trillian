@@ -70,7 +70,7 @@ class ClearDataProductionDbTest {
         val telemetry = File(database.sessionDao().getAllRawFilePaths().single())
         val sidecar = File(telemetry.parentFile, telemetry.name + LapDiagnosticsWriter.SUFFIX).apply { writeText("{}") }
         database.trophyDao().insertAll(
-            listOf(TrophyEntity(sessionId = sessionId, type = "FINISHER_BRONZE", trackKey = "t", value = 1, awardedAt = 1L))
+            listOf(TrophyEntity(sessionId = sessionId, type = "FINISHER", trackKey = "t", value = 1, awardedAt = 1L))
         )
 
         val dataStore = PreferenceDataStoreFactory.create(scope = dataStoreScope) { prefsFile }
@@ -79,6 +79,7 @@ class ClearDataProductionDbTest {
         val vm = ProfileViewModel(
             sessionDao = database.sessionDao(),
             lapDao = database.lapDao(),
+            trophyDao = database.trophyDao(),
             database = database,
             dataStore = dataStore,
             driverProfileStore = DriverProfileStore(dataStore, Dispatchers.IO),

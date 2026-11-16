@@ -8,7 +8,12 @@ import com.drivingcoach.R
 import com.drivingcoach.data.db.DrivingCoachDatabase
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
+import com.drivingcoach.data.db.dao.TrophyDao
+import com.drivingcoach.data.db.entity.LapEntity
+import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.db.entity.TrophyEntity
 import com.drivingcoach.data.profile.DriverProfileStore
+import com.drivingcoach.data.profile.LocalUser
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -29,6 +34,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -54,6 +60,7 @@ class ProfileViewModelTest {
 
     private lateinit var sessionDao: SessionDao
     private lateinit var lapDao: LapDao
+    private lateinit var trophyDao: TrophyDao
     private lateinit var database: DrivingCoachDatabase
 
     @Before
@@ -61,6 +68,7 @@ class ProfileViewModelTest {
         Dispatchers.setMain(testDispatcher)
         sessionDao = mock()
         lapDao = mock()
+        trophyDao = mock()
         database = mock()
     }
 
@@ -89,17 +97,46 @@ class ProfileViewModelTest {
     ): ProfileViewModel {
         // The Profile screen loads stats on construction; keep those reads empty and quiet
         // so each test observes only the action under test.
-        whenever(sessionDao.getAllSessionsForUser("demo_user")).thenReturn(flowOf(emptyList()))
+        stubStats()
 
         return ProfileViewModel(
             sessionDao = sessionDao,
             lapDao = lapDao,
+            trophyDao = trophyDao,
             database = database,
             dataStore = dataStore,
             driverProfileStore = DriverProfileStore(dataStore, testDispatcher),
             ioDispatcher = ioDispatcher
         )
     }
+
+    /**
+     * Sessions are returned only for the user id the recorder writes, as Room would: a
+     * Profile that asked for any other id would see nothing, which is the v3.07 bug.
+     */
+    private fun stubStats(
+        sessions: List<SessionEntity> = emptyList(),
+        laps: List<LapEntity> = emptyList(),
+        trophies: List<TrophyEntity> = emptyList()
+    ) {
+        whenever(sessionDao.getAllSessionsForUser(any())).thenAnswer { call ->
+            flowOf(sessions.filter { it.userId == call.getArgument<String>(0) })
+        }
+        whenever(lapDao.observeAllLaps()).thenReturn(flowOf(laps))
+        whenever(trophyDao.observeAll()).thenReturn(flowOf(trophies))
+    }
+
+    private fun recordedSession(id: Long, distanceM: Double) = SessionEntity(
+        id = id, userId = RECORDER_USER_ID, trackName = "Baltar", startedAt = id * 1_000L,
+        rawFilePath = "", distanceM = distanceM
+    )
+
+    private fun lap(sessionId: Long, number: Int, durationMs: Long) = LapEntity(
+        sessionId = sessionId, lapNumber = number, startTs = 0L, endTs = durationMs, durationMs = durationMs
+    )
+
+    private fun trophyRow(sessionId: Long, type: String) =
+        TrophyEntity(sessionId = sessionId, type = type, trackKey = "name:baltar", value = 0L, awardedAt = 0L)
 
     private fun storedProfile(name: String) = mutablePreferencesOf(
         DriverProfileStore.KEY_DRIVER_NAME to name,
@@ -126,6 +163,76 @@ class ProfileViewModelTest {
             ProfileViewModel.DEFAULT_DISPLAY_NAME,
             vm.uiState.value.profile?.displayName
         )
+    }
+
+    // --- Stats (DP-01, DP-11) --------------------------------------------------------------
+
+    @Test
+    fun `the shared user id is the one the recorder has always written`() {
+        // Existing recordings are keyed to this value; changing it would orphan them.
+        assertEquals(RECORDER_USER_ID, LocalUser.ID)
+    }
+
+    /** Fails on v3.07, which asked for "demo_user" and showed 0 for every driver. */
+    @Test
+    fun `stats come from the sessions the recorder wrote`() = runTest(testDispatcher) {
+        val dataStore = RecordingDataStore(storedProfile("Ayrton"))
+        stubStats(
+            sessions = listOf(recordedSession(1, 6_400.0), recordedSession(2, 8_000.0)),
+            laps = listOf(lap(1, 1, 30 * 60_000L), lap(1, 2, 30 * 60_000L), lap(2, 1, 25 * 60_000L)),
+            trophies = listOf(trophyRow(1, "FINISHER"), trophyRow(2, "METRONOME"))
+        )
+        val fresh = ProfileViewModel(
+            sessionDao, lapDao, trophyDao, database, dataStore,
+            DriverProfileStore(dataStore, testDispatcher), testDispatcher
+        )
+        advanceUntilIdle()
+
+        val stats = fresh.uiState.value.stats
+        assertEquals(14.4, stats.drivenKm, 1e-9)
+        assertEquals(85 * 60_000L, stats.drivenMs)
+        assertEquals(2, stats.trophies)
+    }
+
+    @Test
+    fun `the trophies stat counts level trophies only`() = runTest(testDispatcher) {
+        val dataStore = RecordingDataStore(storedProfile("Ayrton"))
+        stubStats(
+            sessions = listOf(recordedSession(1, 9_000.0)),
+            trophies = listOf(
+                trophyRow(1, "FINISHER"), trophyRow(1, "STEADY_HAND"),
+                trophyRow(1, "FULL_STINT"), trophyRow(1, "CARBON_COPY"),
+                // A pre-3.08 row before the recompute: unknown, so not counted.
+                trophyRow(1, "PB_SILVER")
+            )
+        )
+        val vm = ProfileViewModel(
+            sessionDao, lapDao, trophyDao, database, dataStore,
+            DriverProfileStore(dataStore, testDispatcher), testDispatcher
+        )
+        advanceUntilIdle()
+
+        assertEquals(2, vm.uiState.value.stats.trophies)
+    }
+
+    @Test
+    fun `sessions of another user are not counted`() = runTest(testDispatcher) {
+        val dataStore = RecordingDataStore(storedProfile("Ayrton"))
+        stubStats(
+            sessions = listOf(recordedSession(1, 5_000.0), recordedSession(2, 7_000.0).copy(userId = "demo_user")),
+            laps = listOf(lap(1, 1, 60_000L), lap(2, 1, 90_000L)),
+            trophies = listOf(trophyRow(2, "FINISHER"))
+        )
+        val vm = ProfileViewModel(
+            sessionDao, lapDao, trophyDao, database, dataStore,
+            DriverProfileStore(dataStore, testDispatcher), testDispatcher
+        )
+        advanceUntilIdle()
+
+        val stats = vm.uiState.value.stats
+        assertEquals(5.0, stats.drivenKm, 1e-9)
+        assertEquals(60_000L, stats.drivenMs)
+        assertEquals(0, stats.trophies)
     }
 
     // --- Rename (DR-06) --------------------------------------------------------------------
@@ -338,5 +445,10 @@ class ProfileViewModelTest {
 
         assertFalse("sidecar should have been deleted", sidecar.exists())
         assertTrue("files not derived from a recorded path are left alone", unrelated.exists())
+    }
+
+    private companion object {
+        /** The literal RecordingViewModel wrote before [LocalUser] existed. */
+        const val RECORDER_USER_ID = "default_user"
     }
 }
