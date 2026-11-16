@@ -2750,7 +2750,7 @@ from `SectorSplitter` and keeps whatever it had, rather than being blanked.
 | `coaching/SectorRepair.kt` | `repair()`, `refreshInsights()` |
 | `coaching/CleanLaps.kt` | Median ±15 % lap filter shared with Sector Diagnostic and Fundamentals |
 | `data/db/dao/LapDao.kt` | `updateSectors()` |
-| `data/db/dao/CoachingInsightDao.kt` | `deleteLocalInsightsForSession()`, `getInsightsForSessionOnce()` |
+| `data/db/dao/CoachingInsightDao.kt` | `replaceLocalInsights()` (transactional), `getInsightsForSessionOnce()` |
 | `lap/LapDiagnosticsWriter.kt` | `read()` |
 
 ### Criticality

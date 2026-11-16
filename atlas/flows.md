@@ -1961,8 +1961,8 @@ CoachFragment.updateUI(state)  [populated branch only]
     → OfflineCoachingEngine.generateInsights(laps, path, caveat, mergedSignalKnown)
     → empty → keep existing rather than replace real insights with none
     → getInsightsForSessionOnce → local (headline, detail) list == fresh? → no writes
-    → deleteLocalInsightsForSession (NEVER the indiscriminate delete)
-    → insertInsights(isLocalOnly = true)
+    → replaceLocalInsights(isLocalOnly = true)   [@Transaction: delete local + insert]
+      (atomic: an empty in-between emission would hide the sector map)
   → [ASYNC] FundamentalsAnalyzer.analyze(laps, samples)   [Dispatchers.Default]
     → CleanLaps.of(laps) (< 3 → every tip NOT_ASSESSED)
     → FINAL_CORNER: speed of fix nearest each lap end (<= 2 s); max − median

@@ -3,6 +3,7 @@ package com.drivingcoach.data.db.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -35,4 +36,15 @@ interface CoachingInsightDao {
     /** One-shot read, for comparing stored insights against freshly generated ones. */
     @Query("SELECT * FROM coaching_insights WHERE sessionId = :sessionId ORDER BY id ASC")
     suspend fun getInsightsForSessionOnce(sessionId: Long): List<CoachingInsightEntity>
+
+    /**
+     * Swaps the local insights in one transaction, so observers never see the empty
+     * list between the delete and the insert. That moment is otherwise rendered as
+     * "no insights", which hides the sector map on the COACH tab.
+     */
+    @Transaction
+    suspend fun replaceLocalInsights(sessionId: Long, insights: List<CoachingInsightEntity>) {
+        deleteLocalInsightsForSession(sessionId)
+        insertInsights(insights)
+    }
 }

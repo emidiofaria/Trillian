@@ -187,8 +187,8 @@ class SectorRepair @Inject constructor(
             if (stored == fresh) return false
 
             val now = System.currentTimeMillis()
-            coachingInsightDao.deleteLocalInsightsForSession(sessionId)
-            coachingInsightDao.insertInsights(
+            coachingInsightDao.replaceLocalInsights(
+                sessionId,
                 insights.map {
                     CoachingInsightEntity(
                         sessionId = sessionId,
