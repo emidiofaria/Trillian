@@ -311,9 +311,31 @@
             android:defaultValue="" />
 
         <action
-            android:id="@+id/action_recording_to_session_result"
-            app:destination="@id/sessionResultFragment"
+            android:id="@+id/action_recording_to_rewards"
+            app:destination="@id/rewardsFragment"
             app:popUpTo="@id/homeFragment">
+            <argument
+                android:name="sessionId"
+                app:argType="long" />
+        </action>
+    </fragment>
+
+    <!-- Rewards (SRS PG-19): shown once after a session, then replaced by its result -->
+    <fragment
+        android:id="@+id/rewardsFragment"
+        android:name="com.drivingcoach.ui.rewards.RewardsFragment"
+        android:label="Rewards"
+        tools:layout="@layout/fragment_rewards">
+
+        <argument
+            android:name="sessionId"
+            app:argType="long" />
+
+        <action
+            android:id="@+id/action_rewards_to_session_result"
+            app:destination="@id/sessionResultFragment"
+            app:popUpTo="@id/rewardsFragment"
+            app:popUpToInclusive="true">
             <argument
                 android:name="sessionId"
                 app:argType="long" />

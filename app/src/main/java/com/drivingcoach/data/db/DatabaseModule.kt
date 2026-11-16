@@ -7,6 +7,7 @@ import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.dao.SessionPreferenceDao
 import com.drivingcoach.data.db.dao.TrackDao
+import com.drivingcoach.data.db.dao.TrophyDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,7 +31,8 @@ object DatabaseModule {
                 DrivingCoachDatabase.MIGRATION_1_2, 
                 DrivingCoachDatabase.MIGRATION_2_3,
                 DrivingCoachDatabase.MIGRATION_3_4,
-                DrivingCoachDatabase.MIGRATION_4_5
+                DrivingCoachDatabase.MIGRATION_4_5,
+                DrivingCoachDatabase.MIGRATION_5_6
             )
             // No destructive fallback. Sessions could at least be re-derived from the
             // raw telemetry files, but a circuit the driver walked and saved exists
@@ -62,5 +64,10 @@ object DatabaseModule {
     @Provides
     fun provideTrackDao(database: DrivingCoachDatabase): TrackDao {
         return database.trackDao()
+    }
+
+    @Provides
+    fun provideTrophyDao(database: DrivingCoachDatabase): TrophyDao {
+        return database.trophyDao()
     }
 }

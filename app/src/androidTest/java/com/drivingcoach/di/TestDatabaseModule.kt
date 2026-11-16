@@ -9,6 +9,7 @@ import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.dao.SessionPreferenceDao
 import com.drivingcoach.data.db.dao.TrackDao
+import com.drivingcoach.data.db.dao.TrophyDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -57,5 +58,10 @@ object TestDatabaseModule {
     @Provides
     fun provideTrackDao(database: DrivingCoachDatabase): TrackDao {
         return database.trackDao()
+    }
+
+    @Provides
+    fun provideTrophyDao(database: DrivingCoachDatabase): TrophyDao {
+        return database.trophyDao()
     }
 }

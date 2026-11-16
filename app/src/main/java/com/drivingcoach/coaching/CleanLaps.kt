@@ -20,17 +20,23 @@ object CleanLaps {
     const val TOLERANCE_FRACTION = 0.15
 
     fun of(laps: List<LapEntity>): List<LapEntity> {
-        val durations = laps.map { it.durationMs }.filter { it > 0L }.sorted()
+        val durations = laps.map { it.durationMs }.filter { it > 0L }
         if (durations.isEmpty()) return emptyList()
 
-        val median = if (durations.size % 2 == 0) {
-            (durations[durations.size / 2 - 1] + durations[durations.size / 2]) / 2.0
-        } else {
-            durations[durations.size / 2].toDouble()
-        }
+        val median = medianOf(durations)
+        return laps.filter { it.durationMs > 0L && isRepresentative(it.durationMs, median) }
+    }
 
-        return laps.filter {
-            it.durationMs > 0L && abs(it.durationMs - median) / median <= TOLERANCE_FRACTION
+    /** Median of non-empty [durations]; the mean of the middle two for an even count. */
+    fun medianOf(durations: List<Long>): Double {
+        val sorted = durations.sorted()
+        return if (sorted.size % 2 == 0) {
+            (sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2]) / 2.0
+        } else {
+            sorted[sorted.size / 2].toDouble()
         }
     }
+
+    fun isRepresentative(durationMs: Long, median: Double): Boolean =
+        median > 0.0 && abs(durationMs - median) / median <= TOLERANCE_FRACTION
 }

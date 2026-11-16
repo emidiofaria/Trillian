@@ -4,6 +4,65 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-11-16] Progression — Levels, Trophies, Rewards Screen and Career
+
+**Codebase Version:** v3.07 (versionCode 307; Room migration 5 → 6; DB version 6)
+**Trigger:** Approved "Pragmatic Progression System": a six-level ladder gated by lifetime km
+**and** trophies, six per-session trophies, a Rewards screen between Recording and Session
+Result, a Career section on Profile, and a level badge + Next goal on Home.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `progression/` (`SessionDistance`, `TrophyRules`, `LevelLadder`, `ProgressionGoals`, `ProgressionFormat`) | ✅ Added | Pure rules, no Android dependencies |
+| `TrophyEntity` / `TrophyDao` / `SessionEntity.distanceM` | ✅ Added | `MIGRATION_5_6`; schema `6.json` exported |
+| `SessionDao` / `LapDao` | ✅ Updated | Oldest-first sessions, `updateDistance`, all-laps queries |
+| `CleanLaps.kt` | ✅ Updated | `medianOf`, `isRepresentative` helpers (behaviour unchanged) |
+| `ProgressionRepository.kt` | ✅ Added | Award at stop, one-off replay, career Flow, rewards |
+| `RecordingViewModel` / `RecordingFragment` / `nav_graph.xml` | ✅ Updated | Award after laps saved; Recording → Rewards → Session Result |
+| `ui/rewards/` | ✅ Added | `RewardsFragment`, `RewardsViewModel`, `fragment_rewards.xml` |
+| `ui/progression/` | ✅ Added | `CareerViewModel`, `CareerViews`, `ProgressionText`; level card, roadmap, cabinet, next-goal layouts |
+| `ProfileFragment` / `HomeFragment` + layouts | ✅ Updated | Career section (scrollable Profile); Home level card + Next goal |
+| `strings.xml` / `colors.xml` | ✅ Updated | Progression strings; bronze, silver, locked-medal, scrim colours |
+| L1 tests | ✅ Added | `SessionDistanceTest` (10), `TrophyRulesTest` (14), `LevelLadderTest` (9), `ProgressionGoalsTest` (12), `ProgressionFormatTest` (4) |
+| L2 tests | ✅ Added/Updated | `RewardsScreenTest` (3), `ProfileCareerTest` (3), `ProgressionRepositoryTest` (4), `DrivingCoachDatabaseMigrationTest` (+1, chain to v6); 4 recording end-to-end tests inject the repository |
+| `SRS_v1.md` | ✅ Updated | §11.2 PG-01…PG-23 added; §14.1 `distanceM`, `TrophyEntity` |
+| `components.md` | ✅ Updated | New Progression component; criticality matrix row |
+| `flows.md` | ✅ Updated | New flows: Progression Award & Rewards; Progression History Replay |
+| `system.md` | ✅ Updated | Schema version 6, `MIGRATION_5_6`, `trophies` table |
+| `USER_MANUAL.md` | ✅ Updated | §4.0 Home level card, §4.3 Rewards step, §6.2 Career, new §6.5, two FAQ entries |
+| `coverage-map.tsv` | ✅ Updated | 63 PG-xx claims |
+| `app/build.gradle.kts` | ✅ Updated | `appVersionName` 3.06 → 3.07 |
+
+### New Requirement IDs
+- PG-01 … PG-23 (SRS §11.2 Progression: levels, trophies and rewards)
+
+### Decisions recorded in the SRS
+
+- **Consistency stdDev** is the *population* standard deviation, as in `OfflineCoachingEngine`
+  (PG-08); the window is any 5 consecutive recorded laps.
+- **Distance jitter filter** (PG-03): accuracy > 20 m and (0, 0) fixes dropped; segments
+  under 5 km/h add nothing; implied speed > 250 km/h or gaps > 30 s add nothing and re-anchor.
+  The real `baltar2` fixture measures ≈ 13.7 km.
+- **PB credibility** (PG-07): best lap must be within ±15% of the session median (`CleanLaps`),
+  both for the session and for earlier sessions; strictly faster only.
+- **Merged-lap caveat** (PG-10): Finisher only.
+- **Display rounding** (PG-23): driven km floored, remaining km ceiled.
+
+### Files Modified
+```
+M  01_requirements/DrivingCoach_SRS_v1.md   (+31, -2)
+M  05_tests/coverage-map.tsv                (+65)
+M  atlas/components.md                      (+71, -1)
+M  atlas/flows.md                           (+78, -1)
+M  atlas/system.md                          (+3, -2)
+M  docs/USER_MANUAL.md                      (+99, -1)
+M  docs/SYNC_REPORT.md                      (this entry)
+```
+
+---
+
 ## [2026-11-13] COACH tab — Tester Feedback: Dream Lap Always Shown, Gaps in Seconds
 
 **Codebase Version:** v3.06 (versionCode 306; no Room migration; DB stays at version 5)

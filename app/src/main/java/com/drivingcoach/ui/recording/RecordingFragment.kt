@@ -222,7 +222,7 @@ class RecordingFragment : Fragment() {
     private fun navigateToSessionResult(sessionId: Long) {
         if (sessionId != -1L) {
             val action = RecordingFragmentDirections
-                .actionRecordingToSessionResult(sessionId)
+                .actionRecordingToRewards(sessionId)
             findNavController().navigate(action)
         } else {
             findNavController().popBackStack()

@@ -5,6 +5,7 @@ import android.app.Application
 import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.repository.ProgressionRepository
 import com.drivingcoach.data.repository.SessionRepository
 import com.drivingcoach.data.track.SaveTrackResult
 import com.drivingcoach.data.track.TrackRepository
@@ -85,6 +86,9 @@ class TrackPriorsHandoffTest {
     @Inject
     lateinit var lapDiagnosticsWriter: LapDiagnosticsWriter
 
+    @Inject
+    lateinit var progressionRepository: ProgressionRepository
+
     private lateinit var viewModel: RecordingViewModel
 
     @Before
@@ -97,7 +101,8 @@ class TrackPriorsHandoffTest {
             coachingInsightDao,
             localLapDetector,
             lapDiagnosticsWriter,
-            trackRepository
+            trackRepository,
+            progressionRepository
         )
     }
 

@@ -9,6 +9,7 @@ import androidx.test.rule.GrantPermissionRule
 import com.drivingcoach.data.db.dao.CoachingInsightDao
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.repository.ProgressionRepository
 import com.drivingcoach.data.repository.SessionRepository
 import com.drivingcoach.data.track.TrackRepository
 import com.drivingcoach.lap.LapDiagnosticsWriter
@@ -86,6 +87,9 @@ class TrackPriorsEndToEndTest {
     @Inject
     lateinit var lapDiagnosticsWriter: LapDiagnosticsWriter
 
+    @Inject
+    lateinit var progressionRepository: ProgressionRepository
+
     private lateinit var viewModel: RecordingViewModel
     private lateinit var telemetry: File
 
@@ -100,7 +104,8 @@ class TrackPriorsEndToEndTest {
             coachingInsightDao,
             localLapDetector,
             lapDiagnosticsWriter,
-            trackRepository
+            trackRepository,
+            progressionRepository
         )
         telemetry = copyFixtureOutOfAssets(application)
     }

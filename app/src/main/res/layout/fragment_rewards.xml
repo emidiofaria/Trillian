@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Rewards (SRS PG-19, PG-20). Shown once between Recording and Session Result: lifetime
+    distance, level progress, the trophies this session earned (each also celebrated by a
+    pop-up), a session summary, progress since last time, and the next goal.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    tools:context=".ui.rewards.RewardsFragment">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/rewardsScroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/continueButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_md">
+
+            <TextView
+                android:id="@+id/rewardsTitle"
+                style="@style/TextAppearance.DrivingCoach.H2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:text="@string/rewards_title" />
+
+            <TextView
+                android:id="@+id/rewardsTrack"
+                style="@style/TextAppearance.DrivingCoach.Body.Secondary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                tools:text="Baltar" />
+
+            <TextView
+                android:id="@+id/rewardsLoading"
+                style="@style/TextAppearance.DrivingCoach.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="@dimen/spacing_lg"
+                android:text="@string/rewards_loading" />
+
+            <LinearLayout
+                android:id="@+id/rewardsContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/rewards_lifetime_title"
+                    android:textColor="@color/colorPrimary" />
+
+                <TextView
+                    android:id="@+id/rewardsKmBeforeAfter"
+                    style="@style/TextAppearance.DrivingCoach.H3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    tools:text="74.2 km → 80.1 km" />
+
+                <include
+                    android:id="@+id/rewardsLevelCard"
+                    layout="@layout/view_level_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm" />
+
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/rewards_trophies_title"
+                    android:textColor="@color/colorPrimary" />
+
+                <LinearLayout
+                    android:id="@+id/rewardsTrophies"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/rewardsNoTrophies"
+                    style="@style/TextAppearance.DrivingCoach.Body.Secondary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:text="@string/rewards_no_trophies"
+                    android:visibility="gone" />
+
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/rewards_summary_title"
+                    android:textColor="@color/colorPrimary" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    app:cardBackgroundColor="@color/colorSurface"
+                    app:cardCornerRadius="@dimen/card_corner_radius"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/spacing_md">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="@dimen/spacing_xs">
+
+                            <TextView
+                                style="@style/TextAppearance.DrivingCoach.Body.Secondary"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/rewards_summary_distance" />
+
+                            <TextView
+                                android:id="@+id/summaryDistance"
+                                style="@style/TextAppearance.DrivingCoach.Body"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                tools:text="6.1 km" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="@dimen/spacing_xs">
+
+                            <TextView
+                                style="@style/TextAppearance.DrivingCoach.Body.Secondary"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/rewards_summary_laps" />
+
+                            <TextView
+                                android:id="@+id/summaryLaps"
+                                style="@style/TextAppearance.DrivingCoach.Body"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                tools:text="7" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="@dimen/spacing_xs">
+
+                            <TextView
+                                style="@style/TextAppearance.DrivingCoach.Body.Secondary"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/rewards_summary_best_lap" />
+
+                            <TextView
+                                android:id="@+id/summaryBestLap"
+                                style="@style/TextAppearance.DrivingCoach.Body"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                tools:text="0:52.341" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="@dimen/spacing_xs">
+
+                            <TextView
+                                style="@style/TextAppearance.DrivingCoach.Body.Secondary"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/rewards_summary_consistency" />
+
+                            <TextView
+                                android:id="@+id/summaryConsistency"
+                                style="@style/TextAppearance.DrivingCoach.Body"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                tools:text="0.812s" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/rewards_progress_title"
+                    android:textColor="@color/colorPrimary" />
+
+                <TextView
+                    android:id="@+id/rewardsRecentProgress"
+                    style="@style/TextAppearance.DrivingCoach.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    tools:text="You were 0.800s faster than your last session at Baltar!" />
+
+                <include
+                    android:id="@+id/rewardsNextGoal"
+                    layout="@layout/view_next_goal_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/continueButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/spacing_md"
+        android:layout_marginBottom="@dimen/spacing_lg"
+        android:text="@string/rewards_continue"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Unlock pop-ups, one at a time, over everything (SRS PG-19) -->
+    <FrameLayout
+        android:id="@+id/popupOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@color/colorRewardsScrim"
+        android:clickable="true"
+        android:elevation="16dp"
+        android:focusable="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible">
+
+        <View
+            android:id="@+id/popupGlow"
+            android:layout_width="320dp"
+            android:layout_height="320dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_reward_glow"
+            android:importantForAccessibility="no" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/popupCard"
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            app:cardBackgroundColor="@color/colorSurfaceVariant"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardElevation="8dp"
+            app:strokeWidth="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_lg">
+
+                <TextView
+                    android:id="@+id/popupHeadline"
+                    style="@style/TextAppearance.DrivingCoach.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="TROPHY UNLOCKED" />
+
+                <FrameLayout
+                    android:id="@+id/popupMedal"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:background="@drawable/bg_medal"
+                    android:importantForAccessibility="no">
+
+                    <ImageView
+                        android:id="@+id/popupIcon"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_trophy"
+                        app:tint="@color/colorBackground" />
+
+                    <TextView
+                        android:id="@+id/popupLevelNumber"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:importantForAccessibility="no"
+                        android:textColor="@color/colorBackground"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:text="L4" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/popupName"
+                    style="@style/TextAppearance.DrivingCoach.H2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:gravity="center"
+                    tools:text="Personal Best" />
+
+                <TextView
+                    android:id="@+id/popupDescription"
+                    style="@style/TextAppearance.DrivingCoach.Body.Secondary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    android:gravity="center"
+                    tools:text="Beat your best lap on a track you've driven before." />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/popupDismiss"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="@string/rewards_popup_dismiss" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -322,3 +322,68 @@ LD-23	MergedLapCaveatTest.describes what was seen without guessing why	The cavea
 # --- Build identity (v3.04) ---
 UI-12	BuildVersionTest.the version code is derived from the version name	The About screen's version cannot disagree with the build it runs on
 UI-12	BuildVersionTest.the minor component leaves room for the next release	The major*100 scheme is not silently overrun
+
+# --- Progression (v3.07) ---
+PG-01	LevelLadderTest.ladderDefinition	Six levels, tiers and thresholds as specified
+PG-01	LevelLadderTest.eachLevelAtItsThresholds	Each level reached exactly at its km and trophy thresholds
+PG-02	LevelLadderTest.kmMetButTrophyMissingStaysLower	Distance alone does not promote
+PG-02	LevelLadderTest.trophyMetButKmMissingStaysLower	Trophies alone do not promote
+PG-02	LevelLadderTest.ladderIsSequential	A higher level's conditions cannot skip a lower one
+PG-02	TrophyRulesTest.onlyMainTrophiesCountTowardLevels	Consistency trophies never count
+PG-02	ProgressionGoalsTest.consistencyTrophiesDoNotUnlockLevels	Career ignores consistency trophies for levels
+PG-03	SessionDistanceTest.sumsMovingSegments	Haversine sum of moving segments
+PG-03	SessionDistanceTest.ignoresStationaryJitter	Under 5 km/h adds nothing
+PG-03	SessionDistanceTest.ignoresStationaryJitterWithoutReportedSpeed	Implied speed used when none reported
+PG-03	SessionDistanceTest.ignoresInaccurateFixes	Accuracy over 20 m ignored
+PG-03	SessionDistanceTest.implausibleJumpAddsNothingAndReanchors	Over 250 km/h re-anchors
+PG-03	SessionDistanceTest.longGapAddsNothing	Gap over 30 s adds nothing
+PG-03	SessionDistanceTest.readsTelemetryJsonlSkippingHeader	Reads the real JSONL format
+PG-03	SessionDistanceTest.realBaltarSessionMeasuresPlausibly	Real recorded session measures plausibly
+PG-03	ProgressionRepositoryTest.awardingTwiceStoresEachTrophyOnce	Distance stored on the session in Room
+PG-04	SessionDistanceTest.missingFileIsNull	Missing telemetry yields no trace distance
+PG-04	SessionDistanceTest.fallbackUsesTrackLength	Laps x track length, else 0
+PG-05	TrophyRulesTest.finisherNeedsFiveKmAndFiveLaps	Both thresholds required
+PG-06	TrophyRulesTest.noPersonalBestOnFirstVisit	No PB without a previous time
+PG-06	TrophyRulesTest.personalBestBeatsEarlierSessionsOnSameTrackOnly	Same track key only
+PG-06	TrophyRulesTest.equalTimeIsNotAPersonalBest	Strictly faster
+PG-06	TrophyRulesTest.trackKeyPrefersIdAndNormalisesName	Track key normalisation
+PG-06	ProgressionRepositoryTest.theFirstVisitToATrackIsNeverAPersonalBest	First visit, end to end against Room
+PG-07	TrophyRulesTest.splitHalfLapCannotFakePersonalBest	Credible best within 15% of the median
+PG-08	TrophyRulesTest.consistencyAwardsHighestTierOnly	One consistency trophy per session
+PG-08	TrophyRulesTest.consistencyTiers	3.000 s, 1.500 s, 0.750 s tiers
+PG-08	TrophyRulesTest.consistencyUsesSteadiestFiveConsecutiveLaps	Steadiest 5-lap window
+PG-08	TrophyRulesTest.stdDevIsPopulation	Population standard deviation
+PG-09	TrophyRulesTest.trackMasterIsPersonalBestPlusConsistencyGold	Gold needs PB and Consistency Gold
+PG-10	TrophyRulesTest.mergedLapCaveatKeepsOnlyFinisher	Untrusted lap boundaries keep only The Finisher
+PG-11	ProgressionRepositoryTest.awardingTwiceStoresEachTrophyOnce	Idempotent awarding
+PG-12	RewardsScreenTest.trophiesPopOneAtATimeThenLevelUpThenTheSummary	Awarded session shown on Rewards
+PG-13	ProgressionRepositoryTest.historyReplayIsSilentChronologicalAndOneOff	One-off replay; sessions without laps get distance only
+PG-22	ProgressionRepositoryTest.historyReplayIsSilentChronologicalAndOneOff	Replay is chronological, not insertion order
+PG-14	ProgressionGoalsTest.careerSumsDistanceAndCountsOnlyMainTrophies	Lifetime km is the sum of sessions
+PG-14	ProgressionRepositoryTest.careerSumsDistanceAndCountsOnlyMainTrophies	Lifetime km from Room
+PG-15	ProfileCareerTest.levelCardShowsTheNextLevelChecklist	Checklist with met and unmet rows
+PG-15	ProfileCareerTest.roadmapListsAllSixLevels	Six-level roadmap
+PG-15	LevelLadderTest.progressFractionWithinBand	Progress bar between thresholds
+PG-15	LevelLadderTest.progressFractionClampsWhenKmBeyondNextThreshold	Bar clamps when km is ahead of trophies
+PG-15	LevelLadderTest.maxLevelHasNoNext	No next level at Master
+PG-16	ProgressionGoalsTest.finisherHintIsBestAttempt	Best Finisher attempt
+PG-16	ProgressionGoalsTest.finisherHintEmptyWithoutSessions	No hint without history
+PG-16	ProgressionGoalsTest.consistencyHintUsesSteadiestTrustedWindow	Steadiest window vs next tier
+PG-16	ProgressionGoalsTest.personalBestHintIsBestAtMostRecentTrack	Best lap to beat
+PG-17	ProgressionGoalsTest.cabinetHasSixTilesWithLastAward	Six tiles with count, date and track
+PG-17	ProfileCareerTest.cabinetShowsEarnedAndLockedTrophies	Earned count and how-to-win on screen
+PG-18	ProgressionGoalsTest.nextGoalIsKmWhenKmShort	Kilometres first when short
+PG-18	ProgressionGoalsTest.nextGoalIsMissingTrophyWhenKmMet	Missing trophy when km met
+PG-18	ProgressionGoalsTest.nextGoalPrefersKmWhenBothMissing	Deterministic order
+PG-18	ProgressionGoalsTest.nextGoalAtMaxLevel	Top-level message
+PG-19	RewardsScreenTest.trophiesPopOneAtATimeThenLevelUpThenTheSummary	Pop-ups in turn, level up, summary
+PG-19	RewardsScreenTest.continueReplacesRewardsWithTheSessionResult	Continue reaches Session Result, Rewards popped
+PG-19	RewardsScreenTest.aSessionWithoutTrophiesSaysSoAndStillContinues	No-trophy session
+PG-20	ProgressionGoalsTest.recentProgressFasterSlowerFirst	Faster, slower, first time
+PG-20	RewardsScreenTest.trophiesPopOneAtATimeThenLevelUpThenTheSummary	Faster message on screen
+PG-21	DrivingCoachDatabaseMigrationTest.migrate5To6_keepsSessionsWithNoDistanceAndAnEmptyCabinet	5 to 6 keeps sessions
+PG-21	DrivingCoachDatabaseMigrationTest.migrateAllTheWayFrom1	Full chain to version 6
+PG-22	TrophyRulesTest.laterSessionsAreNotHistory	Only earlier sessions are history
+PG-23	ProgressionFormatTest.drivenKmRoundsDown	Driven km floored
+PG-23	ProgressionFormatTest.remainingKmRoundsUp	Remaining km rounded up
+PG-23	ProgressionFormatTest.secondsHaveThreeDecimals	Seconds with 3 decimals

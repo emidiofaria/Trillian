@@ -305,6 +305,9 @@ class SectorRepairTest {
         override suspend fun clearBestLap(sessionId: Long) = Unit
         override suspend fun setBestLap(lapId: Long) = Unit
         override suspend fun getFastestLap(sessionId: Long): LapEntity? = null
+        override suspend fun getLapsForSessionSync(sessionId: Long): List<LapEntity> = emptyList()
+        override fun observeAllLaps(): Flow<List<LapEntity>> = flowOf(emptyList())
+        override suspend fun getAllLaps(): List<LapEntity> = emptyList()
     }
 
     private class FakeInsightDao : CoachingInsightDao {

@@ -2709,7 +2709,7 @@ session is opened, and refreshes the locally generated coaching text with today'
 A Room migration cannot do this work: it would have to re-read every telemetry file from
 inside a schema upgrade, on a device that may be low on time and battery, for sessions the
 driver may never open again. Repairing lazily costs nothing for sessions nobody looks at
-and needs no schema change — the database stays at **version 5**.
+and needs no schema change — the database stayed at **version 5** (version 6 later added progression, PG-21).
 
 It is also naturally idempotent. There is no "has been migrated" flag to drift out of step
 with reality, because the check *is* the recomputation: recompute, compare, write only on
@@ -2805,6 +2805,75 @@ sectors on old sessions cannot affect the verdict.
 
 ---
 
+## Component: Progression (`progression/*`, `ProgressionRepository`, Rewards & Career UI)
+
+### Purpose
+
+Turns the driver's own sessions into a career (SRS §11.2, PG-01 … PG-23): a lifetime
+distance, a six-level ladder that needs **both** kilometres and main trophies, six trophy
+types per session, a single Next goal, and personal hints for unearned trophies. Added in
+v3.07 with database version 6.
+
+### Structure
+
+| Layer | Class | Responsibility |
+|-------|-------|----------------|
+| Pure logic (no Android) | `progression/SessionDistance` | Jitter-filtered haversine distance from the telemetry JSONL (accuracy > 20 m, < 5 km/h, > 250 km/h or > 30 s gap rejected); `fallback()` = laps × track length |
+| | `progression/TrophyRules` | `TrophyType`, `SessionFacts`, `evaluate(session, history)`; Finisher, PB (credible best vs earlier sessions on the same track key), highest consistency tier over the steadiest 5-lap window (population stdDev), Track Master = PB + Consistency Gold; merged-lap caveat keeps only Finisher |
+| | `progression/LevelLadder` | Six `LevelDef`s, sequential `levelFor()`, `progress()` with next-level `Requirement` checklist and distance-only `kmFraction` |
+| | `progression/ProgressionGoals` | `career()` → `CareerSnapshot` (lifetime km, level progress, counts, cabinet, next goal, hints); `recentProgress()` |
+| | `progression/ProgressionFormat` | Locale.US km (driven floored, remaining ceiled) and `"%.3fs"` seconds |
+| Persistence | `data/db/entity/TrophyEntity`, `data/db/dao/TrophyDao` | `trophies` table, unique (sessionId, type), FK CASCADE to sessions; `insertAll` IGNORE returns −1 for duplicates |
+| | `SessionEntity.distanceM` | Metres, nullable until measured |
+| Repository | `data/repository/ProgressionRepository` (@Singleton) | `awardSession()` (stop), `backfillIfNeeded()` (one-off replay, DataStore key `progression_backfill_v1_done`), `career()` Flow, `rewards(sessionId)` → `SessionRewards` (before/after snapshots, new trophies, recent progress) |
+| UI | `ui/rewards/RewardsFragment` + `RewardsViewModel` | Rewards screen: km before → after, animated level bar, sequential trophy and LEVEL UP pop-ups (scale + glow, `performHapticFeedback`), summary, recent progress, Next goal; Continue → Session Result |
+| | `ui/progression/CareerViewModel` | Shared by Home and Profile; starts the backfill and exposes `career` |
+| | `ui/progression/CareerViews`, `ProgressionText` | Binds the level card, roadmap and trophy cabinet; all words from `strings.xml` |
+| | `ProfileFragment`, `HomeFragment` | Career section (level card with checklist, roadmap, cabinet); Home level badge + Next goal |
+
+### Dependencies
+
+- `SessionDao`, `LapDao`, `TrophyDao`, `DrivingCoachDatabase.withTransaction`
+- `TrackRepository.getTrack()` for the distance fallback
+- `LapDiagnosticsWriter` + `MergedLapCaveat` (`.lapdiag.json`) for lap-boundary trust
+- `CleanLaps` (±15% of median) for the credible best and the summary consistency
+- Preferences `DataStore` for the backfill flag
+
+### Concurrency & consistency
+
+- One `Mutex` serialises the stop-time award and the replay.
+- Distance and trophies for a session are written in a single Room transaction, so the
+  career Flow never sees one without the other.
+- Evaluation only looks at sessions that started earlier, so replaying history oldest first
+  gives the same trophies as awarding at stop (PG-22). Awarding is idempotent.
+- The stop-time award always remeasures the distance, in case the replay ran mid-session.
+
+### Failure Modes
+
+| Failure | Effect | Signal |
+|---------|--------|--------|
+| Telemetry file missing/corrupt | Distance falls back to laps × track length, else 0 | Lower lifetime km |
+| `awardSession` throws | Logged (`RecordingViewModel`), Rewards shows the session without new trophies, Session Result still reachable | Log `Could not update progression` |
+| Replay interrupted | Flag not set, replay runs again on the next Home/Profile open (idempotent) | — |
+| GPS jitter not filtered | Inflated distance | Lifetime km grows while stationary |
+
+### Key Files
+
+| File | Responsibility |
+|------|----------------|
+| `progression/*.kt` | Pure rules, unit-tested in `app/src/test/.../progression/` |
+| `data/repository/ProgressionRepository.kt` | Award, replay, career, rewards |
+| `ui/rewards/RewardsFragment.kt`, `res/layout/fragment_rewards.xml` | Rewards screen |
+| `ui/progression/*.kt`, `res/layout/view_level_card.xml`, `item_trophy_tile.xml`, `item_level_roadmap.xml`, `view_next_goal_card.xml` | Career views |
+
+### Criticality
+
+**LOW** — a progression failure costs the driver their trophies and level display; laps,
+coaching and telemetry are unaffected, and the Rewards screen always leads on to Session
+Result.
+
+---
+
 ## Summary: Criticality Matrix
 
 | Component | Criticality | Impact of Total Failure |
@@ -2830,6 +2899,7 @@ sectors on old sessions cannot affect the verdict.
 | LapAnchor | MEDIUM | Sectors and the drawn outline lose their start/finish anchor; every boundary drifts by one sample gap |
 | SectorRepair | LOW | Sessions recorded before the ruler was anchored keep their old sector times and insight wording; new sessions are unaffected |
 | FundamentalsAnalyzer | LOW | Fundamentals tips shown without verdicts |
+| Progression (levels, trophies, Rewards) | LOW | No trophies, level or distance shown; Rewards still leads to Session Result |
 | Session State Machine | MEDIUM | UX confusion |
 | App Startup / Branded Loading Screen | HIGH | App unusable (no cold start) |
 | Stale Upload Detection | LOW | Missing UX warning |

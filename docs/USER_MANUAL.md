@@ -1,7 +1,7 @@
 # Trillian - Driving coach — User Manual
 
 > **Version:** 1.1  
-> **Last Updated:** 2026-09-21  
+> **Last Updated:** 2026-11-16  
 > **Platform:** Android 8.0+
 
 Welcome to Trillian! This app helps you become a faster, smoother driver by analyzing your track sessions and providing personalized AI coaching feedback.
@@ -279,6 +279,9 @@ back up and it expands again. Your profile button stays reachable in that bar th
 Below the hero you'll find:
 
 - Your **best lap** card
+- Your **driver level** card — level badge, name, tier and a bar showing how far you are
+  through the kilometres for the next level. Tap it to open your full career on Profile (§6.5)
+- Your **Next goal** — the one most reachable step towards the next level
 - **Recent sessions**, newest first
 - A **START SESSION** button — your way into a new run
 
@@ -315,7 +318,9 @@ When your session is done:
 
 1. Open the app and tap **Stop Recording**
 2. **Lap times appear immediately** — the app detects laps locally from your GPS trace
-3. Open the session to see your lap breakdown, speed trace and track map
+3. The **Rewards** screen opens: the distance you just drove, any trophies you won and how
+   your level moved (§6.5)
+4. Tap **CONTINUE** to open the session and see your lap breakdown, speed trace and track map
 
 **Everything happens on your phone.** Trillian has no server and no account.
 Lap detection, the speed trace, the track map and the session stats are all
@@ -684,6 +689,8 @@ Tap your **Profile** (top right icon) to see:
 - Total sessions recorded
 - Total laps driven
 - All-time best lap time
+- Your **Career**: level card with the next-level checklist, the level roadmap and your
+  trophy cabinet (§6.5)
 
 **Changing your name:** tap your name, or the edit icon beside it, type a new one, and tap
 **Save**. The same 2–100 character rule applies. Renaming is purely cosmetic — none of your
@@ -714,6 +721,87 @@ the raw telemetry files behind them. The app returns to the very first screen, a
 installed.
 
 Use it when handing the phone to someone else, or to start completely fresh.
+
+
+### 6.5 Your Career: Levels, Trophies and Rewards
+
+Every session you drive counts towards your **career**. Trillian measures how far you drove
+and awards trophies for what you achieved, all on your phone.
+
+#### Distance
+
+The distance of a session is measured from its GPS trace. Standing still in the pits, GPS
+wobble and the odd wild fix are filtered out, so the number reflects real driving. If a
+session has no readable GPS file, Trillian uses laps × the circuit's length when the circuit
+is from the library. Your **lifetime distance** is the total over all your sessions.
+
+#### Trophies
+
+| Trophy | How to win it |
+|---|---|
+| 🥉 **The Finisher** (Bronze) | Drive at least 5 km and at least 5 laps in one session |
+| 🥈 **Personal Best** (Silver) | Beat your best lap on a circuit you have driven before. Your first visit to a circuit sets the time to beat, so it cannot win this one |
+| 🥇 **Track Master** (Gold) | Set a Personal Best **and** win Consistency Gold in the same session |
+| **Consistency** Bronze / Silver / Gold | Drive 5 laps in a row whose times vary by less than 3.000s / 1.500s / 0.750s. You get the highest one you reach, not all three |
+
+Lap times only count for a Personal Best when the lap is a believable lap (within 15% of the
+session's typical lap), so a half lap from a missed line crossing cannot fake a record. If a
+session's laps could not be split cleanly (the "laps may have been merged" note), it can
+still win The Finisher but not the time-based trophies.
+
+#### Levels
+
+| Level | Tier | Lifetime distance | And |
+|---|---|---|---|
+| 1 Rookie | Beginner | 0 km | — |
+| 2 Novice | Beginner | 25 km | 1 Finisher (Bronze) |
+| 3 Challenger | Mid | 50 km | 3 Finisher (Bronze) |
+| 4 Competitor | Mid | 100 km | 1 Personal Best (Silver) |
+| 5 Expert | Pro | 200 km | 3 Personal Best (Silver) |
+| 6 Master | Pro | 350 km | 1 Track Master (Gold) |
+
+You need **both** the distance **and** the trophy, and you climb one level at a time. If
+you have driven 120 km but not yet set a Personal Best, you stay at Challenger and the
+checklist shows what is missing. Consistency trophies are for your cabinet; they do not
+unlock levels.
+
+#### The Rewards screen
+
+Right after you stop a session you see:
+
+- Your lifetime distance before → after, and the level bar filling up
+- A pop-up for each new trophy (with a short buzz), then a **LEVEL UP!** pop-up if you
+  moved up. Tap **NICE!** (or Back) to move on
+- The session in numbers: distance, laps, best lap and consistency (how much your clean
+  laps varied, in seconds — lower is steadier)
+- **Recent progress**: how your best lap compares with your last session at the same
+  circuit, for example "You were 0.800s faster than your last session at Baltar!"
+- Your **Next goal**
+
+Tap **CONTINUE** to go on to the session. Back from the session goes Home; the Rewards
+screen is shown once.
+
+#### Career on your Profile
+
+- **Level card** — your level, tier, the distance bar and a checklist for the next level,
+  for example "✅ 100 km (124.6 km driven)" and "⬜ 1 × Personal Best (you have 0)"
+- **Roadmap** — all six levels: done ones ticked, your current one highlighted, the rest
+  greyed with what they need
+- **Trophy cabinet** — six tiles. A trophy you have shows its colour, how many times you won
+  it and when and where you last did. One you don't have yet is greyed, says how to win it
+  and gives a personal hint from your own driving, for example "Your steadiest 5 laps varied
+  by 1.820s — get under 1.500s for Consistency Silver"
+
+#### Next goal
+
+One line telling you the single most reachable step towards your next level: kilometres
+still to drive if you are short of them, otherwise the trophy you still need.
+
+#### Sessions from before this update
+
+The first time you open Home or Profile after updating, Trillian quietly goes through your
+earlier sessions, oldest first, and measures them and awards their trophies. There are no
+pop-ups for these; they simply appear in your cabinet and count towards your level.
 
 ---
 
@@ -930,6 +1018,14 @@ There is no account, no server, no analytics and no tracking. The release build
 does not have permission to use the internet, so it could not send your data
 even if it tried. The only way anything leaves your phone is if you export or
 share it yourself (§6).
+
+**Q: Why didn't my first session at a circuit win a Personal Best?**  
+A: A Personal Best needs a previous time at the same circuit to beat. Your first session
+there sets that time; beat it next time.
+
+**Q: I have the kilometres but my level didn't go up. Why?**  
+A: Each level needs a trophy as well as distance. Open Profile: the checklist marks what is
+still missing with ⬜, and Next goal tells you what to do.
 
 **Q: How do I delete my data?**  
 A: Delete individual sessions in the app, or uninstall Trillian / clear its

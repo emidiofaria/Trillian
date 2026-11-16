@@ -64,4 +64,11 @@ interface SessionDao {
 
     @Query("UPDATE sessions SET trackName = :trackName WHERE id = :sessionId")
     suspend fun updateTrackName(sessionId: Long, trackName: String)
+
+    /** Every session, oldest first, for progression's chronological replay (SRS PG-22). */
+    @Query("SELECT * FROM sessions ORDER BY startedAt ASC, id ASC")
+    suspend fun getAllSessionsOldestFirst(): List<SessionEntity>
+
+    @Query("UPDATE sessions SET distanceM = :distanceM WHERE id = :sessionId")
+    suspend fun updateDistance(sessionId: Long, distanceM: Double)
 }

@@ -707,6 +707,36 @@ way that pointed at the index conversion instead.
 | SM-09 | After successful deletion, the app shall display a Snackbar confirming the deletion. |
 | SM-10 | After successful rename, the app shall display a Snackbar confirming the rename. |
 
+### 11.2 Progression: levels, trophies and rewards
+
+Progression turns the driver's own sessions into a career: a lifetime distance, a six-level ladder and a trophy cabinet. Everything is computed on the device from Room and the session's telemetry file; nothing is sent anywhere.
+
+| ID | Requirement |
+|---|---|
+| PG-01 | The app shall define six driver levels in three tiers: **L1 Rookie**, **L2 Novice** (*Beginner*); **L3 Challenger**, **L4 Competitor** (*Mid*); **L5 Expert**, **L6 Master** (*Pro*). Each level above L1 requires **both** a lifetime distance and a cumulative trophy count: L2 25 km and 1 Bronze; L3 50 km and 3 Bronze; L4 100 km and 1 Silver; L5 200 km and 3 Silver; L6 350 km and 1 Gold. |
+| PG-02 | The level shall be derived, never stored: it is the highest level whose requirements **and those of every lower level** are met. When the distance is met but the trophy is not, the driver stays on the lower level and the UI states what is missing. Only the main trophies count towards levels: Bronze = *The Finisher*, Silver = *Personal Best*, Gold = *Track Master*. Consistency trophies never count. |
+| PG-03 | A session's distance shall be the sum of haversine distances between consecutive GPS fixes in its telemetry file (`rawFilePath`), after jitter filtering: fixes with reported accuracy over **20 m** or at (0, 0) are ignored; a segment adds nothing when its speed (reported `speedMs`, else implied) is under **5 km/h**; a segment adds nothing and the next fix becomes the new anchor when its implied speed exceeds **250 km/h** or the gap exceeds **30 s**. |
+| PG-04 | When the telemetry file is missing or unreadable, the distance shall fall back to lap count × the catalogue track's `lengthM`, else 0. The distance is stored as `sessions.distanceM` in metres. |
+| PG-05 | **The Finisher (Bronze)** shall be awarded to a session of at least **5 km** and at least **5 recorded laps**. |
+| PG-06 | **Personal Best (Silver)** shall be awarded when the session's credible best lap is strictly faster than the driver's credible best on the same track over all **earlier** sessions (by `startedAt`). It shall never be awarded on the first session at a track, and an equal time is not a PB. The track key is the catalogue `trackId` when present, else the track name trimmed and lower-cased. |
+| PG-07 | A credible best is the fastest lap within ±15% of the session's median lap (the OC-17 / CF-07 clean-lap rule), so a half lap split by a missed crossing cannot fake a PB. |
+| PG-08 | **Consistency** shall be measured as the lowest **population** standard deviation (the OfflineCoachingEngine convention) over any window of **5 consecutive recorded laps**, in lap order; fewer than 5 laps earns nothing. Under 3.000 s earns Consistency Bronze, under 1.500 s Silver, under 0.750 s Gold, and **only the highest tier** is awarded per session. |
+| PG-09 | **Track Master (Gold)** shall be awarded when a session earns both Personal Best and Consistency Gold. |
+| PG-10 | A session whose lap diagnostics carry the merged-lap caveat (untrusted lap boundaries) shall earn neither Personal Best, Consistency nor Track Master; The Finisher is still awarded. |
+| PG-11 | Each trophy type shall be awarded at most once per session; awarding is idempotent, so re-running it adds nothing. |
+| PG-12 | When recording stops, after laps and coaching are saved, the app shall measure the distance and award the session's trophies, then open the **Rewards** screen instead of Session Result. A failure to award shall be logged and shall not block the result. |
+| PG-13 | On first start of a build with progression, the app shall silently replay every existing session (opened from Home or Profile), with no pop-ups, storing distances and trophies. A preference flag set only after the replay completes makes it one-off; an interrupted replay runs again. Sessions without laps get a distance only. |
+| PG-14 | Lifetime distance shall be the sum of every session's `distanceM`. |
+| PG-15 | Profile shall show a **Career** section: a level card (badge, name, tier, a distance progress bar between the current and next level thresholds, and a next-level checklist where each requirement shows ✅ or ⬜ with the current value, e.g. "✅ 100 km (124.6 km driven)"), and a six-level roadmap (completed levels ticked, the current level highlighted, locked levels greyed with their requirements). Home shall show the level card without the checklist; tapping it opens Profile. |
+| PG-16 | Unearned trophies shall show a personal hint from the driver's own history: the best Finisher attempt (distance and laps); the steadiest 5-lap window against the next consistency tier; the all-time best lap at the most recently driven track to beat for a PB; and, for Track Master, that it takes a PB and Consistency Gold together. |
+| PG-17 | The trophy cabinet shall show six tiles (The Finisher, Personal Best, Track Master, Consistency Bronze/Silver/Gold). An earned tile shows its metal colour, count, last date and track; an unearned tile is greyed and shows how to win it plus its hint. |
+| PG-18 | Home, Profile and Rewards shall show a single **Next goal**: when the next level's distance is not met, the kilometres remaining; otherwise the missing trophy and how many; at L6, a top-level message. It is deterministic. |
+| PG-19 | The Rewards screen shall show the lifetime distance before → after, the level card animating from the career without this session to the career with it, the new trophies, a session summary (distance, laps, credible best lap, consistency = population standard deviation of the clean laps in seconds) and a Next goal card. Each new trophy shall pop up in turn with a scale-and-glow animation and a short haptic (`performHapticFeedback`, no VIBRATE permission), followed by a separate **LEVEL UP** pop-up when the level rose. **Continue** (or Back with no pop-up open) shall open Session Result and remove Rewards from the back stack. |
+| PG-20 | Rewards shall compare this session's credible best with the latest earlier session at the same track that has one: "You were 0.800s faster than your last session at …!", "slower", an exact match, a first-time message, or a no-laps message. |
+| PG-21 | Room version 6 shall add `sessions.distanceM` (REAL, nullable) and a `trophies` table (`id`, `sessionId` FK→sessions CASCADE, `type`, `trackKey`, `value`, `awardedAt`) with a unique (`sessionId`, `type`) index. The 5→6 migration shall keep every session. |
+| PG-22 | Trophy evaluation shall depend only on the session and sessions that started before it, so the history replay (oldest first) and award-at-stop give the same answer. Distance and trophies for one session shall be written in one transaction. |
+| PG-23 | Progression text shall use Locale.US: kilometres with one decimal (driven km floored, remaining km rounded up, so a requirement is never shown met before it is), gaps and standard deviations in seconds with three decimals ("1.820s"), lap times via `LapTimeFormatter`, and no dash directly before a number (OC-34). All text comes from string resources. |
+
 ---
 
 ## 12. Share accomplishments
@@ -772,10 +802,11 @@ way that pointed at the index conversion instead.
 
 | Entity | Fields |
 |---|---|
-| `SessionEntity` | `id` (Long, PK), `firebaseUid` (String), `trackName` (String), `startedAt` (Long), `endedAt` (Long?), `rawFilePath` (String), `uploadStatus` (String: PENDING/UPLOADING/DONE/FAILED), `remoteSessionId` (String?), `processingStatus` (String: PENDING/PROCESSING/LAPS_DONE/COMPLETE/FAILED), `startLineLat1` (Double), `startLineLng1` (Double), `startLineLat2` (Double), `startLineLng2` (Double), `trackId` (String?, TL-08 — null for a captured line) |
+| `SessionEntity` | `id` (Long, PK), `firebaseUid` (String), `trackName` (String), `startedAt` (Long), `endedAt` (Long?), `rawFilePath` (String), `uploadStatus` (String: PENDING/UPLOADING/DONE/FAILED), `remoteSessionId` (String?), `processingStatus` (String: PENDING/PROCESSING/LAPS_DONE/COMPLETE/FAILED), `startLineLat1` (Double), `startLineLng1` (Double), `startLineLat2` (Double), `startLineLng2` (Double), `trackId` (String?, TL-08 — null for a captured line), `distanceM` (Double?, PG-03 — null until measured) |
 | `TrackEntity` | `id` (String, PK), `name` (String), `location` (String?), `startLineLat1/Lng1/Lat2/Lng2` (Double), `startLineSource` (String), `startLineRecordedAt` (String?), `travelHeadingDeg` (Double?), `lengthM` (Int?), `cornerCount` (Int?), `fastestLapMs` (Long?), `slowestLapMs` (Long?), `centrelineSource` (String?), `centrelineMethod` (String?), `centrelineSurveyedAt` (String?), `centrelineSurveyedBy` (String?), `centrelineJson` (String?, JSON array of `[lat, lng]`), `createdAt` (Long), `lastUsedAt` (Long?) — saved circuits only; bundled circuits are read from `assets/tracks/tracks.json` and are never written to Room, so a corrected circuit ships with a build instead of needing a migration |
 | `LapEntity` | `id` (Long, PK), `sessionId` (Long, FK→Session CASCADE), `lapNumber` (Int), `startTs` (Long), `endTs` (Long), `durationMs` (Long), `sector1Ms` (Long), `sector2Ms` (Long), `sector3Ms` (Long), `isBestLap` (Boolean) |
 | `CoachingInsightEntity` | `id` (Long, PK), `sessionId` (Long, FK→Session CASCADE), `headline` (String), `detail` (String), `generatedAt` (Long) |
+| `TrophyEntity` | `id` (Long, PK), `sessionId` (Long, FK→Session CASCADE, indexed), `type` (String: FINISHER_BRONZE/PB_SILVER/TRACK_MASTER_GOLD/CONSISTENCY_BRONZE/CONSISTENCY_SILVER/CONSISTENCY_GOLD), `trackKey` (String), `value` (Double?: lap ms or stdDev ms), `awardedAt` (Long); unique (`sessionId`, `type`) — PG-21 |
 
 ### 14.2 Telemetry sample (JSONL, not stored in Room)
 

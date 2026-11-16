@@ -43,4 +43,14 @@ interface LapDao {
      */
     @Query("UPDATE laps SET sector1Ms = :sector1Ms, sector2Ms = :sector2Ms, sector3Ms = :sector3Ms WHERE id = :lapId")
     suspend fun updateSectors(lapId: Long, sector1Ms: Long, sector2Ms: Long, sector3Ms: Long)
+
+    @Query("SELECT * FROM laps WHERE sessionId = :sessionId ORDER BY lapNumber ASC")
+    suspend fun getLapsForSessionSync(sessionId: Long): List<LapEntity>
+
+    /** All laps of all sessions, for the career view (SRS PG-15). */
+    @Query("SELECT * FROM laps ORDER BY sessionId ASC, lapNumber ASC")
+    fun observeAllLaps(): Flow<List<LapEntity>>
+
+    @Query("SELECT * FROM laps ORDER BY sessionId ASC, lapNumber ASC")
+    suspend fun getAllLaps(): List<LapEntity>
 }

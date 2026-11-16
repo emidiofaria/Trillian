@@ -79,8 +79,45 @@ class DrivingCoachDatabaseMigrationTest {
     }
 
     /**
+     * Progression (SRS PG-21) adds a distance column and a trophies table. Sessions
+     * recorded before it must survive with no distance yet, which is what the history
+     * replay later fills in.
+     */
+    @Test
+    fun migrate5To6_keepsSessionsWithNoDistanceAndAnEmptyCabinet() {
+        helper.createDatabase(databaseName, 5).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO sessions (
+                    id, userId, trackName, startedAt, endedAt, rawFilePath,
+                    uploadStatus, processingStatus, remoteSessionId,
+                    startLineLat1, startLineLng1, startLineLat2, startLineLng2, trackId
+                ) VALUES (
+                    7, 'local', 'Baltar 2', 1000, 2000, '/tmp/telemetry.jsonl',
+                    'PENDING', 'COMPLETE', NULL, NULL, NULL, NULL, NULL, NULL
+                )
+                """.trimIndent()
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(
+            databaseName, 6, true, DrivingCoachDatabase.MIGRATION_5_6
+        )
+
+        db.query("SELECT trackName, distanceM FROM sessions WHERE id = 7").use { cursor ->
+            assertTrue("the session recorded before the upgrade should still be there", cursor.moveToFirst())
+            assertEquals("Baltar 2", cursor.getString(0))
+            assertTrue("distance is unknown until the history replay measures it", cursor.isNull(1))
+        }
+        db.query("SELECT COUNT(*) FROM trophies").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("trophies are awarded by the replay, not the migration", 0, cursor.getInt(0))
+        }
+    }
+
+    /**
      * The whole chain matters as much as the last link: an install from a much older
-     * build has to arrive at version 5 too, and there is no longer a fallback to
+     * build has to arrive at the current version too, and there is no longer a fallback to
      * catch it if it does not.
      */
     @Test
@@ -89,12 +126,13 @@ class DrivingCoachDatabaseMigrationTest {
 
         val db = helper.runMigrationsAndValidate(
             databaseName,
-            5,
+            6,
             true,
             DrivingCoachDatabase.MIGRATION_1_2,
             DrivingCoachDatabase.MIGRATION_2_3,
             DrivingCoachDatabase.MIGRATION_3_4,
-            DrivingCoachDatabase.MIGRATION_4_5
+            DrivingCoachDatabase.MIGRATION_4_5,
+            DrivingCoachDatabase.MIGRATION_5_6
         )
 
         db.query("SELECT COUNT(*) FROM tracks").use { cursor ->

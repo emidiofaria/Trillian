@@ -15,6 +15,7 @@ import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
 import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.data.repository.ProgressionRepository
 import com.drivingcoach.data.repository.SessionRepository
 import com.drivingcoach.data.telemetry.TelemetryFileWriter
 import com.drivingcoach.data.track.TrackRepository
@@ -25,6 +26,7 @@ import com.drivingcoach.lap.NoLapsExplanation
 import com.drivingcoach.service.RecordingState
 import com.drivingcoach.service.TelemetryForegroundService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -71,7 +73,8 @@ class RecordingViewModel @Inject constructor(
     private val coachingInsightDao: CoachingInsightDao,
     private val localLapDetector: LocalLapDetector,
     private val lapDiagnosticsWriter: LapDiagnosticsWriter,
-    private val trackRepository: TrackRepository
+    private val trackRepository: TrackRepository,
+    private val progressionRepository: ProgressionRepository
 ) : AndroidViewModel(application) {
 
     companion object {
@@ -473,8 +476,22 @@ class RecordingViewModel @Inject constructor(
 
     /**
      * Completes lap processing and signals ready to navigate.
+     *
+     * Distance and trophies are settled first (SRS PG-12), whatever the lap outcome, so
+     * the Rewards screen reads a finished session. A failure there must never keep the
+     * driver from their results, so it is logged and the stop carries on.
      */
-    private fun finishProcessing(message: String, lapCount: Int) {
+    private suspend fun finishProcessing(message: String, lapCount: Int) {
+        val sessionId = _uiState.value.sessionId
+        if (sessionId != -1L) {
+            try {
+                progressionRepository.awardSession(sessionId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Could not update progression for session $sessionId", e)
+            }
+        }
         _uiState.value = _uiState.value.copy(
             isProcessingLaps = false,
             lapDetectionMessage = message,

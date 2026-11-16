@@ -197,9 +197,9 @@ by design, so this cannot happen silently.
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| Database | Room 2.6.1 | Schema version 5 |
+| Database | Room 2.6.1 | Schema version 6 |
 | Database Name | `driving_coach.db` | — |
-| Migration Strategy | `MIGRATION_1_2` … `MIGRATION_4_5`, **no destructive fallback** | Explicit migrations only. `fallbackToDestructiveMigration()` was removed when the `tracks` table was added: a circuit the driver walked exists nowhere else, so silently wiping the database on a migration fault is no longer an acceptable outcome. Removing it promoted a latent `MIGRATION_1_2` fault (duplicate column) into a launch crash, which is why that migration is now idempotent |
+| Migration Strategy | `MIGRATION_1_2` … `MIGRATION_5_6`, **no destructive fallback** | Explicit migrations only. `fallbackToDestructiveMigration()` was removed when the `tracks` table was added: a circuit the driver walked exists nowhere else, so silently wiping the database on a migration fault is no longer an acceptable outcome. Removing it promoted a latent `MIGRATION_1_2` fault (duplicate column) into a launch crash, which is why that migration is now idempotent |
 
 **Tables:**
 
@@ -208,6 +208,7 @@ by design, so this cannot happen silently.
 | `SessionEntity` | `sessions` | Driving sessions | — |
 | `LapEntity` | `laps` | Individual lap data | `sessionId` → sessions (CASCADE) |
 | `CoachingInsightEntity` | `coaching_insights` | AI-generated coaching tips | `sessionId` → sessions (CASCADE) |
+| `TrophyEntity` | `trophies` | Progression trophies, unique per (session, type) | `sessionId` → sessions (CASCADE) |
 
 **Key Columns:**
 - `sessions.uploadStatus`: `PENDING` | `UPLOADING` | `DONE` | `FAILED`

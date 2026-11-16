@@ -18,11 +18,16 @@ import androidx.navigation.fragment.findNavController
 import com.drivingcoach.R
 import com.drivingcoach.data.profile.DriverProfileStore
 import com.drivingcoach.databinding.FragmentProfileBinding
+import com.drivingcoach.progression.CareerSnapshot
+import com.drivingcoach.ui.progression.CareerViewModel
+import com.drivingcoach.ui.progression.CareerViews
+import com.drivingcoach.ui.progression.ProgressionText
 import com.drivingcoach.util.LapTimeFormatter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -32,6 +37,7 @@ class ProfileFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: ProfileViewModel by viewModels()
+    private val careerViewModel: CareerViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -145,6 +151,11 @@ class ProfileFragment : Fragment() {
                         handleEvent(event)
                     }
                 }
+                launch {
+                    careerViewModel.career.filterNotNull().collect { career ->
+                        updateCareer(career)
+                    }
+                }
             }
         }
     }
@@ -162,6 +173,13 @@ class ProfileFragment : Fragment() {
         binding.bestLapTime.text = state.stats.bestLapMs?.let { 
             formatShortLapTime(it)
         } ?: "—"
+    }
+
+    private fun updateCareer(career: CareerSnapshot) {
+        CareerViews.bindLevelCard(binding.profileLevelCard, career.progress, showChecklist = true)
+        binding.profileNextGoal.nextGoalText.text = ProgressionText(requireContext()).nextGoal(career.nextGoal)
+        CareerViews.bindRoadmap(binding.levelRoadmap, career.progress)
+        CareerViews.bindCabinet(binding.trophyCabinet, career)
     }
 
     private fun formatShortLapTime(ms: Long): String {

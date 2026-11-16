@@ -226,6 +226,29 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Driver level and next goal (SRS PG-15, PG-18); tapping opens the career on Profile -->
+            <include
+                android:id="@+id/homeLevelCard"
+                layout="@layout/view_level_card"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/spacing_md"
+                android:layout_marginTop="@dimen/spacing_md"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/heroCard" />
+
+            <include
+                android:id="@+id/homeNextGoal"
+                layout="@layout/view_next_goal_card"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/spacing_md"
+                android:layout_marginTop="@dimen/spacing_sm"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/homeLevelCard" />
+
             <!-- Recent Sessions Header -->
             <TextView
                 android:id="@+id/recentSessionsTitle"
@@ -236,7 +259,7 @@
                 android:layout_marginTop="@dimen/spacing_lg"
                 android:text="RECENT SESSIONS"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/heroCard" />
+                app:layout_constraintTop_toBottomOf="@id/homeNextGoal" />
 
             <!-- Session History List -->
             <androidx.recyclerview.widget.RecyclerView

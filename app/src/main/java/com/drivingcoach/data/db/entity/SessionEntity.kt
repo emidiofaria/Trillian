@@ -27,7 +27,12 @@ data class SessionEntity(
     val startLineLat1: Double? = null,
     val startLineLng1: Double? = null,
     val startLineLat2: Double? = null,
-    val startLineLng2: Double? = null
+    val startLineLng2: Double? = null,
+    /**
+     * Distance driven, metres, from the jitter-filtered GPS trace (SRS PG-03). Null until
+     * progression has processed the session.
+     */
+    val distanceM: Double? = null
 )
 
 enum class UploadStatus {

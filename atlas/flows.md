@@ -713,7 +713,7 @@ HomeFragment: User taps FAB
   → _state.value = Idle
   → stopSelf()
 → RecordingFragment observes Stopping state
-  → navigateToSessionResult(sessionId)
+  → navigateToSessionResult(sessionId)   → Rewards first (see Flow: Progression Award & Rewards)
 ```
 
 ### Async Boundaries
@@ -2014,3 +2014,80 @@ CoachFragment.updateUI(state)  [populated branch only]
 - The repair writes **only on difference**, so opening a correct session is read-only.
 - The repair never regenerates insights without the merged-lap signal (OC-14, OC-32), and
   never removes an insight it did not generate (OC-09, OC-10).
+
+---
+
+## Flow: Progression Award & Rewards (Stop → Rewards → Session Result)
+
+### Goal
+
+Measure the session's distance, award its trophies and show the driver what changed in their
+career, once, before the Session Result (SRS PG-12, PG-19, PG-20).
+
+### Trigger
+
+Recording stops and `RecordingViewModel` has saved laps and offline coaching.
+
+### Execution Path
+
+```
+RecordingViewModel.finishProcessing(sessionId)   [suspend, after laps + coaching saved]
+→ progressionRepository.awardSession(sessionId)   [IO, Mutex]
+  → sessionDao.getSessionByIdSync(id)
+  → lapDao.getLapsForSessionSync(id)
+  → SessionDistance.ofTelemetryFile(rawFilePath)   ?: laps × track lengthM ?: 0
+  → LapDiagnosticsWriter.read + MergedLapCaveat     → lapBoundariesTrusted
+  → history = every other session (TrophyRules keeps only earlier startedAt)
+  → TrophyRules.evaluate(facts, history)
+  → [ROOM TRANSACTION] updateDistance + trophyDao.insertAll (IGNORE duplicates)
+  → errors other than cancellation: logged, never block the result
+→ RecordingFragment.navigateToSessionResult(sessionId)
+  → action_recording_to_rewards (popUpTo homeFragment)
+→ RewardsFragment / RewardsViewModel(sessionId)
+  → progressionRepository.rewards(sessionId)
+    → before = career without this session; after = career with it
+    → newTrophies = this session's trophies; recentProgress vs latest earlier session on track
+  → Ready(popups = trophies…, LEVEL UP if level rose)
+  → render: km before → after, level bar animates, summary, recent progress, Next goal
+  → each pop-up: scale + glow, performHapticFeedback; NICE!/Back → onPopupDismissed()
+→ CONTINUE (or Back with no pop-up)
+  → action_rewards_to_session_result (popUpTo rewardsFragment inclusive)
+  → Session Result; Back returns to Home
+```
+
+### Failure Points
+
+| Failure | Cause | Effect |
+|---------|-------|--------|
+| Award throws | DB or file error | Logged; Rewards shows no new trophies; Continue still works |
+| Session missing | Deleted mid-flow | Rewards `Unavailable`: only Continue shown |
+| Telemetry missing | File deleted | Fallback distance |
+
+---
+
+## Flow: Progression History Replay (Backfill)
+
+### Goal
+
+Give sessions recorded before v3.07 their distance and trophies, silently, in the order they
+were driven so Personal Bests are chronological (SRS PG-13, PG-22).
+
+### Execution Path
+
+```
+HomeFragment / ProfileFragment → CareerViewModel.init
+→ [viewModelScope] progressionRepository.backfillIfNeeded()
+  → DataStore[progression_backfill_v1_done] == true?  → return
+  → Mutex
+    → for session in sessionDao.getAllSessionsOldestFirst()
+      → award(session, remeasure = false)   (keeps a stored distanceM)
+    → DataStore[progression_backfill_v1_done] = true
+→ career() Flow (sessions + laps + trophies combined) re-emits as rows land
+→ level card, Next goal, roadmap, cabinet rebind
+```
+
+### Invariants
+
+- No pop-ups: the replay writes rows; only the Rewards screen celebrates.
+- Idempotent: unique (sessionId, type) and earlier-only history make a re-run a no-op.
+- The flag is set only after the whole replay; clearing user data clears it with the sessions.

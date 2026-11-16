@@ -19,11 +19,15 @@ import com.drivingcoach.BuildConfig
 import com.drivingcoach.R
 import com.drivingcoach.databinding.FragmentHomeBinding
 import com.drivingcoach.databinding.ItemSessionHistoryBinding
+import com.drivingcoach.ui.progression.CareerViewModel
+import com.drivingcoach.ui.progression.CareerViews
+import com.drivingcoach.ui.progression.ProgressionText
 import com.drivingcoach.util.LapTimeFormatter
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -34,6 +38,7 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: HomeViewModel by viewModels()
+    private val careerViewModel: CareerViewModel by viewModels()
     
     private var trackNameDialog: androidx.appcompat.app.AlertDialog? = null
     private var trackChoiceDialog: androidx.appcompat.app.AlertDialog? = null
@@ -86,6 +91,9 @@ class HomeFragment : Fragment() {
 
         // Profile button
         binding.profileButton.setOnClickListener {
+            viewModel.onProfileClick()
+        }
+        binding.homeLevelCard.root.setOnClickListener {
             viewModel.onProfileClick()
         }
 
@@ -225,6 +233,13 @@ class HomeFragment : Fragment() {
                 launch {
                     viewModel.events.collect { event ->
                         handleEvent(event)
+                    }
+                }
+                launch {
+                    careerViewModel.career.filterNotNull().collect { career ->
+                        CareerViews.bindLevelCard(binding.homeLevelCard, career.progress, showChecklist = false)
+                        binding.homeNextGoal.nextGoalText.text =
+                            ProgressionText(requireContext()).nextGoal(career.nextGoal)
                     }
                 }
             }

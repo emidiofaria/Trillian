@@ -9,11 +9,13 @@ import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.dao.SessionPreferenceDao
 import com.drivingcoach.data.db.dao.TrackDao
+import com.drivingcoach.data.db.dao.TrophyDao
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
 import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.SessionEntity
 import com.drivingcoach.data.db.entity.SessionPreferenceEntity
 import com.drivingcoach.data.db.entity.TrackEntity
+import com.drivingcoach.data.db.entity.TrophyEntity
 
 @Database(
     entities = [
@@ -21,9 +23,10 @@ import com.drivingcoach.data.db.entity.TrackEntity
         LapEntity::class,
         CoachingInsightEntity::class,
         SessionPreferenceEntity::class,
-        TrackEntity::class
+        TrackEntity::class,
+        TrophyEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class DrivingCoachDatabase : RoomDatabase() {
@@ -33,6 +36,7 @@ abstract class DrivingCoachDatabase : RoomDatabase() {
     abstract fun coachingInsightDao(): CoachingInsightDao
     abstract fun sessionPreferenceDao(): SessionPreferenceDao
     abstract fun trackDao(): TrackDao
+    abstract fun trophyDao(): TrophyDao
 
     companion object {
         const val DATABASE_NAME = "driving_coach.db"
@@ -140,6 +144,33 @@ abstract class DrivingCoachDatabase : RoomDatabase() {
                         lastUsedAt INTEGER
                     )
                 """.trimIndent())
+            }
+        }
+
+        /**
+         * Migration from version 5 to 6: progression (SRS PG-21).
+         * - sessions.distanceM, null until a session has been measured
+         * - the trophies table, one row per trophy per session
+         *
+         * Levels are not stored: they are derived from distance and trophies, so there is
+         * nothing to migrate when the ladder changes.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.addColumnIfMissing("sessions", "distanceM", "REAL")
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `trophies` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `sessionId` INTEGER NOT NULL,
+                        `type` TEXT NOT NULL,
+                        `trackKey` TEXT NOT NULL,
+                        `value` INTEGER NOT NULL,
+                        `awardedAt` INTEGER NOT NULL,
+                        FOREIGN KEY(`sessionId`) REFERENCES `sessions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_trophies_sessionId` ON `trophies` (`sessionId`)")
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_trophies_sessionId_type` ON `trophies` (`sessionId`, `type`)")
             }
         }
     }

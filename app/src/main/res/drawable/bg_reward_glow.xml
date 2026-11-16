@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soft halo behind a reward pop-up; tinted per metal at runtime -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:centerColor="#66FFFFFF"
+        android:endColor="#00FFFFFF"
+        android:gradientRadius="50%p"
+        android:startColor="#CCFFFFFF"
+        android:type="radial" />
+</shape>

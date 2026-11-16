@@ -190,4 +190,99 @@
     <string name="coach_tip_steering_title">Smooth steering inputs</string>
     <string name="coach_tip_steering_body">Turn the wheel in one fluid, progressive movement and unwind it the same way. Sharp, jerky inputs upset the car\'s balance and scrub off speed. If you find yourself constantly correcting, slow your hands down and look further ahead.</string>
 
+    <!-- Progression: levels, trophies, rewards (SRS §11.2, PG-xx) -->
+    <string name="progression_level_1">Rookie</string>
+    <string name="progression_level_2">Novice</string>
+    <string name="progression_level_3">Challenger</string>
+    <string name="progression_level_4">Competitor</string>
+    <string name="progression_level_5">Expert</string>
+    <string name="progression_level_6">Master</string>
+    <string name="progression_tier_beginner">Beginner</string>
+    <string name="progression_tier_mid">Mid</string>
+    <string name="progression_tier_pro">Pro</string>
+    <string name="progression_level_title">Level %1$d · %2$s</string>
+    <string name="progression_level_badge">L%1$d</string>
+    <string name="progression_tier_label">%1$s tier</string>
+    <string name="progression_level_content_description">Driver level %1$d, %2$s, %3$s tier</string>
+    <string name="progression_km_progress">%1$s km driven · next level at %2$s km</string>
+    <string name="progression_km_max">%1$s km driven · top level reached</string>
+    <string name="progression_next_level_header">TO REACH LEVEL %1$d · %2$s</string>
+    <string name="progression_req_km">%1$s %2$s km (%3$s km driven)</string>
+    <string name="progression_req_trophy">%1$s %2$d × %3$s (you have %4$d) · %5$s</string>
+    <string name="progression_check_met">✅</string>
+    <string name="progression_check_unmet">⬜</string>
+    <string name="progression_max_level_reached">You hold the top level. Every new personal best still counts in your cabinet.</string>
+
+    <string name="progression_career_title">CAREER</string>
+    <string name="progression_roadmap_title">LEVEL ROADMAP</string>
+    <string name="progression_cabinet_title">TROPHY CABINET</string>
+    <string name="progression_roadmap_done">✓</string>
+    <string name="progression_roadmap_current">▶</string>
+    <string name="progression_roadmap_locked">🔒</string>
+    <string name="progression_roadmap_start">Where every driver starts</string>
+    <string name="progression_roadmap_requirements">%1$s km · %2$d × %3$s</string>
+    <string name="progression_roadmap_cd_done">Level %1$d, %2$s, completed</string>
+    <string name="progression_roadmap_cd_current">Level %1$d, %2$s, your current level</string>
+    <string name="progression_roadmap_cd_locked">Level %1$d, %2$s, locked. Needs %3$s</string>
+
+    <string name="trophy_finisher_bronze">The Finisher</string>
+    <string name="trophy_pb_silver">Personal Best</string>
+    <string name="trophy_track_master_gold">Track Master</string>
+    <string name="trophy_consistency_bronze">Consistency Bronze</string>
+    <string name="trophy_consistency_silver">Consistency Silver</string>
+    <string name="trophy_consistency_gold">Consistency Gold</string>
+    <string name="trophy_metal_bronze">Bronze</string>
+    <string name="trophy_metal_silver">Silver</string>
+    <string name="trophy_metal_gold">Gold</string>
+    <string name="trophy_requirement_name">%1$s (%2$s)</string>
+    <string name="trophy_how_finisher">Drive at least 5 km and 5 laps in one session.</string>
+    <string name="trophy_how_pb">Beat your best lap on a track you\'ve driven before.</string>
+    <string name="trophy_how_track_master">Set a personal best and keep 5 consecutive laps under 0.750s of variation, in the same session.</string>
+    <string name="trophy_how_consistency">Keep 5 consecutive laps under %1$s of variation (standard deviation). Each session takes only its highest consistency tier.</string>
+    <string name="trophy_how_to_win">How to win: %1$s</string>
+    <string name="trophy_count">× %1$d</string>
+    <string name="trophy_last_earned">Last: %1$s · %2$s</string>
+    <string name="trophy_not_earned">Not yet earned</string>
+    <string name="trophy_tile_cd_earned">%1$s trophy, earned %2$d times</string>
+    <string name="trophy_tile_cd_locked">%1$s trophy, not yet earned</string>
+
+    <string name="trophy_hint_finisher_none">Record a session to see how close you are.</string>
+    <string name="trophy_hint_finisher">Best session so far: %1$s km / %2$d laps · need 5 km and 5 laps</string>
+    <string name="trophy_hint_consistency_none">Drive 5 laps in one session to get a consistency reading.</string>
+    <string name="trophy_hint_consistency">Your steadiest 5 laps varied by %1$s · get under %2$s for %3$s</string>
+    <string name="trophy_hint_consistency_beyond">Your steadiest 5 laps varied by %1$s, already inside this tier. A session that reaches a higher tier takes that one instead.</string>
+    <string name="trophy_hint_pb_none">Set a lap time on any track, then beat it on your next visit.</string>
+    <string name="trophy_hint_pb">Your best at %1$s: %2$s · beat it</string>
+    <string name="trophy_hint_track_master">%1$s Then keep 5 laps under 0.750s of variation in that same session.</string>
+
+    <string name="next_goal_title">NEXT GOAL</string>
+    <string name="next_goal_max">You\'ve reached the top level. Keep chasing personal bests!</string>
+    <string name="next_goal_km">Drive %1$s km more to reach Level %2$d · %3$s.</string>
+    <string name="next_goal_trophy">Win %1$d × %2$s to reach Level %3$d · %4$s. %5$s</string>
+
+    <string name="rewards_title">SESSION COMPLETE</string>
+    <string name="rewards_lifetime_title">LIFETIME DISTANCE</string>
+    <string name="rewards_km_before_after">%1$s km → %2$s km</string>
+    <string name="rewards_summary_title">THIS SESSION</string>
+    <string name="rewards_summary_distance">Distance</string>
+    <string name="rewards_summary_laps">Laps</string>
+    <string name="rewards_summary_best_lap">Best lap</string>
+    <string name="rewards_summary_consistency">Consistency</string>
+    <string name="rewards_km_value">%1$s km</string>
+    <string name="rewards_value_none">None</string>
+    <string name="rewards_trophies_title">TROPHIES EARNED</string>
+    <string name="rewards_no_trophies">No new trophies this session.</string>
+    <string name="rewards_progress_title">RECENT PROGRESS</string>
+    <string name="rewards_progress_faster">You were %1$s faster than your last session at %2$s!</string>
+    <string name="rewards_progress_slower">You were %1$s slower than your last session at %2$s. Next time!</string>
+    <string name="rewards_progress_equal">You matched your last session\'s best at %1$s to the millisecond.</string>
+    <string name="rewards_progress_first">First timed session at %1$s. Your best lap here is now the time to beat.</string>
+    <string name="rewards_progress_no_laps">No timed laps this session, so there is no lap comparison.</string>
+    <string name="rewards_continue">CONTINUE</string>
+    <string name="rewards_loading">Updating your career…</string>
+    <string name="rewards_popup_trophy">TROPHY UNLOCKED</string>
+    <string name="rewards_popup_level_up">LEVEL UP!</string>
+    <string name="rewards_popup_dismiss">NICE!</string>
+    <string name="rewards_popup_cd">%1$s: %2$s</string>
+
 </resources>
