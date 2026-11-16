@@ -98,6 +98,7 @@ class CoachTabTest {
     fun coachTabShowsTheSectorMapWhenLapsAreUsable() {
         seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true)
         launchCoachTab()
+        awaitSectorMap()
 
         onView(withId(R.id.sectorMapCard)).perform(scrollTo()).check(matches(isDisplayed()))
         onView(withId(R.id.sectorMap)).check(matches(isDisplayed()))
@@ -112,6 +113,7 @@ class CoachTabTest {
     fun aMapDerivedFromLapsSaysSoBeneathItself() {
         seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true)
         launchCoachTab()
+        awaitSectorMap()
 
         onView(withId(R.id.sectorMapNote)).perform(scrollTo())
             .check(matches(withText(R.string.coach_map_note_derived)))
@@ -311,6 +313,15 @@ class CoachTabTest {
         awaitUntil("the Coach tab to be rendered") {
             runCatching {
                 onView(withId(R.id.fundamentalsSection)).perform(scrollTo())
+            }.isSuccess
+        }
+    }
+
+    /** The map is drawn off the main thread and can arrive after the fundamentals. */
+    private fun awaitSectorMap() {
+        awaitUntil("the sector map to be rendered") {
+            runCatching {
+                onView(withId(R.id.sectorMapCard)).perform(scrollTo())
             }.isSuccess
         }
     }
