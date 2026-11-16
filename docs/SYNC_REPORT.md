@@ -6,7 +6,7 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ## [2026-11-13] COACH tab — Insight Fixes and Driving Fundamentals
 
-**Codebase Version:** v3.04+ (unreleased; no Room migration; DB stays at version 5)
+**Codebase Version:** v3.05 (versionCode 305; no Room migration; DB stays at version 5)
 **Trigger:** Drivers reported Dream Lap, Sector focus, The odd one out and Pace trend as "not
 working". A request was also made for four beginner tips that turn green when already mastered.
 
