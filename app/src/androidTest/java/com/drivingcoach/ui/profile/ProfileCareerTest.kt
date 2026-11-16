@@ -3,6 +3,8 @@ package com.drivingcoach.ui.profile
 import android.content.Context
 import android.view.View
 import android.widget.LinearLayout
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.navigation.Navigation
 import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
@@ -59,6 +61,11 @@ class ProfileCareerTest {
     @Inject lateinit var lapDao: LapDao
     @Inject lateinit var progression: ProgressionRepository
 
+    // Production DataStore (not replaced in tests): Clear data empties it, so the driver's
+    // onboarding and replay flags are snapshotted here and restored for later test classes.
+    @Inject lateinit var dataStore: DataStore<Preferences>
+    private var savedPrefs: Preferences? = null
+
     private lateinit var seed: ProgressionSeed
     private val context: Context get() = ApplicationProvider.getApplicationContext()
     private var root: View? = null
@@ -66,6 +73,7 @@ class ProfileCareerTest {
     @Before
     fun setUp() {
         hiltRule.inject()
+        savedPrefs = runBlocking { dataStore.data.first() }
         seed = ProgressionSeed(sessionDao, lapDao, File(context.filesDir, "telemetry"))
         runBlocking {
             val id = seed.session(startedAt = 1_700_000_000_000L, lapTimesMs = ProgressionSeed.STEADY_MINUTES)
@@ -80,7 +88,10 @@ class ProfileCareerTest {
     }
 
     @After
-    fun tearDown() = seed.cleanUp()
+    fun tearDown() {
+        seed.cleanUp()
+        savedPrefs?.let { saved -> runBlocking { dataStore.updateData { saved.toMutablePreferences() } } }
+    }
 
     @Test
     fun levelCardShowsTheNextLevelChecklist() {

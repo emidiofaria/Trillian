@@ -717,8 +717,11 @@ timings too, if the problem was a slow lock.
 3. Read the confirmation and tap **Delete everything** if you're sure
 
 This removes your driver name, every recorded session, every lap, every coaching note, and
-the raw telemetry files behind them. The app returns to the very first screen, as if freshly
-installed.
+the raw telemetry files and lap-timing notes behind them, and your career (distance and
+trophies). The app returns to the very first screen, as if freshly installed.
+
+> **Fixed in 3.07:** in earlier versions this button showed an error and deleted nothing. If
+> you tried it before and your data was still there, it will work now.
 
 Use it when handing the phone to someone else, or to start completely fresh.
 

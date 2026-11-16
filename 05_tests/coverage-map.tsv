@@ -59,6 +59,9 @@ DR-05	StartupBackStackTest
 DR-06	ProfileViewModelTest	Asserts the database is untouched by a rename
 DR-06	DriverNameFlowTest.theSavedNameIsShownOnTheProfileScreen
 DR-07	ProfileViewModelTest	inOrder: paths read before clearAllTables()
+DR-07	ProfileViewModelTest.tables are cleared off the main thread	clearAllTables runs on the IO dispatcher
+DR-07	ProfileViewModelTest.lap diagnostics sidecars are deleted with their telemetry	Sidecars deleted by recorded path only
+DR-07	ClearDataProductionDbTest.clearDataWipesEverythingOnAProductionConfiguredDatabase	Full wipe on a DB without allowMainThreadQueries
 DR-08	DriverNameFlowTest.theDemoModeShortcutIsGone
 
 # --- Track Setup ---

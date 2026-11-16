@@ -9,7 +9,9 @@ import com.drivingcoach.data.db.DrivingCoachDatabase
 import com.drivingcoach.data.db.dao.LapDao
 import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.profile.DriverProfileStore
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -27,12 +29,14 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.File
+import java.util.concurrent.Executors
 
 /**
  * L1 (SWE.4) unit tests for the Profile screen's identity actions.
@@ -79,7 +83,10 @@ class ProfileViewModelTest {
         }
     }
 
-    private fun viewModel(dataStore: DataStore<Preferences>): ProfileViewModel {
+    private fun viewModel(
+        dataStore: DataStore<Preferences>,
+        ioDispatcher: CoroutineDispatcher = testDispatcher
+    ): ProfileViewModel {
         // The Profile screen loads stats on construction; keep those reads empty and quiet
         // so each test observes only the action under test.
         whenever(sessionDao.getAllSessionsForUser("demo_user")).thenReturn(flowOf(emptyList()))
@@ -90,7 +97,7 @@ class ProfileViewModelTest {
             database = database,
             dataStore = dataStore,
             driverProfileStore = DriverProfileStore(dataStore, testDispatcher),
-            ioDispatcher = testDispatcher
+            ioDispatcher = ioDispatcher
         )
     }
 
@@ -280,5 +287,56 @@ class ProfileViewModelTest {
         assertEquals(listOf(ProfileEvent.NavigateToOnboarding), events)
 
         collector.cancel()
+    }
+
+    /**
+     * Room's generated `clearAllTables()` throws on the main thread. Calling it straight from
+     * viewModelScope made every Clear data fail in production while mocks and the L2 test
+     * database (which allows main-thread queries) hid it.
+     */
+    @Test
+    fun `tables are cleared off the main thread`() = runTest(testDispatcher) {
+        whenever(sessionDao.getAllRawFilePaths()).thenReturn(emptyList())
+        var clearedOn: String? = null
+        doAnswer { clearedOn = Thread.currentThread().name; null }.whenever(database).clearAllTables()
+
+        val executor = Executors.newSingleThreadExecutor { Thread(it, "io-test") }
+        try {
+            val vm = viewModel(RecordingDataStore(storedProfile("Ayrton")), executor.asCoroutineDispatcher())
+            advanceUntilIdle()
+
+            val events = mutableListOf<ProfileEvent>()
+            val collector = launch { vm.events.collect { events += it } }
+
+            vm.clearUserData()
+            val deadline = System.currentTimeMillis() + 5_000
+            while (events.isEmpty() && System.currentTimeMillis() < deadline) {
+                advanceUntilIdle()
+                Thread.sleep(10)
+            }
+
+            assertEquals(listOf(ProfileEvent.NavigateToOnboarding), events)
+            assertTrue("cleared on $clearedOn", clearedOn?.startsWith("io-test") == true)
+            collector.cancel()
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `lap diagnostics sidecars are deleted with their telemetry`() = runTest(testDispatcher) {
+        val telemetry = temporaryFolder.newFile("session_3.jsonl").apply { writeText("{}") }
+        val sidecar = temporaryFolder.newFile("session_3.jsonl.lapdiag.json").apply { writeText("{}") }
+        val unrelated = temporaryFolder.newFile("notes.lapdiag.json").apply { writeText("{}") }
+        whenever(sessionDao.getAllRawFilePaths()).thenReturn(listOf(telemetry.absolutePath))
+
+        val vm = viewModel(RecordingDataStore(storedProfile("Ayrton")))
+        advanceUntilIdle()
+
+        vm.clearUserData()
+        advanceUntilIdle()
+
+        assertFalse("sidecar should have been deleted", sidecar.exists())
+        assertTrue("files not derived from a recorded path are left alone", unrelated.exists())
     }
 }

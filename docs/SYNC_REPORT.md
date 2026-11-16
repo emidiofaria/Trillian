@@ -4,6 +4,32 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-11-16] Profile — Clear User Data Fixed (Main-Thread Wipe) and Sidecars Deleted
+
+**Codebase Version:** v3.07 (versionCode 307; no Room migration; DB stays at version 6)
+**Trigger:** Found while adding progression gap tests: Clear User Data could never succeed on a device.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `ProfileViewModel.kt` | ✅ Fixed | `clearAllTables()` on `ioDispatcher`; `.lapdiag.json` sidecars deleted with their telemetry |
+| L1 tests | ✅ Updated | `ProfileViewModelTest` +2 (thread, sidecars) |
+| L2 tests | ✅ Updated | `ClearDataProductionDbTest` (new); `ProfileCareerTest` restores the real DataStore after each test |
+| `SRS_v1.md` | ✅ Updated | DR-07 amended (sidecars, off main thread) |
+| `USER_MANUAL.md` | ✅ Updated | §6.4 lists career and timing notes; "Fixed in 3.07" note |
+| `failure-patterns.md` | ✅ Updated | FP-TEST-DB-PERMISSIVE |
+| `coverage-map.tsv` | ✅ Updated | 3 DR-07 claims |
+
+### Root cause
+
+`clearAllTables()` was called on the main thread; Room throws there. The L2 test database sets
+`allowMainThreadQueries()` and L1 mocks the database, so no test could see it. Present since
+`cfefbe3`. Reverting the fix makes `ClearDataProductionDbTest` fail with Room's
+"Cannot access database on the main thread".
+
+---
+
 ## [2026-11-16] Progression — Levels, Trophies, Rewards Screen and Career
 
 **Codebase Version:** v3.07 (versionCode 307; Room migration 5 → 6; DB version 6)

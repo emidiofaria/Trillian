@@ -3084,3 +3084,40 @@ incremental build.**
 - UI-12 — the About screen shows build identity read from `BuildConfig`
 - NF-17 — the packaging gates that stand between a bad build and strangers
 - `BuildVersionTest` (L1) — asserts the derivation; cannot see inlining drift
+
+---
+
+## Pattern: The Test Database Allowed What Production Forbids (FP-TEST-DB-PERMISSIVE) — ✅ FIXED (2026-11-16)
+
+### Symptom
+
+An action works in every test and fails on every device. Clear User Data showed an error
+snackbar and deleted nothing — no rows, no files, no preferences.
+
+### Where it bit
+
+`ProfileViewModel.clearUserData()` called `database.clearAllTables()` directly from
+`viewModelScope` (main thread). Room's generated `clearAllTables()` asserts it is not on the
+main thread unless `allowMainThreadQueries()` was set. Production never sets it; the L2
+`TestDatabaseModule` does. Present since the first commit (`cfefbe3`).
+
+### Why the usual guards missed it
+
+- **L1 mocked the database**, so the assertion inside Room never ran.
+- **L2 used the permissive test database**, so the real call succeeded.
+- **The failure was caught and turned into a snackbar**, so nothing crashed or logged loudly.
+
+### Resolution
+
+Wrap the call in `withContext(ioDispatcher)`. Guarded by
+`ProfileViewModelTest.tables are cleared off the main thread` (L1, asserts the thread) and
+`ClearDataProductionDbTest` (L2, a database built without `allowMainThreadQueries`), which
+reproduces the production error when the fix is reverted.
+
+### Generalisable rule
+
+**A test configuration that relaxes a production check hides every violation of that check.**
+Any Room call that is not a `suspend` DAO method or a `Flow` (e.g. `clearAllTables()`,
+`runInTransaction`, raw `openHelper` access) must be explicitly dispatched off the main thread,
+and at least one test must exercise it against a database configured like production.
+

@@ -14,6 +14,7 @@ import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.profile.DriverProfileStore
 import com.drivingcoach.data.profile.DriverProfileStore.NameValidation
 import com.drivingcoach.di.IoDispatcher
+import com.drivingcoach.lap.LapDiagnosticsWriter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -164,19 +165,26 @@ class ProfileViewModel @Inject constructor(
      * Order matters: file paths are read *before* the tables are cleared, because once the
      * rows are gone there is no record of which files belong to this app. Files are deleted
      * by their recorded path only — never by emptying the telemetry directory — so nothing
-     * the app did not create can be caught in the sweep.
+     * the app did not create can be caught in the sweep. Each recording's lap-diagnostics
+     * sidecar (`LapDiagnosticsWriter.SUFFIX`) is derived from that same path and goes with it.
      */
     fun clearUserData() {
         viewModelScope.launch {
             try {
                 val filePaths = withContext(ioDispatcher) { sessionDao.getAllRawFilePaths() }
 
-                database.clearAllTables()
+                // Room refuses to run this on the main thread; until v3.07 it was called from
+                // viewModelScope directly, so the wipe threw and nothing was ever cleared.
+                withContext(ioDispatcher) { database.clearAllTables() }
 
                 withContext(ioDispatcher) {
                     filePaths.forEach { path ->
-                        runCatching { File(path).takeIf { it.isFile }?.delete() }
-                            .onFailure { Log.w(TAG, "could not delete telemetry file $path", it) }
+                        val telemetry = File(path)
+                        listOf(telemetry, File(telemetry.parentFile, telemetry.name + LapDiagnosticsWriter.SUFFIX))
+                            .forEach { file ->
+                                runCatching { file.takeIf { it.isFile }?.delete() }
+                                    .onFailure { Log.w(TAG, "could not delete $file", it) }
+                            }
                     }
                 }
 
