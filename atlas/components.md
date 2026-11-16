@@ -1503,7 +1503,7 @@ the table. Equally importantly, it refuses to do so when the data cannot support
 
 ### Key Code Areas
 
-- `coaching/DreamLap.kt` — pure object; `of(laps, mergedLapCaveat)` returns `Result?`
+- `coaching/DreamLap.kt` — pure object; `evaluate(laps, mergedLapCaveat)` returns `Evaluation` (`Available(result)` or `NotAvailable(Withheld)`, where `Withheld` is `MergedLaps`, `TooFewLaps(usableLaps)` or `SectorsInconsistent`); `of()` is a nullable wrapper
 - `OfflineCoachingEngine.generateDreamLapInsight()` — the only caller
 
 ### Dependencies
@@ -1531,11 +1531,11 @@ achievements, credibly.
 | Mode | Symptom | Cause | Mitigation |
 |------|---------|-------|------------|
 | Artefact stitched in | Impossible "theoretical best" | Double-counted lap | Caveat suppression + gain bound |
-| Silent absence | No Dream Lap card | Any gate rule fired | Intended; silence over an unfounded claim |
+| Withheld | "Dream Lap" card with "Not available for this session" and the reason | Any gate rule fired | Intended; no time over an unfounded one. The card stays so it isn't mistaken for a broken feature (OC-13, v3.06) |
 
 ### Criticality
 
-LOW — absence costs one insight. A *wrong* Dream Lap, however, would be a MEDIUM-severity
+LOW — a withheld time costs one insight. A *wrong* Dream Lap, however, would be a MEDIUM-severity
 trust failure, which is why the gate is the larger half of the component.
 
 ---
@@ -1635,10 +1635,10 @@ Since the sector slice it produces a **variable number of insights (1–7)**, em
 
 | Insight | Condition | Example |
 |---------|-----------|---------|
-| Best Lap | Always (if ≥2 laps) | "Lap 3 Was Your Fastest — 2.3s ahead of average" |
+| Best Lap | Always (if ≥2 laps) | "You nailed Sector 2: 0.667s quicker than your average" |
 | Top Speed | If telemetry file exists | "🚀 Top Speed: 247 km/h — Hit on Lap 3" |
-| Consistency | Always (if ≥2 laps) | "Laps within 1.2s of each other" |
-| Dream Lap | If `DreamLap.of()` returns non-null | "Dream Lap: 1:12.345 — 3.5s quicker than your best" |
+| Consistency | Always (if ≥2 laps) | "Laps within 1.200s of each other" |
+| Dream Lap | Always (if ≥2 laps) — time and calculation from `DreamLap.evaluate()`, or the withheld reason | "Dream Lap: 1:12.345" / "Best S1 … (Lap a) + … = 1:12.345. Your best lap: 1:15.845 (Lap n)…" |
 | Sector Diagnostic | If laps carry sectors | "Focus on Sector 2" / "All Sectors Strong" |
 | Outlier Lap | ≥4 laps, one ≥15% off the **median** | "Lap 5 Was The Odd One Out" |
 | Pace Trend | ≥6 laps, halves differ by >2% | "You Built Pace Through The Session" |
@@ -1646,6 +1646,8 @@ Since the sector slice it produces a **variable number of insights (1–7)**, em
 **Removed:** the "Sector Focus — Coming Soon" upsell (OC-08). An advertisement occupying a
 coaching slot is not a degraded insight, it is a false one, and the quota that demanded it
 has been removed with it.
+
+All time gaps are formatted by `formatTime()` as seconds with three decimals (`Locale.US`), and no dash is placed directly before a number (OC-34).
 
 ### The Dream Lap gate
 

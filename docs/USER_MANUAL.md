@@ -381,17 +381,20 @@ that lap to divide it honestly, so it shows nothing rather than guessing.
 At the top of the **Coach** tab you'll find a map of the circuit, split into three coloured
 parts — see "The sector map" just below. Underneath it, the tab reads your laps and tells you
 what it can see in them. You'll get between
-one and seven cards, depending on what your session actually supports:
+three and seven cards, depending on what your session actually supports:
 
 | Card | When you'll see it |
 |------|--------------------|
 | **Your fastest lap** | Always — which lap it was and how far ahead of your average |
 | **🚀 Top speed** | When telemetry was recorded — your highest speed and the lap you hit it on |
 | **Consistency** | Always — how tightly your lap times cluster together |
-| **Dream Lap** | When your sector times support it (see below) |
+| **Dream Lap** | Always — the time and how it was worked out, or why it isn't available for this session (see below) |
 | **Sector focus** | When your laps have sectors — which third of the track is costing you most |
 | **The odd one out** | 4+ laps, when one was far off your usual pace |
 | **Pace trend** | 6+ laps, when you clearly got quicker or slower through the session |
+
+All time gaps on the cards are in seconds to three decimals — for example *0.667s quicker than
+your average*.
 
 **The app will show fewer cards rather than make something up.** If your session doesn't
 support a particular piece of analysis, that card simply isn't there. A missing card is the
@@ -487,14 +490,19 @@ The **Dream Lap** takes your fastest sector 1, your fastest sector 2 and your fa
 in pieces but never strung together in one go, and the difference from your actual best lap is
 the time sitting on the table.
 
-For example: your best lap was 1:12.4, but your best S1 came on lap 3, your best S2 on lap 7
-and your best S3 on lap 5. Stitched together they make 1:10.9 — so there's 1.5 seconds
-available without driving anything you haven't already driven.
+The card shows the working, so you can check it yourself:
 
-If one single lap happened to hold all three of your best sectors, the app says so. That's a
-genuinely good result: it means you put the whole thing together.
+> **Dream Lap: 1:10.900**
+> Best S1 24.100s (Lap 3) + best S2 23.500s (Lap 7) + best S3 23.300s (Lap 5) = 1:10.900.
+> Your best lap: 1:12.400 (Lap 4). Put your best sectors together and you'd be 1.500s faster.
 
-**Why the Dream Lap sometimes doesn't appear.** This is deliberate. The Dream Lap works by
+That's 1.5 seconds available without driving anything you haven't already driven.
+
+If one single lap happened to hold all three of your best sectors, the card is still called
+**Dream Lap** and says there was nothing left on the table. That's a genuinely good result: it
+means you put the whole thing together.
+
+**Why the Dream Lap sometimes says "Not available".** This is deliberate. The Dream Lap works by
 picking the *quickest* of everything, and that means if anything went wrong with lap detection
 — say a lap got split in two — the resulting half-lap would have impossibly quick sectors, and
 they'd win every time. You'd be shown a fantastic-looking lap time that you never drove.
@@ -502,7 +510,15 @@ they'd win every time. You'd be shown a fantastic-looking lap time that you neve
 So the app checks its own working first: there must be at least 3 good laps, the sectors must
 add up properly, none of them can be an absurd fraction of the lap, and the stitched time has
 to be a believable improvement rather than a miracle. If anything looks off — or if the app
-already warned you that two laps may have been recorded as one — it shows no Dream Lap at all.
+already warned you that two laps may have been recorded as one — the card shows no time, and
+tells you which of these it was:
+
+| The card says | What it means |
+|---------------|---------------|
+| *needs at least 3 laps with reliable sector times; this session has N* | Drive more laps, or check the start/finish line |
+| *No lap has reliable sector times* | The session has no sectors (e.g. the telemetry is gone) |
+| *…two laps may have been timed as one* | Lap detection suspects merged laps |
+| *…sector times don't add up reliably* | The stitched time would be a miracle, not a target |
 
 ### 5.3 Speed Charts
 
@@ -978,8 +994,8 @@ A: They're not the same sectors. The circuit's sectors are set by the organisers
 **Q: Why has one of my laps got no sector times?**  
 A: The GPS didn't give enough fixes during that lap to divide it up honestly — usually a weak signal, or a very short lap. Rather than estimate three numbers that look real but aren't, the app leaves them blank.
 
-**Q: Why don't I get a Dream Lap?**  
-A: The Dream Lap only appears when the app is confident the data behind it is sound. It needs at least 3 laps with good sector times, and it refuses if anything looks wrong — most often when it suspects two laps were recorded as one, which would produce an impossibly quick "best" sector. A missing Dream Lap means the app wasn't willing to show you a time you never drove.
+**Q: Why does my Dream Lap say "Not available"?**  
+A: The Dream Lap card is always there, but it only shows a time when the app is confident the data behind it is sound. It needs at least 3 laps with good sector times, and it refuses if anything looks wrong — most often when it suspects two laps were recorded as one, which would produce an impossibly quick "best" sector. The card then says "Not available for this session" and tells you why.
 
 **Q: The corner numbers in the Analysis tab don't match the circuit's map. Why?**  
 A: Trillian works out corners from the way your car actually changed direction, and numbers them in the order you drove through them. It has no knowledge of the circuit's official layout — a chicane the circuit calls one corner may show up as two, and a gentle kink they number may not register at all.

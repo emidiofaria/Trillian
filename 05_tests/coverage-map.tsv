@@ -188,6 +188,13 @@ OC-33	SectorRepairTest.an unreadable sidecar is treated as no sidecar rather tha
 OC-33	OfflineCoachingEngineTest	Dream Lap median guard
 OC-05	OfflineCoachingEngineTest.top speed reads the recorder's timestampMs key	Recorder timestamp key read
 OC-05	OfflineCoachingEngineTest.top speed outside every lap names no lap	No lap named outside laps
+OC-12	OfflineCoachingEngineTest.dream lap card shows the sum of best sectors against the best lap	Card states the calculation
+OC-13	OfflineCoachingEngineTest.a withheld dream lap says how many usable laps there were	Withheld card names the usable-lap count
+OC-13	OfflineCoachingEngineTest.a withheld dream lap says when the sectors do not add up	Withheld card names the inconsistency
+OC-14	OfflineCoachingEngineTest.a withheld dream lap says merged laps are suspected	Withheld card names the merged-lap reason
+OC-15	OfflineCoachingEngineTest.a lap holding every best sector is still titled Dream Lap	Complete lap keeps the Dream Lap title
+OC-34	OfflineCoachingEngineTest.best lap insight shows time gained in detail	Gaps in seconds, 3 decimals
+OC-34	OfflineCoachingEngineTest.sector focus shows time lost in detail	Gaps in seconds, 3 decimals
 CF-01	FundamentalsAnalyzerTest.tips are always all four, in display order	Four tips in order
 CF-01	CoachTabTest.allFourFundamentalsAreShownEvenWithoutInsights	Tips on screen
 CF-02	CoachTabTest.allFourFundamentalsAreShownEvenWithoutInsights	Shown without insights

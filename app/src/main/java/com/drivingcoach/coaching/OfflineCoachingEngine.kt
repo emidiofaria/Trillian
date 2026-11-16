@@ -3,6 +3,7 @@ package com.drivingcoach.coaching
 import com.drivingcoach.data.db.entity.LapEntity
 import org.json.JSONObject
 import java.io.File
+import java.util.Locale
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -101,9 +102,9 @@ object OfflineCoachingEngine {
         // 3. Consistency
         insights.add(generateConsistencyInsight(laps))
         
-        // 4. Dream Lap - omitted entirely when the sectors cannot carry it
+        // 4. Dream Lap - always present: the calculation, or why there is none (OC-13)
         val dreamLapSource = if (mergedSignalKnown) laps else CleanLaps.of(laps)
-        DreamLap.of(dreamLapSource, mergedLapCaveat)?.let { insights.add(generateDreamLapInsight(it)) }
+        insights.add(generateDreamLapInsight(DreamLap.evaluate(dreamLapSource, mergedLapCaveat)))
         
         // 5. Sector Diagnostic - omitted when there are no sectors, rather than
         //    replaced by an advertisement for a feature that does not exist
@@ -203,36 +204,30 @@ object OfflineCoachingEngine {
     ): OfflineInsight {
         val avgDuration = laps.map { it.durationMs }.average()
         val gainVsAverage = (avgDuration - bestLap.durationMs).toLong()
-        
-        return if (sectorsAvailable) {
-            // Calculate average sector times
-            val avgS1 = laps.map { it.sector1Ms }.average()
-            val avgS2 = laps.map { it.sector2Ms }.average()
-            val avgS3 = laps.map { it.sector3Ms }.average()
-            
-            // Find which sector had the biggest gain vs average
-            val gainS1 = avgS1 - bestLap.sector1Ms
-            val gainS2 = avgS2 - bestLap.sector2Ms
-            val gainS3 = avgS3 - bestLap.sector3Ms
-            
-            val (bestSectorGain, bestSectorNum) = listOf(
-                gainS1 to 1,
-                gainS2 to 2,
-                gainS3 to 3
-            ).maxByOrNull { it.first } ?: (gainS1 to 1)
-            
-            OfflineInsight(
-                headline = "Lap ${bestLap.lapNumber} Was Your Fastest",
-                detail = "You nailed Sector $bestSectorNum — ${bestSectorGain.toLong()}ms quicker than average. " +
-                         "Try to replicate that next session."
-            )
-        } else {
-            // No sector data - show lap-level insight
-            OfflineInsight(
-                headline = "Lap ${bestLap.lapNumber} Was Your Fastest",
-                detail = "You were ${formatTime(gainVsAverage.toDouble())} ahead of your average. Great rhythm on this lap!"
-            )
-        }
+        val headline = "Lap ${bestLap.lapNumber} Was Your Fastest"
+        val lapLevel = OfflineInsight(
+            headline = headline,
+            detail = "You were ${formatTime(gainVsAverage.toDouble())} ahead of your average. Great rhythm on this lap!"
+        )
+        if (!sectorsAvailable) return lapLevel
+
+        // Sector gain = the session's average time in that sector minus the best lap's
+        // time in it; the sector where the best lap gained most is the one named.
+        val (bestSectorGain, bestSectorNum) = listOf<(LapEntity) -> Long>(
+            { it.sector1Ms }, { it.sector2Ms }, { it.sector3Ms }
+        ).mapIndexed { index, sectorOf ->
+            laps.map(sectorOf).average() - sectorOf(bestLap) to index + 1
+        }.maxBy { it.first }
+
+        // Sectors that sum to their laps make this positive; anything else is bad data,
+        // and "quicker by a negative amount" must never reach the driver.
+        if (bestSectorGain <= 0.0) return lapLevel
+
+        return OfflineInsight(
+            headline = headline,
+            detail = "You nailed Sector $bestSectorNum: ${formatTime(bestSectorGain)} quicker than your average. " +
+                     "Try to replicate that next session."
+        )
     }
 
     /**
@@ -269,27 +264,54 @@ object OfflineCoachingEngine {
     }
 
     /**
-     * Insight: Dream Lap.
+     * Insight: Dream Lap (OC-12 to OC-15).
      *
-     * Deliberately worded as a lap the driver has already driven in pieces, not as a
-     * prediction. The sectors are real and were each recorded on a named lap; what is
-     * theoretical is only putting them together.
+     * Always titled "Dream Lap", so the driver can find it. When available, the detail
+     * shows the arithmetic - each best sector and the lap it came from, their sum, and
+     * the best lap actually driven - so the number can be checked rather than trusted.
+     * When withheld, it says why in one sentence: a silently missing card reads as a
+     * broken feature.
      */
-    private fun generateDreamLapInsight(dream: DreamLap.Result): OfflineInsight {
-        if (dream.isCompleteLap) {
-            return OfflineInsight(
-                headline = "Lap ${dream.sector1LapNumber} Was Your Complete Lap",
-                detail = "Your best sector 1, 2 and 3 all came from the same lap. " +
-                         "There was nothing left on the table — now repeat it."
+    private fun generateDreamLapInsight(evaluation: DreamLap.Evaluation): OfflineInsight {
+        val dream = when (evaluation) {
+            is DreamLap.Evaluation.Available -> evaluation.result
+            is DreamLap.Evaluation.NotAvailable -> return OfflineInsight(
+                headline = "Dream Lap",
+                detail = "Not available for this session. " + when (val reason = evaluation.reason) {
+                    DreamLap.Withheld.MergedLaps ->
+                        "Lap detection suspects some laps were timed as one, so adding up " +
+                            "your best sectors could show a time you never drove."
+                    is DreamLap.Withheld.TooFewLaps ->
+                        if (reason.usableLaps == 0) {
+                            "No lap has reliable sector times."
+                        } else {
+                            "It needs at least ${DreamLap.MIN_LAPS} laps with reliable sector " +
+                                "times; this session has ${reason.usableLaps}."
+                        }
+                    DreamLap.Withheld.SectorsInconsistent ->
+                        "The sector times don't add up reliably to the lap times, so the " +
+                            "result couldn't be trusted."
+                }
             )
+        }
+
+        val sum = "Best S1 ${formatLapTime(dream.sector1Ms)} (Lap ${dream.sector1LapNumber}) + " +
+            "best S2 ${formatLapTime(dream.sector2Ms)} (Lap ${dream.sector2LapNumber}) + " +
+            "best S3 ${formatLapTime(dream.sector3Ms)} (Lap ${dream.sector3LapNumber}) " +
+            "= ${formatLapTime(dream.totalMs)}. " +
+            "Your best lap: ${formatLapTime(dream.bestLapMs)} (Lap ${dream.bestLapNumber}). "
+
+        val verdict = if (dream.isCompleteLap) {
+            "All three best sectors came from that lap, so there was nothing left on the " +
+                "table. Now repeat it."
+        } else {
+            "Put your best sectors together and you'd be ${formatTime(dream.gainMs.toDouble())} " +
+                "faster. That's time you've already proven you can find."
         }
 
         return OfflineInsight(
             headline = "Dream Lap: ${formatLapTime(dream.totalMs)}",
-            detail = "Your best sectors came from laps ${dream.sector1LapNumber}, " +
-                     "${dream.sector2LapNumber} and ${dream.sector3LapNumber}. Put them together and " +
-                     "you'd be ${formatTime(dream.gainMs.toDouble())} under your best lap — that's time " +
-                     "you've already proven you can find."
+            detail = sum + verdict
         )
     }
 
@@ -328,7 +350,7 @@ object OfflineCoachingEngine {
         } else {
             OfflineInsight(
                 headline = "Focus on Sector $worstSectorNum",
-                detail = "You lose ${worstLoss.toLong()}ms here on average against your own best " +
+                detail = "You lose ${formatTime(worstLoss)} here on average against your own best " +
                          "Sector $worstSectorNum. Small gains here will drop your lap time."
             )
         }
@@ -415,20 +437,16 @@ object OfflineCoachingEngine {
         val minutes = ms / 60_000
         val seconds = (ms % 60_000) / 1000.0
         return if (minutes > 0) {
-            String.format("%d:%06.3f", minutes, seconds)
+            String.format(Locale.US, "%d:%06.3f", minutes, seconds)
         } else {
-            String.format("%.3fs", seconds)
+            String.format(Locale.US, "%.3fs", seconds)
         }
     }
 
     /**
-     * Formats time for display - uses ms for small values, s for larger ones.
+     * Formats a time gap in seconds with millisecond precision, e.g. "7.526s".
+     * One format everywhere, so cards can be compared at a glance.
      */
-    private fun formatTime(ms: Double): String {
-        return if (ms < 1000) {
-            "${ms.toLong()}ms"
-        } else {
-            String.format("%.1fs", ms / 1000)
-        }
-    }
+    private fun formatTime(ms: Double): String =
+        String.format(Locale.US, "%.3fs", ms / 1000)
 }

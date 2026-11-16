@@ -4,6 +4,38 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-11-13] COACH tab — Tester Feedback: Dream Lap Always Shown, Gaps in Seconds
+
+**Codebase Version:** v3.06 (versionCode 306; no Room migration; DB stays at version 5)
+**Trigger:** Testers reported (1) the Dream Lap missing from the COACH tab and (2) the Best Lap
+card reading "You nailed sector 1 -7526ms".
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `DreamLap.kt` | ✅ Updated | `evaluate()` returns `Available` / `NotAvailable(Withheld)`; `Result.bestLapNumber`; gates unchanged |
+| `OfflineCoachingEngine.kt` | ✅ Updated | Dream Lap card always present, shows calculation or reason; `formatTime` = seconds, 3 decimals; no dash before numbers |
+| L1 tests | ✅ Updated | `OfflineCoachingEngineTest` (+5, 3 assertions reworded) |
+| `SRS_v1.md` | ✅ Updated | OC-07, OC-13, OC-14, OC-15 amended; OC-34 added |
+| `components.md` | ✅ Updated | DreamLap API and failure modes; insight table examples |
+| `USER_MANUAL.md` | ✅ Updated | Dream Lap card always shown, worked example, "Not available" reasons; gaps in seconds |
+| `coverage-map.tsv` | ✅ Updated | OC-12…OC-15, OC-34 claims |
+
+### Root causes found
+
+- **"-7526ms" was not negative.** The text was "Sector 1 — 7526ms"; the em dash read as a minus.
+  Replaying all five fixtures showed sectors summing exactly to each lap and every gain
+  positive. The defect was formatting: raw milliseconds, and `formatTime` switching between
+  "ms" and one-decimal seconds.
+- **Dream Lap "missing".** Every fixture yields one, so the report could not be reproduced
+  without tester data. The card was, however, silently suppressed whenever a gate fired, and
+  retitled "Lap N Was Your Complete Lap" when one lap held all best sectors — both read as
+  "no Dream Lap". It is now always titled "Dream Lap" and states either its working or why
+  it is withheld.
+
+---
+
 ## [2026-11-13] COACH tab — Insight Fixes and Driving Fundamentals
 
 **Codebase Version:** v3.05 (versionCode 305; no Room migration; DB stays at version 5)

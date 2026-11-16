@@ -123,7 +123,7 @@ class OfflineCoachingEngineTest {
             createLap(3, 48000, s1 = 16000, s2 = 16000, s3 = 16000)
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
-        assertTrue("Detail should contain time in ms", insights[0].detail.contains("ms"))
+        assertTrue(insights[0].detail, insights[0].detail.contains("Sector 1: 0.667s quicker than your average"))
     }
 
     // ==================== Consistency Insight ====================
@@ -220,7 +220,7 @@ class OfflineCoachingEngineTest {
         )
         val insights = OfflineCoachingEngine.generateInsights(laps)
         val sectorInsight = insights.sectorDiagnostic()
-        assertTrue("Detail should contain time in ms", sectorInsight.detail.contains("ms"))
+        assertTrue(sectorInsight.detail, sectorInsight.detail.contains("You lose 1.167s here"))
     }
 
     @Test
@@ -258,7 +258,7 @@ class OfflineCoachingEngineTest {
         )
         val sectorInsight = OfflineCoachingEngine.generateInsights(laps).sectorDiagnostic()
         assertEquals("Focus on Sector 3", sectorInsight.headline)
-        assertTrue(sectorInsight.detail, sectorInsight.detail.contains("2333ms"))
+        assertTrue(sectorInsight.detail, sectorInsight.detail.contains("2.333s"))
     }
 
     @Test
@@ -291,6 +291,82 @@ class OfflineCoachingEngineTest {
 
         assertTrue(trusted.headline, trusted.headline.contains("50.000"))
         assertTrue(guarded.headline, guarded.headline.contains("59.300"))
+    }
+
+    // ==================== Dream Lap card (OC-12 to OC-15) ====================
+
+    private fun List<OfflineCoachingEngine.OfflineInsight>.dreamLap() = single { it.headline.startsWith("Dream Lap") }
+
+    @Test
+    fun `dream lap card shows the sum of best sectors against the best lap`() {
+        val laps = listOf(
+            createLap(1, 61000, s1 = 20000, s2 = 21000, s3 = 20000),
+            createLap(2, 60500, s1 = 20500, s2 = 20000, s3 = 20000),
+            createLap(3, 60800, s1 = 20400, s2 = 20900, s3 = 19500)
+        )
+        val dream = OfflineCoachingEngine.generateInsights(laps).dreamLap()
+
+        assertEquals("Dream Lap: 59.500s", dream.headline)
+        assertTrue(dream.detail, dream.detail.startsWith(
+            "Best S1 20.000s (Lap 1) + best S2 20.000s (Lap 2) + best S3 19.500s (Lap 3) " +
+                "= 59.500s. Your best lap: 1:00.500 (Lap 2). "
+        ))
+        assertTrue(dream.detail, dream.detail.contains("you'd be 1.000s faster"))
+    }
+
+    @Test
+    fun `a lap holding every best sector is still titled Dream Lap`() {
+        val laps = listOf(
+            createLap(1, 61000, s1 = 20300, s2 = 20200, s3 = 20500),
+            createLap(2, 60000, s1 = 20000, s2 = 20000, s3 = 20000),
+            createLap(3, 61500, s1 = 20500, s2 = 20500, s3 = 20500)
+        )
+        val dream = OfflineCoachingEngine.generateInsights(laps).dreamLap()
+
+        assertEquals("Dream Lap: 1:00.000", dream.headline)
+        assertTrue(dream.detail, dream.detail.contains("Your best lap: 1:00.000 (Lap 2)"))
+        assertTrue(dream.detail, dream.detail.contains("nothing left on the table"))
+    }
+
+    @Test
+    fun `a withheld dream lap says merged laps are suspected`() {
+        val laps = listOf(
+            createLap(1, 61000, s1 = 20000, s2 = 21000, s3 = 20000),
+            createLap(2, 60500, s1 = 20500, s2 = 20000, s3 = 20000),
+            createLap(3, 60800, s1 = 20400, s2 = 20900, s3 = 19500)
+        )
+        val dream = OfflineCoachingEngine.generateInsights(laps, mergedLapCaveat = "caveat").dreamLap()
+
+        assertEquals("Dream Lap", dream.headline)
+        assertTrue(dream.detail, dream.detail.contains("timed as one"))
+    }
+
+    @Test
+    fun `a withheld dream lap says how many usable laps there were`() {
+        val two = listOf(
+            createLap(1, 61000, s1 = 20000, s2 = 21000, s3 = 20000),
+            createLap(2, 60500, s1 = 20500, s2 = 20000, s3 = 20000)
+        )
+        assertTrue(OfflineCoachingEngine.generateInsights(two).dreamLap().detail
+            .contains("at least 3 laps with reliable sector times; this session has 2"))
+
+        val noSectors = listOf(1, 2, 3).map { createLap(it, 60000L + it, s1 = 0, s2 = 0, s3 = 0) }
+        assertTrue(OfflineCoachingEngine.generateInsights(noSectors).dreamLap().detail
+            .contains("No lap has reliable sector times"))
+    }
+
+    @Test
+    fun `a withheld dream lap says when the sectors do not add up`() {
+        // Each lap is slow in two sectors, so the stitched lap is 50% under the best.
+        val laps = listOf(
+            createLap(1, 60000, s1 = 10000, s2 = 25000, s3 = 25000),
+            createLap(2, 60000, s1 = 25000, s2 = 10000, s3 = 25000),
+            createLap(3, 60000, s1 = 25000, s2 = 25000, s3 = 10000)
+        )
+        val dream = OfflineCoachingEngine.generateInsights(laps).dreamLap()
+
+        assertEquals("Dream Lap", dream.headline)
+        assertTrue(dream.detail, dream.detail.contains("don't add up reliably"))
     }
 
     // ==================== Tone Validation (70/30 Rule) ====================

@@ -60,7 +60,7 @@ object DreamLap {
      *
      * @param sector1Ms best sector 1 across the session, and the lap it came from
      * @param totalMs the three bests added together
-     * @param bestLapMs the quickest lap actually driven
+     * @param bestLapMs the quickest lap actually driven, and [bestLapNumber] its number
      * @param gainMs how much the stitched lap is quicker than the best real lap.
      *   Zero when one lap held all three best sectors - which is a real and
      *   meaningful answer: there was nothing left on the table.
@@ -74,6 +74,7 @@ object DreamLap {
         val sector3LapNumber: Int,
         val totalMs: Long,
         val bestLapMs: Long,
+        val bestLapNumber: Int,
         val gainMs: Long
     ) {
         /** True when a single lap already held every best sector. */
@@ -81,8 +82,33 @@ object DreamLap {
             get() = sector1LapNumber == sector2LapNumber && sector2LapNumber == sector3LapNumber
     }
 
+    /** Why a dream lap was withheld, so the driver can be told rather than left guessing. */
+    sealed class Withheld {
+        /** Lap detection suspects two laps were timed as one (OC-14). */
+        object MergedLaps : Withheld()
+
+        /** Fewer than [MIN_LAPS] laps carry believable sectors; [usableLaps] do. */
+        data class TooFewLaps(val usableLaps: Int) : Withheld()
+
+        /** The sectors do not add up to a believable lap (stitched total or gain out of range). */
+        object SectorsInconsistent : Withheld()
+    }
+
+    /** Either a dream lap, or the reason there is none. */
+    sealed class Evaluation {
+        data class Available(val result: Result) : Evaluation()
+        data class NotAvailable(val reason: Withheld) : Evaluation()
+    }
+
     /**
      * Computes the dream lap, or returns null when the data does not support one.
+     * See [evaluate] for the reason.
+     */
+    fun of(laps: List<LapEntity>, mergedLapCaveat: String? = null): Result? =
+        (evaluate(laps, mergedLapCaveat) as? Evaluation.Available)?.result
+
+    /**
+     * Computes the dream lap, or says why the data does not support one.
      *
      * @param laps the session's laps
      * @param mergedLapCaveat the warning produced by `MergedLapCaveat`, or null. When
@@ -91,15 +117,15 @@ object DreamLap {
      *   can detect that from the sector times alone, which is precisely why the signal
      *   has to be passed in rather than inferred.
      */
-    fun of(laps: List<LapEntity>, mergedLapCaveat: String? = null): Result? {
-        if (mergedLapCaveat != null) return null
+    fun evaluate(laps: List<LapEntity>, mergedLapCaveat: String? = null): Evaluation {
+        if (mergedLapCaveat != null) return Evaluation.NotAvailable(Withheld.MergedLaps)
 
         val usable = laps.filter { it.hasPlausibleSectors() }
-        if (usable.size < MIN_LAPS) return null
+        if (usable.size < MIN_LAPS) return Evaluation.NotAvailable(Withheld.TooFewLaps(usable.size))
 
-        val best1 = usable.minByOrNull { it.sector1Ms } ?: return null
-        val best2 = usable.minByOrNull { it.sector2Ms } ?: return null
-        val best3 = usable.minByOrNull { it.sector3Ms } ?: return null
+        val best1 = usable.minBy { it.sector1Ms }
+        val best2 = usable.minBy { it.sector2Ms }
+        val best3 = usable.minBy { it.sector3Ms }
 
         val total = best1.sector1Ms + best2.sector2Ms + best3.sector3Ms
 
@@ -107,26 +133,31 @@ object DreamLap {
         // a stitched lap against a lap whose own sectors were rejected would compare
         // two different things, and could report a "gain" that is only the difference
         // between a sound lap and an unsound one.
-        val bestLap = usable.minByOrNull { it.durationMs } ?: return null
+        val bestLap = usable.minBy { it.durationMs }
 
         // A dream lap can never be slower than a lap actually driven: the best lap's own
         // sectors are candidates, so the minimum is at worst that lap. If this fails,
         // the sectors do not sum to their laps and the arithmetic is not trustworthy.
-        if (total > bestLap.durationMs) return null
+        if (total > bestLap.durationMs) return Evaluation.NotAvailable(Withheld.SectorsInconsistent)
 
         val gain = bestLap.durationMs - total
-        if (gain > bestLap.durationMs * MAX_GAIN_FRACTION) return null
+        if (gain > bestLap.durationMs * MAX_GAIN_FRACTION) {
+            return Evaluation.NotAvailable(Withheld.SectorsInconsistent)
+        }
 
-        return Result(
-            sector1Ms = best1.sector1Ms,
-            sector1LapNumber = best1.lapNumber,
-            sector2Ms = best2.sector2Ms,
-            sector2LapNumber = best2.lapNumber,
-            sector3Ms = best3.sector3Ms,
-            sector3LapNumber = best3.lapNumber,
-            totalMs = total,
-            bestLapMs = bestLap.durationMs,
-            gainMs = gain
+        return Evaluation.Available(
+            Result(
+                sector1Ms = best1.sector1Ms,
+                sector1LapNumber = best1.lapNumber,
+                sector2Ms = best2.sector2Ms,
+                sector2LapNumber = best2.lapNumber,
+                sector3Ms = best3.sector3Ms,
+                sector3LapNumber = best3.lapNumber,
+                totalMs = total,
+                bestLapMs = bestLap.durationMs,
+                bestLapNumber = bestLap.lapNumber,
+                gainMs = gain
+            )
         )
     }
 
