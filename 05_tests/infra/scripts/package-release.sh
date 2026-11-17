@@ -155,7 +155,7 @@ RELEASE_DIR="$RELEASES_DIR/$RELEASE_NAME"
 # preflight and again by the submission checklist. Derived here, once, with the
 # same arithmetic app/build.gradle.kts uses — BuildVersionTest asserts that the
 # compiled APK agrees with it.
-VERSION_CODE="$(( $(echo "$VERSION" | cut -d. -f1) * 100 + $(echo "$VERSION" | cut -d. -f2) ))"
+VERSION_CODE="$(( 10#$(echo "$VERSION" | cut -d. -f1) * 100 + 10#$(echo "$VERSION" | cut -d. -f2) ))"
 
 # The bundle is named for the version alone: a Play release is identified by what
 # it is, not by the branch it was cut from. The APK keeps the slug because a
@@ -244,7 +244,7 @@ if [ "$PLAY_GATES" = true ]; then
             [0-9]*.[0-9]*) ;;
             *) log_warn "Skipping unparseable release directory: $(basename "$prev")"; continue ;;
         esac
-        prev_code="$(( $(echo "$prev_v" | cut -d. -f1) * 100 + $(echo "$prev_v" | cut -d. -f2) ))"
+        prev_code="$(( 10#$(echo "$prev_v" | cut -d. -f1) * 100 + 10#$(echo "$prev_v" | cut -d. -f2) ))"
         if [ "$VERSION_CODE" -le "$prev_code" ]; then
             log_error "versionCode $VERSION_CODE is not above already-packaged v$prev_v ($prev_code)."
             log_error "  Play only accepts a strictly increasing versionCode."
