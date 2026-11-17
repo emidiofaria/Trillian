@@ -30,6 +30,11 @@ object OfflineCoachingEngine {
     private const val MIN_LAPS_FOR_TREND = 6
     private const val TREND_THRESHOLD_FRACTION = 0.02
     
+    // Dream Lap card title and confidence labels (OC-13, OC-35)
+    const val DREAM_LAP_TITLE = "Dream Lap"
+    const val LABEL_RELIABLE = "Reliable"
+    const val LABEL_ESTIMATE = "Estimate"
+
     // Speed limits for filtering GPS noise (m/s)
     private const val MAX_PLAUSIBLE_SPEED_MS = 97.2  // 350 km/h - covers fastest track cars
     private const val MIN_MEANINGFUL_SPEED_MS = 5.0  // ~18 km/h - ignore very slow speeds
@@ -57,12 +62,17 @@ object OfflineCoachingEngine {
      * @param laps List of laps from the session (minimum 2 required)
      * @param telemetryFilePath Optional path to JSONL telemetry file for top speed extraction
      * @param mergedLapCaveat Warning from `MergedLapCaveat` when detection suspects two
-     *   laps were reported as one, or null. Passed through to the dream lap, which must
-     *   stay silent when the lap boundaries themselves are in doubt.
+     *   laps were reported as one, or null. Passed through to the dream lap, which can
+     *   then never be labelled Reliable (OC-14, OC-35).
+     * @param suspectCrossingTimesMs `MergedLapCaveat.suspectCrossingTimes`: when each
+     *   swallowed start-line pass happened, so the dream lap can leave out the lap that
+     *   absorbed it rather than distrust every lap.
      * @param mergedSignalKnown false when the merged-lap signal could not be recovered
      *   (a session recorded before detection diagnostics existed). A null caveat then
      *   means "unknown" rather than "no doubt", so the dream lap is built only from
      *   laps near the median lap time, where a merged lap or half-lap cannot hide (OC-33).
+     *   If none of those carries sector times, every lap is used and the result is
+     *   labelled an Estimate.
      * @return The insights the data supports, which may be fewer than the maximum and
      *   may be empty. Nothing here pads the list to a fixed length: an insight that
      *   exists only to fill a slot teaches the driver to skim past all of them.
@@ -71,7 +81,7 @@ object OfflineCoachingEngine {
      * 1. Best Lap Highlight (always positive)
      * 2. Top Speed (always positive) - requires telemetry file
      * 3. Consistency Score (positive or constructive based on score)
-     * 4. Dream Lap - requires trustworthy sectors across at least 3 laps
+     * 4. Dream Lap - always present; Reliable or Estimate, or why there is none
      * 5. Sector Diagnostic - requires sectors
      * 6. Outlier Lap - requires a lap far enough off the pace to be worth naming
      * 7. Pace Trend - requires at least 6 laps
@@ -80,7 +90,8 @@ object OfflineCoachingEngine {
         laps: List<LapEntity>,
         telemetryFilePath: String? = null,
         mergedLapCaveat: String? = null,
-        mergedSignalKnown: Boolean = true
+        mergedSignalKnown: Boolean = true,
+        suspectCrossingTimesMs: List<Long> = emptyList()
     ): List<OfflineInsight> {
         if (laps.size < 2) return emptyList()
         
@@ -102,9 +113,13 @@ object OfflineCoachingEngine {
         // 3. Consistency
         insights.add(generateConsistencyInsight(laps))
         
-        // 4. Dream Lap - always present: the calculation, or why there is none (OC-13)
-        val dreamLapSource = if (mergedSignalKnown) laps else CleanLaps.of(laps)
-        insights.add(generateDreamLapInsight(DreamLap.evaluate(dreamLapSource, mergedLapCaveat)))
+        // 4. Dream Lap - always present: the labelled calculation, or why there is none
+        //    (OC-13, OC-35)
+        insights.add(
+            generateDreamLapInsight(
+                evaluateDreamLap(laps, mergedLapCaveat, mergedSignalKnown, suspectCrossingTimesMs)
+            )
+        )
         
         // 5. Sector Diagnostic - omitted when there are no sectors, rather than
         //    replaced by an advertisement for a feature that does not exist
@@ -264,36 +279,53 @@ object OfflineCoachingEngine {
     }
 
     /**
-     * Insight: Dream Lap (OC-12 to OC-15).
+     * The dream lap for this session, with the OC-33 median guard applied when the
+     * merged-lap signal is unknown.
      *
-     * Always titled "Dream Lap", so the driver can find it. When available, the detail
-     * shows the arithmetic - each best sector and the lap it came from, their sum, and
-     * the best lap actually driven - so the number can be checked rather than trusted.
-     * When withheld, it says why in one sentence: a silently missing card reads as a
-     * broken feature.
+     * The guard keeps a merged lap or half-lap out of the stitching by using only laps
+     * near the median. If that leaves nothing with sector times, the guard has nothing
+     * to protect, so every lap is used instead and the result is labelled an estimate
+     * rather than withheld.
+     */
+    internal fun evaluateDreamLap(
+        laps: List<LapEntity>,
+        mergedLapCaveat: String?,
+        mergedSignalKnown: Boolean,
+        suspectCrossingTimesMs: List<Long>
+    ): DreamLap.Evaluation {
+        if (mergedSignalKnown) return DreamLap.evaluate(laps, mergedLapCaveat, suspectCrossingTimesMs)
+
+        val guarded = DreamLap.evaluate(CleanLaps.of(laps), mergedLapCaveat, suspectCrossingTimesMs)
+        if (guarded is DreamLap.Evaluation.Available) return guarded
+
+        return when (val all = DreamLap.evaluate(laps, mergedLapCaveat, suspectCrossingTimesMs)) {
+            is DreamLap.Evaluation.Available -> all.withReason(DreamLap.EstimateReason.OffPaceLapsUsed)
+            is DreamLap.Evaluation.NotAvailable -> all
+        }
+    }
+
+    /**
+     * Insight: Dream Lap (OC-12 to OC-15, OC-35).
+     *
+     * Always titled "Dream Lap", so the driver can find it, and always labelled
+     * "(Reliable)" or "(Estimate)" when there is a number. The detail shows the
+     * arithmetic - each best sector and the lap it came from, their sum, and the best
+     * lap actually driven - so the number can be checked rather than trusted, and an
+     * estimate ends with the reason(s) in a few words. Only a session with no sector
+     * times at all has no number, and the card says so.
      */
     private fun generateDreamLapInsight(evaluation: DreamLap.Evaluation): OfflineInsight {
-        val dream = when (evaluation) {
-            is DreamLap.Evaluation.Available -> evaluation.result
+        val available = when (evaluation) {
+            is DreamLap.Evaluation.Available -> evaluation
             is DreamLap.Evaluation.NotAvailable -> return OfflineInsight(
-                headline = "Dream Lap",
-                detail = "Not available for this session. " + when (val reason = evaluation.reason) {
-                    DreamLap.Withheld.MergedLaps ->
-                        "Lap detection suspects some laps were timed as one, so adding up " +
-                            "your best sectors could show a time you never drove."
-                    is DreamLap.Withheld.TooFewLaps ->
-                        if (reason.usableLaps == 0) {
-                            "No lap has reliable sector times."
-                        } else {
-                            "It needs at least ${DreamLap.MIN_LAPS} laps with reliable sector " +
-                                "times; this session has ${reason.usableLaps}."
-                        }
-                    DreamLap.Withheld.SectorsInconsistent ->
-                        "The sector times don't add up reliably to the lap times, so the " +
-                            "result couldn't be trusted."
+                headline = DREAM_LAP_TITLE,
+                detail = when (evaluation.reason) {
+                    DreamLap.Withheld.NoSectorTimes -> "Not available: no lap had sector times."
                 }
             )
         }
+        val dream = available.result
+        val estimate = available.confidence == DreamLap.Confidence.ESTIMATE
 
         val sum = "Best S1 ${formatLapTime(dream.sector1Ms)} (Lap ${dream.sector1LapNumber}) + " +
             "best S2 ${formatLapTime(dream.sector2Ms)} (Lap ${dream.sector2LapNumber}) + " +
@@ -301,18 +333,53 @@ object OfflineCoachingEngine {
             "= ${formatLapTime(dream.totalMs)}. " +
             "Your best lap: ${formatLapTime(dream.bestLapMs)} (Lap ${dream.bestLapNumber}). "
 
-        val verdict = if (dream.isCompleteLap) {
-            "All three best sectors came from that lap, so there was nothing left on the " +
-                "table. Now repeat it."
-        } else {
-            "Put your best sectors together and you'd be ${formatTime(dream.gainMs.toDouble())} " +
-                "faster. That's time you've already proven you can find."
+        val verdict = when {
+            dream.isCompleteLap ->
+                "All three best sectors came from that lap, so there was nothing left on the " +
+                    "table. Now repeat it."
+            estimate ->
+                "Put your best sectors together and you'd be about " +
+                    "${formatTime(dream.gainMs.toDouble())} faster."
+            else ->
+                "Put your best sectors together and you'd be ${formatTime(dream.gainMs.toDouble())} " +
+                    "faster. That's time you've already proven you can find."
         }
 
+        val why = if (estimate) {
+            "\nWhy it's an estimate: " + available.reasons.joinToString("; ") { describe(it) } + "."
+        } else {
+            ""
+        }
+
+        val label = if (estimate) LABEL_ESTIMATE else LABEL_RELIABLE
         return OfflineInsight(
-            headline = "Dream Lap: ${formatLapTime(dream.totalMs)}",
-            detail = sum + verdict
+            headline = "$DREAM_LAP_TITLE: ${formatLapTime(dream.totalMs)} ($label)",
+            detail = sum + verdict + why
         )
+    }
+
+    /** One short, plain reason per [DreamLap.EstimateReason] (OC-35). */
+    private fun describe(reason: DreamLap.EstimateReason): String = when (reason) {
+        is DreamLap.EstimateReason.SuspectLapsLeftOut -> {
+            val n = reason.lapNumbers
+            if (n.size == 1) {
+                "lap ${n.single()} left out — it may be two laps timed as one"
+            } else {
+                "laps ${n.dropLast(1).joinToString(", ")} and ${n.last()} left out — " +
+                    "each may be two laps timed as one"
+            }
+        }
+        DreamLap.EstimateReason.MergedLapsSuspected ->
+            "lap detection suspects some laps were timed as one"
+        is DreamLap.EstimateReason.FewLaps ->
+            if (reason.laps == 1) "based on 1 lap" else "based on ${reason.laps} laps"
+        DreamLap.EstimateReason.UnusualSectorShares -> "sector times look unusual"
+        DreamLap.EstimateReason.LargeGain ->
+            "much faster than any real lap — sector timing may be off"
+        DreamLap.EstimateReason.SectorsInconsistent ->
+            "sector times don't add up to the lap times"
+        DreamLap.EstimateReason.OffPaceLapsUsed ->
+            "includes laps far from your typical lap time"
     }
 
     /**

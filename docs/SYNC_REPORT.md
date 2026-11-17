@@ -4,6 +4,64 @@ Cumulative changelog of documentation synchronizations with codebase.
 
 ---
 
+## [2026-11-17] Dream Lap always shown — Reliable or Estimate with reasons
+
+**Codebase Version:** v3.08 (versionCode 308, unreleased; no Room migration)
+**Trigger:** Approved plan: the Dream Lap must always be calculated and labelled Reliable or Estimate with short reasons; withheld only when no lap has sector times.
+
+### Summary
+
+| Artifact | Status | Changes |
+|----------|--------|---------|
+| `coaching/DreamLap.kt` | ✅ Updated | `Confidence` (RELIABLE/ESTIMATE), `EstimateReason`, `Available(result, confidence, reasons)`, `Withheld.NoSectorTimes` only; former gates now set the label; `of()` Reliable-only |
+| `lap/MergedLapCaveat.kt` | ✅ Updated | New `suspectCrossingTimes(diagnostics)`; `of()` text unchanged |
+| `OfflineCoachingEngine` | ✅ Updated | `evaluateDreamLap` (CleanLaps first, all laps as Estimate if none timed); headline "Dream Lap: t (Reliable/Estimate)"; "Why it's an estimate: …" |
+| `SectorRepair`, `RecordingViewModel` | ✅ Updated | Pass suspect crossing times from the diagnostics / `.lapdiag.json` sidecar |
+| `SRS_v1.md` | ✅ Updated | OC-13, OC-14, OC-33 amended; OC-35 new |
+| `components.md` | ✅ Updated | DreamLap component, insight table, "The Dream Lap gate" → confidence rules, refresh table |
+| `flows.md` | ✅ Updated | Save flow and open-session refresh pass suspect times; evaluate steps |
+| `failure-patterns.md` | ✅ Updated | Regeneration hazard amended for v3.08 |
+| `USER_MANUAL.md` | ✅ Updated | §5.2 "Reliable or Estimate?" with reason table; insight table; old-session note; FAQ |
+| `coverage-map.tsv` | ✅ Updated | OC-13/14/33 claims rebuilt; OC-35 claims (L1, L2 CoachTabTest, fixture measurement) |
+
+### Rules
+
+| Former gate | Now |
+|-------------|-----|
+| No lap with S1+S2+S3 == duration | **Not available: no lap had sector times.** (only withheld case) |
+| Merged-lap caveat | Estimate; laps whose `[startTs, endTs]` (inclusive) holds a swallowed pass are left out and named; none located / all suspect → all laps |
+| Sector share outside 10–75 % | Such laps dropped while any believable lap remains; else all used — Estimate |
+| < 3 laps | Estimate "based on N laps"; 1 lap → gain 0 |
+| Total > best lap / gain > 25 % | Estimate |
+| All pass | Reliable — identical number to before |
+
+Progression (Optimal Lap, Purple Sector) does not use `DreamLap` and is unchanged.
+
+### New Requirement IDs
+
+- OC-35 Dream Lap confidence label and estimate reasons; `DreamLap.of` Reliable-only
+
+### Dream Lap on real recordings (`DreamLapFixtureMeasurementTest`)
+
+| Recording | Laps | Dream lap | Best lap | Gain | Label |
+|-----------|------|-----------|----------|------|-------|
+| baltar2 | 12 | 68.982 | 72.745 | 3.763 | Reliable |
+| cabo_do_mundo | 8 | 63.145 | 63.716 | 0.571 | Reliable |
+| ines3 | 3 | 84.648 | 85.651 | 1.003 | Reliable |
+| s_mamede | 3 | 71.830 | 76.413 | 4.583 | Reliable |
+| teste3 | 4 | 72.428 | 77.079 | 4.651 | Reliable |
+
+Same result with no priors, with catalogue priors, and with no sidecar (OC-33 path).
+
+### Files Modified
+
+- `01_requirements/DrivingCoach_SRS_v1.md`
+- `atlas/components.md`, `atlas/flows.md`, `atlas/failure-patterns.md`
+- `docs/USER_MANUAL.md`, `docs/SYNC_REPORT.md`
+- `05_tests/coverage-map.tsv`
+
+---
+
 ## [2026-11-16] Progression v2 (7 levels, 8 trophies, 6 medals, 8 km milestones) and Profile Stats Fix
 
 **Codebase Version:** v3.08 (versionCode 308; no Room migration; DB stays at version 6)

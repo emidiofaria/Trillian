@@ -116,13 +116,26 @@ OC-08	OfflineCoachingEngineTest.zero sectors - no sector insight and no upsell	S
 OC-11	SectorSplitterTest.every lap of a real session carries sectors that sum to the lap	Sectors persisted, non-zero, summing to the lap
 OC-12	DreamLapTest.stitches the best sector from each lap	Optimal sector stitching
 OC-12	DreamLapTest.the gain is the distance to the best lap actually driven	Gain reported against the fastest real lap
-OC-13	DreamLapTest.no dream lap below the minimum number of usable laps	MIN_LAPS gate
-OC-13	DreamLapTest.laps whose sectors do not sum to the lap are discarded	Arithmetic plausibility gate
-OC-13	DreamLapTest.a lap with an implausibly lopsided sector is discarded	Sector share bounds
+OC-13	DreamLapTest.two laps give an estimate based on 2 laps	Below MIN_LAPS is an Estimate, not withheld
+OC-13	DreamLapTest.one lap is its own dream lap with a gain of zero	One lap is its own Dream Lap
+OC-13	DreamLapTest.laps whose sectors do not sum to the lap have no sector times to stitch	Arithmetic plausibility decides usable laps
+OC-13	DreamLapTest.lopsided sectors are used only when no lap has believable shares	Sector share bounds fall back as Estimate
+OC-13	DreamLapTest.believable laps are preferred over lopsided ones even when fewer	Believable shares preferred
+OC-13	DreamLapTest.a gain beyond a quarter of the best lap is shown as an estimate	Gain bound labels Estimate
+OC-13	DreamLapTest.laps with no sectors leave nothing to stitch	Only withheld case: no sector times
+OC-13	DreamLapTest.no laps at all leave nothing to stitch	Only withheld case: no laps
+OC-13	DreamLapTest.clean laps are reliable with no reasons and the same numbers of() returns	Reliable keeps the pre-3.08 numbers
 OC-13	DreamLapTest.a dream lap is never slower than a lap actually driven	Total bounded by the best real lap
 OC-13	DreamLapTest.a half-lap artefact can never produce a fabricated gain	No fabricated gain from a double-counted lap
-OC-14	DreamLapTest.no dream lap when lap detection warned about a merged lap	MergedLapCaveat suppression
-OC-14	DreamLapTest.the merged lap caveat is the real defence against a double counted lap	Caveat is the defence arithmetic cannot provide
+OC-14	DreamLapTest.a merged lap caveat that cannot be located makes every lap an estimate	Unlocated caveat: all laps, Estimate
+OC-14	DreamLapTest.the lap that swallowed a start line pass is left out and named	Suspect lap left out and named
+OC-14	DreamLapTest.a pass exactly on a lap's start or end marks that lap - the window is inclusive	Inclusive suspect window
+OC-14	DreamLapTest.when every lap is suspect all laps are used and labelled an estimate	All suspect: all laps, Estimate
+OC-14	DreamLapTest.suspect crossing times are ignored without a caveat	Suspect times need the caveat
+OC-14	DreamLapTest.the merged lap caveat keeps a double counted lap from ever being reliable	Caveat is the defence arithmetic cannot provide
+OC-14	MergedLapCaveatTest.suspect crossing times are exactly the refusals that make the caveat speak	Suspect times match the caveat
+OC-14	MergedLapCaveatTest.no suspect crossing times when the caveat is silent	No suspects without a caveat
+OC-14	MergedLapCaveatTest.the suspect times use the same half-floor threshold as the caveat	Same threshold as the caveat
 OC-15	DreamLapTest.one lap holding every best sector is reported as a complete lap	Complete-lap case, gain zero
 OC-15	DreamLapTest.the Baltar session produces an honest dream lap end to end	Real-session end-to-end honesty
 OC-16	OfflineCoachingEngineTest	Sector diagnostic insight
@@ -192,9 +205,22 @@ OC-33	OfflineCoachingEngineTest	Dream Lap median guard
 OC-05	OfflineCoachingEngineTest.top speed reads the recorder's timestampMs key	Recorder timestamp key read
 OC-05	OfflineCoachingEngineTest.top speed outside every lap names no lap	No lap named outside laps
 OC-12	OfflineCoachingEngineTest.dream lap card shows the sum of best sectors against the best lap	Card states the calculation
-OC-13	OfflineCoachingEngineTest.a withheld dream lap says how many usable laps there were	Withheld card names the usable-lap count
-OC-13	OfflineCoachingEngineTest.a withheld dream lap says when the sectors do not add up	Withheld card names the inconsistency
-OC-14	OfflineCoachingEngineTest.a withheld dream lap says merged laps are suspected	Withheld card names the merged-lap reason
+OC-13	OfflineCoachingEngineTest.two laps give an estimate based on 2 laps	Estimate card names the lap count
+OC-13	OfflineCoachingEngineTest.no sector times is the only dream lap that is not available	Only withheld card
+OC-13	OfflineCoachingEngineTest.an implausible gain is shown as an estimate with the reason	Gain bound reason on the card
+OC-13	OfflineCoachingEngineTest.unusual sector shares are named as the reason	Share reason on the card
+OC-14	OfflineCoachingEngineTest.merged laps that cannot be located give an estimate saying so	Unlocated merged-lap reason on the card
+OC-14	OfflineCoachingEngineTest.a located merged lap is left out and named on the card	Suspect lap named on the card
+OC-14	OfflineCoachingEngineTest.several located merged laps are listed together	Several suspect laps listed
+OC-33	OfflineCoachingEngineTest.without the merged-lap signal off-pace laps are used when no clean lap has sectors	CleanLaps fallback to all laps as Estimate
+OC-33	OfflineCoachingEngineTest.without the merged-lap signal a usable clean subset is still preferred	CleanLaps subset preferred
+OC-35	OfflineCoachingEngineTest.dream lap card shows the sum of best sectors against the best lap	Reliable label in the headline
+OC-35	DreamLapTest.of() stays strict and returns nothing for an estimate	of() is Reliable-only
+OC-35	DreamLapTest.reasons accumulate in a fixed order	Fixed reason order
+OC-35	CoachTabTest.aNormalSessionShowsAReliableDreamLap	Reliable label on screen
+OC-35	CoachTabTest.aTwoLapSessionShowsAnEstimateDreamLap	Estimate label and reason on screen
+OC-35	CoachTabTest.aMergedLapSessionShowsAnEstimateThatLeavesTheSuspectLapOut	Suspect lap left out on screen
+OC-35	DreamLapFixtureMeasurementTest.dreamLapOnRealRecordings	All 5 real fixtures are Reliable
 OC-15	OfflineCoachingEngineTest.a lap holding every best sector is still titled Dream Lap	Complete lap keeps the Dream Lap title
 OC-34	OfflineCoachingEngineTest.best lap insight shows time gained in detail	Gaps in seconds, 3 decimals
 OC-34	OfflineCoachingEngineTest.sector focus shows time lost in detail	Gaps in seconds, 3 decimals

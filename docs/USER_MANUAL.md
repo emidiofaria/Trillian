@@ -393,7 +393,7 @@ three and seven cards, depending on what your session actually supports:
 | **Your fastest lap** | Always — which lap it was and how far ahead of your average |
 | **🚀 Top speed** | When telemetry was recorded — your highest speed and the lap you hit it on |
 | **Consistency** | Always — how tightly your lap times cluster together |
-| **Dream Lap** | Always — the time and how it was worked out, or why it isn't available for this session (see below) |
+| **Dream Lap** | Always — the time, how it was worked out, and whether it's **Reliable** or an **Estimate** (see below) |
 | **Sector focus** | When your laps have sectors — which third of the track is costing you most |
 | **The odd one out** | 4+ laps, when one was far off your usual pace |
 | **Pace trend** | 6+ laps, when you clearly got quicker or slower through the session |
@@ -476,7 +476,7 @@ The coaching cards are also refreshed every time you open a session, so older se
 get the **Dream Lap**, **The odd one out** and **Pace trend** cards too, along with the latest
 fixes. For the oldest sessions, the Dream Lap only uses laps close to your typical lap time
 (within 15 %). That way a lap that was split in two, or two laps merged into one, can't give
-you a fantasy time. You need at least 3 such laps.
+you a fantasy time. With fewer than 3 such laps it's shown as an **Estimate**.
 
 **Fixes in this version:**
 - **Top speed** now names the right lap. Before, it always said "Lap 1". If your top speed
@@ -497,7 +497,7 @@ the time sitting on the table.
 
 The card shows the working, so you can check it yourself:
 
-> **Dream Lap: 1:10.900**
+> **Dream Lap: 1:10.900 (Reliable)**
 > Best S1 24.100s (Lap 3) + best S2 23.500s (Lap 7) + best S3 23.300s (Lap 5) = 1:10.900.
 > Your best lap: 1:12.400 (Lap 4). Put your best sectors together and you'd be 1.500s faster.
 
@@ -507,23 +507,33 @@ If one single lap happened to hold all three of your best sectors, the card is s
 **Dream Lap** and says there was nothing left on the table. That's a genuinely good result: it
 means you put the whole thing together.
 
-**Why the Dream Lap sometimes says "Not available".** This is deliberate. The Dream Lap works by
-picking the *quickest* of everything, and that means if anything went wrong with lap detection
-— say a lap got split in two — the resulting half-lap would have impossibly quick sectors, and
-they'd win every time. You'd be shown a fantastic-looking lap time that you never drove.
+**Reliable or Estimate?** Every Dream Lap is labelled. The Dream Lap works by picking the
+*quickest* of everything, so if anything went wrong with lap detection — say a lap got split
+in two — the resulting half-lap would have impossibly quick sectors, and they'd win every time.
+So the app checks its own working: at least 3 good laps, sectors that add up properly, none of
+them an absurd fraction of the lap, a believable improvement rather than a miracle, and no
+warning that two laps may have been recorded as one.
 
-So the app checks its own working first: there must be at least 3 good laps, the sectors must
-add up properly, none of them can be an absurd fraction of the lap, and the stitched time has
-to be a believable improvement rather than a miracle. If anything looks off — or if the app
-already warned you that two laps may have been recorded as one — the card shows no time, and
-tells you which of these it was:
+- **Reliable** — every check passed. Trust the number.
+- **Estimate** — the app still worked it out, but at least one check didn't pass. The card ends
+  with a short line saying why, for example:
 
-| The card says | What it means |
-|---------------|---------------|
-| *needs at least 3 laps with reliable sector times; this session has N* | Drive more laps, or check the start/finish line |
-| *No lap has reliable sector times* | The session has no sectors (e.g. the telemetry is gone) |
-| *…two laps may have been timed as one* | Lap detection suspects merged laps |
-| *…sector times don't add up reliably* | The stitched time would be a miracle, not a target |
+> **Dream Lap: 1:11.300 (Estimate)**
+> Best S1 24.100s (Lap 3) + best S2 23.700s (Lap 1) + best S3 23.500s (Lap 3) = 1:11.300.
+> Your best lap: 1:12.400 (Lap 3). Put your best sectors together and you'd be about 1.100s faster.
+> Why it's an estimate: lap 2 left out — it may be two laps timed as one; based on 2 laps.
+
+| The reason says | What it means |
+|-----------------|---------------|
+| *lap N left out — it may be two laps timed as one* | Lap detection thinks lap N swallowed a lap; it isn't used |
+| *lap detection suspects some laps were timed as one* | Merged laps suspected, but the app couldn't tell which, so every lap was used |
+| *based on N laps* | Fewer than 3 laps had good sector times — drive more laps |
+| *sector times look unusual* | No lap had believable sector proportions, so all were used |
+| *much faster than any real lap — sector timing may be off* | Treat it as a rough guide, not a target |
+| *includes laps far from your typical lap time* | Older session: the usual laps had no sectors, so off-pace laps were used |
+
+The only time there is no number is when no lap has sector times at all (for example, the
+telemetry is gone): the card then says **"Not available: no lap had sector times."**
 
 ### 5.3 Speed Charts
 
@@ -1143,8 +1153,8 @@ A: They're not the same sectors. The circuit's sectors are set by the organisers
 **Q: Why has one of my laps got no sector times?**  
 A: The GPS didn't give enough fixes during that lap to divide it up honestly — usually a weak signal, or a very short lap. Rather than estimate three numbers that look real but aren't, the app leaves them blank.
 
-**Q: Why does my Dream Lap say "Not available"?**  
-A: The Dream Lap card is always there, but it only shows a time when the app is confident the data behind it is sound. It needs at least 3 laps with good sector times, and it refuses if anything looks wrong — most often when it suspects two laps were recorded as one, which would produce an impossibly quick "best" sector. The card then says "Not available for this session" and tells you why.
+**Q: Why does my Dream Lap say "Estimate"?**  
+A: The Dream Lap is always worked out, but it's only labelled **Reliable** when the data behind it is sound: at least 3 laps with good sector times, nothing that looks like two laps recorded as one, and a believable improvement. Otherwise it's labelled **Estimate** and the card ends with a short reason (for example "based on 2 laps"). It only says "Not available" when no lap had sector times at all.
 
 **Q: The corner numbers in the Analysis tab don't match the circuit's map. Why?**  
 A: Trillian works out corners from the way your car actually changed direction, and numbers them in the order you drove through them. It has no knowledge of the circuit's official layout — a chicane the circuit calls one corner may show up as two, and a gentle kink they number may not register at all.

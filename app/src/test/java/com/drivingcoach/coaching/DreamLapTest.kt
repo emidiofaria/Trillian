@@ -13,13 +13,14 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 /**
- * Holds [DreamLap] to its one hard promise: it never presents a detection artefact
- * as an achievement.
+ * Holds [DreamLap] to its promise: it never presents a detection artefact as a
+ * *reliable* achievement (OC-13, OC-14, OC-35).
  *
  * A dream lap is a minimum over the session's sectors, and a minimum actively seeks
- * out the worst data in the set. Every test below is either the feature working or
- * the gate refusing; there is deliberately no test that merely checks a number comes
- * back, because a number always comes back - the question is whether it means anything.
+ * out the worst data in the set. A number now always comes back when any lap has
+ * sector times, so the tests pin the label and the reasons: Reliable exactly when the
+ * strict gates pass, Estimate with the right reason otherwise, and the worst evidence
+ * kept out wherever it can be located.
  */
 class DreamLapTest {
 
@@ -91,62 +92,153 @@ class DreamLapTest {
         assertEquals("there was nothing left on the table", 0L, dream.gainMs)
     }
 
-    // ==================== The gate refusing ====================
+    // ==================== Reliable: every gate passes ====================
 
     @Test
-    fun `no dream lap when lap detection warned about a merged lap`() {
+    fun `clean laps are reliable with no reasons and the same numbers of() returns`() {
         val laps = listOf(
             lap(1, s1 = 14_000, s2 = 16_000, s3 = 15_000),
             lap(2, s1 = 15_000, s2 = 15_000, s3 = 16_000),
             lap(3, s1 = 15_500, s2 = 16_500, s3 = 14_500)
         )
 
-        assertNotNull("control: these laps do support a dream lap", DreamLap.of(laps))
-        assertNull(
-            "a session whose laps may have been merged cannot support a stitched lap",
-            DreamLap.of(laps, mergedLapCaveat = "Two laps may have been reported as one.")
+        val available = available(DreamLap.evaluate(laps))
+
+        assertEquals(DreamLap.Confidence.RELIABLE, available.confidence)
+        assertTrue(available.reasons.isEmpty())
+        assertEquals(DreamLap.of(laps), available.result)
+        assertEquals(43_500L, available.result.totalMs)
+    }
+
+    @Test
+    fun `of() stays strict and returns nothing for an estimate`() {
+        val two = listOf(
+            lap(1, s1 = 14_000, s2 = 16_000, s3 = 15_000),
+            lap(2, s1 = 15_000, s2 = 15_000, s3 = 16_000)
         )
+
+        assertEquals(DreamLap.Confidence.ESTIMATE, available(DreamLap.evaluate(two)).confidence)
+        assertNull("a number that rewards or records must have passed every gate", DreamLap.of(two))
+    }
+
+    // ==================== Estimate: merged laps (OC-14) ====================
+
+    @Test
+    fun `a merged lap caveat that cannot be located makes every lap an estimate`() {
+        val laps = listOf(
+            lap(1, s1 = 14_000, s2 = 16_000, s3 = 15_000),
+            lap(2, s1 = 15_000, s2 = 15_000, s3 = 16_000),
+            lap(3, s1 = 15_500, s2 = 16_500, s3 = 14_500)
+        )
+
+        assertNotNull("control: these laps are reliable without the caveat", DreamLap.of(laps))
+        val available = available(
+            DreamLap.evaluate(laps, mergedLapCaveat = "Two laps may have been reported as one.")
+        )
+
+        assertEquals(DreamLap.Confidence.ESTIMATE, available.confidence)
+        assertEquals(listOf(DreamLap.EstimateReason.MergedLapsSuspected), available.reasons)
+        assertEquals("all laps are still used", 43_500L, available.result.totalMs)
+        assertNull("of() never hands out a number lap detection doubts", DreamLap.of(laps, "caveat"))
+    }
+
+    @Test
+    fun `the lap that swallowed a start line pass is left out and named`() {
+        val laps = listOf(
+            lap(1, s1 = 14_000, s2 = 16_000, s3 = 15_000),
+            lap(2, s1 = 15_000, s2 = 15_000, s3 = 16_000),
+            lap(3, s1 = 15_500, s2 = 16_500, s3 = 14_500),
+            // Lap 4 is two laps timed as one: its sectors are each about two thirds of a
+            // lap. Its own S1 is not the minimum, but nothing about it can be trusted.
+            lap(4, s1 = 13_000, s2 = 37_000, s3 = 40_000)
+        )
+        val swallowedAt = laps[3].startTs + 45_000L
+
+        val available = available(
+            DreamLap.evaluate(laps, mergedLapCaveat = "caveat", suspectCrossingTimesMs = listOf(swallowedAt))
+        )
+
+        assertEquals(DreamLap.Confidence.ESTIMATE, available.confidence)
+        assertEquals(listOf(DreamLap.EstimateReason.SuspectLapsLeftOut(listOf(4))), available.reasons)
+        assertEquals("lap 4's 13 s sector 1 must not be stitched in", 1, available.result.sector1LapNumber)
+        assertEquals(43_500L, available.result.totalMs)
+    }
+
+    @Test
+    fun `a pass exactly on a lap's start or end marks that lap - the window is inclusive`() {
+        val laps = (1..4).map { n -> lap(n, s1 = 15_000, s2 = 15_000, s3 = 15_000 + n * 100L) }
+
+        val atStart = available(
+            DreamLap.evaluate(laps, "caveat", suspectCrossingTimesMs = listOf(laps[2].startTs))
+        )
+        assertEquals(listOf(DreamLap.EstimateReason.SuspectLapsLeftOut(listOf(3))), atStart.reasons)
+
+        val atEnd = available(
+            DreamLap.evaluate(laps, "caveat", suspectCrossingTimesMs = listOf(laps[1].endTs))
+        )
+        assertEquals(listOf(DreamLap.EstimateReason.SuspectLapsLeftOut(listOf(2))), atEnd.reasons)
+
+        val justOutside = available(
+            DreamLap.evaluate(laps, "caveat", suspectCrossingTimesMs = listOf(laps[1].endTs + 1))
+        )
+        assertEquals(
+            "a pass in the gap between laps belongs to no lap",
+            listOf(DreamLap.EstimateReason.MergedLapsSuspected), justOutside.reasons
+        )
+    }
+
+    @Test
+    fun `when every lap is suspect all laps are used and labelled an estimate`() {
+        val laps = listOf(
+            lap(1, s1 = 14_000, s2 = 16_000, s3 = 15_000),
+            lap(2, s1 = 15_000, s2 = 15_000, s3 = 16_000)
+        )
+        val inEach = laps.map { it.startTs + 10_000L }
+
+        val available = available(DreamLap.evaluate(laps, "caveat", inEach))
+
+        assertEquals(
+            listOf(DreamLap.EstimateReason.MergedLapsSuspected, DreamLap.EstimateReason.FewLaps(2)),
+            available.reasons
+        )
+        assertEquals(44_000L, available.result.totalMs)
+    }
+
+    @Test
+    fun `suspect crossing times are ignored without a caveat`() {
+        val laps = (1..3).map { n -> lap(n, s1 = 15_000, s2 = 15_000, s3 = 15_000 + n * 100L) }
+
+        val available = available(
+            DreamLap.evaluate(laps, mergedLapCaveat = null, suspectCrossingTimesMs = listOf(laps[0].startTs))
+        )
+
+        assertEquals(DreamLap.Confidence.RELIABLE, available.confidence)
     }
 
     @Test
     fun `a half-lap artefact can never produce a fabricated gain`() {
         // The signature of FP-LAP-DOUBLE-COUNT: one "lap" of roughly half the duration,
         // whose sectors are the quickest in the session by a wide margin and are exactly
-        // what an ungated minimum would reach for.
-        //
-        // The artefact cannot be excluded by inspection - its sectors are internally
-        // consistent and evenly shared, because half a lap driven normally looks like a
-        // lap driven normally, only shorter. What can be guaranteed is that stitching it
-        // in never invents pace: either it is itself the quickest "lap", in which case the
-        // dream lap merely restates it with a gain of zero and claims nothing the lap list
-        // does not already show, or mixing it with real laps pushes the total above the
-        // best lap and the whole result is refused.
-        //
-        // In practice it is always the former: every sector of a half-lap is shorter than
-        // every real one, so the artefact wins all three and becomes the best lap itself.
-        // That is the limit of what arithmetic can do here, and it is why the caveat below
-        // is the actual defence.
+        // what an ungated minimum would reach for. Its sectors are internally consistent,
+        // so arithmetic cannot exclude it; what is guaranteed is that it never invents
+        // pace - every sector of a half-lap beats every real one, so it becomes the best
+        // lap itself and the gain is zero. The caveat is the real defence (see below).
         val clean = (1..4).map { n ->
             val duration = 45_000L + n * 500L
             lap(n, s1 = duration / 3, s2 = duration / 3, s3 = duration - 2 * (duration / 3))
         }
         val halfLap = lap(5, s1 = 7_500, s2 = 7_500, s3 = 7_500)   // 22.5s
 
-        val dream = DreamLap.of(clean + halfLap)
+        val dream = available(DreamLap.evaluate(clean + halfLap)).result
 
-        if (dream != null) {
-            assertEquals(
-                "stitching a half-lap in must not invent pace over the laps on the list",
-                0L, dream.gainMs
-            )
-        }
+        assertEquals(
+            "stitching a half-lap in must not invent pace over the laps on the list",
+            0L, dream.gainMs
+        )
     }
 
     @Test
-    fun `the merged lap caveat is the real defence against a double counted lap`() {
-        // Since a half-lap cannot be recognised from its sector times, the signal has to
-        // come from detection, which is the one place that knows a crossing was refused
-        // for being too soon. This is why the caveat is a parameter rather than inferred.
+    fun `the merged lap caveat keeps a double counted lap from ever being reliable`() {
         val clean = (1..4).map { n ->
             val duration = 45_000L + n * 500L
             lap(n, s1 = duration / 3, s2 = duration / 3, s3 = duration - 2 * (duration / 3))
@@ -154,52 +246,146 @@ class DreamLapTest {
         val halfLap = lap(5, s1 = 7_500, s2 = 7_500, s3 = 7_500)
 
         assertNull(
-            "when detection suspects a merged or split lap, nothing is stitched at all",
+            "when detection suspects a merged or split lap, nothing reliable is stitched",
             DreamLap.of(clean + halfLap, mergedLapCaveat = "Lap 5 may be a partial lap.")
         )
+        val located = available(
+            DreamLap.evaluate(clean + halfLap, "caveat", listOf(halfLap.startTs + 1_000L))
+        )
+        assertEquals("with the lap located it is left out", 1, located.result.bestLapNumber)
+        assertEquals(45_500L, located.result.totalMs)
+        assertEquals(listOf(DreamLap.EstimateReason.SuspectLapsLeftOut(listOf(5))), located.reasons)
     }
 
+    // ==================== Estimate: few laps ====================
+
     @Test
-    fun `no dream lap below the minimum number of usable laps`() {
+    fun `two laps give an estimate based on 2 laps`() {
         val two = listOf(
             lap(1, s1 = 14_000, s2 = 16_000, s3 = 15_000),
             lap(2, s1 = 15_000, s2 = 15_000, s3 = 16_000)
         )
 
-        assertNull(
-            "with ${DreamLap.MIN_LAPS - 1} laps the stitching says nothing the lap list does not",
-            DreamLap.of(two)
+        val available = available(DreamLap.evaluate(two))
+
+        assertEquals(DreamLap.Confidence.ESTIMATE, available.confidence)
+        assertEquals(listOf(DreamLap.EstimateReason.FewLaps(2)), available.reasons)
+        assertEquals(44_000L, available.result.totalMs)
+        assertEquals(1_000L, available.result.gainMs)
+    }
+
+    @Test
+    fun `one lap is its own dream lap with a gain of zero`() {
+        val one = listOf(lap(7, s1 = 14_000, s2 = 16_000, s3 = 15_000))
+
+        val available = available(DreamLap.evaluate(one))
+
+        assertEquals(listOf(DreamLap.EstimateReason.FewLaps(1)), available.reasons)
+        assertEquals(45_000L, available.result.totalMs)
+        assertEquals(0L, available.result.gainMs)
+        assertEquals(7, available.result.bestLapNumber)
+        assertTrue(available.result.isCompleteLap)
+    }
+
+    // ==================== Estimate: unusual sectors and gain ====================
+
+    @Test
+    fun `lopsided sectors are used only when no lap has believable shares`() {
+        val laps = (1..4).map { n ->
+            // Sector 1 is 2% of the lap: no car goes round a third of a circuit in that.
+            lap(n, s1 = 900, s2 = 22_050 + n * 10L, s3 = 22_050)
+        }
+
+        assertNull("a 2% sector is never reliable", DreamLap.of(laps))
+        val available = available(DreamLap.evaluate(laps))
+
+        assertEquals(listOf(DreamLap.EstimateReason.UnusualSectorShares), available.reasons)
+        assertEquals(900L + 22_060L + 22_050L, available.result.totalMs)
+    }
+
+    @Test
+    fun `believable laps are preferred over lopsided ones even when fewer`() {
+        val good = listOf(
+            lap(1, s1 = 14_000, s2 = 16_000, s3 = 15_000),
+            lap(2, s1 = 15_000, s2 = 15_000, s3 = 16_000)
+        )
+        val lopsided = (3..5).map { n -> lap(n, s1 = 900, s2 = 22_050, s3 = 22_050) }
+
+        val available = available(DreamLap.evaluate(good + lopsided))
+
+        assertEquals(listOf(DreamLap.EstimateReason.FewLaps(2)), available.reasons)
+        assertEquals("the 0.9 s sector is not stitched in", 44_000L, available.result.totalMs)
+    }
+
+    @Test
+    fun `a gain beyond a quarter of the best lap is shown as an estimate`() {
+        // Each lap is slow in two sectors, so the stitched lap is 50% under the best.
+        val laps = listOf(
+            lap(1, s1 = 10_000, s2 = 25_000, s3 = 25_000),
+            lap(2, s1 = 25_000, s2 = 10_000, s3 = 25_000),
+            lap(3, s1 = 25_000, s2 = 25_000, s3 = 10_000)
+        )
+
+        assertNull(DreamLap.of(laps))
+        val available = available(DreamLap.evaluate(laps))
+
+        assertEquals(listOf(DreamLap.EstimateReason.LargeGain), available.reasons)
+        assertEquals(30_000L, available.result.totalMs)
+        assertEquals(30_000L, available.result.gainMs)
+    }
+
+    @Test
+    fun `reasons accumulate in a fixed order`() {
+        val laps = listOf(
+            lap(1, s1 = 8_000, s2 = 25_000, s3 = 25_000),     // 58 s; 8 + 10 + 25 = 43 s
+            lap(2, s1 = 25_000, s2 = 10_000, s3 = 25_000),
+            lap(3, s1 = 30_000, s2 = 30_000, s3 = 30_000)
+        )
+
+        val available = available(DreamLap.evaluate(laps, "caveat", listOf(laps[2].startTs + 5L)))
+
+        assertEquals(
+            listOf(
+                DreamLap.EstimateReason.SuspectLapsLeftOut(listOf(3)),
+                DreamLap.EstimateReason.FewLaps(2),
+                DreamLap.EstimateReason.LargeGain
+            ),
+            available.reasons
+        )
+    }
+
+    // ==================== Not available: nothing to stitch ====================
+
+    @Test
+    fun `laps with no sectors leave nothing to stitch`() {
+        // Sessions recorded before sectors existed, or laps the splitter refused.
+        val laps = (1..5).map { n -> lap(n, s1 = 0, s2 = 0, s3 = 0, durationMs = 45_000L) }
+
+        assertEquals(
+            DreamLap.Evaluation.NotAvailable(DreamLap.Withheld.NoSectorTimes),
+            DreamLap.evaluate(laps)
+        )
+        assertNull(DreamLap.of(laps))
+    }
+
+    @Test
+    fun `no laps at all leave nothing to stitch`() {
+        assertEquals(
+            DreamLap.Evaluation.NotAvailable(DreamLap.Withheld.NoSectorTimes),
+            DreamLap.evaluate(emptyList())
         )
     }
 
     @Test
-    fun `laps with no sectors are not usable`() {
-        // Sessions recorded before sectors existed, or laps the splitter refused.
-        val laps = (1..5).map { n -> lap(n, s1 = 0, s2 = 0, s3 = 0, durationMs = 45_000L) }
-
-        assertNull("zero sectors carry no information", DreamLap.of(laps))
-    }
-
-    @Test
-    fun `laps whose sectors do not sum to the lap are discarded`() {
+    fun `laps whose sectors do not sum to the lap have no sector times to stitch`() {
         val laps = (1..4).map { n ->
             lap(n, s1 = 15_000, s2 = 15_000, s3 = 15_000, durationMs = 60_000L)
         }
 
-        assertNull(
-            "sectors that do not add up to their own lap are not trustworthy arithmetic",
-            DreamLap.of(laps)
+        assertEquals(
+            DreamLap.Evaluation.NotAvailable(DreamLap.Withheld.NoSectorTimes),
+            DreamLap.evaluate(laps)
         )
-    }
-
-    @Test
-    fun `a lap with an implausibly lopsided sector is discarded`() {
-        val laps = (1..4).map { n ->
-            // Sector 1 is 2% of the lap: no car goes round a third of a circuit in that.
-            lap(n, s1 = 900, s2 = 22_050, s3 = 22_050)
-        }
-
-        assertNull("a 2% sector is a boundary in the wrong place", DreamLap.of(laps))
     }
 
     // ==================== Against a real recorded session ====================
@@ -233,8 +419,11 @@ class DreamLapTest {
             )
         }
 
-        val dream = DreamLap.of(entities, caveat)
-            ?: error("12 clean laps with derived sectors should support a dream lap")
+        val evaluation = available(
+            DreamLap.evaluate(entities, caveat, MergedLapCaveat.suspectCrossingTimes(outcome.diagnostics))
+        )
+        assertEquals("12 clean laps with derived sectors are reliable", DreamLap.Confidence.RELIABLE, evaluation.confidence)
+        val dream = evaluation.result
 
         val bestReal = entities.minOf { it.durationMs }
         assertEquals("the comparison must be against the quickest real lap", bestReal, dream.bestLapMs)
@@ -254,6 +443,9 @@ class DreamLapTest {
     }
 
     // ==================== Helpers ====================
+
+    private fun available(evaluation: DreamLap.Evaluation): DreamLap.Evaluation.Available =
+        evaluation as? DreamLap.Evaluation.Available ?: error("expected a dream lap, got $evaluation")
 
     private fun lap(
         lapNumber: Int,

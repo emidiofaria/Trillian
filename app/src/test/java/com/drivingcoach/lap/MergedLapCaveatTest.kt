@@ -254,4 +254,61 @@ class MergedLapCaveatTest {
             )
         }
     }
+
+    // --- Locating the lost laps (OC-14, OC-35) --------------------------------------------
+
+    @Test
+    fun `suspect crossing times are exactly the refusals that make the caveat speak`() {
+        val d = diagnostics(
+            accepted = listOf(252_000L, 100_000L, 176_000L),   // out of order on purpose
+            rejections = listOf(
+                tooSoon(214_000L),  // lost lap
+                tooSoon(101_100L),  // duplicate fix
+                wide(150_000L),     // not a TOO_SOON refusal
+                tooSoon(138_000L)   // lost lap
+            )
+        )
+
+        val times = MergedLapCaveat.suspectCrossingTimes(d)
+
+        assertEquals("ascending, lost laps only", listOf(138_000L, 214_000L), times)
+        assertTrue(MergedLapCaveat.of(d)!!.contains("${times.size} passes"))
+    }
+
+    @Test
+    fun `no suspect crossing times when the caveat is silent`() {
+        assertEquals(emptyList<Long>(), MergedLapCaveat.suspectCrossingTimes(null))
+        assertEquals(
+            emptyList<Long>(),
+            MergedLapCaveat.suspectCrossingTimes(
+                diagnostics(accepted = listOf(100_000L, 165_000L), rejections = listOf(tooSoon(101_200L)))
+            )
+        )
+        assertEquals(
+            "no floor in force",
+            emptyList<Long>(),
+            MergedLapCaveat.suspectCrossingTimes(
+                diagnostics(rejections = listOf(tooSoon(115_000L)), minLapTimeMs = 0L)
+            )
+        )
+        assertEquals(
+            "a refusal before any accepted crossing is not evidence",
+            emptyList<Long>(),
+            MergedLapCaveat.suspectCrossingTimes(
+                diagnostics(accepted = listOf(100_000L), rejections = listOf(tooSoon(50_000L)))
+            )
+        )
+    }
+
+    @Test
+    fun `the suspect times use the same half-floor threshold as the caveat`() {
+        val threshold = (floorMs * MergedLapCaveat.MERGED_LAP_GAP_FRACTION).toLong()
+        val under = diagnostics(rejections = listOf(tooSoon(100_000L + threshold - 1)))
+        val on = diagnostics(rejections = listOf(tooSoon(100_000L + threshold)))
+
+        assertTrue(MergedLapCaveat.suspectCrossingTimes(under).isEmpty())
+        assertNull(MergedLapCaveat.of(under))
+        assertEquals(listOf(100_000L + threshold), MergedLapCaveat.suspectCrossingTimes(on))
+        assertNotNull(MergedLapCaveat.of(on))
+    }
 }

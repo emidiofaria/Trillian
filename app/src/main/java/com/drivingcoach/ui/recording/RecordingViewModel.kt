@@ -363,7 +363,10 @@ class RecordingViewModel @Inject constructor(
                         // dream lap stitches minima across laps and must not do so when
                         // the lap boundaries themselves are in doubt.
                         if (lapEntities.isNotEmpty()) {
-                            generateOfflineCoaching(sessionId, lapEntities, session.rawFilePath, caveat)
+                            generateOfflineCoaching(
+                                sessionId, lapEntities, session.rawFilePath, caveat,
+                                MergedLapCaveat.suspectCrossingTimes(outcome.diagnostics)
+                            )
                         }
 
                         val message = "${result.laps.size} laps detected" +
@@ -443,10 +446,14 @@ class RecordingViewModel @Inject constructor(
         sessionId: Long, 
         laps: List<LapEntity>,
         rawFilePath: String?,
-        mergedLapCaveat: String? = null
+        mergedLapCaveat: String? = null,
+        suspectCrossingTimesMs: List<Long> = emptyList()
     ) {
         try {
-            val insights = OfflineCoachingEngine.generateInsights(laps, rawFilePath, mergedLapCaveat)
+            val insights = OfflineCoachingEngine.generateInsights(
+                laps, rawFilePath, mergedLapCaveat,
+                suspectCrossingTimesMs = suspectCrossingTimesMs
+            )
             
             if (insights.isEmpty()) {
                 Log.d(TAG, "No offline coaching insights generated (insufficient laps)")

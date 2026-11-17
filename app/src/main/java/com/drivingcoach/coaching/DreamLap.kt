@@ -16,9 +16,24 @@ import com.drivingcoach.data.db.entity.LapEntity
  * detection artefact presented as an achievement, and it would look entirely credible.
  *
  * So every rule below exists to answer one question: is this set of sectors good
- * enough that a minimum over it means anything? When the answer is no, this returns
- * null and the driver is shown nothing. A dream lap is a claim about what the driver
- * is capable of, and an unfounded one is worse than silence.
+ * enough that a minimum over it means anything?
+ *
+ * ### Reliable or Estimate, never silence (OC-13, OC-14, OC-35)
+ *
+ * Withholding the number whenever a rule failed left most real sessions with no dream
+ * lap at all, and a missing number teaches the driver nothing. So the stitching is now
+ * always done whenever any lap carries sector times, and the rules decide the *label*
+ * rather than the existence of the answer:
+ *
+ * - **Reliable** - every gate that used to make the number available passes, and the
+ *   number is exactly the one those gates used to allow.
+ * - **Estimate** - at least one gate failed. The worst evidence is still kept out where
+ *   it can be located (a lap that swallowed a start-line pass is left out; laps with
+ *   implausible sector shares are used only when nothing better exists), and the card
+ *   says in a few words why the number deserves less trust.
+ *
+ * The only remaining "not available" is a session in which no lap has sector times:
+ * there is nothing to add up.
  */
 object DreamLap {
 
@@ -82,46 +97,138 @@ object DreamLap {
             get() = sector1LapNumber == sector2LapNumber && sector2LapNumber == sector3LapNumber
     }
 
-    /** Why a dream lap was withheld, so the driver can be told rather than left guessing. */
-    sealed class Withheld {
-        /** Lap detection suspects two laps were timed as one (OC-14). */
-        object MergedLaps : Withheld()
+    /** How far the stitched number can be trusted (OC-35). */
+    enum class Confidence {
+        /** Every gate passed: the number is what the strict rules always produced. */
+        RELIABLE,
 
-        /** Fewer than [MIN_LAPS] laps carry believable sectors; [usableLaps] do. */
-        data class TooFewLaps(val usableLaps: Int) : Withheld()
-
-        /** The sectors do not add up to a believable lap (stitched total or gain out of range). */
-        object SectorsInconsistent : Withheld()
+        /** Calculated anyway; see [Evaluation.Available.reasons] for why it is softer. */
+        ESTIMATE
     }
 
-    /** Either a dream lap, or the reason there is none. */
+    /** Why a dream lap is labelled an estimate. Each maps to one short line on the card. */
+    sealed class EstimateReason {
+        /**
+         * Lap detection refused a start-line pass inside these laps, so each may be two
+         * laps timed as one. They were left out of the stitching (OC-14).
+         */
+        data class SuspectLapsLeftOut(val lapNumbers: List<Int>) : EstimateReason()
+
+        /**
+         * Lap detection suspects merged laps but none could be left out - every lap
+         * with sector times was suspect, or the refused passes could not be placed.
+         */
+        object MergedLapsSuspected : EstimateReason()
+
+        /** Only [laps] laps went into the stitching - fewer than [MIN_LAPS]. */
+        data class FewLaps(val laps: Int) : EstimateReason()
+
+        /** No lap's sectors fell inside the believable share of their lap. */
+        object UnusualSectorShares : EstimateReason()
+
+        /** The stitched lap beats the best real lap by more than [MAX_GAIN_FRACTION]. */
+        object LargeGain : EstimateReason()
+
+        /**
+         * The stitched lap came out slower than a lap actually driven. Cannot happen when
+         * every sector set sums to its lap, which is checked; kept so arithmetic that
+         * somehow disagrees is labelled rather than presented as reliable.
+         */
+        object SectorsInconsistent : EstimateReason()
+
+        /**
+         * The merged-lap signal was unknown, no lap near the median lap time carried
+         * sector times, and so laps far from the typical time were used (OC-33).
+         */
+        object OffPaceLapsUsed : EstimateReason()
+    }
+
+    /** Why there is no dream lap at all. Only one case remains. */
+    sealed class Withheld {
+        /** No lap carries sector times that add up to the lap: nothing to stitch. */
+        object NoSectorTimes : Withheld()
+    }
+
+    /** Either a dream lap with its label, or the reason there is none. */
     sealed class Evaluation {
-        data class Available(val result: Result) : Evaluation()
+        data class Available(
+            val result: Result,
+            val confidence: Confidence,
+            val reasons: List<EstimateReason>
+        ) : Evaluation() {
+            /** Adds a reason; any reason makes the number an estimate. */
+            fun withReason(reason: EstimateReason): Available =
+                copy(confidence = Confidence.ESTIMATE, reasons = reasons + reason)
+        }
+
         data class NotAvailable(val reason: Withheld) : Evaluation()
     }
 
     /**
-     * Computes the dream lap, or returns null when the data does not support one.
-     * See [evaluate] for the reason.
+     * The dream lap only when it is [Confidence.RELIABLE], otherwise null.
+     *
+     * Deliberately strict: anything that wants a number to *reward* or *record* - as
+     * opposed to the coaching card, which can say "estimate" - must not be handed one
+     * the gates did not pass. See [evaluate] for the labelled answer.
      */
     fun of(laps: List<LapEntity>, mergedLapCaveat: String? = null): Result? =
-        (evaluate(laps, mergedLapCaveat) as? Evaluation.Available)?.result
+        (evaluate(laps, mergedLapCaveat) as? Evaluation.Available)
+            ?.takeIf { it.confidence == Confidence.RELIABLE }
+            ?.result
 
     /**
-     * Computes the dream lap, or says why the data does not support one.
+     * Computes the dream lap, labelled Reliable or Estimate, or says why there is none.
      *
      * @param laps the session's laps
      * @param mergedLapCaveat the warning produced by `MergedLapCaveat`, or null. When
      *   present, lap detection itself has said that two laps may have been reported as
      *   one - and a sector stitched out of a merged lap is meaningless. Nothing here
      *   can detect that from the sector times alone, which is precisely why the signal
-     *   has to be passed in rather than inferred.
+     *   has to be passed in rather than inferred. Its presence alone rules out
+     *   [Confidence.RELIABLE].
+     * @param suspectCrossingTimesMs `MergedLapCaveat.suspectCrossingTimes`: when each
+     *   swallowed pass happened. A lap whose window `[startTs, endTs]` contains one -
+     *   ends **inclusive**, because wrongly leaving a sound lap out costs only a label,
+     *   while wrongly keeping a merged lap in corrupts the number - is left out.
+     *   Ignored when [mergedLapCaveat] is null.
      */
-    fun evaluate(laps: List<LapEntity>, mergedLapCaveat: String? = null): Evaluation {
-        if (mergedLapCaveat != null) return Evaluation.NotAvailable(Withheld.MergedLaps)
+    fun evaluate(
+        laps: List<LapEntity>,
+        mergedLapCaveat: String? = null,
+        suspectCrossingTimesMs: List<Long> = emptyList()
+    ): Evaluation {
+        val timed = laps.filter { it.hasSectorTimes() }
+        if (timed.isEmpty()) return Evaluation.NotAvailable(Withheld.NoSectorTimes)
 
-        val usable = laps.filter { it.hasPlausibleSectors() }
-        if (usable.size < MIN_LAPS) return Evaluation.NotAvailable(Withheld.TooFewLaps(usable.size))
+        val reasons = mutableListOf<EstimateReason>()
+
+        // 1. Merged laps: leave out the laps that swallowed a pass, where they can be named.
+        val pool = if (mergedLapCaveat == null) {
+            timed
+        } else {
+            val suspects = timed.filter { lap ->
+                suspectCrossingTimesMs.any { t -> t >= lap.startTs && t <= lap.endTs }
+            }
+            if (suspects.isEmpty() || suspects.size == timed.size) {
+                reasons += EstimateReason.MergedLapsSuspected
+                timed
+            } else {
+                reasons += EstimateReason.SuspectLapsLeftOut(suspects.map { it.lapNumber }.sorted())
+                timed - suspects.toSet()
+            }
+        }
+
+        // 2. Sector shares: the believable laps when there are any, else whatever there is.
+        val plausible = pool.filter { it.hasPlausibleShares() }
+        val usable = if (plausible.isNotEmpty()) {
+            plausible
+        } else {
+            reasons += EstimateReason.UnusualSectorShares
+            pool
+        }
+
+        // 3. Too few laps for the stitching to say more than the lap list.
+        if (usable.size < MIN_LAPS) reasons += EstimateReason.FewLaps(usable.size)
 
         val best1 = usable.minBy { it.sector1Ms }
         val best2 = usable.minBy { it.sector2Ms }
@@ -138,15 +245,13 @@ object DreamLap {
         // A dream lap can never be slower than a lap actually driven: the best lap's own
         // sectors are candidates, so the minimum is at worst that lap. If this fails,
         // the sectors do not sum to their laps and the arithmetic is not trustworthy.
-        if (total > bestLap.durationMs) return Evaluation.NotAvailable(Withheld.SectorsInconsistent)
+        if (total > bestLap.durationMs) reasons += EstimateReason.SectorsInconsistent
 
-        val gain = bestLap.durationMs - total
-        if (gain > bestLap.durationMs * MAX_GAIN_FRACTION) {
-            return Evaluation.NotAvailable(Withheld.SectorsInconsistent)
-        }
+        val gain = (bestLap.durationMs - total).coerceAtLeast(0L)
+        if (gain > bestLap.durationMs * MAX_GAIN_FRACTION) reasons += EstimateReason.LargeGain
 
         return Evaluation.Available(
-            Result(
+            result = Result(
                 sector1Ms = best1.sector1Ms,
                 sector1LapNumber = best1.lapNumber,
                 sector2Ms = best2.sector2Ms,
@@ -157,22 +262,21 @@ object DreamLap {
                 bestLapMs = bestLap.durationMs,
                 bestLapNumber = bestLap.lapNumber,
                 gainMs = gain
-            )
+            ),
+            confidence = if (reasons.isEmpty()) Confidence.RELIABLE else Confidence.ESTIMATE,
+            reasons = reasons.toList()
         )
     }
 
-    /**
-     * Whether a lap's sectors can be believed: all three present, summing to the lap,
-     * and none of them an implausible share of it.
-     */
-    private fun LapEntity.hasPlausibleSectors(): Boolean {
-        if (sector1Ms <= 0L || sector2Ms <= 0L || sector3Ms <= 0L) return false
-        if (durationMs <= 0L) return false
-        if (sector1Ms + sector2Ms + sector3Ms != durationMs) return false
+    /** All three sectors present and adding up to the lap: something to stitch. */
+    private fun LapEntity.hasSectorTimes(): Boolean =
+        sector1Ms > 0L && sector2Ms > 0L && sector3Ms > 0L && durationMs > 0L &&
+            sector1Ms + sector2Ms + sector3Ms == durationMs
 
-        return listOf(sector1Ms, sector2Ms, sector3Ms).all { sector ->
+    /** None of the sectors an implausible share of the lap. Assumes [hasSectorTimes]. */
+    private fun LapEntity.hasPlausibleShares(): Boolean =
+        listOf(sector1Ms, sector2Ms, sector3Ms).all { sector ->
             val share = sector.toDouble() / durationMs
             share in MIN_SECTOR_SHARE..MAX_SECTOR_SHARE
         }
-    }
 }

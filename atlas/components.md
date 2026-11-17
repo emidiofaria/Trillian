@@ -1501,17 +1501,20 @@ times, detection and all existing behaviour are unaffected.
 
 Stitches the fastest sector 1, sector 2 and sector 3 recorded anywhere in a session into the
 lap the driver has already driven in pieces but never in one go, and reports the time left on
-the table. Equally importantly, it refuses to do so when the data cannot support it.
+the table. Equally importantly, it labels the number **Reliable** only when the data fully
+supports it, and **Estimate** (with short reasons) otherwise (OC-35, v3.08). It is withheld
+only when no lap has sector times.
 
 ### Key Code Areas
 
-- `coaching/DreamLap.kt` — pure object; `evaluate(laps, mergedLapCaveat)` returns `Evaluation` (`Available(result)` or `NotAvailable(Withheld)`, where `Withheld` is `MergedLaps`, `TooFewLaps(usableLaps)` or `SectorsInconsistent`); `of()` is a nullable wrapper
-- `OfflineCoachingEngine.generateDreamLapInsight()` — the only caller
+- `coaching/DreamLap.kt` — pure object; `evaluate(laps, mergedLapCaveat, suspectCrossingTimesMs)` returns `Evaluation`: `Available(result, confidence, reasons)` with `Confidence` `RELIABLE`/`ESTIMATE` and `EstimateReason` `SuspectLapsLeftOut(lapNumbers)`, `MergedLapsSuspected`, `FewLaps(n)`, `UnusualSectorShares`, `LargeGain`, `SectorsInconsistent`, `OffPaceLapsUsed`; or `NotAvailable(Withheld.NoSectorTimes)`. `of()` is a **reliable-only** nullable wrapper (strict, for anything that rewards or records)
+- `OfflineCoachingEngine.evaluateDreamLap()` (OC-33 median guard with all-laps fallback) and `generateDreamLapInsight()` — the only production callers
+- `MergedLapCaveat.suspectCrossingTimes(diagnostics)` — when each swallowed start-line pass happened (same half-floor rule as `of()`)
 
 ### Dependencies
 
 - `LapEntity` sector columns (written by `SectorSplitter` via the detector)
-- `MergedLapCaveat` output, forwarded from `RecordingViewModel`
+- `MergedLapCaveat` output and suspect crossing times, forwarded from `RecordingViewModel` (save) and `SectorRepair` (re-open, from the `.lapdiag.json` sidecar)
 
 ### Why the gate exists
 
@@ -1532,13 +1535,14 @@ achievements, credibly.
 
 | Mode | Symptom | Cause | Mitigation |
 |------|---------|-------|------------|
-| Artefact stitched in | Impossible "theoretical best" | Double-counted lap | Caveat suppression + gain bound |
-| Withheld | "Dream Lap" card with "Not available for this session" and the reason | Any gate rule fired | Intended; no time over an unfounded one. The card stays so it isn't mistaken for a broken feature (OC-13, v3.06) |
+| Artefact stitched in | Impossible "theoretical best" | Double-counted lap | Suspect lap left out where located; never labelled Reliable under a caveat; gain bound labels it Estimate |
+| Estimate | "Dream Lap: t (Estimate)" + "Why it's an estimate: …" | Any former gate rule fired | Intended (OC-35, v3.08): the number is still shown, with the reason(s) |
+| Not available | "Dream Lap" card: "Not available: no lap had sector times." | No lap has S1+S2+S3 == duration | Intended; nothing to stitch |
 
 ### Criticality
 
-LOW — a withheld time costs one insight. A *wrong* Dream Lap, however, would be a MEDIUM-severity
-trust failure, which is why the gate is the larger half of the component.
+LOW — an estimate costs some trust in one insight. A *wrong* Dream Lap labelled Reliable,
+however, would be a MEDIUM-severity trust failure, which is why the gates still decide the label.
 
 ---
 
@@ -1640,7 +1644,7 @@ Since the sector slice it produces a **variable number of insights (1–7)**, em
 | Best Lap | Always (if ≥2 laps) | "You nailed Sector 2: 0.667s quicker than your average" |
 | Top Speed | If telemetry file exists | "🚀 Top Speed: 247 km/h — Hit on Lap 3" |
 | Consistency | Always (if ≥2 laps) | "Laps within 1.200s of each other" |
-| Dream Lap | Always (if ≥2 laps) — time and calculation from `DreamLap.evaluate()`, or the withheld reason | "Dream Lap: 1:12.345" / "Best S1 … (Lap a) + … = 1:12.345. Your best lap: 1:15.845 (Lap n)…" |
+| Dream Lap | Always (if ≥2 laps) — time, label and calculation from `DreamLap.evaluate()`; "not available" only with no sector times | "Dream Lap: 1:12.345 (Reliable)" / "Best S1 … (Lap a) + … = 1:12.345. Your best lap: 1:15.845 (Lap n)…" / Estimate adds "Why it's an estimate: based on 2 laps." |
 | Sector Diagnostic | If laps carry sectors | "Focus on Sector 2" / "All Sectors Strong" |
 | Outlier Lap | ≥4 laps, one ≥15% off the **median** | "Lap 5 Was The Odd One Out" |
 | Pace Trend | ≥6 laps, halves differ by >2% | "You Built Pace Through The Session" |
@@ -1659,16 +1663,19 @@ detected, and a minimum actively seeks out the worst data in the set. A lap coun
 half as long as they should be — exactly the values `min()` reaches for. The result would be
 a detection artefact presented as an achievement, and it would look entirely credible.
 
-Suppression rules (OC-13, OC-14):
+Confidence rules (OC-13, OC-14, OC-35; v3.08 — the gates now set the **label**, they no
+longer withhold the number):
 
-| Rule | Rejects |
-|------|---------|
-| `mergedLapCaveat != null` | Sessions where detection itself suspects a merged or split lap |
-| ≥3 laps with believable sectors | Sets too small for a minimum to mean anything |
-| Sectors sum to their own lap | Arithmetic that has come apart upstream |
-| Each sector in 10%–75% of its lap | The signature of boundaries in the wrong place |
-| Total ≤ fastest real lap | Impossible stitches |
-| Gain ≤ 25% of that lap | Order-of-magnitude errors, i.e. half-laps |
+| Rule | When it fails |
+|------|---------------|
+| Lap has sector times (all > 0, sum == duration) | Lap not usable at all; **no such lap → "not available"** |
+| `mergedLapCaveat == null` | Estimate. Laps whose `[startTs, endTs]` (inclusive) contains a suspect crossing are left out and named; if none can be located or all are suspect, all laps are used ("merged laps suspected") |
+| Each sector in 10%–75% of its lap | Such laps dropped while any believable lap remains; if none remains, all are used — Estimate ("sector times look unusual") |
+| ≥3 laps used | Estimate ("based on N laps"); 1 lap = that lap, gain 0 |
+| Total ≤ fastest real lap | Estimate (defensive; cannot happen when sectors sum to laps) |
+| Gain ≤ 25% of that lap | Estimate ("much faster than any real lap — sector timing may be off") |
+
+Reliable = every rule passes, and the number is identical to the one the pre-3.08 gate allowed.
 
 **What the arithmetic cannot do:** a half-lap's sectors are internally consistent and evenly
 shared, because half a lap driven normally looks like a lap driven normally, only shorter.
@@ -2728,13 +2735,13 @@ or any later fix. Drivers reported those features as "not working".
 Now every open recomputes the insights and compares `(headline, detail)` against the
 stored local ones; it writes only on difference, so a steady session costs no writes.
 
-`DreamLap` must still not be resurrected over a merged lap (OC-14). The signal comes from
+`DreamLap` must still never be labelled Reliable over a merged lap (OC-14). The signal comes from
 the `.lapdiag.json` sidecar (LD-16):
 
 | Sidecar | Sectors | Insight text |
 |---------|---------|--------------|
-| Present and parseable | Corrected | Refreshed with the recovered caveat |
-| Absent, unreadable, or no telemetry path | Corrected | Refreshed; Dream Lap built from `CleanLaps` only — laps within ±15 % of the median, at least 3 (OC-33) |
+| Present and parseable | Corrected | Refreshed with the recovered caveat and suspect crossing times (suspect laps left out, Estimate) |
+| Absent, unreadable, or no telemetry path | Corrected | Refreshed; Dream Lap built from `CleanLaps` only — laps within ±15 % of the median (OC-33). If none of those has sector times, all laps are used and the result is an Estimate ("includes laps far from your typical lap time") |
 
 A merged lap is ~2× the median and a half-lap ~0.5×, so neither survives the guard.
 

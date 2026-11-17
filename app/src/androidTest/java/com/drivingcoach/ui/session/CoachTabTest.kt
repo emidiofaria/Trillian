@@ -19,6 +19,8 @@ import com.drivingcoach.data.db.dao.SessionDao
 import com.drivingcoach.data.db.entity.CoachingInsightEntity
 import com.drivingcoach.data.db.entity.LapEntity
 import com.drivingcoach.data.db.entity.SessionEntity
+import com.drivingcoach.lap.LapDiagnosticsWriter
+import com.drivingcoach.lap.LocalLapDetector
 import com.drivingcoach.testing.awaitUntil
 import com.drivingcoach.testing.launchFragmentInHiltContainer
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -41,7 +43,7 @@ import kotlin.math.sin
 /**
  * L2 (ASPICE SWE.5) coverage for the COACH tab — SRS OC-19, OC-20, OC-26, OC-27,
  * CF-01, CF-02, CF-04, CF-05,
- * OC-31 and OC-32.
+ * OC-13, OC-14, OC-31, OC-32 and OC-35.
  *
  * ### Why this class exists
  *
@@ -77,6 +79,9 @@ class CoachTabTest {
     @Inject
     lateinit var insightDao: CoachingInsightDao
 
+    @Inject
+    lateinit var lapDiagnosticsWriter: LapDiagnosticsWriter
+
     private lateinit var telemetryFile: File
     private var sessionId: Long = 0L
 
@@ -87,7 +92,10 @@ class CoachTabTest {
 
     @After
     fun tearDown() {
-        if (::telemetryFile.isInitialized) telemetryFile.delete()
+        if (::telemetryFile.isInitialized) {
+            lapDiagnosticsWriter.sidecarFor(telemetryFile).delete()
+            telemetryFile.delete()
+        }
     }
 
     private fun context(): Context = ApplicationProvider.getApplicationContext()
@@ -233,6 +241,56 @@ class CoachTabTest {
         )
     }
 
+    // --- Dream Lap is always calculated and labelled (SRS OC-13, OC-14, OC-35) ---
+
+    /**
+     * Three identical laps pass every gate. The card is regenerated on open (OC-32), so
+     * what is asserted is today's engine output reaching the screen.
+     */
+    @Test
+    fun aNormalSessionShowsAReliableDreamLap() {
+        seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true)
+        launchCoachTab()
+
+        val headline = awaitDreamLapHeadline()
+        assertTrue(headline, headline.endsWith("(Reliable)"))
+        onView(withText(headline)).perform(scrollTo()).check(matches(isDisplayed()))
+        assertTrue(dreamLapDetail(), !dreamLapDetail().contains("Why it's an estimate"))
+    }
+
+    /** Two laps used to show "not available"; now the number is shown as an estimate. */
+    @Test
+    fun aTwoLapSessionShowsAnEstimateDreamLap() {
+        seedSession(lapCount = 2, withSectorTimes = true, withTelemetryFile = true)
+        launchCoachTab()
+
+        val headline = awaitDreamLapHeadline()
+        assertTrue(headline, headline.endsWith("(Estimate)"))
+        onView(withText(headline)).perform(scrollTo()).check(matches(isDisplayed()))
+        val detail = dreamLapDetail()
+        assertTrue(detail, detail.contains("Why it's an estimate: based on 2 laps."))
+        onView(withText(detail)).perform(scrollTo()).check(matches(isDisplayed()))
+    }
+
+    /**
+     * Lap detection refused a start-line pass in the middle of lap 2 (the sidecar says
+     * so). Lap 2 is left out, named, and the rest still give a number - instead of the
+     * whole session's dream lap being withheld.
+     */
+    @Test
+    fun aMergedLapSessionShowsAnEstimateThatLeavesTheSuspectLapOut() {
+        seedSession(lapCount = 3, withSectorTimes = true, withTelemetryFile = true)
+        writeDiagnosticsWithASwallowedPassInLap(2, lapCount = 3)
+        launchCoachTab()
+
+        val headline = awaitDreamLapHeadline()
+        assertTrue(headline, headline.endsWith("(Estimate)"))
+        onView(withText(headline)).perform(scrollTo()).check(matches(isDisplayed()))
+        val detail = dreamLapDetail()
+        assertTrue(detail, detail.contains("lap 2 left out — it may be two laps timed as one"))
+        onView(withText(detail)).perform(scrollTo()).check(matches(isDisplayed()))
+    }
+
     // --- Driving fundamentals (SRS CF-01 .. CF-08) ---
 
     /** The tips stand alone: a session with no insights at all still shows all four. */
@@ -301,6 +359,54 @@ class CoachTabTest {
 
     private fun storedInsights(): List<CoachingInsightEntity> =
         runBlocking { insightDao.getInsightsForSession(sessionId).first() }
+
+    /** Waits for today's Dream Lap card to replace the seeded insight, and returns its headline. */
+    private fun awaitDreamLapHeadline(): String {
+        awaitUntil("the Dream Lap insight to be regenerated") {
+            storedInsights().any { it.headline.startsWith("Dream Lap:") }
+        }
+        return storedInsights().first { it.headline.startsWith("Dream Lap:") }.headline
+    }
+
+    private fun dreamLapDetail(): String =
+        storedInsights().first { it.headline.startsWith("Dream Lap:") }.detail
+
+    /**
+     * The sidecar lap detection would have written had it accepted a crossing at every
+     * seeded lap boundary and refused one, as too soon, half-way through lap [lapNumber].
+     */
+    private fun writeDiagnosticsWithASwallowedPassInLap(lapNumber: Int, lapCount: Int) {
+        val boundaries = (0..lapCount).map { START_MS + it * LAP_MS }
+        val swallowedAt = START_MS + (lapNumber - 1) * LAP_MS + LAP_MS / 2
+        val diagnostics = LocalLapDetector.DetectionDiagnostics(
+            sampleCount = 1000,
+            durationMs = lapCount * LAP_MS,
+            observedSampleRateHz = 10.0,
+            startLineLengthM = 10.0,
+            startLineBearingDeg = 90.0,
+            angleBetweenLineAndTravelDeg = 90.0,
+            acceptedCrossings = boundaries.map {
+                LocalLapDetector.Crossing(timestampMs = it, lateralOffsetM = 1.0, headingDeg = 0.0)
+            },
+            rejectedCrossings = listOf(
+                LocalLapDetector.RejectedCrossing(
+                    timestampMs = swallowedAt,
+                    reason = LocalLapDetector.RejectionReason.TOO_SOON,
+                    detail = "instrumented: swallowed lap"
+                )
+            ),
+            lapCount = lapCount,
+            minLapTimeMs = LAP_MS / 2 + 1_000L
+        )
+        checkNotNull(
+            lapDiagnosticsWriter.write(
+                telemetryFile, sessionId,
+                LocalLapDetector.DetectionOutcome(
+                    LocalLapDetector.DetectionResult.Error("instrumented"), diagnostics
+                )
+            )
+        ) { "the diagnostics sidecar could not be written" }
+    }
 
     private fun not(matcher: org.hamcrest.Matcher<android.view.View>) =
         org.hamcrest.CoreMatchers.not(matcher)

@@ -3010,6 +3010,12 @@ The signal turned out to be recoverable after all: LD-16 writes detection diagno
 `.lapdiag.json` sidecar beside the telemetry. Regeneration happens only when that sidecar
 parses. Otherwise the corrected numbers stand and the wording is left exactly as recorded.
 
+*Amended v3.08 (OC-35):* the Dream Lap is no longer withheld under a merged-lap caveat; it is
+labelled **Estimate**, and the sidecar's swallowed-pass times (`MergedLapCaveat.suspectCrossingTimes`)
+locate the merged lap so it is left out of the stitching. The hazard above is unchanged in
+shape — regenerating without the signal would now *upgrade an estimate to Reliable* — and the
+guard is the same: no signal, no claim of reliability beyond what the OC-33 median guard allows.
+
 ### Generalisable rule
 
 **Persisted prose is derived data with no dependency tracking.** Before correcting a stored

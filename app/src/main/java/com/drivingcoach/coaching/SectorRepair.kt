@@ -45,8 +45,9 @@ import javax.inject.Singleton
  * Pace Trend, and none of the later fixes. So every open regenerates them, compares
  * `(headline, detail)` with the stored local ones, and writes only on difference.
  *
- * The dream lap must still not be resurrected over a merged lap (OC-14). When the
- * diagnostics sidecar is readable, its caveat is passed in. When it is not - an older
+ * The dream lap must still not be presented as reliable over a merged lap (OC-14). When
+ * the diagnostics sidecar is readable, its caveat and the times of the swallowed passes
+ * are passed in, so the suspect laps are left out and the result labelled an estimate. When it is not - an older
  * session, or a failed write - the engine builds the dream lap from laps within ±15 %
  * of the median only (OC-33), which neither a merged lap nor a half-lap survives.
  * Only `isLocalOnly` insights are replaced, and never by an empty result.
@@ -171,7 +172,8 @@ class SectorRepair @Inject constructor(
                 laps = laps,
                 telemetryFilePath = telemetryFile?.takeIf { it.exists() }?.absolutePath,
                 mergedLapCaveat = diagnostics?.let { MergedLapCaveat.of(it) },
-                mergedSignalKnown = diagnostics != null
+                mergedSignalKnown = diagnostics != null,
+                suspectCrossingTimesMs = MergedLapCaveat.suspectCrossingTimes(diagnostics)
             )
             if (insights.isEmpty()) {
                 // Replacing real insights with none would be a visible loss, and an

@@ -65,32 +65,48 @@ object MergedLapCaveat {
      * contains positive evidence that a boundary was lost.
      */
     fun of(diagnostics: LocalLapDetector.DetectionDiagnostics?): String? {
-        diagnostics ?: return null
-
-        val floorMs = diagnostics.minLapTimeMs
-        if (floorMs <= 0L) return null
-        val threshold = floorMs * MERGED_LAP_GAP_FRACTION
-
-        // Sorted because the gap is measured against the accepted crossing immediately
-        // before each refusal, and nothing guarantees the detector recorded them in
-        // order once the three-stage fallback has had a turn.
-        val acceptedTimes = diagnostics.acceptedCrossings.map { it.timestampMs }.sorted()
-        if (acceptedTimes.isEmpty()) return null
-
-        val swallowed = diagnostics.rejectedCrossings.count { rejected ->
-            if (rejected.reason != LocalLapDetector.RejectionReason.TOO_SOON) return@count false
-            // A refusal with no accepted crossing before it has no gap to measure and is
-            // not evidence of anything. It cannot arise from the current detector, which
-            // only applies the floor once a boundary exists, but the diagnostics are a
-            // record rather than a guarantee.
-            val previous = acceptedTimes.lastOrNull { it < rejected.timestampMs } ?: return@count false
-            (rejected.timestampMs - previous) >= threshold
-        }
+        val swallowed = suspectCrossingTimes(diagnostics).size
         if (swallowed == 0) return null
 
         val passes = if (swallowed == 1) "pass" else "passes"
         val were = if (swallowed == 1) "was" else "were"
         return "$swallowed $passes of the start line $were too soon after the one before " +
             "to be counted -- some laps here may be timed as one."
+    }
+
+    /**
+     * When each swallowed crossing happened, so the lap that absorbed it can be named.
+     *
+     * The same rule as [of] - a `TOO_SOON` refusal at least [MERGED_LAP_GAP_FRACTION] of
+     * the floor after the accepted crossing before it - so the two can never disagree:
+     * [of] is non-null exactly when this is non-empty. The dream lap uses these times to
+     * leave out the lap whose window contains one (OC-14) instead of discarding the
+     * whole session.
+     *
+     * @return the refused crossings' timestamps in ascending order; empty when the
+     *   diagnostics are absent, carry no usable floor, or show no swallowed lap
+     */
+    fun suspectCrossingTimes(diagnostics: LocalLapDetector.DetectionDiagnostics?): List<Long> {
+        diagnostics ?: return emptyList()
+
+        val floorMs = diagnostics.minLapTimeMs
+        if (floorMs <= 0L) return emptyList()
+        val threshold = floorMs * MERGED_LAP_GAP_FRACTION
+
+        // Sorted because the gap is measured against the accepted crossing immediately
+        // before each refusal, and nothing guarantees the detector recorded them in
+        // order once the three-stage fallback has had a turn.
+        val acceptedTimes = diagnostics.acceptedCrossings.map { it.timestampMs }.sorted()
+        if (acceptedTimes.isEmpty()) return emptyList()
+
+        return diagnostics.rejectedCrossings.filter { rejected ->
+            if (rejected.reason != LocalLapDetector.RejectionReason.TOO_SOON) return@filter false
+            // A refusal with no accepted crossing before it has no gap to measure and is
+            // not evidence of anything. It cannot arise from the current detector, which
+            // only applies the floor once a boundary exists, but the diagnostics are a
+            // record rather than a guarantee.
+            val previous = acceptedTimes.lastOrNull { it < rejected.timestampMs } ?: return@filter false
+            (rejected.timestampMs - previous) >= threshold
+        }.map { it.timestampMs }.sorted()
     }
 }

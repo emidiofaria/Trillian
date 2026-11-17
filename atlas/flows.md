@@ -964,19 +964,26 @@ RecordingViewModel.processLapsLocally()
         → refuse (null) if <6 samples, <50 m, or boundaries out of order
       → lap.copy(sector1Ms, sector2Ms, sector3Ms)   // or leave 0L on refusal
 → caveat = MergedLapCaveat.of(diagnostics)          // computed BEFORE coaching
+→ suspects = MergedLapCaveat.suspectCrossingTimes(diagnostics)   // when each swallowed pass happened
 → saveLapsToRoom(sessionId, detectedLaps)
   → Map DetectedLap to LapEntity, carrying sector1Ms/2Ms/3Ms through
   → lapDao.insertLaps(lapEntities)
-→ generateOfflineCoaching(sessionId, lapEntities, caveat)
-  → OfflineCoachingEngine.generateInsights(laps, rawFilePath, mergedLapCaveat)
+→ generateOfflineCoaching(sessionId, lapEntities, caveat, suspects)
+  → OfflineCoachingEngine.generateInsights(laps, rawFilePath, mergedLapCaveat, suspectCrossingTimesMs)
     → Check laps.size >= 2
     → generateBestLapInsight(laps, bestLap)          // sector detail now real
     → generateTopSpeedInsight(rawFilePath)           // omitted without telemetry
     → generateConsistencyInsight(laps)
-    → generateDreamLapInsight(laps, mergedLapCaveat)
-      → DreamLap.of(laps, caveat)
-        → null if caveat present, <3 usable laps, sectors not summing,
-          implausible shares, total > best lap, or gain > 25%
+    → generateDreamLapInsight(evaluateDreamLap(laps, caveat, known, suspects))
+      → DreamLap.evaluate(laps, caveat, suspects)                   (OC-13, OC-14, OC-35)
+        → no lap with S1+S2+S3 == duration → NotAvailable(NoSectorTimes)
+        → caveat: leave out laps whose [startTs, endTs] holds a suspect pass
+          (none located / all suspect → keep all)                  → ESTIMATE
+        → prefer laps with shares in 10–75 %; none → all            → ESTIMATE
+        → < 3 laps used, total > best lap, gain > 25 %              → ESTIMATE
+        → otherwise RELIABLE (same number as the pre-3.08 gate)
+      → headline "Dream Lap: t (Reliable|Estimate)"; estimate detail ends
+        "Why it's an estimate: <reason>; <reason>."
     → generateSectorDiagnosticInsight(laps, bestLap) // omitted when sectors are 0L
     → generateOutlierLapInsight(laps)                // ≥4 laps, ≥15% off the MEDIAN
     → generatePaceTrendInsight(laps)                 // ≥6 laps, halves differ >2%
@@ -1955,10 +1962,11 @@ CoachFragment.updateUI(state)  [populated branch only]
       → differs by >= 1 ms → lapDao.updateSectors(...)
     → ALWAYS refresh insight text (OC-32), whether or not sectors moved
     → lapDiagnosticsWriter.read(telemetryFile)
-      → diagnostics → MergedLapCaveat.of(it), mergedSignalKnown = true
+      → diagnostics → MergedLapCaveat.of(it) + suspectCrossingTimes(it), mergedSignalKnown = true
       → null (absent / unparseable / no path) → mergedSignalKnown = false
-        → Dream Lap built from CleanLaps only (median ±15 %, >= 3 laps) (OC-33)
-    → OfflineCoachingEngine.generateInsights(laps, path, caveat, mergedSignalKnown)
+        → Dream Lap built from CleanLaps only (median ±15 %) (OC-33);
+          none of those with sectors → all laps, ESTIMATE ("includes laps far from …")
+    → OfflineCoachingEngine.generateInsights(laps, path, caveat, mergedSignalKnown, suspects)
     → empty → keep existing rather than replace real insights with none
     → getInsightsForSessionOnce → local (headline, detail) list == fresh? → no writes
     → replaceLocalInsights(isLocalOnly = true)   [@Transaction: delete local + insert]
@@ -2012,7 +2020,8 @@ CoachFragment.updateUI(state)  [populated branch only]
   resampling is anchored at the interpolated crossing (LD-27), on the surveyed one because
   of the rotation in `fromCentreline` (OC-21). OC-30 is the requirement that they agree.
 - The repair writes **only on difference**, so opening a correct session is read-only.
-- The repair never regenerates insights without the merged-lap signal (OC-14, OC-32), and
+- The repair never regenerates insights without the merged-lap signal, so a merged lap is
+  never labelled Reliable (OC-14, OC-32, OC-35), and
   never removes an insight it did not generate (OC-09, OC-10).
 
 ---
